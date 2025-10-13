@@ -1,4 +1,3 @@
 # pyGEDAI
 GEDAI in python
-<img width="2048" height="512" alt="pyGEDAI_logo" src="https://github.com/user-attachments/assets/15df21e2-cea4-4e37-bfa7-e123673ee9d0" />
-
+![pyGEDAI_logo](https://github.com/user-attachments/assets/5e06d5d4-1e68-4a74-b47c-cf59e850f379)
