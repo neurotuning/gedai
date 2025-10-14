@@ -136,7 +136,7 @@ class Gedai():
   
             wavelet_epochs = mne.EpochsArray(wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False)
             if method == 'gridsearch':
-                min_sensai_threshold, max_threshold, step = 0, 15, 0.1
+                min_sensai_threshold, max_threshold, step = 0, 12, 0.1
                 sensai_thresholds = np.arange(min_sensai_threshold, max_threshold, step)
                 eigen_thresholds = [self._sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
                 threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=3, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
