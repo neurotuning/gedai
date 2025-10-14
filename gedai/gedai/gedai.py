@@ -15,6 +15,7 @@ from typing import Optional
 from ..utils._checks import check_type, _check_n_jobs
 from ..utils._docs import fill_doc
 
+from ..wavelet.transform import epochs_to_wavelet
 from .decompose import clean_epochs
 from .covariances import compute_distance_cov, compute_refcov
 from ..sensai import sensai_gridsearch, sensai_optimize, scale_threshold
@@ -31,30 +32,6 @@ def validate_method(method):
     check_type(method, (str,), 'method')
     if method not in ['gridsearch', 'optimize']:
         raise ValueError("Method must be either 'gridsearch' or 'optimize', got '{method}' instead.")
-
-
-def epochs_to_wavelet(epochs, wavelet, level):
-    # compute frequency bands
-    freq_bands = []
-    for i in range(1, level + 1):
-        fmin = epochs.info['sfreq'] / (2 ** (i + 1))
-        fmax = epochs.info['sfreq'] / (2 ** i)
-        freq_bands.append((fmin, fmax))
-    freq_bands.append((0, epochs.info['sfreq'] / (2 ** (level+1))))
-    freq_bands = freq_bands[::-1]
-    
-    epochs_data = epochs.get_data()
-    wavelet_signals = np.zeros((epochs_data.shape[0], epochs_data.shape[1], level+1, epochs_data.shape[2]))
-    for e,epoch_data in enumerate(epochs_data):
-        for c,channel_data in enumerate(epoch_data):
-            coeffs = pywt.wavedec(channel_data, wavelet, level=level)
-            for component in range(level+1):
-                coeffs_single = [np.zeros_like(c) for c in coeffs]
-                coeffs_single[component] = coeffs[component]  # Only keep the desired component
-                # Reconstruct the signal using the modified coefficients
-                comp = pywt.waverec(coeffs_single, wavelet)
-                wavelet_signals[e, c, component] = comp[:len(channel_data)]
-    return(wavelet_signals, freq_bands)
 
 
 @fill_doc
@@ -105,10 +82,10 @@ class Gedai():
         validate_method(method)
         n_jobs = _check_n_jobs(n_jobs)
         # Compute reference covariance matrix
-        if covariance_method == 'distance':
+        if (covariance_method == 'distance'):
             reference_cov = compute_distance_cov(epochs)
             ch_names = epochs.info['ch_names']
-        elif covariance_method == 'leadfield':
+        elif (covariance_method == 'leadfield'):
             mat = os.path.join(os.path.dirname(__file__), '../../gedai/data/fsavLEADFIELD_4_GEDAI.mat')
             reference_cov, ch_names = compute_refcov(epochs, mat)
         else:
@@ -121,7 +98,11 @@ class Gedai():
         reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
 
         # Broadband data
-        epochs_wavelet, freq_bands = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        
+        # Store the actual levels used for consistency in transform
+        self.levels_used = levels
+        self.freq_bands = freq_bands
         
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
@@ -135,7 +116,7 @@ class Gedai():
                 epochs_eigenvalues[e] = eigenvalues
   
             wavelet_epochs = mne.EpochsArray(wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False)
-            if method == 'gridsearch':
+            if (method == 'gridsearch'):
                 min_sensai_threshold, max_threshold, step = 0, 12, 0.1
                 sensai_thresholds = np.arange(min_sensai_threshold, max_threshold, step)
                 eigen_thresholds = [self._sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
@@ -143,7 +124,8 @@ class Gedai():
 
             else:
                 raise ValueError("Method must be 'gridsearch'")
-            wavelet_fit = {'level': w, 'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
+            # Store band_index to map back to the correct position in epochs_wavelet during transform
+            wavelet_fit = {'band_index': w, 'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
 
@@ -204,15 +186,25 @@ class Gedai():
             The transformed epochs.
         """
         check_type(epochs, (BaseEpochs,), 'epochs')
+        
+        # Check if model was fitted
+        if not hasattr(self, 'wavelets_fits'):
+            raise RuntimeError("Model has not been fitted yet. Call fit_epochs() or fit_raw() first.")
 
-        epochs_wavelet, freq_bands = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        
+        # Validate that the decomposition matches the fitted model
+        if levels != self.levels_used:
+            raise ValueError(f"Wavelet decomposition levels mismatch. Model was fitted with levels {self.levels_used}, "
+                           f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
         
         cleaned_epochs_wavelet = epochs_wavelet.copy()
-        for w, wavelet_fits in enumerate(self.wavelets_fits):
-            wavelet_level = wavelet_fits['level']
-            wavelet_epochs_data = epochs_wavelet[:, :, wavelet_level, :]
-            cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fits['reference_cov'], wavelet_fits['threshold'])
-            cleaned_epochs_wavelet[:, :, wavelet_level, :] = cleaned_epochs
+        for wavelet_fit in self.wavelets_fits:
+            # Use the stored band_index to access the correct wavelet band
+            band_idx = wavelet_fit['band_index']
+            wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
+            cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
+            cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_epochs
         
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
@@ -248,7 +240,7 @@ class Gedai():
         raw_data = raw.get_data()
         n_channels, n_times = raw_data.shape
 
-        window_size = raw.info['sfreq'] * duration
+        window_size = int(raw.info['sfreq'] * duration)
         window = create_cosine_weights(window_size)
 
         raw_corrected = np.zeros_like(raw_data)
