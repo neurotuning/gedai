@@ -24,23 +24,23 @@ raw.set_eeg_reference("average")
 
 from gedai.gedai import Gedai
 
-gedai = Gedai()
-gedai.fit_raw(raw, n_jobs=2, noise_multiplier=1.0, verbose=False)
+#gedai = Gedai()
+#gedai.fit_raw(raw, n_jobs=2, noise_multiplier=1.0, verbose=False)
 
 # %%
 # plot
 
 import matplotlib.pyplot as plt
 
-fig, axes = gedai.plot_fit()
-plt.show()
+#fig, axes = gedai.plot_fit()
+#plt.show()
 
 # %%
 # Transforming the raw data
 
-raw_corrected = gedai.transform_raw(raw, verbose=False)
+#raw_corrected = gedai.transform_raw(raw, verbose=False)
 
 # %%
 # Interactive plot
-from gedai.viz import plot_mne_style_overlay_interactive
-plot_mne_style_overlay_interactive(raw, raw_corrected)
+#from gedai.viz import plot_mne_style_overlay_interactive
+#plot_mne_style_overlay_interactive(raw, raw_corrected)

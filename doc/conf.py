@@ -109,7 +109,7 @@ autoclass_content = "class"
 
 # -- intersphinx -----------------------------------------------------------------------
 intersphinx_mapping = get_intersphinx_mapping(
-    packages={"matplotlib", "mne", "numpy", "pandas", "python", "scipy", "sklearn"},
+    packages={"joblib", "matplotlib", "mne", "numpy", "pandas", "python", "scipy", "sklearn"},
 )
 intersphinx_mapping.update({
     'pywt': ('https://pywavelets.readthedocs.io/en/latest/', None),
