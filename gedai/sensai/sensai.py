@@ -41,6 +41,9 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     A = np.asarray(A, dtype=np.float64)
     B = np.asarray(B, dtype=np.float64)
 
+    A, _ = np.linalg.qr(A)
+    B, _ = np.linalg.qr(B)
+    
     # Compute the SVD of A.T @ B
     S = np.linalg.svd(A.T @ B, compute_uv=False)
 

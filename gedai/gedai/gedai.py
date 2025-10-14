@@ -63,7 +63,7 @@ class Gedai():
 
     Parameters
     ----------
-    wavelet : int
+    wavelet_type : int
         Wavelet to use for the decomposition. The default is 'db4' (Daubechies 4).
         See :py:func:`pywt.wavedec` for complete list of available wavelet values.
     wavelet_level : int
@@ -143,7 +143,7 @@ class Gedai():
 
             else:
                 raise ValueError("Method must be 'gridsearch'")
-            wavelet_fit = {'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
+            wavelet_fit = {'level': w, 'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
 
@@ -207,11 +207,12 @@ class Gedai():
 
         epochs_wavelet, freq_bands = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
         
-        cleaned_epochs_wavelet = np.zeros_like(epochs_wavelet)
+        cleaned_epochs_wavelet = epochs_wavelet.copy()
         for w, wavelet_fits in enumerate(self.wavelets_fits):
-            wavelet_epochs_data = epochs_wavelet[:, :, w, :]
+            wavelet_level = wavelet_fits['level']
+            wavelet_epochs_data = epochs_wavelet[:, :, wavelet_level, :]
             cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fits['reference_cov'], wavelet_fits['threshold'])
-            cleaned_epochs_wavelet[:, :, w, :] = cleaned_epochs
+            cleaned_epochs_wavelet[:, :, wavelet_level, :] = cleaned_epochs
         
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
