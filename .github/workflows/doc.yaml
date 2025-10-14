@@ -1,0 +1,54 @@
+name: doc
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
+  cancel-in-progress: true
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - run: sudo apt update && sudo apt install -y optipng
+      - uses: astral-sh/setup-uv@v5
+      - run: uv pip install --quiet --system .[doc]
+      - run: gedai sys-info --developer
+      - run: make -C doc html
+      - name: Prune sphinx environment
+        run: rm -R ./doc/_build/html/.doctrees
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doc-dev
+          path: ./doc/_build/html
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: doc-dev
+          path: ./doc-dev
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ./doc-dev
+          target-folder: ./dev
+          git-config-name: 'github-actions[bot]'
+          git-config-email: 'github-actions[bot]@users.noreply.github.com'
+          single-commit: true
+          force: true

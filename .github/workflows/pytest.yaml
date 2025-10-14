@@ -1,0 +1,73 @@
+name: pytest
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
+  cancel-in-progress: true
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1'
+
+jobs:
+  pytest:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu, macos, windows]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    name: ${{ matrix.os }} - py${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v5
+      - run: uv pip install --quiet --system .[test]
+      - run: gedai sys-info --developer
+      - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
+      - uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests  # optional
+          name: codecov-umbrella  # optional
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true  # optional (default = false)
+
+  pytest-pip-pre:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11"]
+    name: pip pre-release - py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v5
+      - name: Install package
+        run: |
+          uv pip install --quiet --system .[test]
+          uv pip install --quiet --system --upgrade --prerelease allow --only-binary :all: -i https://pypi.anaconda.org/scientific-python-nightly-wheels/simple numpy
+      - run: gedai sys-info --developer
+      - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
+      - uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests  # optional
+          name: codecov-umbrella  # optional
+          token: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true  # optional (default = false)

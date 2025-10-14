@@ -1,0 +1,27 @@
+name: publish
+on:  # yamllint disable-line rule:truthy
+  workflow_dispatch:
+
+jobs:
+  pypi:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - uses: astral-sh/setup-uv@v5
+      - run: uv pip install --quiet --system -e .[build,stubs]
+      - run: gedai sys-info --developer
+      - run: python tools/stubgen.py
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN  }}
+        run: |
+          python -m build
+          twine check --strict dist/*
+          twine upload dist/*
