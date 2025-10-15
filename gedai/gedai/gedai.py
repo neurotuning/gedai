@@ -28,6 +28,84 @@ def create_cosine_weights(n_samples):
     return cos_win
 
 
+def compute_required_duration(wavelet_level, sfreq):
+    """Compute the minimum epoch duration required for a given wavelet level.
+    
+    Parameters
+    ----------
+    wavelet_level : int
+        The desired wavelet decomposition level.
+    sfreq : float
+        The sampling frequency in Hz.
+    
+    Returns
+    -------
+
+    duration : float
+        Minimum duration in seconds required for the wavelet level.
+    """
+    if wavelet_level == 0:
+        return 1.0  # Default for no decomposition
+    
+    # For SWT, minimum length is 2^(level+1)
+    min_samples = 2 ** (wavelet_level + 1)
+    duration = min_samples / sfreq
+    return duration
+
+
+def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
+    """Compute the closest valid duration for a given wavelet level.
+    
+    For SWT to work at a given level, the signal length must be divisible by 2^level.
+    This function finds the closest valid duration to the target duration.
+    
+    Parameters
+    ----------
+    target_duration : float
+        The desired duration in seconds.
+    wavelet_level : int
+        The desired wavelet decomposition level.
+    sfreq : float
+        The sampling frequency in Hz.
+    
+    Returns
+    -------
+    valid_duration : float
+        The closest valid duration in seconds.
+    valid_samples : int
+        The number of samples for the valid duration.
+    """
+    if wavelet_level == 0:
+        # No constraint for level 0
+        return target_duration, int(target_duration * sfreq)
+    
+    # Convert target duration to samples
+    target_samples = int(target_duration * sfreq)
+    
+    # For SWT at level L, length must be divisible by 2^L
+    divisor = 2 ** wavelet_level
+    
+    # Find the closest multiple of divisor
+    # Round down and round up
+    samples_down = (target_samples // divisor) * divisor
+    samples_up = samples_down + divisor
+    
+    # Choose the closest one
+    if abs(samples_down - target_samples) <= abs(samples_up - target_samples):
+        valid_samples = samples_down
+    else:
+        valid_samples = samples_up
+    
+    # Ensure we meet minimum length requirement (2^(level+1))
+    min_samples = 2 ** (wavelet_level + 1)
+    if valid_samples < min_samples:
+        valid_samples = min_samples
+    
+    valid_duration = valid_samples / sfreq
+    
+    return valid_duration, valid_samples
+
+
 def validate_method(method):
     check_type(method, (str,), 'method')
     if method not in ['gridsearch', 'optimize']:
@@ -132,7 +210,7 @@ class Gedai():
     @fill_doc
     def fit_raw(self,
                 raw: BaseRaw,
-                duration: Optional[float] = 1,
+                duration: float = 1.0,
                 overlap: float = 0.5,
                 reject_by_annotation: Optional[bool] = False,
                 covariance_method: str = 'leadfield',
@@ -147,10 +225,16 @@ class Gedai():
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
         duration : float
-            Duration of each epoch in seconds. Defaults to 1.
+            Duration of each epoch in seconds (default 1.0). Will be automatically
+            adjusted to the closest valid duration for the wavelet level.
         overlap : float
-            The overlap between epochs, in seconds. Must be ``0 <= overlap < duration``. Default is 0, i.e., no overlap. 
-        %(reject_by_annotation_raw)s
+            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
+            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
+        reject_by_annotation : bool
+            Whether to reject epochs based on annotations. Default is False.
+        covariance_method : str
+            Method to compute reference covariance. Either 'distance' or 'leadfield'.
+            Default is 'leadfield'.
         noise_multiplier : float
             The noise multiplier to use artefact threshold rejection optimization.
         method : str
@@ -161,11 +245,27 @@ class Gedai():
         check_type(raw, (BaseRaw,), 'raw')
         check_type(duration, (float, int,), 'duration')
         check_type(overlap, (float, int,), 'overlap')
+        if not (0 <= overlap < 1):
+            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         check_type(reject_by_annotation, (bool,), 'reject_by_annotation')
         check_type(noise_multiplier, (float,), 'noise_multiplier')
         validate_method(method)
         n_jobs = _check_n_jobs(n_jobs)
-        epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap, reject_by_annotation=reject_by_annotation, preload=True, verbose=verbose)
+        
+        # Adjust user's duration to closest valid duration
+        valid_duration, valid_samples = compute_closest_valid_duration(duration, self.wavelet_level, raw.info['sfreq'])
+        if abs(valid_duration - duration) > 1e-6:  # Only warn if there's a significant difference
+            import warnings
+            warnings.warn(
+                f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
+                f"({valid_samples} samples) to satisfy wavelet level {self.wavelet_level} requirements."
+            )
+        duration = valid_duration
+        
+        # Convert overlap ratio to seconds for mne.make_fixed_length_epochs
+        overlap_seconds = duration * overlap
+        
+        epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=verbose)
         self.fit_epochs(epochs, noise_multiplier=noise_multiplier, covariance_method=covariance_method, method=method, n_jobs=n_jobs, verbose=verbose)
 
     @fill_doc
@@ -213,7 +313,7 @@ class Gedai():
 
     @fill_doc
     def transform_raw(self, raw: BaseRaw,
-                      duration: Optional[float] = 1,
+                      duration: float = 1.0,
                       overlap: float = 0.5,
                       verbose: Optional[str] = None):
         """Transform raw data using the fitted model.
@@ -223,9 +323,11 @@ class Gedai():
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
         duration : float
-            Duration of each epoch in seconds. Defaults to 1.
+            Duration of each epoch in seconds (default 1.0). Will be automatically
+            adjusted to the closest valid duration for the wavelet level.
         overlap : float
-            The overlap between epochs. Must be ``0 <= overlap < 1``. Default is 0.5 .
+            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
+            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
         %(verbose)s
 
         Returns
@@ -236,6 +338,18 @@ class Gedai():
         check_type(raw, (BaseRaw,), 'raw')
         check_type(duration, (float, int), 'duration')
         check_type(overlap, (float, int), 'overlap')
+        if not (0 <= overlap < 1):
+            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
+        
+        # Adjust user's duration to closest valid duration
+        valid_duration, valid_samples = compute_closest_valid_duration(duration, self.wavelet_level, raw.info['sfreq'])
+        if abs(valid_duration - duration) > 1e-6:  # Only warn if there's a significant difference
+            import warnings
+            warnings.warn(
+                f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
+                f"({valid_samples} samples) to satisfy wavelet level {self.wavelet_level} requirements."
+            )
+        duration = valid_duration
 
         raw_data = raw.get_data()
         n_channels, n_times = raw_data.shape
