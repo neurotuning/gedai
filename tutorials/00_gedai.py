@@ -12,7 +12,7 @@ from gedai import Gedai
 
 subjects = [1]  # may vary
 runs = [4, 8, 12]  # may vary
-raw_fnames = eegbci.load_data(subjects, runs)
+raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
 raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
 # concatenate runs from subject
 raw = concatenate_raws(raws)
