@@ -16,7 +16,7 @@ from ..utils._docs import fill_doc
 from ..wavelet.transform import epochs_to_wavelet
 from .decompose import clean_epochs
 from .covariances import compute_refcov
-from ..sensai import sensai_gridsearch,
+from ..sensai import sensai_gridsearch
 
 
 def create_cosine_weights(n_samples):
