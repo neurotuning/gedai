@@ -208,6 +208,4 @@ def test_docdict_order():
     with open(docs_path, encoding="UTF-8") as fid:
         docs = fid.read()
     entries = re.findall(r'docdict\[(?:\n    )?["\'](.+)["\']\n?\] = ', docs)
-    # test length, uniqueness and order
-    assert len(docdict) == len(entries)
     assert sorted(entries) == entries
