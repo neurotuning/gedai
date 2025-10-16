@@ -2,7 +2,6 @@ import numpy as np
 from scipy.linalg import eigh
 
 
-
 def clean_epochs(epochs_data, reference_cov, threshold):
     # Reconstruct data
     cleaned_epochs = np.zeros_like(epochs_data)
@@ -13,7 +12,7 @@ def clean_epochs(epochs_data, reference_cov, threshold):
         eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
         # Compute spatial maps
-        maps = np.linalg.pinv(eigenvectors).T 
+        maps = np.linalg.pinv(eigenvectors).T
         eigenvectors_filtered = eigenvectors.copy()
 
         # Zero out components with small eigenvalues

@@ -22,7 +22,6 @@ raw.set_eeg_reference("average")
 # %%
 # Fit the raw data
 
-from gedai.gedai import Gedai
 
 #gedai = Gedai()
 #gedai.fit_raw(raw, n_jobs=2, noise_multiplier=1.0, verbose=False)
@@ -30,7 +29,6 @@ from gedai.gedai import Gedai
 # %%
 # plot
 
-import matplotlib.pyplot as plt
 
 #fig, axes = gedai.plot_fit()
 #plt.show()

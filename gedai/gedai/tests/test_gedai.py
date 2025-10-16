@@ -1,21 +1,11 @@
 """Test Gedai."""
 
-import logging
-import re
-from copy import deepcopy
-from itertools import groupby
 
-import numpy as np
-import pytest
-from matplotlib.figure import Figure
 from mne import Epochs, make_fixed_length_events
 from mne.datasets import testing
 from mne.io import read_raw_fif
 
-from numpy.testing import assert_allclose
-
-from gedai import logger, set_log_level
-from gedai import Gedai
+from gedai import Gedai, logger, set_log_level
 
 set_log_level("INFO")
 logger.propagate = True

@@ -1,8 +1,7 @@
 import numpy as np
+from mne.parallel import parallel_func
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
-
-from mne.parallel import parallel_func
 
 from ..gedai.decompose import clean_epochs
 
@@ -25,14 +24,14 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     """
     Calculate the principal angles (in radians) between two subspaces.
 
-    Parameters:
+    Parameters
     ----------
     A : np.ndarray
         Orthonormal basis for the first subspace (columns = basis vectors).
     B : np.ndarray
         Orthonormal basis for the second subspace.
 
-    Returns:
+    Returns
     -------
     angles_rad : np.ndarray
         Vector of principal angles in radians, sorted in ascending order.
@@ -43,7 +42,7 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
 
     A, _ = np.linalg.qr(A)
     B, _ = np.linalg.qr(B)
-    
+
     # Compute the SVD of A.T @ B
     S = np.linalg.svd(A.T @ B, compute_uv=False)
 
@@ -72,7 +71,7 @@ def sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
     signal_subspace_similarity = np.zeros((len(epochs_data), n_pc))
     noise_subspace_similarity = np.zeros((len(epochs_data), n_pc))
 
-    for e, (epoch_clean_data, epoch_artefact_data) in enumerate(zip(epochs_clean, epochs_artefacts)):
+    for e, (epoch_clean_data, epoch_artefact_data) in enumerate(zip(epochs_clean, epochs_artefacts, strict=False)):
         # Clean signal subspace
         epoch_clean_covariance = np.cov(epoch_clean_data)
         _, epoch_clean_eigenvectors = eigh(epoch_clean_covariance)

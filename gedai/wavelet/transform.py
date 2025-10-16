@@ -1,7 +1,6 @@
 import numpy as np
-import pywt
-from ._modwt import modwt, modwtmra
 
+from ._modwt import modwt, modwtmra
 
 
 def epochs_to_wavelet(epochs, wavelet, level):
@@ -41,10 +40,10 @@ def epochs_to_wavelet(epochs, wavelet, level):
         # Calculate frequency bands matching MODWT MRA output order
         # MODWT MRA returns: [approximation, detail_level, detail_level-1, ..., detail_1]
         freq_bands = []
-        
+
         # Approximation (index 0): lowest frequencies
         freq_bands.append((0, sfreq / (2 ** (level + 1))))
-        
+
         # Details (indices 1 to level): from coarse to fine
         for i in range(level, 0, -1):
             fmin = sfreq / (2 ** (i + 1))
@@ -52,15 +51,15 @@ def epochs_to_wavelet(epochs, wavelet, level):
             freq_bands.append((fmin, fmax))
 
         transformed_data = np.zeros((n_epochs, n_channels, level + 1, n_times))
-        
+
         for e, epoch in enumerate(epochs_data):
             for c, ch_data in enumerate(epoch):
                 coeffs = modwt(ch_data, wavelet, level)
                 modwtmra_data = modwtmra(coeffs, wavelet)
                 modwtmra_data = np.squeeze(modwtmra_data, axis=-1)
                 transformed_data[e, c, :, :] = modwtmra_data
-        
+
         levels = level
-    
+
     return transformed_data, freq_bands, levels
 

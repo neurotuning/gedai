@@ -1,5 +1,6 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
 
 def plot_mne_style_overlay_interactive(raw_noisy, raw_clean, title=None, duration=4.0):
     """Interactive overlay plot: scroll time with left/right, toggle subtraction with D, up/down adjust magnitude scaling."""
