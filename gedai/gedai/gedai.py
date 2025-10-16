@@ -125,7 +125,7 @@ class Gedai():
     Parameters
     ----------
     wavelet_type : int
-        Wavelet to use for the decomposition. The default is 'db4' (Daubechies 4).
+        Wavelet to use for the decomposition. The default is 'haar'.
         See :py:func:`pywt.wavedec` for complete list of available wavelet values.
     wavelet_level : int
         Decomposition level (must be >= 0). The default is 0 (no decomposition).
@@ -136,7 +136,7 @@ class Gedai():
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type='db4', wavelet_level=0):
+    def __init__(self, wavelet_type='haar', wavelet_level=0):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
 
@@ -395,6 +395,7 @@ class Gedai():
         return sensai_value
 
     def plot_fit(self):
+        """Plot the fitting results"""
         wavelet_fits = self.wavelets_fits
         figs = []
         for w, wavelet_fit in enumerate(wavelet_fits):
