@@ -106,10 +106,16 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     return valid_duration, valid_samples
 
 
-def validate_method(method):
+def check_sensai_method(method):
     check_type(method, (str,), 'method')
     if method not in ['gridsearch', 'optimize']:
         raise ValueError("Method must be either 'gridsearch' or 'optimize', got '{method}' instead.")
+
+
+def check_reference_cov(reference_cov):
+    check_type(reference_cov, (str,), 'reference_cov')
+    if reference_cov not in ['leadfield']:
+        raise ValueError("Reference covariance must be 'leadfield' for now, got '{reference_cov}' instead.")
 
 
 @fill_doc
@@ -137,9 +143,9 @@ class Gedai():
     @fill_doc
     def fit_epochs(self,
                     epochs: BaseEpochs,
-                    noise_multiplier: float = 0.0,
-                    covariance_method: str = 'leadfield',
-                    method: str = 'gridsearch',
+                    reference_cov: str = 'leadfield',
+                    sensai_method: str = 'gridsearch',
+                    noise_multiplier: float = 3.0,
                     n_jobs: int = None,
                     verbose: Optional[str] = None):
         """Fit the GEDAI model to the epochs data.
@@ -148,26 +154,20 @@ class Gedai():
         ----------
         epochs : mne.Epochs
             The epochs data to fit the model to.
-        noise_multiplier : float
-            The noise multiplier to use artefact threshold rejection optimization.
-        method : str
-            The method to use for threshold optimization. Can be either 'gridsearch' or 'optimize'.
+        %(reference_cov)s
+        %(sensai_method)s
+        %(noise_multiplier)s
         %(n_jobs)s
         %(verbose)s
         """
         check_type(epochs, (BaseEpochs,), 'epochs')
+        check_reference_cov(reference_cov)
+        check_sensai_method(sensai_method)
         check_type(noise_multiplier, (float,), 'noise_multiplier')
-        validate_method(method)
         n_jobs = _check_n_jobs(n_jobs)
-        # Compute reference covariance matrix
-        if (covariance_method == 'distance'):
-            reference_cov = compute_distance_cov(epochs)
-            ch_names = epochs.info['ch_names']
-        elif (covariance_method == 'leadfield'):
-            mat = os.path.join(os.path.dirname(__file__), '../../gedai/data/fsavLEADFIELD_4_GEDAI.mat')
-            reference_cov, ch_names = compute_refcov(epochs, mat)
-        else:
-            raise ValueError("Covariance method must be either 'distance' or 'leadfield'")
+
+        mat = os.path.join(os.path.dirname(__file__), '../../gedai/data/fsavLEADFIELD_4_GEDAI.mat')
+        reference_cov, ch_names = compute_refcov(epochs, mat)
 
         # Tikhonov Regularization based on average diagonal power 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
@@ -194,7 +194,7 @@ class Gedai():
                 epochs_eigenvalues[e] = eigenvalues
   
             wavelet_epochs = mne.EpochsArray(wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False)
-            if (method == 'gridsearch'):
+            if (sensai_method == 'gridsearch'):
                 min_sensai_threshold, max_threshold, step = 0, 12, 0.1
                 sensai_thresholds = np.arange(min_sensai_threshold, max_threshold, step)
                 eigen_thresholds = [self._sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
@@ -213,9 +213,9 @@ class Gedai():
                 duration: float = 1.0,
                 overlap: float = 0.5,
                 reject_by_annotation: Optional[bool] = False,
-                covariance_method: str = 'leadfield',
-                noise_multiplier: float = 1.0,
-                method: str = 'gridsearch',
+                reference_cov: str = 'leadfield',
+                sensai_method: str = 'gridsearch',
+                noise_multiplier: float = 3.0,
                 n_jobs: int = None,
                 verbose: Optional[str] = None):
         """Fit the GEDAI model to the raw data.
@@ -232,13 +232,9 @@ class Gedai():
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
         reject_by_annotation : bool
             Whether to reject epochs based on annotations. Default is False.
-        covariance_method : str
-            Method to compute reference covariance. Either 'distance' or 'leadfield'.
-            Default is 'leadfield'.
-        noise_multiplier : float
-            The noise multiplier to use artefact threshold rejection optimization.
-        method : str
-            The method to use for threshold optimization. Can be either 'gridsearch' or 'optimize'.
+        %(reference_cov)s
+        %(sensai_method)s
+        %(noise_multiplier)s
         %(n_jobs)s
         %(verbose)s
         """
@@ -248,8 +244,9 @@ class Gedai():
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         check_type(reject_by_annotation, (bool,), 'reject_by_annotation')
+        check_reference_cov(reference_cov)
+        check_sensai_method(sensai_method)
         check_type(noise_multiplier, (float,), 'noise_multiplier')
-        validate_method(method)
         n_jobs = _check_n_jobs(n_jobs)
         
         # Adjust user's duration to closest valid duration
@@ -266,7 +263,7 @@ class Gedai():
         overlap_seconds = duration * overlap
         
         epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=verbose)
-        self.fit_epochs(epochs, noise_multiplier=noise_multiplier, covariance_method=covariance_method, method=method, n_jobs=n_jobs, verbose=verbose)
+        self.fit_epochs(epochs, noise_multiplier=noise_multiplier, reference_cov=reference_cov, sensai_method=sensai_method, n_jobs=n_jobs, verbose=verbose)
 
     @fill_doc
     def transform_epochs(self,

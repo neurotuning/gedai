@@ -10,12 +10,9 @@
 
 .. project
 
-..
-   .. _project pypi: https://pypi.org/project/gedai/
-   .. _project citation: https://github.com/vferat/gedai/blob/main/CITATION.cff
-
-.. _project github: https://github.com/vferat/Gedai
-.. _project license: https://github.com/vferat/Gedai/blob/main/LICENSE
+.. _project github: https://github.com/neurotuning/pyGEDAI
+.. _project license: https://github.com/neurotuning/pyGEDAI/blob/main/LICENSE
+.. _project issues: https://github.com/neurotuning/pyGEDAI/issues
 
 
 .. mne

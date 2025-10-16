@@ -20,22 +20,29 @@ If you use GEDAI in your research, please cite the original publication :footcit
 License
 -------
 
-You may use this software under the terms of the PolyForm Noncommercial License 1.0.0 LICENSE. This is suitable for personal use, research, or evaluation.
-
-Commercial License
-^^^^^^^^^^^^^^^^^^
-If you wish to use this software in a commercial or proprietary application without being bound by terms of the PolyForm Noncommercial License 1.0.0, you must purchase a commercial license. The core algorithms in this repository are the subject of a pending patent application, and a commercial license includes a grant for patent rights.
-
+This software is licensed under the **PolyForm Noncommercial License 1.0.0**. For more details, see the :ref:`license` page.
 
 Acknowledgements
 ----------------
 
 We are gratefully supported by the Center for Biomedical Imaging (CIBM), the Swiss National Science Foundation (SNSF), and Unitec.
 
+.. image:: _static/img/logo_cibm.jpg
+
+.. image:: _static/img/logo_snf.jpg
+
+.. image:: _static/img/logo_unitec.jpg
+
+.. image:: _static/img/logo_fcbgmeeg.png
+   :width: 140px
+
 .. toctree::
    :hidden:
+   :maxdepth: 0
 
+   self
    api/index
    generated/tutorials/index
-   changes/index
+   license/index
+   dev/index
 

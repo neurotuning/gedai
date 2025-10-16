@@ -36,4 +36,4 @@ Authors
 -------
 
 * `Victor Férat`_
-* `Mathieu Scheltienne`_
+* `Tomas Ros`_

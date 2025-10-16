@@ -19,7 +19,7 @@ import gedai
 # -- project information ---------------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "gedai"
+project = "pyGEDAI"
 author = "Neurotuning"
 copyright = f"{date.today().year}, {author}"  # noqa: A001
 release = gedai.__version__
@@ -89,11 +89,25 @@ html_theme_options = {
     "announcement": (
         "This project is in early development and has not yet reached a stable release. Use for testing only."
     ),
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": gh_url,
+            "icon": "fab fa-github-square",
+        },
+    ]
 }
+
+html_show_sourcelink = False
+html_copy_source = False
+html_show_sphinx = False
 
 
 # -- autosummary -----------------------------------------------------------------------
 autosummary_generate = True
+
+# -- autosectionlabels -------------------------------------------------------
+autosectionlabel_prefix_document = True
 
 # -- autodoc ---------------------------------------------------------------------------
 autodoc_typehints = "none"
