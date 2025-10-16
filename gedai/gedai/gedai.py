@@ -7,8 +7,6 @@ from mne.io import BaseRaw
 import matplotlib.pyplot as plt
 
 from scipy.linalg import eigh
-import pywt
-from pyriemann.estimation import Covariances
 
 from typing import Optional
 
