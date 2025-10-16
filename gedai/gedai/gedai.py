@@ -129,6 +129,7 @@ class Gedai():
         See :py:func:`pywt.wavedec` for complete list of available wavelet values.
     wavelet_level : int
         Decomposition level (must be >= 0). The default is 0 (no decomposition).
+        If 0 (default), no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
 
     References
@@ -395,7 +396,7 @@ class Gedai():
         return sensai_value
 
     def plot_fit(self):
-        """Plot the fitting results"""
+        """Plot the fitting results."""
         wavelet_fits = self.wavelets_fits
         figs = []
         for w, wavelet_fit in enumerate(wavelet_fits):

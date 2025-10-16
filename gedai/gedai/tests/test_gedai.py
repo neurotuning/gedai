@@ -34,19 +34,34 @@ epochs_eeg = Epochs(raw, events, tmin=0, tmax=1, baseline=None, preload=True)
 
 
 def test_gedai_fit_raw():
-    gedai = Gedai(wavelet_type="db4", wavelet_level=1)
+    gedai = Gedai(wavelet_level=0)
+    gedai.fit_raw(raw)
+
+    gedai = Gedai(wavelet_level=5)
     gedai.fit_raw(raw)
 
 def test_gedai_fit_epochs():
-    gedai = Gedai(wavelet_type="db4", wavelet_level=1)
+    gedai = Gedai(wavelet_level=0)
+    gedai.fit_epochs(epochs_eeg)
+
+    gedai = Gedai(wavelet_level=5)
     gedai.fit_epochs(epochs_eeg)
 
 def test_gedai_transform_raw():
-    gedai = Gedai(wavelet_type="db4", wavelet_level=1)
+    gedai = Gedai(wavelet_level=0)
     gedai.fit_raw(raw)
     gedai.transform_raw(raw)
 
+    gedai = Gedai(wavelet_level=5)
+    gedai.fit_raw(raw)
+    gedai.transform_raw(raw)
+
+
 def test_gedai_transform_epochs():
-    gedai = Gedai(wavelet_type="db4", wavelet_level=1)
+    gedai = Gedai(wavelet_level=0)
     gedai.fit_epochs(epochs_eeg)
     gedai.transform_epochs(epochs_eeg)
+
+    gedai = Gedai(wavelet_level=5)
+    gedai.fit_raw(raw)
+    gedai.transform_raw(raw)
