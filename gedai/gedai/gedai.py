@@ -358,7 +358,7 @@ class Gedai():
 
         step = int(window_size * (1 - overlap))
         starts = np.arange(0, n_times, step)
-        for s, start in enumerate(starts[:-2]):
+        for s, start in enumerate(starts):
             end = int(min(start + window_size, n_times))
             actual_window_size = end - start
             segment = raw_data[:, start:end]
