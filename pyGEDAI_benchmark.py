@@ -21,7 +21,7 @@ def sig_to_noise(ground_truth_matrix, denoised_matrix):
     Calculates Signal-to-Noise Ratio (SNR) in dB.
     Translated from MATLAB's sig_to_noise function.
     """
-    original_signal_power = np.var(ground_truth_matrix)
+    original_signal_power = np.var(ground_truth_matrix.flatten())
     residual_noise_power = np.var(denoised_matrix - ground_truth_matrix)
     if residual_noise_power == 0:
         return np.inf  # Infinite SNR if no residual noise
@@ -79,6 +79,14 @@ def retain_exact_percentage_random_eeg_blocks(data_matrix, percentage_to_keep, m
     actual_block_sizes = []
     actual_k_num_blocks = 0
     modified_matrix = np.zeros_like(data_matrix)
+
+    # Fast-path for 100% case to avoid complex logic and potential floating point issues
+    if percentage_to_keep == 100:
+        kept_column_indices = np.arange(num_cols)
+        zeroed_column_indices = np.array([], dtype=int)
+        actual_block_sizes = [num_cols]
+        actual_k_num_blocks = 1
+        return data_matrix.copy(), kept_column_indices, zeroed_column_indices, actual_block_sizes, actual_k_num_blocks
 
     if percentage_to_keep == 0:
         return modified_matrix, kept_column_indices, zeroed_column_indices, actual_block_sizes, actual_k_num_blocks
@@ -146,11 +154,12 @@ def retain_exact_percentage_random_eeg_blocks(data_matrix, percentage_to_keep, m
     if k == 0:
         gap_lengths = [available_gap_space]
     else:
+        # Correctly handle the case where available_gap_space is 0
+        # This logic mirrors MATLAB's randperm(N, K) where N = available_gap_space + k
         if available_gap_space + k > 0:
-            # Generate k random dividers within the range [1, available_gap_space + k]
             dividers = np.sort(np.random.choice(np.arange(1, available_gap_space + k + 1), k, replace=False))
             gap_lengths = np.diff(np.concatenate(([0], dividers, [available_gap_space + k + 1]))) - 1
-        else: # No gap space (means total_columns_needed == num_cols)
+        else:  # No gap space (total_columns_needed == num_cols)
             gap_lengths = np.zeros(k + 1, dtype=int)
 
     kept_column_indices_list = [] # Use a list for dynamic appending
@@ -192,8 +201,8 @@ def retain_exact_percentage_random_eeg_blocks(data_matrix, percentage_to_keep, m
 
 if __name__ == "__main__":
     # Configuration parameters
-    contaminated_signal_proportion = [25, 50, 75, 100]  # percent of epochs temporally contaminated
-    signal_to_noise_in_db = [-9, -6, -3, 0]  # initial data signal-to-noise ratio in decibels
+    contaminated_signal_proportion = [100]  # percent of epochs temporally contaminated
+    signal_to_noise_in_db = [-9,]  # initial data signal-to-noise ratio in decibels
     
     # Set to True to display interactive plots for each combination (will pause execution)
     generate_individual_plots = False
@@ -206,7 +215,7 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
     # Construct paths relative to the pyGEDAI directory using raw strings to handle backslashes
     clean_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\CLEAN EEG'
-    artifact_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\ARTIFACTS'
+    artifact_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\artifacts_test'
 
     # For demonstration, let's use placeholder paths if the full path doesn't exist
     # In a real scenario, these should point to actual data.
@@ -264,8 +273,13 @@ if __name__ == "__main__":
     print("Starting benchmark...")
     for n_idx, snr_db in enumerate(signal_to_noise_in_db):
         print(f"\nProcessing SNR: {snr_db} dB")
-        snr_linear = 10**(snr_db / 20)
-        noise_ratio = 1 / snr_linear
+        # Convert SNR from dB (a power ratio) to a linear power ratio.
+        # SNR_dB = 10 * log10(P_signal / P_noise) => P_signal / P_noise = 10^(SNR_dB / 10)
+        snr_linear_power_ratio = 10**(snr_db / 10)
+
+        # We need a scaling factor for amplitude. Since Power ~ Amplitude^2, Amplitude ~ sqrt(Power).
+        # The noise_ratio is the desired ratio of noise amplitude to signal amplitude.
+        noise_ratio = 1 / np.sqrt(snr_linear_power_ratio)
 
         for c_idx, contamination_percent in enumerate(contaminated_signal_proportion):
             print(f"  Processing Contamination: {contamination_percent}%")
@@ -328,18 +342,27 @@ if __name__ == "__main__":
                 min_block_size_samples = 1
                 max_block_size_samples = int(1 * srate) # 1 second
                 
-                contaminated_artifact_data, _, _, _, _ = \
+                contaminated_artifact_data, kept_indices, _, _, _ = \
                     retain_exact_percentage_random_eeg_blocks(
                         artifact_raw_data, contamination_percent,
                         min_block_size_samples, max_block_size_samples
                     )
                 
-                # Z-score and scale artifact data (flattened array z-score)
-                artifact_data_flat = contaminated_artifact_data.flatten()
-                if np.std(artifact_data_flat) > 0: # Avoid division by zero for constant data
-                    artifact_data_scaled = noise_ratio * zscore(artifact_data_flat).reshape(contaminated_artifact_data.shape)
+                # Inconsistency Fix: Match MATLAB's artifact scaling logic.
+                # Z-score and scale ONLY the non-zero, contaminated portions of the artifact data.
+                artifact_data_scaled = np.zeros_like(contaminated_artifact_data)
+                if kept_indices.size > 0:
+                    # Select only the non-zero parts for z-scoring
+                    temp_data = contaminated_artifact_data[:, kept_indices]
+                    
+                    if np.std(temp_data) > 0:
+                        # Z-score the flattened temp_data and reshape back
+                        scaled_temp_data = noise_ratio * zscore(temp_data.flatten()).reshape(temp_data.shape)
+                        # Place the scaled data back into the corresponding columns
+                        artifact_data_scaled[:, kept_indices] = scaled_temp_data
                 else:
-                    artifact_data_scaled = np.zeros_like(contaminated_artifact_data) # If artifact is constant, it contributes nothing
+                    # If there are no kept indices, artifact_data_scaled remains all zeros
+                    pass
 
                 # Mix data
                 mixed_data = ground_truth_data_zscored + artifact_data_scaled
@@ -416,28 +439,43 @@ if __name__ == "__main__":
                 }
                 results_time = pd.concat([results_time, pd.DataFrame([new_row_time])], ignore_index=True)
 
-    print("\nBenchmark finished. Results:")
-    print("\nCorrelation Results:")
-    print(results_correlation.head())
-    print("\nRRMSE Results:")
-    print(results_rrmse.head())
-    print("\nSNR Results:")
-    print(results_snr.head())
-    print("\nTime Results:")
-    print(results_time.head())
+    #print("\nBenchmark finished. Results:")
+    #print("\nCorrelation Results:")
+    #print(results_correlation.head())
+    #print("\nRRMSE Results:")
+    #print(results_rrmse.head())
+    #print("\nSNR Results:")
+    #print(results_snr.head())
+    #print("\nTime Results:")
+    #print(results_time.head())
     print("\nBenchmark finished. Aggregated Results (Mean ± Std Dev):")
-    
+
     print("\n--- Correlation ---")
-    print(results_correlation.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['mean', 'std']))
-    
+    print(results_correlation.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['mean', 'std']))
+
     print("\n--- RRMSE ---")
-    print(results_rrmse.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['mean', 'std']))
-    
+    print(results_rrmse.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['mean', 'std']))
+
     print("\n--- SNR ---")
-    print(results_snr.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['mean', 'std']))
-    
+    print(results_snr.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['mean', 'std']))
+
     print("\n--- Time (seconds) ---")
-    print(results_time.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
+    print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
+
+    # --- Add new grouping by artifact type ---
+    print("\n\n--- Aggregated Results by Artifact Type (Mean ± Std Dev) ---")
+
+    print("\n--- Correlation by Artifact ---")
+    print(results_correlation.groupby(['Algorithm', 'artifact'])['Correlation'].agg(['mean', 'std']))
+
+    print("\n--- RRMSE by Artifact ---")
+    print(results_rrmse.groupby(['Algorithm', 'artifact'])['RRMSE'].agg(['mean', 'std']))
+
+    print("\n--- SNR by Artifact ---")
+    print(results_snr.groupby(['Algorithm', 'artifact'])['SNR'].agg(['mean', 'std']))
+
+    print("\n--- Time (seconds) by Artifact ---")
+    print(results_time.groupby(['Algorithm', 'artifact'])['time'].agg(['mean', 'std']))
 
     # Save results to CSV
     results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
