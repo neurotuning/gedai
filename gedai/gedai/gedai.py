@@ -136,9 +136,10 @@ class Gedai():
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type='haar', wavelet_level=0):
+    def __init__(self, wavelet_type='haar', wavelet_level=0, low_cutoff=0.0):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
+        self.low_cutoff = low_cutoff
 
     @fill_doc
     def fit_epochs(self,
@@ -326,6 +327,13 @@ class Gedai():
         for wavelet_fit in self.wavelets_fits:
             # Use the stored band_index to access the correct wavelet band
             band_idx = wavelet_fit['band_index']
+            fmin, fmax = self.freq_bands[band_idx]
+
+            # If the upper bound of the frequency band is below the cutoff, zero it out.
+            if fmax < self.low_cutoff and self.low_cutoff > 0:
+                cleaned_epochs_wavelet[:, :, band_idx, :] = 0
+                continue # Skip to the next band
+
             wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
             cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
             cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_epochs
