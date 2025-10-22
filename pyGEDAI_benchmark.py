@@ -215,7 +215,7 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
     # Construct paths relative to the pyGEDAI directory using raw strings to handle backslashes
     clean_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\CLEAN EEG'
-    artifact_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\artifacts_test'
+    artifact_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\ARTIFACTS\NOISE EOG EMG'
 
     # For demonstration, let's use placeholder paths if the full path doesn't exist
     # In a real scenario, these should point to actual data.
@@ -462,20 +462,6 @@ if __name__ == "__main__":
     print("\n--- Time (seconds) ---")
     print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
 
-    # --- Add new grouping by artifact type ---
-    print("\n\n--- Aggregated Results by Artifact Type (Mean ± Std Dev) ---")
-
-    print("\n--- Correlation by Artifact ---")
-    print(results_correlation.groupby(['Algorithm', 'artifact'])['Correlation'].agg(['mean', 'std']))
-
-    print("\n--- RRMSE by Artifact ---")
-    print(results_rrmse.groupby(['Algorithm', 'artifact'])['RRMSE'].agg(['mean', 'std']))
-
-    print("\n--- SNR by Artifact ---")
-    print(results_snr.groupby(['Algorithm', 'artifact'])['SNR'].agg(['mean', 'std']))
-
-    print("\n--- Time (seconds) by Artifact ---")
-    print(results_time.groupby(['Algorithm', 'artifact'])['time'].agg(['mean', 'std']))
 
     # Save results to CSV
     results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
