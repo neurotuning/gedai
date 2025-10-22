@@ -1,0 +1,11 @@
+clean_EEG_file,artifact_file,artifact,temporal_contamination,signal_to_noise,Algorithm,SNR
+clean_EEG_dataset_1.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,1.1834192718071048
+clean_EEG_dataset_10.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,3.2162550436979793
+clean_EEG_dataset_2.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,3.8864874988192275
+clean_EEG_dataset_3.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,4.410471926519804
+clean_EEG_dataset_4.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,4.630915468233907
+clean_EEG_dataset_5.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,3.8073332040956256
+clean_EEG_dataset_6.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,5.087887413563687
+clean_EEG_dataset_7.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,1.8641010034073702
+clean_EEG_dataset_8.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,4.230144311111824
+clean_EEG_dataset_9.set,EOG_EMG_NOISE_dataset_4.set,artifacts_test,100,-9,GEDAI,4.153446821660413

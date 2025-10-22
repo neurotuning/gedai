@@ -7,9 +7,10 @@ from mne.io import BaseRaw
 import matplotlib.pyplot as plt
 
 from scipy.linalg import eigh
+from scipy.optimize import minimize_scalar # Import minimize_scalar
 
 from typing import Optional
-
+from ..sensai.sensai import sensai_score # Import sensai_score
 from ..utils._checks import check_type, _check_n_jobs
 from ..utils._docs import fill_doc
 
@@ -142,8 +143,8 @@ class Gedai():
     @fill_doc
     def fit_epochs(self,
                     epochs: BaseEpochs,
-                    reference_cov: str = 'leadfield',
-                    sensai_method: str = 'gridsearch',
+                    reference_cov: str = 'leadfield', # Default to 'leadfield'
+                    sensai_method: str = 'optimize', # Changed default to 'optimize'
                     noise_multiplier: float = 3.0,
                     n_jobs: int = None,
                     verbose: Optional[str] = None):
@@ -204,7 +205,28 @@ class Gedai():
                 sensai_thresholds = np.arange(min_sensai_threshold, max_threshold, step)
                 eigen_thresholds = [self._sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
                 threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=3, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
+            elif (sensai_method == 'optimize'):
+                # Define objective function for minimize_scalar
+                def objective_function(sensai_value):
+                    eigen_threshold = self._sensai_to_eigen(sensai_value, epochs_eigenvalues)
+                    score, _, _ = sensai_score(wavelet_epochs, eigen_threshold, reference_cov, n_pc=3, noise_multiplier=noise_multiplier)
+                    return -score # minimize_scalar minimizes, so we negate the score
 
+                # Define bounds for sensai_value. This should match the range used in the gridsearch
+                # to ensure the scaling logic in _sensai_to_eigen behaves consistently.
+                sensai_value_bounds = (0, 12)
+
+                # Perform optimization
+                result = minimize_scalar(objective_function, bounds=sensai_value_bounds, method='bounded')
+
+                if not result.success:
+                    raise ValueError("Optimization failed: " + result.message)
+
+                best_sensai_value = result.x
+                threshold = self._sensai_to_eigen(best_sensai_value, epochs_eigenvalues)
+                # For 'runs' in optimize mode, we can just store the best result for consistency
+                best_score, best_signal_sim, best_noise_sim = sensai_score(wavelet_epochs, threshold, reference_cov, n_pc=3, noise_multiplier=noise_multiplier)
+                runs = [[threshold, best_score, best_signal_sim, best_noise_sim]] # Store as a list of one run
             else:
                 raise ValueError("Method must be 'gridsearch'")
             # Store band_index to map back to the correct position in epochs_wavelet during transform
@@ -219,7 +241,7 @@ class Gedai():
                 overlap: float = 0.5,
                 reject_by_annotation: Optional[bool] = False,
                 reference_cov: str = 'leadfield',
-                sensai_method: str = 'gridsearch',
+                sensai_method: str = 'optimize', # Changed default to 'optimize'
                 noise_multiplier: float = 3.0,
                 n_jobs: int = None,
                 verbose: Optional[str] = None):

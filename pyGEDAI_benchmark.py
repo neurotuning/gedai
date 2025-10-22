@@ -439,8 +439,8 @@ if __name__ == "__main__":
     print("\n--- Time (seconds) ---")
     print(results_time.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
 
-    # Optional: Save results to CSV
-    # results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
-    # results_rrmse.to_csv("gedai_benchmark_rrmse.csv", index=False)
-    # results_snr.to_csv("gedai_benchmark_snr.csv", index=False)
-    # results_time.to_csv("gedai_benchmark_time.csv", index=False)
+    # Save results to CSV
+    results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
+    results_rrmse.to_csv("gedai_benchmark_rrmse.csv", index=False)
+    results_snr.to_csv("gedai_benchmark_snr.csv", index=False)
+    results_time.to_csv("gedai_benchmark_time.csv", index=False)
