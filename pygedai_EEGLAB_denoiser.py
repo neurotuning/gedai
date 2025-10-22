@@ -3,7 +3,7 @@ import mne
 import numpy as np
 from gedai import Gedai
 
-def pygedai_denoise_EEGLAB_data(eeg_data, sfreq):
+def pygedai_denoise_EEGLAB_data(eeg_data, sfreq, ch_names=None):
     """
     Denoises EEG data using the pyGEDAI library.
 
@@ -17,15 +17,21 @@ def pygedai_denoise_EEGLAB_data(eeg_data, sfreq):
         The EEG data matrix (channels x samples).
     sfreq : float
         The sampling frequency of the EEG data.
+    ch_names : list of str, optional
+        List of channel names. If None, generic names "EEG 001", etc. will be used.
 
     Returns
     -------
     np.ndarray
         The denoised EEG data matrix.
     """
-    # 1. Create an MNE RawArray object from the input data
+    # 1. Create an MNE RawArray object from the input data, using provided channel names
     n_channels = eeg_data.shape[0]
-    ch_names = [f"EEG {i+1:03}" for i in range(n_channels)]
+    if ch_names is None:
+        ch_names = [f"EEG {i+1:03}" for i in range(n_channels)]
+    elif len(ch_names) != n_channels:
+        raise ValueError(f"Number of provided channel names ({len(ch_names)}) does not match "
+                         f"number of channels in data ({n_channels}).")
     ch_types = ["eeg"] * n_channels
     info = mne.create_info(ch_names=ch_names, sfreq=sfreq, ch_types=ch_types)
     raw = mne.io.RawArray(eeg_data, info, verbose=False)

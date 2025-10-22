@@ -15,7 +15,17 @@
 % Tomas Ros, CIBM & University of Geneva, 2025
 
 clear all
-eeglab nogui
+eeglab nogui; % Added semicolon to suppress output
+command = 'python -c "import numpy; import mne; import gedai"';
+[status, cmdout] = system(command);
+
+% Add the directory containing pygedai_EEGLAB_denoiser.py to Python's path
+% This ensures MATLAB can find the Python module.
+py_module_path = fileparts(mfilename('fullpath')); % Gets the directory of the current MATLAB script
+if count(py.sys.path, py_module_path) == 0
+    insert(py.sys.path, int32(0), py_module_path);
+    fprintf('Added "%s" to Python sys.path.\n', py_module_path);
+end
 
 just_testing=false; % for script testing purposes (runs only a few files)
 random_number_of_test_files = 50; % Number of test files to run
@@ -28,15 +38,17 @@ signal_to_noise_in_db=[ -9 ]; % initial data signal-to-noise ratio in decibels e
 
 %% automated script begins here %%
 
-%% Read the GROUND TRUTH data
-Group1Dir = uigetdir([],'Root directory of CLEAN EEG files (EEGlab set files)');
+% Read the GROUND TRUTH data
+%Group1Dir = uigetdir([],'Root directory of CLEAN EEG files (EEGlab set files)');
+Group1Dir = 'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\CLEAN EEG';
 Group1Index = 1;
 DirGroup1 = dir(fullfile(Group1Dir,'*.set'));
 FileNamesGroup1 = {DirGroup1.name};
 files_in_Group1=numel(FileNamesGroup1);
 
-%% Read the ARTIFACT data
-Group2Dir = uigetdir([],'Root directory of ARTIFACT files (EEGlab set files)');
+% Read the ARTIFACT data
+%Group2Dir = uigetdir([],'Root directory of ARTIFACT files (EEGlab set files)');
+Group2Dir = 'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\ARTIFACTS\EMG';
 SavePath   = pwd;
 Group2Index = 2;
 DirGroup2 = dir(fullfile(Group2Dir,'**','*.set'));
@@ -319,28 +331,21 @@ end
 
 
  % RUN GEDAI
+ref_matrix='precomputed';
+
+epoch_size = 1; % for EMPIRICAL data sampled at 200 Hz
+
+
 for m=1:length(file_mixing_combination)
 
     m
 
 tic
-% Get data and sfreq from the EEGLAB struct
-eeg_data = ALLEEG3(m).data;
-sfreq = ALLEEG3(m).srate;
-
-% Call the Python function
-denoised_data_py = py.pygedai_EEGLAB_denoiser.pygedai_denoise_EEGLAB_data(eeg_data, sfreq);
-
-% Convert Python output (py.numpy.ndarray) to a MATLAB matrix
-denoised_data_mat = double(denoised_data_py);
-
-% Create the output struct
-ALLEEG11 = ALLEEG3(m);
-ALLEEG11.data = denoised_data_mat;
-
+ALLEEG11 = ALLEEG3(m); % Initialize with the mixed data
+ALLEEG11.data = py.pygedai_EEGLAB_denoiser.pygedai_denoise_EEGLAB_data(ALLEEG3(m).data, ALLEEG3(m).srate);
 time_GEDAI(m,:) = toc;
 
-denoised_dataset_name=['GEDAI ' ' SNR=' num2str(signal_to_noise_linear(n)) ' contamination=' num2str(contaminated_signal_proportion(c)) ' ' FileNamesGroup1{file_mixing_combination(m,1)} ' + ' FileNamesGroup2{file_mixing_combination(m,2)}]
+denoised_dataset_name=['pyGEDAI ' ' SNR=' num2str(signal_to_noise_linear(n)) ' contamination=' num2str(contaminated_signal_proportion(c)) ' ' FileNamesGroup1{file_mixing_combination(m,1)} ' + ' FileNamesGroup2{file_mixing_combination(m,2)}];
 % ALLEEG11 = pop_saveset( ALLEEG11,'filename',denoised_dataset_name, 'savemode','onefile'); % optional DENOISED file save
 
 % % estimate GEDAI denoising quality
@@ -895,7 +900,3 @@ if ~isempty(keptColumnIndices)
 end
 
 end % End of function
-
-
-
-

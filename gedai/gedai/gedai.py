@@ -186,6 +186,12 @@ class Gedai():
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
 
             # Compute eigenvalues
+            # The reference_cov must be a square matrix of the same dimensions as covariance.
+            # An empty reference_cov (0,0) indicates a failure in compute_refcov,
+            # likely due to a missing or malformed leadfield file, or incorrect channel handling
+            # within compute_refcov itself.
+            if reference_cov.shape == (0, 0):
+                raise ValueError("Reference covariance matrix is empty. This usually means the leadfield file was not loaded or processed correctly by 'compute_refcov'.")
             epochs_eigenvalues = np.zeros((len(wavelet_epochs_data), wavelet_epochs_data.shape[1]))
             for e, wavelet_epoch_data in enumerate(wavelet_epochs_data):
                 covariance = np.cov(wavelet_epoch_data)
@@ -433,4 +439,3 @@ class Gedai():
             figs.append(fig)
 
         return figs
-
