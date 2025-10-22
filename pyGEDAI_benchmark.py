@@ -6,6 +6,7 @@ from scipy.stats import zscore
 from itertools import product
 import random
 import time
+import warnings # Import the warnings module
 import matplotlib.pyplot as plt # Import matplotlib for potential plt.close()
 
 # Import the GEDAI denoising function from the local module
@@ -196,6 +197,9 @@ if __name__ == "__main__":
     
     # Set to True to display interactive plots for each combination (will pause execution)
     generate_individual_plots = False
+
+    # Suppress all warnings for cleaner output during benchmark
+    warnings.filterwarnings('ignore')
 
     # Data directories (adjust these paths as needed)
     # Assuming the script is run from the pyGEDAI directory
@@ -421,6 +425,19 @@ if __name__ == "__main__":
     print(results_snr.head())
     print("\nTime Results:")
     print(results_time.head())
+    print("\nBenchmark finished. Aggregated Results (Mean ± Std Dev):")
+    
+    print("\n--- Correlation ---")
+    print(results_correlation.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['mean', 'std']))
+    
+    print("\n--- RRMSE ---")
+    print(results_rrmse.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['mean', 'std']))
+    
+    print("\n--- SNR ---")
+    print(results_snr.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['mean', 'std']))
+    
+    print("\n--- Time (seconds) ---")
+    print(results_time.groupby(['Algorithm', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
 
     # Optional: Save results to CSV
     # results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
