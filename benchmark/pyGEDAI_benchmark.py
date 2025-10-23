@@ -489,6 +489,19 @@ if __name__ == "__main__":
     print("\\n--- Time (seconds) ---")
     print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['median', iqr]))
 
+    print("\n\n--- Overall Aggregated Results (Median (IQR)) across all conditions ---")
+
+    print("\n--- Correlation ---")
+    print(results_correlation.groupby('Algorithm')['Correlation'].agg(['median', iqr]))
+
+    print("\n--- RRMSE ---")
+    print(results_rrmse.groupby('Algorithm')['RRMSE'].agg(['median', iqr]))
+
+    print("\n--- SNR ---")
+    print(results_snr.groupby('Algorithm')['SNR'].agg(['median', iqr]))
+
+    print("\n--- Time (seconds) ---")
+    print(results_time.groupby('Algorithm')['time'].agg(['median', iqr]))
 
     # Save results to CSV
     results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
