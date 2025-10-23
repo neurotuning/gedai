@@ -17,7 +17,7 @@ from ..utils._docs import fill_doc
 from ..wavelet.transform import epochs_to_wavelet
 from .decompose import clean_epochs
 from .covariances import compute_refcov
-from ..sensai import sensai_gridsearch
+from ..sensai.sensai import _sensai_to_eigen, _eigen_to_sensai, sensai_gridsearch, sensai_optimize
 
 
 def create_cosine_weights(n_samples):
@@ -141,8 +141,8 @@ class Gedai():
     @fill_doc
     def fit_epochs(self,
                     epochs: BaseEpochs,
-                    reference_cov: str = 'leadfield', # Default to 'leadfield'
-                    sensai_method: str = 'optimize', # Changed default to 'optimize'
+                    reference_cov: str = 'leadfield',
+                    sensai_method: str = 'optimize',
                     noise_multiplier: float = 3.0,
                     n_jobs: int = None,
                     verbose: Optional[str] = None):
@@ -184,13 +184,6 @@ class Gedai():
         for w, (fmin, fmax) in enumerate(freq_bands):
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
 
-            # Compute eigenvalues
-            # The reference_cov must be a square matrix of the same dimensions as covariance.
-            # An empty reference_cov (0,0) indicates a failure in compute_refcov,
-            # likely due to a missing or malformed leadfield file, or incorrect channel handling
-            # within compute_refcov itself.
-            if reference_cov.shape == (0, 0):
-                raise ValueError("Reference covariance matrix is empty. This usually means the leadfield file was not loaded or processed correctly by 'compute_refcov'.")
             epochs_eigenvalues = np.zeros((len(wavelet_epochs_data), wavelet_epochs_data.shape[1]))
             for e, wavelet_epoch_data in enumerate(wavelet_epochs_data):
                 covariance = np.cov(wavelet_epoch_data)
@@ -198,35 +191,17 @@ class Gedai():
                 epochs_eigenvalues[e] = eigenvalues
   
             wavelet_epochs = mne.EpochsArray(wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False)
+            min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+            n_pc = 3
             if (sensai_method == 'gridsearch'):
-                min_sensai_threshold, max_threshold, step = 0, 12, 0.1
-                sensai_thresholds = np.arange(min_sensai_threshold, max_threshold, step)
-                eigen_thresholds = [self._sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
-                threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=3, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
+                sensai_thresholds = np.arange(min_sensai_threshold, max_sensai_threshold, step)
+                eigen_thresholds = [_sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
+                threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
             elif (sensai_method == 'optimize'):
-                # Define objective function for minimize_scalar
-                def objective_function(sensai_value):
-                    eigen_threshold = self._sensai_to_eigen(sensai_value, epochs_eigenvalues)
-                    score, _, _ = sensai_score(wavelet_epochs, eigen_threshold, reference_cov, n_pc=3, noise_multiplier=noise_multiplier)
-                    return -score # minimize_scalar minimizes, so we negate the score
-
-                # Define bounds for sensai_value. This should match the range used in the gridsearch
-                # to ensure the scaling logic in _sensai_to_eigen behaves consistently.
-                sensai_value_bounds = (0, 12)
-
-                # Perform optimization
-                result = minimize_scalar(objective_function, bounds=sensai_value_bounds, method='bounded')
-
-                if not result.success:
-                    raise ValueError("Optimization failed: " + result.message)
-
-                best_sensai_value = result.x
-                threshold = self._sensai_to_eigen(best_sensai_value, epochs_eigenvalues)
-                # For 'runs' in optimize mode, we can just store the best result for consistency
-                best_score, best_signal_sim, best_noise_sim = sensai_score(wavelet_epochs, threshold, reference_cov, n_pc=3, noise_multiplier=noise_multiplier)
-                runs = [[threshold, best_score, best_signal_sim, best_noise_sim]] # Store as a list of one run
+                sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
+                threshold, runs = sensai_optimize(epochs, epochs_eigenvalues, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, bounds=sensai_threshold_bounds)
             else:
-                raise ValueError("Method must be 'gridsearch'")
+                raise ValueError("Method must be either 'gridsearch' or 'optimize', got '{sensai_method}' instead.")
             # Store band_index to map back to the correct position in epochs_wavelet during transform
             wavelet_fit = {'band_index': w, 'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
             wavelets_fits.append(wavelet_fit)
@@ -426,22 +401,6 @@ class Gedai():
 
         raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
         return raw_corrected
-    
-    def _sensai_to_eigen(self, sensai_value, eigenvalues):
-        all_diagonals = np.abs(eigenvalues.T.flatten())
-        log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
-        T1 = (105 - sensai_value) / 100
-        threshold1 = T1 * np.percentile(log_eig_val_all, 95)
-        eigenvalue = np.exp(threshold1 - 100)
-        return eigenvalue
-
-    def _eigen_to_sensai(self, eigenvalue, eigenvalues):
-        all_diagonals = np.abs(eigenvalues.T.flatten())
-        log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
-        threshold1 = np.log(eigenvalue) + 100
-        T1 = threshold1 / np.percentile(log_eig_val_all, 95)
-        sensai_value = 105 - T1 * 100
-        return sensai_value
 
     def plot_fit(self):
         """Plot the fitting results."""
@@ -453,7 +412,7 @@ class Gedai():
 
             sensai_runs = wavelet_fit['sensai_runs']
             eigen_thresholds = [run[0] for run in sensai_runs]
-            sensai_thresholds = [self._eigen_to_sensai(thresh, eigenvalues) for thresh in eigen_thresholds]
+            sensai_thresholds = [_eigen_to_sensai(thresh, eigenvalues) for thresh in eigen_thresholds]
 
             sensai_score = [run[1] for run in sensai_runs]
             signal_score = [run[2] for run in sensai_runs]
@@ -468,7 +427,7 @@ class Gedai():
             axes[1].plot(sensai_thresholds, sensai_score, label='SENSAI score', color='black')
             axes[1].plot(sensai_thresholds, signal_score, label='Signal similarity', color='blue')
             axes[1].plot(sensai_thresholds, noise_score, label='Noise similarity', color='red')
-            axes[1].axvline(self._eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
+            axes[1].axvline(_eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
             axes[1].set_xlabel('SENSAI threshold')
             axes[1].legend()
 

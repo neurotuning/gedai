@@ -1,1 +1,1 @@
-from .sensai import scale_threshold, sensai_gridsearch, sensai_score
+from .sensai import sensai_gridsearch, sensai_score
