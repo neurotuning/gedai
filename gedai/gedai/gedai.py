@@ -375,24 +375,11 @@ class Gedai():
             end = int(min(start + window_size, n_times))
             actual_window_size = end - start
             segment = raw_data[:, start:end]
-            
-            # If the final segment is shorter than the window size, pad it
-            padded = False
-            if actual_window_size < window_size:
-                # Pad the segment up to the full window_size using reflection
-                pad_width = window_size - actual_window_size
-                padding = ((0, 0), (0, pad_width))  # Pad only the time axis (last axis)
-                segment = np.pad(segment, padding, mode='reflect')
-                padded = True
 
             segment_epoch = mne.EpochsArray(segment[np.newaxis], raw.info, verbose=False)
             # GEDAI
             corrected_epochs = self.transform_epochs(segment_epoch, verbose=False)
             corrected_segment = corrected_epochs.get_data()[0]
-
-            if padded:
-                # Trim the corrected segment back to its original size
-                corrected_segment = corrected_segment[:, :actual_window_size]
 
             corrected_segment *= window[:actual_window_size]
             raw_corrected[:, start:end] += corrected_segment
