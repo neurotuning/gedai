@@ -318,8 +318,8 @@ def process_combination(clean_idx, artifact_idx, clean_eeg_files, artifact_eeg_f
 
 if __name__ == "__main__":
     # Configuration parameters
-    contaminated_signal_proportion = [25, 100]  # percent of epochs temporally contaminated
-    signal_to_noise_in_db = [-9]  # initial data signal-to-noise ratio in decibels
+    contaminated_signal_proportion = [100]  # percent of epochs temporally contaminated
+    signal_to_noise_in_db = [-9, -6, -3, 0]  # initial data signal-to-noise ratio in decibels
     
     # Set to True to display interactive plots for each combination (will pause execution)
     generate_individual_plots = False
@@ -329,7 +329,7 @@ if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
     # Construct paths relative to the pyGEDAI directory using raw strings to handle backslashes
     clean_eeg_dir = r'C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\CLEAN EEG'
-    artifact_eeg_dir = r'C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\ARTIFACTS\\NOISE EOG EMG'
+    artifact_eeg_dir = r'C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\ARTIFACTS'
 
     # For demonstration, let\'s use placeholder paths if the full path doesn\'t exist
     # In a real scenario, these should point to actual data.
