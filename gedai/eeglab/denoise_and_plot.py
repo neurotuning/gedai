@@ -22,7 +22,8 @@ gedai = Gedai()
 gedai.fit_raw(raw, noise_multiplier=6., duration=duration, n_jobs=n_jobs)
 raw_corrected = gedai.transform_raw(raw, duration=duration)
 
-gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=6, low_cutoff=1.0)
+
+gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=6, low_cutoff=2.0)
 gedai_spectral.fit_raw(raw_corrected, noise_multiplier=3., duration=duration, n_jobs=n_jobs)
 raw_corrected_final = gedai_spectral.transform_raw(raw_corrected, duration=duration)
 
