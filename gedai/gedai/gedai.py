@@ -127,16 +127,16 @@ class Gedai():
         Decomposition level (must be >= 0). The default is 0 (no decomposition).
         If 0 (default), no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
-    wavelet_low_cutoff : float
-        Ignore wavelet bands with upper frequency below this cutoff (in Hz).
-        Has not effect if wavelet_level is 0.
+    wavelet_low_cutoff : float | None
+        If float, zero out all bands whose upper frequency bound is below this cutoff frequency (in Hz).
+        If None, no frequency band is zeroed out. The default is None.
     
     References
     ----------
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type='haar', wavelet_level=0, wavelet_low_cutoff=0.0):
+    def __init__(self, wavelet_type='haar', wavelet_level=0, wavelet_low_cutoff=None):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
         self.wavelet_low_cutoff = wavelet_low_cutoff
@@ -181,7 +181,6 @@ class Gedai():
         
         # Store the actual levels used for consistency in transform
         self.levels_used = levels
-        self.freq_bands = freq_bands
         
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
@@ -296,21 +295,23 @@ class Gedai():
         # Validate that the decomposition matches the fitted model
         if levels != self.levels_used:
             raise ValueError(f"Wavelet decomposition levels mismatch. Model was fitted with levels {self.levels_used}, "
-                           f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
+                             f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
         
         cleaned_epochs_wavelet = epochs_wavelet.copy()
         for wavelet_fit in self.wavelets_fits:
             # Use the stored band_index to access the correct wavelet band
             band_idx = wavelet_fit['band_index']
-            fmin, fmax = self.freq_bands[band_idx]
+            fmin, fmax = wavelet_fit['fmin'], wavelet_fit['fmax']
 
             # If the upper bound of the frequency band is below the cutoff, zero it out.
-            if fmax < self.wavelet_low_cutoff and self.low_cutoff > 0:
-                cleaned_epochs_wavelet[:, :, band_idx, :] = 0
-            else:
-                wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
-                cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
-                cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_epochs
+            if self.wavelet_low_cutoff is not None:
+                if fmax < self.wavelet_low_cutoff and self.low_cutoff > 0:
+                    cleaned_epochs_wavelet[:, :, band_idx, :] = 0
+                    continue
+
+            wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
+            cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
+            cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_epochs
         
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
