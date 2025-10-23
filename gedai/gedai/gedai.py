@@ -390,7 +390,9 @@ class Gedai():
         weight_sum = np.zeros_like(raw_data)
 
         step = int(window_size * (1 - overlap))
-        starts = np.arange(0, n_times, step)
+        starts = np.arange(0, n_times - window_size, step)
+        starts = np.append(starts, n_times - window_size)
+
         for s, start in enumerate(starts):
             end = int(min(start + window_size, n_times))
             actual_window_size = end - start
