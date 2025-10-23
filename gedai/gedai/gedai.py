@@ -305,7 +305,7 @@ class Gedai():
 
             # If the upper bound of the frequency band is below the cutoff, zero it out.
             if self.wavelet_low_cutoff is not None:
-                if fmax < self.wavelet_low_cutoff and self.low_cutoff > 0:
+                if fmax < self.wavelet_low_cutoff:
                     cleaned_epochs_wavelet[:, :, band_idx, :] = 0
                     continue
 
