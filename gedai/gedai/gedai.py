@@ -84,16 +84,13 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     # For SWT at level L, length must be divisible by 2^L
     divisor = 2 ** wavelet_level
     
-    # Find the closest multiple of divisor
-    # Round down and round up
-    samples_down = (target_samples // divisor) * divisor
-    samples_up = samples_down + divisor
-    
-    # Choose the closest one
-    if abs(samples_down - target_samples) <= abs(samples_up - target_samples):
-        valid_samples = samples_down
+    # Find the smallest valid number of samples >= target_samples.
+    # A valid number of samples must be a multiple of the divisor.
+    if target_samples % divisor == 0:
+        valid_samples = target_samples
     else:
-        valid_samples = samples_up
+        # If not a multiple, round up to the next multiple of the divisor.
+        valid_samples = ((target_samples // divisor) + 1) * divisor
     
     # Ensure we meet minimum length requirement (2^(level+1))
     min_samples = 2 ** (wavelet_level + 1)

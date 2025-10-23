@@ -201,11 +201,11 @@ def retain_exact_percentage_random_eeg_blocks(data_matrix, percentage_to_keep, m
 
 if __name__ == "__main__":
     # Configuration parameters
-    contaminated_signal_proportion = [25, 50, 75, 100]  # percent of epochs temporally contaminated
-    signal_to_noise_in_db = [-9,-6,-3,0]  # initial data signal-to-noise ratio in decibels
+    contaminated_signal_proportion = [100]  # percent of epochs temporally contaminated
+    signal_to_noise_in_db = [-9]  # initial data signal-to-noise ratio in decibels
     
     # Set to True to display interactive plots for each combination (will pause execution)
-    generate_individual_plots = True
+    generate_individual_plots = False
 
     # Suppress all warnings for cleaner output during benchmark
     warnings.filterwarnings('ignore')
