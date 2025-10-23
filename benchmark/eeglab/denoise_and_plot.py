@@ -4,6 +4,9 @@ import mne
 import time
 from gedai import Gedai
 from gedai.viz.compare import plot_mne_style_overlay_interactive
+from gedai import set_log_level
+
+set_log_level("INFO")
 
 # Parameters
 n_jobs = 1

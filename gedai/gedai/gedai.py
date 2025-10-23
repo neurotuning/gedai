@@ -212,7 +212,7 @@ class Gedai():
             if self.wavelet_low_cutoff is not None:
                 if fmax < self.wavelet_low_cutoff:
                     ignore = True
-                    logger.info(f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) will zeroed out during transformation because its upper frequency {fmax:.2f} Hz is below the low cutoff {self.wavelet_low_cutoff:.2f} Hz.")
+                    logger.info(f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) will be zeroed out during transformation because its upper frequency {fmax:.2f} Hz is below the low cutoff {self.wavelet_low_cutoff:.2f} Hz.")
             wavelet_fit['ignore'] = ignore
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
@@ -261,7 +261,7 @@ class Gedai():
         
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(duration, self.wavelet_level, raw.info['sfreq'])
-        if abs(valid_duration - duration) > 1e-6:  # Only warn if there's a significant difference
+        if valid_duration != duration:
             import warnings
             warnings.warn(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
@@ -365,7 +365,7 @@ class Gedai():
             )
         duration = valid_duration
 
-        raw_data = raw.get_data()
+        raw_data = raw.get_data(verbose=False)
         n_channels, n_times = raw_data.shape
 
         window_size = int(raw.info['sfreq'] * duration)
@@ -386,7 +386,7 @@ class Gedai():
             segment_epoch = mne.EpochsArray(segment[np.newaxis], raw.info, verbose=False)
             # GEDAI
             corrected_epochs = self.transform_epochs(segment_epoch, verbose=False)
-            corrected_segment = corrected_epochs.get_data()[0]
+            corrected_segment = corrected_epochs.get_data(verbose=False)[0]
 
             corrected_segment *= window[:actual_window_size]
             raw_corrected[:, start:end] += corrected_segment

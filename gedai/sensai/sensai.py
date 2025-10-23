@@ -61,7 +61,7 @@ def _eigen_to_sensai(eigenvalue, eigenvalues):
     
 
 def sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
-    epochs_data = epochs.get_data()
+    epochs_data = epochs.get_data(verbose=False)
     epochs_clean, epochs_artefacts = clean_epochs(epochs_data, reference_cov, threshold)
 
     # Top n_pc components of reference_cov
