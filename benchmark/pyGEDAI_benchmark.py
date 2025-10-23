@@ -205,7 +205,7 @@ if __name__ == "__main__":
     signal_to_noise_in_db = [-9]  # initial data signal-to-noise ratio in decibels
     
     # Set to True to display interactive plots for each combination (will pause execution)
-    generate_individual_plots = True
+    generate_individual_plots = False
 
     # Suppress all warnings for cleaner output during benchmark
     warnings.filterwarnings('ignore')
