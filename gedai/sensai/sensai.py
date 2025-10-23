@@ -119,7 +119,7 @@ def sensai_gridsearch(epochs, reference_cov, n_pc, noise_multiplier, eigen_thres
     sensai_data = [[eigen_thresholds[r], runs[r][0], runs[r][1], runs[r][2]] for r in range(len(runs))]
     return best_threshold, sensai_data
 
-def sensai_optimize(epochs, epochs_eigenvalues, reference_cov, n_pc, noise_multiplier, bounds):
+def sensai_optimize(epochs, reference_cov, n_pc, noise_multiplier, epochs_eigenvalues, bounds):
     runs = []
 
     def objective_function(sensai_threshold):

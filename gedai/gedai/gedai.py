@@ -7,10 +7,8 @@ from mne.io import BaseRaw
 import matplotlib.pyplot as plt
 
 from scipy.linalg import eigh
-from scipy.optimize import minimize_scalar # Import minimize_scalar
 
 from typing import Optional
-from ..sensai.sensai import sensai_score # Import sensai_score
 from ..utils._checks import check_type, _check_n_jobs
 from ..utils._docs import fill_doc
 from ..utils.logs import logger
@@ -202,7 +200,7 @@ class Gedai():
                 threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
             elif (sensai_method == 'optimize'):
                 sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
-                threshold, runs = sensai_optimize(epochs, epochs_eigenvalues, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, bounds=sensai_threshold_bounds)
+                threshold, runs = sensai_optimize(wavelet_epochs, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, epochs_eigenvalues=epochs_eigenvalues, bounds=sensai_threshold_bounds)
             else:
                 raise ValueError("Method must be either 'gridsearch' or 'optimize', got '{sensai_method}' instead.")
             # Store band_index to map back to the correct position in epochs_wavelet during transform
@@ -429,15 +427,6 @@ class Gedai():
             axes[1].axvline(_eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
             axes[1].set_xlabel('SENSAI threshold')
             axes[1].legend()
-
-            # Add second x-axis for eigenvalue thresholds
-            ax2 = axes[1].twiny()
-            ax2.set_xlim(axes[1].get_xlim())
-            ax1_xticks_locs = axes[1].get_xticks()
-            ax2_xticks = [_sensai_to_eigen(sensai_val, eigenvalues) for sensai_val in ax1_xticks_locs]
-            ax2.set_xticks(ax1_xticks_locs)
-            ax2.set_xticklabels([f"{val:.1e}" for val in ax2_xticks])
-            ax2.set_xlabel('Eigenvalue Threshold')
 
             fig.suptitle(f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz')
             figs.append(fig)
