@@ -13,6 +13,7 @@ from typing import Optional
 from ..sensai.sensai import sensai_score # Import sensai_score
 from ..utils._checks import check_type, _check_n_jobs
 from ..utils._docs import fill_doc
+from ..utils.logs import logger
 
 from ..wavelet.transform import epochs_to_wavelet
 from .decompose import clean_epochs
@@ -206,6 +207,13 @@ class Gedai():
                 raise ValueError("Method must be either 'gridsearch' or 'optimize', got '{sensai_method}' instead.")
             # Store band_index to map back to the correct position in epochs_wavelet during transform
             wavelet_fit = {'band_index': w, 'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
+            # ignore
+            ignore = False
+            if self.wavelet_low_cutoff is not None:
+                if fmax < self.wavelet_low_cutoff:
+                    ignore = True
+                    logger.info(f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) will zeroed out during transformation because its upper frequency {fmax:.2f} Hz is below the low cutoff {self.wavelet_low_cutoff:.2f} Hz.")
+            wavelet_fit['ignore'] = ignore
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
 
@@ -264,8 +272,8 @@ class Gedai():
         # Convert overlap ratio to seconds for mne.make_fixed_length_epochs
         overlap_seconds = duration * overlap
         
-        epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=verbose)
-        self.fit_epochs(epochs, noise_multiplier=noise_multiplier, reference_cov=reference_cov, sensai_method=sensai_method, n_jobs=n_jobs, verbose=verbose)
+        epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=False)
+        self.fit_epochs(epochs, noise_multiplier=noise_multiplier, reference_cov=reference_cov, sensai_method=sensai_method, n_jobs=n_jobs, verbose=False)
 
     @fill_doc
     def transform_epochs(self,
@@ -302,12 +310,11 @@ class Gedai():
             # Use the stored band_index to access the correct wavelet band
             band_idx = wavelet_fit['band_index']
             fmin, fmax = wavelet_fit['fmin'], wavelet_fit['fmax']
+            ignore = wavelet_fit['ignore']
 
-            # If the upper bound of the frequency band is below the cutoff, zero it out.
-            if self.wavelet_low_cutoff is not None:
-                if fmax < self.wavelet_low_cutoff:
-                    cleaned_epochs_wavelet[:, :, band_idx, :] = 0
-                    continue
+            if ignore:         
+                cleaned_epochs_wavelet[:, :, band_idx, :] = 0
+                continue
 
             wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
             cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
@@ -397,6 +404,8 @@ class Gedai():
         wavelet_fits = self.wavelets_fits
         figs = []
         for w, wavelet_fit in enumerate(wavelet_fits):
+            if wavelet_fit['ignore']:
+                continue
             threshold = wavelet_fit['threshold']
             eigenvalues = wavelet_fit['epochs_eigenvalues']
 
@@ -424,11 +433,12 @@ class Gedai():
             # Add second x-axis for eigenvalue thresholds
             ax2 = axes[1].twiny()
             ax2.set_xlim(axes[1].get_xlim())
-            ax2.set_xticks(sensai_thresholds[::len(sensai_thresholds)//5])
-            ax2.set_xticklabels([f"{eigen_thresholds[i]:.2e}" for i in range(0, len(eigen_thresholds), len(eigen_thresholds)//5)])
+            ax1_xticks_locs = axes[1].get_xticks()
+            ax2_xticks = [_sensai_to_eigen(sensai_val, eigenvalues) for sensai_val in ax1_xticks_locs]
+            ax2.set_xticks(ax1_xticks_locs)
+            ax2.set_xticklabels([f"{val:.1e}" for val in ax2_xticks])
             ax2.set_xlabel('Eigenvalue Threshold')
 
             fig.suptitle(f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz')
             figs.append(fig)
-
         return figs

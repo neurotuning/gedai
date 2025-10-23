@@ -120,10 +120,12 @@ def sensai_gridsearch(epochs, reference_cov, n_pc, noise_multiplier, eigen_thres
     return best_threshold, sensai_data
 
 def sensai_optimize(epochs, epochs_eigenvalues, reference_cov, n_pc, noise_multiplier, bounds):
+    runs = []
 
     def objective_function(sensai_threshold):
         eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
-        score, _, _ = sensai_score(epochs, eigen_threshold, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier)
+        score, signal_subspace_similarity, noise_subspace_similarity = sensai_score(epochs, eigen_threshold, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier)
+        runs.append([eigen_threshold, score, signal_subspace_similarity, noise_subspace_similarity])
         return -score
     
     result = minimize_scalar(objective_function, bounds=bounds, method='bounded')
@@ -133,7 +135,6 @@ def sensai_optimize(epochs, epochs_eigenvalues, reference_cov, n_pc, noise_multi
 
     sensai_threshold = result.x
     eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
-    best_score, best_signal_sim, best_noise_sim = sensai_score(epochs, eigen_threshold, reference_cov, n_pc=3, noise_multiplier=noise_multiplier)
-    # TODO: Store optimize runs if possible.
-    runs = [[eigen_threshold, best_score, best_signal_sim, best_noise_sim]]
+    # sort runs
+    runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
