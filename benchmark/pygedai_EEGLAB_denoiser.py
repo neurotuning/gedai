@@ -2,6 +2,7 @@
 import mne
 import numpy as np
 from gedai import Gedai
+import warnings
 
 def pygedai_denoise_EEGLAB_data(eeg_data, sfreq, ch_names=None):
     """
@@ -41,16 +42,21 @@ def pygedai_denoise_EEGLAB_data(eeg_data, sfreq, ch_names=None):
     n_jobs = 1
     duration = 1  # seconds
     
-    # Stage 1: Broadband denoising
-    raw.set_eeg_reference("average", projection=False, verbose=False)
-    gedai = Gedai()
-    gedai.fit_raw(raw, noise_multiplier=6., duration=duration, n_jobs=n_jobs, verbose=False)
-    raw_corrected = gedai.transform_raw(raw, duration=duration, verbose=False)
-
-    # Stage 2: Spectral denoising
-    gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=6, wavelet_low_cutoff=2.0)
-    gedai_spectral.fit_raw(raw_corrected, noise_multiplier=3., duration=duration, n_jobs=n_jobs, verbose=False)
-    raw_corrected_final = gedai_spectral.transform_raw(raw_corrected, duration=duration, verbose=False)
+    # Use a context manager to suppress only the specific duration adjustment warning
+    # for the duration of the denoising process within this function.
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', message=".*Requested duration.*adjusted to.*")
+        
+        # Stage 1: Broadband denoising
+        raw.set_eeg_reference("average", projection=False, verbose=False)
+        gedai = Gedai()
+        gedai.fit_raw(raw, noise_multiplier=6., duration=duration, n_jobs=n_jobs, verbose=False)
+        raw_corrected = gedai.transform_raw(raw, duration=duration, verbose=False)
+    
+        # Stage 2: Spectral denoising
+        gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=6, wavelet_low_cutoff=2.0)
+        gedai_spectral.fit_raw(raw_corrected, noise_multiplier=3., duration=duration, n_jobs=n_jobs, verbose=False)
+        raw_corrected_final = gedai_spectral.transform_raw(raw_corrected, duration=duration, verbose=False)
 
     # 3. Extract and return the denoised data as a NumPy array
     denoised_data = raw_corrected_final.get_data()
