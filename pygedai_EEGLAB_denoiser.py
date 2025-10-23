@@ -48,7 +48,8 @@ def pygedai_denoise_EEGLAB_data(eeg_data, sfreq, ch_names=None):
 
     # Stage 2: Spectral denoising
     duration = 10  # seconds
-    gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=5)
+    duration = 1  # seconds
+    gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=6, low_cutoff=1.0)
     gedai_spectral.fit_raw(raw_corrected, noise_multiplier=3., duration=duration, n_jobs=n_jobs, verbose=False)
     raw_corrected_final = gedai_spectral.transform_raw(raw_corrected, duration=duration, verbose=False)
 
