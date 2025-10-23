@@ -318,7 +318,7 @@ def process_combination(clean_idx, artifact_idx, clean_eeg_files, artifact_eeg_f
 
 if __name__ == "__main__":
     # Configuration parameters
-    contaminated_signal_proportion = [100]  # percent of epochs temporally contaminated
+    contaminated_signal_proportion = [25, 100]  # percent of epochs temporally contaminated
     signal_to_noise_in_db = [-9]  # initial data signal-to-noise ratio in decibels
     
     # Set to True to display interactive plots for each combination (will pause execution)
@@ -471,19 +471,23 @@ if __name__ == "__main__":
     #print(results_snr.head())
     #print("\\nTime Results:")
     #print(results_time.head())
-    print("\\nBenchmark finished. Aggregated Results (Mean ± Std Dev):")
+    print("\\nBenchmark finished. Aggregated Results (Median (IQR)):")
+
+    # Define a function to calculate Interquartile Range (IQR)
+    def iqr(x):
+        return x.quantile(0.75) - x.quantile(0.25)
 
     print("\\n--- Correlation ---")
-    print(results_correlation.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['mean', 'std']))
+    print(results_correlation.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['median', iqr]))
 
     print("\\n--- RRMSE ---")
-    print(results_rrmse.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['mean', 'std']))
+    print(results_rrmse.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['median', iqr]))
 
     print("\\n--- SNR ---")
-    print(results_snr.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['mean', 'std']))
+    print(results_snr.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['median', iqr]))
 
     print("\\n--- Time (seconds) ---")
-    print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
+    print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['median', iqr]))
 
 
     # Save results to CSV
