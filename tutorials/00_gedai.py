@@ -29,7 +29,7 @@ gedai.fit_raw(raw)
 # %%
 # plot
 import matplotlib.pyplot as plt
-fig, axes = gedai.plot_fit()
+fig = gedai.plot_fit()
 plt.show()
 
 # %%

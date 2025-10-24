@@ -63,8 +63,8 @@ reference_cov : str
 # -- S ---------------------------------------------------------------------------------
 docdict["sensai_method"] = """
 sensai_method : str
-    The method to use for threshold optimization. 
-    Only 'gridsearch' is supported for now."""
+    The method to use for threshold optimization. Can be 'gridsearch' or
+    'optimize'. The default is 'optimize'."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------

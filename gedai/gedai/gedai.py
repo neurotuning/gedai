@@ -3,20 +3,21 @@ import numpy as np
 import mne
 from mne import BaseEpochs
 from mne.io import BaseRaw
+from mne.parallel import parallel_func
 
 import matplotlib.pyplot as plt
 
 from scipy.linalg import eigh
 
 from typing import Optional
-
 from ..utils._checks import check_type, _check_n_jobs
 from ..utils._docs import fill_doc
+from ..utils.logs import logger
 
 from ..wavelet.transform import epochs_to_wavelet
 from .decompose import clean_epochs
 from .covariances import compute_refcov
-from ..sensai import sensai_gridsearch
+from ..sensai.sensai import _sensai_to_eigen, _eigen_to_sensai, sensai_gridsearch, sensai_optimize
 
 
 def create_cosine_weights(n_samples):
@@ -83,16 +84,13 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     # For SWT at level L, length must be divisible by 2^L
     divisor = 2 ** wavelet_level
     
-    # Find the closest multiple of divisor
-    # Round down and round up
-    samples_down = (target_samples // divisor) * divisor
-    samples_up = samples_down + divisor
-    
-    # Choose the closest one
-    if abs(samples_down - target_samples) <= abs(samples_up - target_samples):
-        valid_samples = samples_down
+    # Find the smallest valid number of samples >= target_samples.
+    # A valid number of samples must be a multiple of the divisor.
+    if target_samples % divisor == 0:
+        valid_samples = target_samples
     else:
-        valid_samples = samples_up
+        # If not a multiple, round up to the next multiple of the divisor.
+        valid_samples = ((target_samples // divisor) + 1) * divisor
     
     # Ensure we meet minimum length requirement (2^(level+1))
     min_samples = 2 ** (wavelet_level + 1)
@@ -129,21 +127,25 @@ class Gedai():
         Decomposition level (must be >= 0). The default is 0 (no decomposition).
         If 0 (default), no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
-
+    wavelet_low_cutoff : float | None
+        If float, zero out all bands whose upper frequency bound is below this cutoff frequency (in Hz).
+        If None, no frequency band is zeroed out. The default is None.
+    
     References
     ----------
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type='haar', wavelet_level=0):
+    def __init__(self, wavelet_type='haar', wavelet_level=0, wavelet_low_cutoff=None):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
+        self.wavelet_low_cutoff = wavelet_low_cutoff
 
     @fill_doc
     def fit_epochs(self,
                     epochs: BaseEpochs,
                     reference_cov: str = 'leadfield',
-                    sensai_method: str = 'gridsearch',
+                    sensai_method: str = 'optimize',
                     noise_multiplier: float = 3.0,
                     n_jobs: int = None,
                     verbose: Optional[str] = None):
@@ -175,23 +177,15 @@ class Gedai():
         reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
 
         # Broadband data
-        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs)
         
         # Store the actual levels used for consistency in transform
         self.levels_used = levels
-        self.freq_bands = freq_bands
         
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
 
-            # Compute eigenvalues
-            # The reference_cov must be a square matrix of the same dimensions as covariance.
-            # An empty reference_cov (0,0) indicates a failure in compute_refcov,
-            # likely due to a missing or malformed leadfield file, or incorrect channel handling
-            # within compute_refcov itself.
-            if reference_cov.shape == (0, 0):
-                raise ValueError("Reference covariance matrix is empty. This usually means the leadfield file was not loaded or processed correctly by 'compute_refcov'.")
             epochs_eigenvalues = np.zeros((len(wavelet_epochs_data), wavelet_epochs_data.shape[1]))
             for e, wavelet_epoch_data in enumerate(wavelet_epochs_data):
                 covariance = np.cov(wavelet_epoch_data)
@@ -199,16 +193,26 @@ class Gedai():
                 epochs_eigenvalues[e] = eigenvalues
   
             wavelet_epochs = mne.EpochsArray(wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False)
+            min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+            n_pc = 3
             if (sensai_method == 'gridsearch'):
-                min_sensai_threshold, max_threshold, step = 0, 12, 0.1
-                sensai_thresholds = np.arange(min_sensai_threshold, max_threshold, step)
-                eigen_thresholds = [self._sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
-                threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=3, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
-
+                sensai_thresholds = np.arange(min_sensai_threshold, max_sensai_threshold, step)
+                eigen_thresholds = [_sensai_to_eigen(sensai_value, epochs_eigenvalues) for sensai_value in sensai_thresholds]
+                threshold, runs = sensai_gridsearch(wavelet_epochs, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, eigen_thresholds=eigen_thresholds, n_jobs=n_jobs)
+            elif (sensai_method == 'optimize'):
+                sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
+                threshold, runs = sensai_optimize(wavelet_epochs, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier, epochs_eigenvalues=epochs_eigenvalues, bounds=sensai_threshold_bounds)
             else:
-                raise ValueError("Method must be 'gridsearch'")
+                raise ValueError("Method must be either 'gridsearch' or 'optimize', got '{sensai_method}' instead.")
             # Store band_index to map back to the correct position in epochs_wavelet during transform
             wavelet_fit = {'band_index': w, 'fmin': fmin, 'fmax': fmax, 'threshold': threshold, 'reference_cov': reference_cov, 'epochs_eigenvalues': epochs_eigenvalues, 'sensai_runs': runs}
+            # ignore
+            ignore = False
+            if self.wavelet_low_cutoff is not None:
+                if fmax < self.wavelet_low_cutoff:
+                    ignore = True
+                    logger.info(f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) will be zeroed out during transformation because its upper frequency {fmax:.2f} Hz is below the low cutoff {self.wavelet_low_cutoff:.2f} Hz.")
+            wavelet_fit['ignore'] = ignore
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
 
@@ -219,7 +223,7 @@ class Gedai():
                 overlap: float = 0.5,
                 reject_by_annotation: Optional[bool] = False,
                 reference_cov: str = 'leadfield',
-                sensai_method: str = 'gridsearch',
+                sensai_method: str = 'optimize', # Changed default to 'optimize'
                 noise_multiplier: float = 3.0,
                 n_jobs: int = None,
                 verbose: Optional[str] = None):
@@ -256,7 +260,7 @@ class Gedai():
         
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(duration, self.wavelet_level, raw.info['sfreq'])
-        if abs(valid_duration - duration) > 1e-6:  # Only warn if there's a significant difference
+        if valid_duration != duration:
             import warnings
             warnings.warn(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
@@ -267,12 +271,13 @@ class Gedai():
         # Convert overlap ratio to seconds for mne.make_fixed_length_epochs
         overlap_seconds = duration * overlap
         
-        epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=verbose)
-        self.fit_epochs(epochs, noise_multiplier=noise_multiplier, reference_cov=reference_cov, sensai_method=sensai_method, n_jobs=n_jobs, verbose=verbose)
+        epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=False)
+        self.fit_epochs(epochs, noise_multiplier=noise_multiplier, reference_cov=reference_cov, sensai_method=sensai_method, n_jobs=n_jobs, verbose=False)
 
     @fill_doc
     def transform_epochs(self,
                          epochs: BaseEpochs,
+                         n_jobs: int = None,
                          verbose: Optional[str] = None):
         """Transform epochs data using the fitted model.
 
@@ -280,6 +285,7 @@ class Gedai():
         ----------
         epochs : mne.Epochs
             The epochs to transform.
+        %(n_jobs)s
         %(verbose)s
 
         Returns
@@ -288,25 +294,48 @@ class Gedai():
             The transformed epochs.
         """
         check_type(epochs, (BaseEpochs,), 'epochs')
+        n_jobs = _check_n_jobs(n_jobs)
         
         # Check if model was fitted
         if not hasattr(self, 'wavelets_fits'):
             raise RuntimeError("Model has not been fitted yet. Call fit_epochs() or fit_raw() first.")
 
-        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs)
         
         # Validate that the decomposition matches the fitted model
         if levels != self.levels_used:
             raise ValueError(f"Wavelet decomposition levels mismatch. Model was fitted with levels {self.levels_used}, "
-                           f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
+                             f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
         
         cleaned_epochs_wavelet = epochs_wavelet.copy()
+        
+        # Process each wavelet band sequentially, but parallelize across epochs within each band
         for wavelet_fit in self.wavelets_fits:
-            # Use the stored band_index to access the correct wavelet band
             band_idx = wavelet_fit['band_index']
-            wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
-            cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
-            cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_epochs
+            ignore = wavelet_fit['ignore']
+            
+            if ignore:
+                # Zero out this band
+                cleaned_epochs_wavelet[:, :, band_idx, :] = 0
+            else:
+                wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
+                reference_cov = wavelet_fit['reference_cov']
+                threshold = wavelet_fit['threshold']
+                
+                if n_jobs == 1:
+                    # Sequential processing
+                    for e, epoch_data in enumerate(wavelet_epochs_data):
+                        cleaned_epochs_wavelet[e, :, band_idx, :] = _process_single_epoch(
+                            epoch_data, reference_cov, threshold
+                        )
+                else:
+                    # Parallel processing across epochs
+                    parallel, p_fun, _ = parallel_func(_process_single_epoch, n_jobs)
+                    cleaned_epochs_list = parallel(
+                        p_fun(epoch_data, reference_cov, threshold)
+                        for epoch_data in wavelet_epochs_data
+                    )
+                    cleaned_epochs_wavelet[:, :, band_idx, :] = np.array(cleaned_epochs_list)
         
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
@@ -317,6 +346,7 @@ class Gedai():
     def transform_raw(self, raw: BaseRaw,
                       duration: float = 1.0,
                       overlap: float = 0.5,
+                      n_jobs: int = None,
                       verbose: Optional[str] = None):
         """Transform raw data using the fitted model.
 
@@ -330,6 +360,7 @@ class Gedai():
         overlap : float
             The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
+        %(n_jobs)s
         %(verbose)s
 
         Returns
@@ -340,6 +371,8 @@ class Gedai():
         check_type(raw, (BaseRaw,), 'raw')
         check_type(duration, (float, int), 'duration')
         check_type(overlap, (float, int), 'overlap')
+        n_jobs = _check_n_jobs(n_jobs)
+        
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         
@@ -353,7 +386,7 @@ class Gedai():
             )
         duration = valid_duration
 
-        raw_data = raw.get_data()
+        raw_data = raw.get_data(verbose=False)
         n_channels, n_times = raw_data.shape
 
         window_size = int(raw.info['sfreq'] * duration)
@@ -366,52 +399,46 @@ class Gedai():
         starts = np.arange(0, n_times - window_size, step)
         starts = np.append(starts, n_times - window_size)
 
+        # Batch all segments together for parallel processing
+        all_segments = []
+        for start in starts:
+            segment = raw_data[:, start:start + window_size]
+            all_segments.append(segment)
+        
+        # Convert to epochs array (n_epochs, n_channels, n_times)
+        all_segments_array = np.array(all_segments)
+        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=False)
+        
+        # Process all segments at once with parallelization
+        corrected_segments_epochs = self.transform_epochs(segments_epochs, n_jobs=n_jobs, verbose=False)
+        corrected_segments = corrected_segments_epochs.get_data(verbose=False)
+        
+        # Apply windowing and reconstruct
         for s, start in enumerate(starts):
-            end = int(min(start + window_size, n_times))
-            actual_window_size = end - start
-            segment = raw_data[:, start:end]
-            segment_epoch = mne.EpochsArray(segment[np.newaxis], raw.info, verbose=False)
-            # GEDAI
-            corrected_epochs = self.transform_epochs(segment_epoch, verbose=False)
-            corrected_segment = corrected_epochs.get_data()[0]
-            corrected_segment *= window[:actual_window_size]
-            raw_corrected[:, start:end] += corrected_segment
-            weight_sum[:, start:end] += window[:actual_window_size]
+            corrected_segment = corrected_segments[s] * window
+            raw_corrected[:, start:start + window_size] += corrected_segment
+            weight_sum[:, start:start + window_size] += window
         
         # Normalize the corrected signal by the weight sum
-        weight_sum[weight_sum == 0] = 1 # Avoid division by zero
+        weight_sum[weight_sum == 0] = 1  # Avoid division by zero
         raw_corrected /= weight_sum
 
         raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
         return raw_corrected
-    
-    def _sensai_to_eigen(self, sensai_value, eigenvalues):
-        all_diagonals = np.abs(eigenvalues.T.flatten())
-        log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
-        T1 = (105 - sensai_value) / 100
-        threshold1 = T1 * np.percentile(log_eig_val_all, 95)
-        eigenvalue = np.exp(threshold1 - 100)
-        return eigenvalue
-
-    def _eigen_to_sensai(self, eigenvalue, eigenvalues):
-        all_diagonals = np.abs(eigenvalues.T.flatten())
-        log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
-        threshold1 = np.log(eigenvalue) + 100
-        T1 = threshold1 / np.percentile(log_eig_val_all, 95)
-        sensai_value = 105 - T1 * 100
-        return sensai_value
 
     def plot_fit(self):
         """Plot the fitting results."""
         wavelet_fits = self.wavelets_fits
         figs = []
         for w, wavelet_fit in enumerate(wavelet_fits):
+            if wavelet_fit['ignore']:
+                continue
             threshold = wavelet_fit['threshold']
             eigenvalues = wavelet_fit['epochs_eigenvalues']
 
             sensai_runs = wavelet_fit['sensai_runs']
             eigen_thresholds = [run[0] for run in sensai_runs]
-            sensai_thresholds = [self._eigen_to_sensai(thresh, eigenvalues) for thresh in eigen_thresholds]
+            sensai_thresholds = [_eigen_to_sensai(thresh, eigenvalues) for thresh in eigen_thresholds]
 
             sensai_score = [run[1] for run in sensai_runs]
             signal_score = [run[2] for run in sensai_runs]
@@ -426,18 +453,54 @@ class Gedai():
             axes[1].plot(sensai_thresholds, sensai_score, label='SENSAI score', color='black')
             axes[1].plot(sensai_thresholds, signal_score, label='Signal similarity', color='blue')
             axes[1].plot(sensai_thresholds, noise_score, label='Noise similarity', color='red')
-            axes[1].axvline(self._eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
+            axes[1].axvline(_eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
             axes[1].set_xlabel('SENSAI threshold')
             axes[1].legend()
 
-            # Add second x-axis for eigenvalue thresholds
-            ax2 = axes[1].twiny()
-            ax2.set_xlim(axes[1].get_xlim())
-            ax2.set_xticks(sensai_thresholds[::len(sensai_thresholds)//5])
-            ax2.set_xticklabels([f"{eigen_thresholds[i]:.2e}" for i in range(0, len(eigen_thresholds), len(eigen_thresholds)//5)])
-            ax2.set_xlabel('Eigenvalue Threshold')
+            fig.suptitle(f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz')
+            figs.append(fig)
+            axes[1].axvline(_eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
+            axes[1].set_xlabel('SENSAI threshold')
+            axes[1].legend()
 
             fig.suptitle(f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz')
             figs.append(fig)
-
         return figs
+
+
+def _process_single_epoch(epoch_data, reference_cov, threshold):
+    """Process a single epoch for cleaning.
+    
+    Parameters
+    ----------
+    epoch_data : np.ndarray
+        Single epoch data with shape (n_channels, n_times).
+    reference_cov : np.ndarray
+        Reference covariance matrix.
+    threshold : float
+        Threshold for component selection.
+    
+    Returns
+    -------
+    cleaned_epoch : np.ndarray
+        The cleaned epoch data.
+    """
+    covariance = np.cov(epoch_data)
+    eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+
+    # Compute spatial maps
+    maps = np.linalg.pinv(eigenvectors).T
+    eigenvectors_filtered = eigenvectors.copy()
+
+    # Zero out components with small eigenvalues
+    for v, val in enumerate(eigenvalues):
+        if abs(val) < threshold:
+            maps[:, v] = 0
+            eigenvectors_filtered[:, v] = 0
+
+    # Reconstruct artifact signal
+    spatial_filter = np.dot(maps, eigenvectors_filtered.T)
+    artefact_data = spatial_filter @ epoch_data
+    cleaned_epoch = epoch_data - artefact_data
+
+    return cleaned_epoch
