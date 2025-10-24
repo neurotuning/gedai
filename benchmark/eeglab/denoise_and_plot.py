@@ -9,7 +9,7 @@ from gedai import set_log_level
 set_log_level("INFO")
 
 # Parameters
-n_jobs = 1
+n_jobs = 24
 duration = 1  # seconds
 
 # Load the data
@@ -23,12 +23,12 @@ raw.set_eeg_reference("average", projection=False)
 
 gedai = Gedai(wavelet_low_cutoff=None)
 gedai.fit_raw(raw, noise_multiplier=6., duration=duration, n_jobs=n_jobs)
-raw_corrected = gedai.transform_raw(raw, duration=duration)
+raw_corrected = gedai.transform_raw(raw, duration=duration, n_jobs=n_jobs)
 
 
 gedai_spectral = Gedai(wavelet_type='haar', wavelet_level=6, wavelet_low_cutoff=2.0)
 gedai_spectral.fit_raw(raw_corrected, noise_multiplier=3., duration=duration, n_jobs=n_jobs)
-raw_corrected_final = gedai_spectral.transform_raw(raw_corrected, duration=duration)
+raw_corrected_final = gedai_spectral.transform_raw(raw_corrected, duration=duration, n_jobs=n_jobs)
 
 # End timer and print elapsed time
 end_time = time.time()

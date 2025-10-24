@@ -3,6 +3,7 @@ import numpy as np
 import mne
 from mne import BaseEpochs
 from mne.io import BaseRaw
+from mne.parallel import parallel_func
 
 import matplotlib.pyplot as plt
 
@@ -176,7 +177,7 @@ class Gedai():
         reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
 
         # Broadband data
-        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs)
         
         # Store the actual levels used for consistency in transform
         self.levels_used = levels
@@ -276,6 +277,7 @@ class Gedai():
     @fill_doc
     def transform_epochs(self,
                          epochs: BaseEpochs,
+                         n_jobs: int = None,
                          verbose: Optional[str] = None):
         """Transform epochs data using the fitted model.
 
@@ -283,6 +285,7 @@ class Gedai():
         ----------
         epochs : mne.Epochs
             The epochs to transform.
+        %(n_jobs)s
         %(verbose)s
 
         Returns
@@ -291,12 +294,13 @@ class Gedai():
             The transformed epochs.
         """
         check_type(epochs, (BaseEpochs,), 'epochs')
+        n_jobs = _check_n_jobs(n_jobs)
         
         # Check if model was fitted
         if not hasattr(self, 'wavelets_fits'):
             raise RuntimeError("Model has not been fitted yet. Call fit_epochs() or fit_raw() first.")
 
-        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level)
+        epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs)
         
         # Validate that the decomposition matches the fitted model
         if levels != self.levels_used:
@@ -304,19 +308,34 @@ class Gedai():
                              f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
         
         cleaned_epochs_wavelet = epochs_wavelet.copy()
+        
+        # Process each wavelet band sequentially, but parallelize across epochs within each band
         for wavelet_fit in self.wavelets_fits:
-            # Use the stored band_index to access the correct wavelet band
             band_idx = wavelet_fit['band_index']
-            fmin, fmax = wavelet_fit['fmin'], wavelet_fit['fmax']
             ignore = wavelet_fit['ignore']
-
-            if ignore:         
+            
+            if ignore:
+                # Zero out this band
                 cleaned_epochs_wavelet[:, :, band_idx, :] = 0
-                continue
-
-            wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
-            cleaned_epochs, artefact_epochs = clean_epochs(wavelet_epochs_data, wavelet_fit['reference_cov'], wavelet_fit['threshold'])
-            cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_epochs
+            else:
+                wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
+                reference_cov = wavelet_fit['reference_cov']
+                threshold = wavelet_fit['threshold']
+                
+                if n_jobs == 1:
+                    # Sequential processing
+                    for e, epoch_data in enumerate(wavelet_epochs_data):
+                        cleaned_epochs_wavelet[e, :, band_idx, :] = _process_single_epoch(
+                            epoch_data, reference_cov, threshold
+                        )
+                else:
+                    # Parallel processing across epochs
+                    parallel, p_fun, _ = parallel_func(_process_single_epoch, n_jobs)
+                    cleaned_epochs_list = parallel(
+                        p_fun(epoch_data, reference_cov, threshold)
+                        for epoch_data in wavelet_epochs_data
+                    )
+                    cleaned_epochs_wavelet[:, :, band_idx, :] = np.array(cleaned_epochs_list)
         
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
@@ -327,6 +346,7 @@ class Gedai():
     def transform_raw(self, raw: BaseRaw,
                       duration: float = 1.0,
                       overlap: float = 0.5,
+                      n_jobs: int = None,
                       verbose: Optional[str] = None):
         """Transform raw data using the fitted model.
 
@@ -340,6 +360,7 @@ class Gedai():
         overlap : float
             The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
+        %(n_jobs)s
         %(verbose)s
 
         Returns
@@ -350,6 +371,8 @@ class Gedai():
         check_type(raw, (BaseRaw,), 'raw')
         check_type(duration, (float, int), 'duration')
         check_type(overlap, (float, int), 'overlap')
+        n_jobs = _check_n_jobs(n_jobs)
+        
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         
@@ -376,22 +399,28 @@ class Gedai():
         starts = np.arange(0, n_times - window_size, step)
         starts = np.append(starts, n_times - window_size)
 
+        # Batch all segments together for parallel processing
+        all_segments = []
+        for start in starts:
+            segment = raw_data[:, start:start + window_size]
+            all_segments.append(segment)
+        
+        # Convert to epochs array (n_epochs, n_channels, n_times)
+        all_segments_array = np.array(all_segments)
+        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=False)
+        
+        # Process all segments at once with parallelization
+        corrected_segments_epochs = self.transform_epochs(segments_epochs, n_jobs=n_jobs, verbose=False)
+        corrected_segments = corrected_segments_epochs.get_data(verbose=False)
+        
+        # Apply windowing and reconstruct
         for s, start in enumerate(starts):
-            end = int(min(start + window_size, n_times))
-            actual_window_size = end - start
-            segment = raw_data[:, start:end]
-
-            segment_epoch = mne.EpochsArray(segment[np.newaxis], raw.info, verbose=False)
-            # GEDAI
-            corrected_epochs = self.transform_epochs(segment_epoch, verbose=False)
-            corrected_segment = corrected_epochs.get_data(verbose=False)[0]
-
-            corrected_segment *= window[:actual_window_size]
-            raw_corrected[:, start:end] += corrected_segment
-            weight_sum[:, start:end] += window[:actual_window_size]
+            corrected_segment = corrected_segments[s] * window
+            raw_corrected[:, start:start + window_size] += corrected_segment
+            weight_sum[:, start:start + window_size] += window
         
         # Normalize the corrected signal by the weight sum
-        weight_sum[weight_sum == 0] = 1 # Avoid division by zero
+        weight_sum[weight_sum == 0] = 1  # Avoid division by zero
         raw_corrected /= weight_sum
 
         raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
@@ -430,4 +459,48 @@ class Gedai():
 
             fig.suptitle(f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz')
             figs.append(fig)
+            axes[1].axvline(_eigen_to_sensai(threshold, eigenvalues), color='green', linestyle='--', label='Threshold')
+            axes[1].set_xlabel('SENSAI threshold')
+            axes[1].legend()
+
+            fig.suptitle(f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz')
+            figs.append(fig)
         return figs
+
+
+def _process_single_epoch(epoch_data, reference_cov, threshold):
+    """Process a single epoch for cleaning.
+    
+    Parameters
+    ----------
+    epoch_data : np.ndarray
+        Single epoch data with shape (n_channels, n_times).
+    reference_cov : np.ndarray
+        Reference covariance matrix.
+    threshold : float
+        Threshold for component selection.
+    
+    Returns
+    -------
+    cleaned_epoch : np.ndarray
+        The cleaned epoch data.
+    """
+    covariance = np.cov(epoch_data)
+    eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+
+    # Compute spatial maps
+    maps = np.linalg.pinv(eigenvectors).T
+    eigenvectors_filtered = eigenvectors.copy()
+
+    # Zero out components with small eigenvalues
+    for v, val in enumerate(eigenvalues):
+        if abs(val) < threshold:
+            maps[:, v] = 0
+            eigenvectors_filtered[:, v] = 0
+
+    # Reconstruct artifact signal
+    spatial_filter = np.dot(maps, eigenvectors_filtered.T)
+    artefact_data = spatial_filter @ epoch_data
+    cleaned_epoch = epoch_data - artefact_data
+
+    return cleaned_epoch
