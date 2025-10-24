@@ -132,3 +132,5 @@ dmypy.json
 _version.py
 test.py
 test.ipynb
+/validation/*
+/benchmark/*

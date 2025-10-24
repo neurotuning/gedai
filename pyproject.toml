@@ -23,7 +23,7 @@ dependencies = [
   'click',
   'numpy>=1.23,<3',
   'mne>=1.9.0',
-  'pyriemann>=0.8',
+  'h5py',
   'pywavelets>=1.8.0',
   'scikit-learn>=1.6.1',
   'packaging',
@@ -166,7 +166,10 @@ exclude = ['gedai*tests']
 include = ['gedai*']
 
 [tool.setuptools.package-data]
-'gedai' = ['gedai/data/OPENMEEG_BEM_leadfield_4_GEDAI_343_electrodes.mat']
+'gedai' = [
+  'gedai/data/OPENMEEG_BEM_leadfield_4_GEDAI_343_electrodes.mat',
+  'gedai/data/fsavLEADFIELD_4_GEDAI.mat'
+]
 
 [tool.tomlsort]
 all = true

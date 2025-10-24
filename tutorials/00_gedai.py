@@ -6,38 +6,34 @@ This tutorial demonstrates how to use Gedai to fit and transform EEG data.
 """
 
 # %% Import data
-import os
+from mne.io import concatenate_raws, read_raw_edf
+from mne.datasets import eegbci
+from gedai import Gedai
 
-import mne
-
-sample_data_folder = mne.datasets.sample.data_path()
-sample_data_raw_file = os.path.join(
-    sample_data_folder, "MEG", "sample", "sample_audvis_raw.fif"
-)
-raw = mne.io.read_raw_fif(sample_data_raw_file, verbose=False)
-raw.crop(tmax=60).load_data()
-raw.pick([f"EEG 0{n:02}" for n in range(41, 60)])
-raw.set_eeg_reference("average")
-
+subjects = [1]  # may vary
+runs = [4, 8, 12]  # may vary
+raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
+raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
+# concatenate runs from subject
+raw = concatenate_raws(raws)
+# make channel names follow standard conventions
+eegbci.standardize(raw)
+raw.crop(0, 15)
+raw.pick("eeg").load_data().apply_proj()
+raw.set_eeg_reference("average", projection=False)
 # %%
 # Fit the raw data
-
-from gedai.gedai import Gedai
-
 gedai = Gedai()
-gedai.fit_raw(raw, n_jobs=2, noise_multiplier=1.0, verbose=False)
+gedai.fit_raw(raw)
 
 # %%
 # plot
-
 import matplotlib.pyplot as plt
-
-fig, axes = gedai.plot_fit()
+fig = gedai.plot_fit()
 plt.show()
 
 # %%
 # Transforming the raw data
-
 raw_corrected = gedai.transform_raw(raw, verbose=False)
 
 # %%

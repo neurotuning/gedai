@@ -1,38 +1,23 @@
 import numpy as np
+from mne.parallel import parallel_func
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
 
-from mne.parallel import parallel_func
-
 from ..gedai.decompose import clean_epochs
-
-
-def scale_threshold(threshold: float, eigenvalues: np.ndarray) -> float:
-    magnitudes = np.abs(eigenvalues)
-    magnitudes = np.log(magnitudes[magnitudes > 0]) + 100
-    original_data = np.unique(magnitudes)
-    sorted_data = np.sort(original_data)
-    n = len(sorted_data)
-    f = np.arange(1, n + 1) / n
-    cdf = np.interp(sorted_data, original_data, f)
-    outliers = original_data[cdf > 0.95]
-    scaled_threshold = (105 - threshold) / 100 * np.min(outliers)
-    scaled_threshold = np.exp(scaled_threshold - 100)
-    return scaled_threshold
 
 
 def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     """
     Calculate the principal angles (in radians) between two subspaces.
 
-    Parameters:
+    Parameters
     ----------
     A : np.ndarray
         Orthonormal basis for the first subspace (columns = basis vectors).
     B : np.ndarray
         Orthonormal basis for the second subspace.
 
-    Returns:
+    Returns
     -------
     angles_rad : np.ndarray
         Vector of principal angles in radians, sorted in ascending order.
@@ -40,6 +25,9 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     # Ensure inputs are float64
     A = np.asarray(A, dtype=np.float64)
     B = np.asarray(B, dtype=np.float64)
+
+    A, _ = np.linalg.qr(A)
+    B, _ = np.linalg.qr(B)
 
     # Compute the SVD of A.T @ B
     S = np.linalg.svd(A.T @ B, compute_uv=False)
@@ -54,8 +42,26 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return np.sort(angles_rad)
 
 
+def _sensai_to_eigen(sensai_value, eigenvalues):
+    all_diagonals = np.abs(eigenvalues.T.flatten())
+    log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
+    T1 = (105 - sensai_value) / 100
+    threshold1 = T1 * np.percentile(log_eig_val_all, 95)
+    eigenvalue = np.exp(threshold1 - 100)
+    return eigenvalue
+
+
+def _eigen_to_sensai(eigenvalue, eigenvalues):
+    all_diagonals = np.abs(eigenvalues.T.flatten())
+    log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
+    threshold1 = np.log(eigenvalue) + 100
+    T1 = threshold1 / np.percentile(log_eig_val_all, 95)
+    sensai_value = 105 - T1 * 100
+    return sensai_value
+    
+
 def sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
-    epochs_data = epochs.get_data()
+    epochs_data = epochs.get_data(verbose=False)
     epochs_clean, epochs_artefacts = clean_epochs(epochs_data, reference_cov, threshold)
 
     # Top n_pc components of reference_cov
@@ -69,7 +75,7 @@ def sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
     signal_subspace_similarity = np.zeros((len(epochs_data), n_pc))
     noise_subspace_similarity = np.zeros((len(epochs_data), n_pc))
 
-    for e, (epoch_clean_data, epoch_artefact_data) in enumerate(zip(epochs_clean, epochs_artefacts)):
+    for e, (epoch_clean_data, epoch_artefact_data) in enumerate(zip(epochs_clean, epochs_artefacts, strict=False)):
         # Clean signal subspace
         epoch_clean_covariance = np.cov(epoch_clean_data)
         _, epoch_clean_eigenvectors = eigh(epoch_clean_covariance)
@@ -113,14 +119,22 @@ def sensai_gridsearch(epochs, reference_cov, n_pc, noise_multiplier, eigen_thres
     sensai_data = [[eigen_thresholds[r], runs[r][0], runs[r][1], runs[r][2]] for r in range(len(runs))]
     return best_threshold, sensai_data
 
+def sensai_optimize(epochs, reference_cov, n_pc, noise_multiplier, epochs_eigenvalues, bounds):
+    runs = []
 
-def sensai_optimize(epochs, reference_cov, n_pc, noise_multiplier, bounds, n_jobs=1):
-    def objective_function(threshold):
-        score, _, _ = sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier)
+    def objective_function(sensai_threshold):
+        eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
+        score, signal_subspace_similarity, noise_subspace_similarity = sensai_score(epochs, eigen_threshold, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier)
+        runs.append([eigen_threshold, score, signal_subspace_similarity, noise_subspace_similarity])
         return -score
-
+    
     result = minimize_scalar(objective_function, bounds=bounds, method='bounded')
+
     if not result.success:
         raise ValueError("Optimization failed: " + result.message)
-    best_threshold = result.x
-    return best_threshold, None
+
+    sensai_threshold = result.x
+    eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
+    # sort runs
+    runs.sort(key=lambda x: x[0])
+    return eigen_threshold, runs
