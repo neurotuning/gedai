@@ -6,8 +6,12 @@ from scipy.stats import zscore
 from itertools import product
 import random
 import time
-import warnings # Import the warnings module
 import matplotlib.pyplot as plt # Import matplotlib for potential plt.close()
+from joblib import Parallel, delayed
+
+# Import and configure warnings at the top to suppress all output
+import warnings
+warnings.filterwarnings('ignore')
 
 # Import the GEDAI denoising function from the local module
 from pygedai_EEGLAB_denoiser import pygedai_denoise_EEGLAB_data
@@ -155,7 +159,7 @@ def retain_exact_percentage_random_eeg_blocks(data_matrix, percentage_to_keep, m
         gap_lengths = [available_gap_space]
     else:
         # Correctly handle the case where available_gap_space is 0
-        # This logic mirrors MATLAB's randperm(N, K) where N = available_gap_space + k
+        # This logic mirrors MATLAB\'s randperm(N, K) where N = available_gap_space + k
         if available_gap_space + k > 0:
             dividers = np.sort(np.random.choice(np.arange(1, available_gap_space + k + 1), k, replace=False))
             gap_lengths = np.diff(np.concatenate(([0], dividers, [available_gap_space + k + 1]))) - 1
@@ -196,35 +200,145 @@ def retain_exact_percentage_random_eeg_blocks(data_matrix, percentage_to_keep, m
 
     return modified_matrix, kept_column_indices, zeroed_column_indices, actual_block_sizes, actual_k_num_blocks
 
+def process_combination(clean_idx, artifact_idx, clean_eeg_files, artifact_eeg_file_names, artifact_types, ALLEEG1_raw_objects, ALLEEG2_raw_objects, contamination_percent, snr_db, noise_ratio, generate_individual_plots):
+    clean_eeg_file_name = clean_eeg_files[clean_idx]
+    artifact_eeg_file_name = artifact_eeg_file_names[artifact_idx]
+    current_artifact_type = artifact_types[artifact_idx]
+
+    # Get clean EEG data
+    clean_raw = ALLEEG1_raw_objects[clean_idx]
+    ground_truth_data = clean_raw.get_data()
+    srate = clean_raw.info['sfreq']
+    ch_names = clean_raw.info['ch_names'] # Get channel names for GEDAI
+
+    # Z-score clean data (MATLAB\'s zscore(data(:)) z-scores the entire flattened array)
+    ground_truth_data_zscored = zscore(ground_truth_data.flatten()).reshape(ground_truth_data.shape)
+
+    # Get artifact data
+    artifact_raw = ALLEEG2_raw_objects[artifact_idx]
+    artifact_raw_data = artifact_raw.get_data()
+    
+    # Ensure artifact data has same number of channels as clean data
+    if artifact_raw_data.shape[0] != ground_truth_data.shape[0]:
+        n_channels_clean = ground_truth_data.shape[0]
+        n_channels_artifact = artifact_raw_data.shape[0]
+        if n_channels_artifact > n_channels_clean:
+            artifact_raw_data = artifact_raw_data[:n_channels_clean, :]
+        elif n_channels_artifact < n_channels_clean:
+            #print(f"Warning: Artifact data '{artifact_eeg_file_name}' has fewer channels ({n_channels_artifact}) than clean data ({n_channels_clean}). Padding with zeros.")
+            padded_artifact = np.zeros((n_channels_clean, artifact_raw_data.shape[1]))
+            padded_artifact[:n_channels_artifact, :] = artifact_raw_data
+            artifact_raw_data = padded_artifact
+    
+    # Ensure artifact data has same number of samples as clean data
+    if artifact_raw_data.shape[1] != ground_truth_data.shape[1]:
+        n_samples_clean = ground_truth_data.shape[1]
+        n_samples_artifact = artifact_raw_data.shape[1]
+        if n_samples_artifact > n_samples_clean:
+            artifact_raw_data = artifact_raw_data[:, :n_samples_clean]
+        elif n_samples_artifact < n_samples_clean:
+            #print(f"Warning: Artifact data '{artifact_eeg_file_name}' has fewer samples ({n_samples_artifact}) than clean data ({n_samples_clean}). Padding with zeros.")
+            padded_artifact = np.zeros((artifact_raw_data.shape[0], n_samples_clean))
+            padded_artifact[:, :n_samples_artifact] = artifact_raw_data
+            artifact_raw_data = padded_artifact
+
+    # Apply temporal contamination to artifact data
+    min_block_size_samples = 1
+    max_block_size_samples = int(1 * srate) # 1 second
+    
+    contaminated_artifact_data, kept_indices, _, _, _ = \
+        retain_exact_percentage_random_eeg_blocks(
+            artifact_raw_data, contamination_percent,
+            min_block_size_samples, max_block_size_samples
+        )
+    
+    # Inconsistency Fix: Match MATLAB\'s artifact scaling logic.
+    # Z-score and scale ONLY the non-zero, contaminated portions of the artifact data.
+    artifact_data_scaled = np.zeros_like(contaminated_artifact_data)
+    if kept_indices.size > 0:
+        # Select only the non-zero parts for z-scoring
+        temp_data = contaminated_artifact_data[:, kept_indices]
+        
+        if np.std(temp_data) > 0:
+            # Z-score the flattened temp_data and reshape back
+            scaled_temp_data = noise_ratio * zscore(temp_data.flatten()).reshape(temp_data.shape)
+            # Place the scaled data back into the corresponding columns
+            artifact_data_scaled[:, kept_indices] = scaled_temp_data
+    else:
+        # If there are no kept indices, artifact_data_scaled remains all zeros
+        pass
+
+    # Mix data
+    mixed_data = ground_truth_data_zscored + artifact_data_scaled
+
+    # --- RUN GEDAI ---
+    start_time = time.time()
+    denoised_data_gedai = pygedai_denoise_EEGLAB_data(mixed_data, srate, ch_names)
+    end_time = time.time()
+    time_gedai = end_time - start_time
+
+    # --- Plotting (if enabled) ---
+    if generate_individual_plots:
+        # Create MNE RawArray objects for plotting the mixed and denoised data
+        # The info object needs to be created for each RawArray
+        info_mixed = mne.create_info(ch_names=ch_names, sfreq=srate, ch_types=["eeg"] * len(ch_names))
+        raw_mixed = mne.io.RawArray(mixed_data, info_mixed, verbose=False)
+
+        info_denoised = mne.create_info(ch_names=ch_names, sfreq=srate, ch_types=["eeg"] * len(ch_names))
+        raw_denoised = mne.io.RawArray(denoised_data_gedai, info_denoised, verbose=False)
+
+        plot_title = (
+            f"SNR: {snr_db}dB, Contam: {contamination_percent}%, "
+            f"Clean: {clean_eeg_file_name}, Artifact: {artifact_eeg_file_name}"
+        )
+        #print(f"Displaying plot for: {plot_title}")
+        plot_mne_style_overlay_interactive(raw_mixed, raw_denoised, title=plot_title)
+        # plt.close('all') # Uncomment to automatically close plots after interaction
+
+    # Calculate metrics
+    gedai_correlation = correlation_coefficient(ground_truth_data_zscored, denoised_data_gedai)
+    gedai_rrmse = relative_RMSE(ground_truth_data_zscored, denoised_data_gedai)
+    gedai_snr = sig_to_noise(ground_truth_data_zscored, denoised_data_gedai)
+
+    # Store results
+    return {
+        'clean_EEG_file': clean_eeg_file_name,
+        'artifact_file': artifact_eeg_file_name,
+        'artifact': current_artifact_type,
+        'temporal_contamination': str(contamination_percent),
+        'signal_to_noise': str(snr_db),
+        'Algorithm': 'GEDAI',
+        'Correlation': gedai_correlation,
+        'RRMSE': gedai_rrmse,
+        'SNR': gedai_snr,
+        'time': time_gedai
+    }
 
 # --- Main Benchmark Script Logic ---
 
 if __name__ == "__main__":
     # Configuration parameters
     contaminated_signal_proportion = [100]  # percent of epochs temporally contaminated
-    signal_to_noise_in_db = [-9]  # initial data signal-to-noise ratio in decibels
+    signal_to_noise_in_db = [-9, -6, -3, 0]  # initial data signal-to-noise ratio in decibels
     
     # Set to True to display interactive plots for each combination (will pause execution)
-    generate_individual_plots = True
-
-    # Suppress all warnings for cleaner output during benchmark
-    warnings.filterwarnings('ignore')
+    generate_individual_plots = False
 
     # Data directories (adjust these paths as needed)
     # Assuming the script is run from the pyGEDAI directory
     base_dir = os.path.dirname(os.path.abspath(__file__))
     # Construct paths relative to the pyGEDAI directory using raw strings to handle backslashes
-    clean_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\CLEAN EEG'
-    artifact_eeg_dir = r'C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\ARTIFACTS\NOISE EOG EMG'
+    clean_eeg_dir = r'C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\CLEAN EEG'
+    artifact_eeg_dir = r'C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\ARTIFACTS'
 
-    # For demonstration, let's use placeholder paths if the full path doesn't exist
+    # For demonstration, let\'s use placeholder paths if the full path doesn\'t exist
     # In a real scenario, these should point to actual data.
     if not os.path.exists(clean_eeg_dir):
         print(f"Warning: Clean EEG directory not found at {clean_eeg_dir}. Using a hardcoded placeholder path. Please update if incorrect.")
-        clean_eeg_dir = r"C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\CLEAN EEG"
+        clean_eeg_dir = r"C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\CLEAN EEG"
     if not os.path.exists(artifact_eeg_dir):
         print(f"Warning: Artifact EEG directory not found at {artifact_eeg_dir}. Using a hardcoded placeholder path. Please update if incorrect.")
-        artifact_eeg_dir = r"C:\Users\Ros\Documents\EEG data\new 4GEDAI paper\DENOISING SIMULATIONS\EMPIRICAL analysis\ARTIFACTS\EMG"
+        artifact_eeg_dir = r"C:\\Users\\Ros\\Documents\\EEG data\\new 4GEDAI paper\\DENOISING SIMULATIONS\\EMPIRICAL analysis\\ARTIFACTS\\EMG"
 
 
     just_testing = False
@@ -272,7 +386,7 @@ if __name__ == "__main__":
     # Main benchmark loop
     print("Starting benchmark...")
     for n_idx, snr_db in enumerate(signal_to_noise_in_db):
-        print(f"\nProcessing SNR: {snr_db} dB")
+        print(f"\\nProcessing SNR: {snr_db} dB")
         # Convert SNR from dB (a power ratio) to a linear power ratio.
         # SNR_dB = 10 * log10(P_signal / P_noise) => P_signal / P_noise = 10^(SNR_dB / 10)
         snr_linear_power_ratio = 10**(snr_db / 10)
@@ -293,175 +407,101 @@ if __name__ == "__main__":
             else:
                 mixing_combinations = list(product(range(files_in_group1), range(files_in_group2)))
 
-            # Loop through different artifact types/clean EEG combinations
-            for m_idx, (clean_idx, artifact_idx) in enumerate(mixing_combinations):
-                clean_eeg_file_name = clean_eeg_files[clean_idx]
-                artifact_eeg_file_name = artifact_eeg_file_names[artifact_idx]
-                current_artifact_type = artifact_types[artifact_idx]
+            # Parallel processing of mixing combinations
+            print(f"  Running {len(mixing_combinations)} combinations in parallel...")
+            results = Parallel(n_jobs=-1)(delayed(process_combination)(
+                clean_idx, artifact_idx,
+                clean_eeg_files, artifact_eeg_file_names, artifact_types,
+                ALLEEG1_raw_objects, ALLEEG2_raw_objects,
+                contamination_percent, snr_db, noise_ratio, generate_individual_plots
+            ) for clean_idx, artifact_idx in mixing_combinations)
 
-                print(f"    Processing combination {m_idx+1}/{len(mixing_combinations)}: {clean_eeg_file_name} + {artifact_eeg_file_name}")
-
-                # Get clean EEG data
-                clean_raw = ALLEEG1_raw_objects[clean_idx]
-                ground_truth_data = clean_raw.get_data()
-                srate = clean_raw.info['sfreq']
-                ch_names = clean_raw.info['ch_names'] # Get channel names for GEDAI
-
-                # Z-score clean data (MATLAB's zscore(data(:)) z-scores the entire flattened array)
-                ground_truth_data_zscored = zscore(ground_truth_data.flatten()).reshape(ground_truth_data.shape)
-
-                # Get artifact data
-                artifact_raw = ALLEEG2_raw_objects[artifact_idx]
-                artifact_raw_data = artifact_raw.get_data()
-                
-                # Ensure artifact data has same number of channels as clean data
-                if artifact_raw_data.shape[0] != ground_truth_data.shape[0]:
-                    n_channels_clean = ground_truth_data.shape[0]
-                    n_channels_artifact = artifact_raw_data.shape[0]
-                    if n_channels_artifact > n_channels_clean:
-                        artifact_raw_data = artifact_raw_data[:n_channels_clean, :]
-                    elif n_channels_artifact < n_channels_clean:
-                        print(f"Warning: Artifact data '{artifact_eeg_file_name}' has fewer channels ({n_channels_artifact}) than clean data ({n_channels_clean}). Padding with zeros.")
-                        padded_artifact = np.zeros((n_channels_clean, artifact_raw_data.shape[1]))
-                        padded_artifact[:n_channels_artifact, :] = artifact_raw_data
-                        artifact_raw_data = padded_artifact
-                
-                # Ensure artifact data has same number of samples as clean data
-                if artifact_raw_data.shape[1] != ground_truth_data.shape[1]:
-                    n_samples_clean = ground_truth_data.shape[1]
-                    n_samples_artifact = artifact_raw_data.shape[1]
-                    if n_samples_artifact > n_samples_clean:
-                        artifact_raw_data = artifact_raw_data[:, :n_samples_clean]
-                    elif n_samples_artifact < n_samples_clean:
-                        print(f"Warning: Artifact data '{artifact_eeg_file_name}' has fewer samples ({n_samples_artifact}) than clean data ({n_samples_clean}). Padding with zeros.")
-                        padded_artifact = np.zeros((artifact_raw_data.shape[0], n_samples_clean))
-                        padded_artifact[:, :n_samples_artifact] = artifact_raw_data
-                        artifact_raw_data = padded_artifact
-
-                # Apply temporal contamination to artifact data
-                min_block_size_samples = 1
-                max_block_size_samples = int(1 * srate) # 1 second
-                
-                contaminated_artifact_data, kept_indices, _, _, _ = \
-                    retain_exact_percentage_random_eeg_blocks(
-                        artifact_raw_data, contamination_percent,
-                        min_block_size_samples, max_block_size_samples
-                    )
-                
-                # Inconsistency Fix: Match MATLAB's artifact scaling logic.
-                # Z-score and scale ONLY the non-zero, contaminated portions of the artifact data.
-                artifact_data_scaled = np.zeros_like(contaminated_artifact_data)
-                if kept_indices.size > 0:
-                    # Select only the non-zero parts for z-scoring
-                    temp_data = contaminated_artifact_data[:, kept_indices]
-                    
-                    if np.std(temp_data) > 0:
-                        # Z-score the flattened temp_data and reshape back
-                        scaled_temp_data = noise_ratio * zscore(temp_data.flatten()).reshape(temp_data.shape)
-                        # Place the scaled data back into the corresponding columns
-                        artifact_data_scaled[:, kept_indices] = scaled_temp_data
-                else:
-                    # If there are no kept indices, artifact_data_scaled remains all zeros
-                    pass
-
-                # Mix data
-                mixed_data = ground_truth_data_zscored + artifact_data_scaled
-
-                # --- RUN GEDAI ---
-                start_time = time.time()
-                denoised_data_gedai = pygedai_denoise_EEGLAB_data(mixed_data, srate, ch_names)
-                end_time = time.time()
-                time_gedai = end_time - start_time
-
-                # --- Plotting (if enabled) ---
-                if generate_individual_plots:
-                    # Create MNE RawArray objects for plotting the mixed and denoised data
-                    # The info object needs to be created for each RawArray
-                    info_mixed = mne.create_info(ch_names=ch_names, sfreq=srate, ch_types=["eeg"] * len(ch_names))
-                    raw_mixed = mne.io.RawArray(mixed_data, info_mixed, verbose=False)
-
-                    info_denoised = mne.create_info(ch_names=ch_names, sfreq=srate, ch_types=["eeg"] * len(ch_names))
-                    raw_denoised = mne.io.RawArray(denoised_data_gedai, info_denoised, verbose=False)
-
-                    plot_title = (f"SNR: {snr_db}dB, Contam: {contamination_percent}%, "
-                                  f"Clean: {clean_eeg_file_name}, Artifact: {artifact_eeg_file_name}")
-                    print(f"Displaying plot for: {plot_title}")
-                    plot_mne_style_overlay_interactive(raw_mixed, raw_denoised, title=plot_title)
-                    # plt.close('all') # Uncomment to automatically close plots after interaction
-
-                # Calculate metrics
-                gedai_correlation = correlation_coefficient(ground_truth_data_zscored, denoised_data_gedai)
-                gedai_rrmse = relative_RMSE(ground_truth_data_zscored, denoised_data_gedai)
-                gedai_snr = sig_to_noise(ground_truth_data_zscored, denoised_data_gedai)
-
-                # Store results
+            # Process results
+            for result in results:
                 new_row_correlation = {
-                    'clean_EEG_file': clean_eeg_file_name,
-                    'artifact_file': artifact_eeg_file_name,
-                    'artifact': current_artifact_type,
-                    'temporal_contamination': str(contamination_percent),
-                    'signal_to_noise': str(snr_db),
-                    'Algorithm': 'GEDAI',
-                    'Correlation': gedai_correlation
+                    'clean_EEG_file': result['clean_EEG_file'],
+                    'artifact_file': result['artifact_file'],
+                    'artifact': result['artifact'],
+                    'temporal_contamination': result['temporal_contamination'],
+                    'signal_to_noise': result['signal_to_noise'],
+                    'Algorithm': result['Algorithm'],
+                    'Correlation': result['Correlation']
                 }
                 results_correlation = pd.concat([results_correlation, pd.DataFrame([new_row_correlation])], ignore_index=True)
 
                 new_row_rrmse = {
-                    'clean_EEG_file': clean_eeg_file_name,
-                    'artifact_file': artifact_eeg_file_name,
-                    'artifact': current_artifact_type,
-                    'temporal_contamination': str(contamination_percent),
-                    'signal_to_noise': str(snr_db),
-                    'Algorithm': 'GEDAI',
-                    'RRMSE': gedai_rrmse
+                    'clean_EEG_file': result['clean_EEG_file'],
+                    'artifact_file': result['artifact_file'],
+                    'artifact': result['artifact'],
+                    'temporal_contamination': result['temporal_contamination'],
+                    'signal_to_noise': result['signal_to_noise'],
+                    'Algorithm': result['Algorithm'],
+                    'RRMSE': result['RRMSE']
                 }
                 results_rrmse = pd.concat([results_rrmse, pd.DataFrame([new_row_rrmse])], ignore_index=True)
 
                 new_row_snr = {
-                    'clean_EEG_file': clean_eeg_file_name,
-                    'artifact_file': artifact_eeg_file_name,
-                    'artifact': current_artifact_type,
-                    'temporal_contamination': str(contamination_percent),
-                    'signal_to_noise': str(snr_db),
-                    'Algorithm': 'GEDAI',
-                    'SNR': gedai_snr
+                    'clean_EEG_file': result['clean_EEG_file'],
+                    'artifact_file': result['artifact_file'],
+                    'artifact': result['artifact'],
+                    'temporal_contamination': result['temporal_contamination'],
+                    'signal_to_noise': result['signal_to_noise'],
+                    'Algorithm': result['Algorithm'],
+                    'SNR': result['SNR']
                 }
                 results_snr = pd.concat([results_snr, pd.DataFrame([new_row_snr])], ignore_index=True)
 
                 new_row_time = {
-                    'clean_EEG_file': clean_eeg_file_name,
-                    'artifact_file': artifact_eeg_file_name,
-                    'artifact': current_artifact_type,
-                    'temporal_contamination': str(contamination_percent),
-                    'signal_to_noise': str(snr_db),
-                    'Algorithm': 'GEDAI',
-                    'time': time_gedai
+                    'clean_EEG_file': result['clean_EEG_file'],
+                    'artifact_file': result['artifact_file'],
+                    'artifact': result['artifact'],
+                    'temporal_contamination': result['temporal_contamination'],
+                    'signal_to_noise': result['signal_to_noise'],
+                    'Algorithm': result['Algorithm'],
+                    'time': result['time']
                 }
                 results_time = pd.concat([results_time, pd.DataFrame([new_row_time])], ignore_index=True)
 
-    #print("\nBenchmark finished. Results:")
-    #print("\nCorrelation Results:")
+    #print("\\nBenchmark finished. Results:")
+    #print("\\nCorrelation Results:")
     #print(results_correlation.head())
-    #print("\nRRMSE Results:")
+    #print("\\nRRMSE Results:")
     #print(results_rrmse.head())
-    #print("\nSNR Results:")
+    #print("\\nSNR Results:")
     #print(results_snr.head())
-    #print("\nTime Results:")
+    #print("\\nTime Results:")
     #print(results_time.head())
-    print("\nBenchmark finished. Aggregated Results (Mean ± Std Dev):")
+    print("\\nBenchmark finished. Aggregated Results (Median (IQR)):")
+
+    # Define a function to calculate Interquartile Range (IQR)
+    def iqr(x):
+        return x.quantile(0.75) - x.quantile(0.25)
+
+    print("\\n--- Correlation ---")
+    print(results_correlation.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['median', iqr]))
+
+    print("\\n--- RRMSE ---")
+    print(results_rrmse.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['median', iqr]))
+
+    print("\\n--- SNR ---")
+    print(results_snr.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['median', iqr]))
+
+    print("\\n--- Time (seconds) ---")
+    print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['median', iqr]))
+
+    print("\n\n--- Overall Aggregated Results (Median (IQR)) across all conditions ---")
 
     print("\n--- Correlation ---")
-    print(results_correlation.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['Correlation'].agg(['mean', 'std']))
+    print(results_correlation.groupby('Algorithm')['Correlation'].agg(['median', iqr]))
 
     print("\n--- RRMSE ---")
-    print(results_rrmse.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['RRMSE'].agg(['mean', 'std']))
+    print(results_rrmse.groupby('Algorithm')['RRMSE'].agg(['median', iqr]))
 
     print("\n--- SNR ---")
-    print(results_snr.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['SNR'].agg(['mean', 'std']))
+    print(results_snr.groupby('Algorithm')['SNR'].agg(['median', iqr]))
 
     print("\n--- Time (seconds) ---")
-    print(results_time.groupby(['Algorithm', 'artifact', 'temporal_contamination', 'signal_to_noise'])['time'].agg(['mean', 'std']))
-
+    print(results_time.groupby('Algorithm')['time'].agg(['median', iqr]))
 
     # Save results to CSV
     results_correlation.to_csv("gedai_benchmark_correlation.csv", index=False)
