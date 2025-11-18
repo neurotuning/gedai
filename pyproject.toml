@@ -155,7 +155,7 @@ convention = 'numpy'
 ignore-decorators = ["gedai.utils._docs.copy_doc"]
 
 [tool.setuptools]
-include-package-data = false
+include-package-data = true
 
 [tool.setuptools_scm]
 version_file = "gedai/_version.py"
