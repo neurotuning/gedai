@@ -167,7 +167,7 @@ class Gedai():
         check_type(noise_multiplier, (float,), 'noise_multiplier')
         n_jobs = _check_n_jobs(n_jobs)
 
-        mat = os.path.join(os.path.dirname(__file__), '../../gedai/data/fsavLEADFIELD_4_GEDAI.mat')
+        mat = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../gedai/data/fsavLEADFIELD_4_GEDAI.mat'))
         reference_cov, ch_names = compute_refcov(epochs, mat)
 
         # Tikhonov Regularization based on average diagonal power 
