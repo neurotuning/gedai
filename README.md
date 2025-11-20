@@ -10,7 +10,7 @@ For more details about the GEDAI algorithm, please refer to the [MATLAB implemen
 
 ## Documentation
 
-Detailed documentation can be found on : [pyGEDAI website](https://neurotuning.github.io/pyGEDAI).
+Detailed documentation can be found on [pyGEDAI website](https://neurotuning.github.io/pyGEDAI).
 
 ## 📜 Citation
 
