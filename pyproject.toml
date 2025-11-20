@@ -66,6 +66,7 @@ doc = [
   'sphinx-gallery',
   'sphinx-issues',
   'sphinxcontrib-bibtex',
+  'myst_parser',
 ]
 full = [
   'gedai[all]',

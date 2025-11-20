@@ -51,6 +51,7 @@ extensions = [
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
     "sphinx_issues",
+    "myst_parser",
 ]
 
 templates_path = ["_templates"]
