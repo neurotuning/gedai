@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import eigh
 
 
-def clean_epochs(epochs_data, reference_cov, threshold):
+def _clean_epochs(epochs_data, reference_cov, threshold):
     # Reconstruct data
     cleaned_epochs = np.zeros_like(epochs_data)
     artefact_epochs = np.zeros_like(epochs_data)
@@ -28,4 +28,4 @@ def clean_epochs(epochs_data, reference_cov, threshold):
         artefact_epochs[e] = artefact_data
         cleaned_epochs[e] = epoch_data - artefact_data
 
-    return(cleaned_epochs, artefact_epochs)
+    return (cleaned_epochs, artefact_epochs)

@@ -50,25 +50,33 @@ del key
 # -- L ---------------------------------------------------------------------------------
 # -- M ---------------------------------------------------------------------------------
 # -- N ---------------------------------------------------------------------------------
-docdict["noise_multiplier"] = """
+docdict[
+    "noise_multiplier"
+] = """
 noise_multiplier : float
     The noise multiplier to use for artefact threshold rejection optimization."""
 # -- O ---------------------------------------------------------------------------------
 # -- P ---------------------------------------------------------------------------------
 # -- Q ---------------------------------------------------------------------------------
 # -- R ---------------------------------------------------------------------------------
-docdict["reference_cov"] = """
+docdict[
+    "reference_cov"
+] = """
 reference_cov : str
     The reference covariance to use. Only 'leadfield' is supported for now."""
 # -- S ---------------------------------------------------------------------------------
-docdict["sensai_method"] = """
+docdict[
+    "sensai_method"
+] = """
 sensai_method : str
     The method to use for threshold optimization. Can be 'gridsearch' or
     'optimize'. The default is 'optimize'."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------
-docdict["verbose"] = """
+docdict[
+    "verbose"
+] = """
 verbose : int | str | bool | None
     Sets the verbosity level. The verbosity increases gradually between ``"CRITICAL"``,
     ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``. If None is provided, the

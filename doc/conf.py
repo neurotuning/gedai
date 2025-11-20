@@ -51,6 +51,7 @@ extensions = [
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
     "sphinx_issues",
+    "myst_parser",
 ]
 
 templates_path = ["_templates"]
@@ -84,10 +85,11 @@ html_title = project
 # Documentation to change footer icons:
 # https://pradyunsg.me/furo/customisation/footer/#changing-footer-icons
 html_theme_options = {
-    "footer_start": ["copyright"
-        ],
+    "footer_start": ["copyright"],
     "announcement": (
-        "This project is in early development and has not yet reached a stable release. Use for testing only."
+        "This project is in early development,"
+        " and has not yet reached a stable version"
+        " Use for testing only."
     ),
     "icon_links": [
         {
@@ -95,7 +97,7 @@ html_theme_options = {
             "url": gh_url,
             "icon": "fab fa-github-square",
         },
-    ]
+    ],
 }
 
 html_show_sourcelink = False
@@ -117,11 +119,22 @@ autoclass_content = "class"
 
 # -- intersphinx -----------------------------------------------------------------------
 intersphinx_mapping = get_intersphinx_mapping(
-    packages={"joblib", "matplotlib", "mne", "numpy", "pandas", "python", "scipy", "sklearn"},
+    packages={
+        "joblib",
+        "matplotlib",
+        "mne",
+        "numpy",
+        "pandas",
+        "python",
+        "scipy",
+        "sklearn",
+    },
 )
-intersphinx_mapping.update({
-    'pywt': ('https://pywavelets.readthedocs.io/en/latest/', None),
-})
+intersphinx_mapping.update(
+    {
+        "pywt": ("https://pywavelets.readthedocs.io/en/latest/", None),
+    }
+)
 intersphinx_timeout = 5
 
 # -- sphinx-issues ---------------------------------------------------------------------

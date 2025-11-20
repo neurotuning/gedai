@@ -4,8 +4,8 @@ import pywt
 
 def modwt(data, wavelet_type, level):
     """
-    Performs MODWT using PyWavelets (pywt.swt), matching MATLAB coefficient order.
-    
+    PerformsMODWT using PyWavelets (pywt.swt), matching MATLAB coefficient order.
+
     Input: data (Samples x Channels)
     Output: (Bands x Samples x Channels). Order: [W1, ..., WJ, VJ].
     """
@@ -23,9 +23,7 @@ def modwt(data, wavelet_type, level):
         try:
             coeffs = pywt.swt(data[:, i], wavelet_type, level=level, norm=True, axis=0)
         except TypeError:
-            # print("Warning: PyWavelets version might not support norm=True. Results may differ from MATLAB MODWT.")
             coeffs = pywt.swt(data[:, i], wavelet_type, level=level, axis=0)
-
 
         # Reformat to MATLAB convention [W1, ..., WJ, VJ]
 
@@ -33,8 +31,8 @@ def modwt(data, wavelet_type, level):
         VJ = coeffs[0][0]
 
         # 2. Extract Details W1 to WJ (cD1 to cDJ)
-        details = [c[1] for c in coeffs] # [cDJ, ..., cD1]
-        details.reverse() # [cD1, ..., cDJ]
+        details = [c[1] for c in coeffs]  # [cDJ, ..., cD1]
+        details.reverse()  # [cD1, ..., cDJ]
 
         # 3. Combine
         matlab_order_coeffs = details + [VJ]
@@ -42,10 +40,11 @@ def modwt(data, wavelet_type, level):
 
     return wpt
 
+
 def modwtmra(wpt, wavelet_type):
     """
-    Performs MODWTMRA (Multiresolution Analysis) using PyWavelets (pywt.iswt).
-    
+    Perform MODWTMRA (Multiresolution Analysis) using PyWavelets (pywt.iswt).
+
     Input/Output: (Bands x Samples x Channels). Order: [D1, ..., DJ, AJ].
     """
     if wpt.ndim == 2:
@@ -60,10 +59,6 @@ def modwtmra(wpt, wavelet_type):
 
         # MRA: Isolate one band (j) and reconstruct
         for j in range(n_bands):
-            # j is the index of the band to isolate (0=W1, ..., L=VJ)
-
-            # 1. Prepare the structure for pywt.iswt: [(cAJ, cDJ), ..., (cA1, cD1)]
-            # Create a list of coefficient tuples for iswt, replacing None with zero arrays.
             isolated_swt_structure = []
 
             # Iterate from highest level (J) down to 1 (to match pywt order)
@@ -78,13 +73,15 @@ def modwtmra(wpt, wavelet_type):
 
                 # If we are at the highest level and reconstructing VJ, set cA_k
                 if k == level and j == level:
-                   cA_k = channel_coeffs[j]
+                    cA_k = channel_coeffs[j]
 
                 isolated_swt_structure.append((cA_k, cD_k))
 
-            # 2. Inverse SWT (ISWT/IMODWT). CRITICAL: Must use norm=True if used in forward transform.
+            # 2. Inverse SWT (ISWT/IMODWT).
             try:
-                mra[j, :, i] = pywt.iswt(isolated_swt_structure, wavelet_type, norm=True)
+                mra[j, :, i] = pywt.iswt(
+                    isolated_swt_structure, wavelet_type, norm=True
+                )
             except TypeError:
                 mra[j, :, i] = pywt.iswt(isolated_swt_structure, wavelet_type)
 
