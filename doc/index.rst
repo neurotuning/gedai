@@ -11,7 +11,7 @@
    :maxdepth: 0
 
    self
-   install
+   install/index
    api/index
    generated/tutorials/index
    license/index

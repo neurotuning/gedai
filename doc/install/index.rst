@@ -1,4 +1,5 @@
-.. include:: links.inc
+.. _install:
+.. include:: ../links.inc
 
 Install
 =======
