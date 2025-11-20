@@ -30,6 +30,7 @@ If you wish to use this software in a commercial or proprietary application with
 
 For any questions or enquiries, please contact:
 Tomas Ros - tomas.ros@unige.ch
+Victor Férat: victor.ferat@fcbg.ch
 
 ## Acknowledgements
 We are gratefully supported by the Center for Biomedical Imaging (CIBM), the Swiss National Science Foundation (SNSF), Unitec and the M/EEG & NMOD Platform, Fondation Campus Biotech Geneva, Geneva,.
