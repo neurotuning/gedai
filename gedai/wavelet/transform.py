@@ -8,7 +8,7 @@ from ._modwt import modwt, modwtmra
 
 def _process_epoch_wavelet(epoch_data, wavelet, level):
     """Process a single epoch with wavelet transform.
-    
+
     Parameters
     ----------
     epoch_data : np.ndarray
@@ -17,7 +17,7 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
         The type of wavelet to use.
     level : int
         The level of decomposition.
-    
+
     Returns
     -------
     transformed_epoch : np.ndarray
@@ -33,6 +33,7 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
         transformed_epoch[c, :, :] = modwtmra_data
 
     return transformed_epoch
+
 
 @fill_doc
 def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
@@ -53,9 +54,6 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
     -------
     transformed_data : np.ndarray
         The transformed data with shape (n_epochs, n_channels, level+1, n_times).
-        When level=0: returns original data with shape (n_epochs, n_channels, 1, n_times).
-        When level>0: Index 0 corresponds to approximation (lowest frequencies),
-                      Indices 1 to level correspond to details from coarse to fine.
     freq_bands : list of tuple
         Frequency bands for each component, ordered to match transformed_data.
     levels : int
@@ -65,7 +63,7 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
 
     epochs_data = epochs.get_data()  # shape (n_epochs, n_channels, n_times)
     n_epochs, n_channels, n_times = epochs_data.shape
-    sfreq = epochs.info['sfreq']
+    sfreq = epochs.info["sfreq"]
 
     if level == 0:
         # No wavelet decomposition - return original data as single band
@@ -73,8 +71,6 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
         freq_bands = [(0, sfreq / 2)]
         levels = 0
     else:
-        # Calculate frequency bands matching MODWT MRA output order
-        # MODWT MRA returns: [approximation, detail_level, detail_level-1, ..., detail_1]
         freq_bands = []
 
         # Approximation (index 0): lowest frequencies
@@ -83,7 +79,7 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
         # Details (indices 1 to level): from coarse to fine
         for i in range(level, 0, -1):
             fmin = sfreq / (2 ** (i + 1))
-            fmax = sfreq / (2 ** i)
+            fmax = sfreq / (2**i)
             freq_bands.append((fmin, fmax))
 
         # Parallelize the wavelet transform across epochs
@@ -96,12 +92,10 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
             # Parallel processing using MNE's parallel_func
             parallel, p_fun, n_jobs = parallel_func(_process_epoch_wavelet, n_jobs)
             transformed_epochs = parallel(
-                p_fun(epoch, wavelet, level)
-                for epoch in epochs_data
+                p_fun(epoch, wavelet, level) for epoch in epochs_data
             )
             transformed_data = np.array(transformed_epochs)
 
         levels = level
 
     return transformed_data, freq_bands, levels
-

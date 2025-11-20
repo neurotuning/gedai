@@ -1,2 +1,2 @@
-from .decompose import clean_epochs
+from .decompose import _clean_epochs
 from .gedai import Gedai

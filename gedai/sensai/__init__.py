@@ -1,1 +1,1 @@
-from .sensai import sensai_gridsearch, sensai_score
+from .sensai import _sensai_gridsearch, _sensai_score
