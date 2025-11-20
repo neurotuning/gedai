@@ -1,23 +1,24 @@
 import os
-import numpy as np
+
+import matplotlib.pyplot as plt
 import mne
+import numpy as np
 from mne import BaseEpochs
 from mne.io import BaseRaw
 from mne.parallel import parallel_func
-
-import matplotlib.pyplot as plt
-
 from scipy.linalg import eigh
 
-from typing import Optional
-from ..utils._checks import check_type, _check_n_jobs
+from ..sensai.sensai import (
+    _eigen_to_sensai,
+    _sensai_to_eigen,
+    sensai_gridsearch,
+    sensai_optimize,
+)
+from ..utils._checks import _check_n_jobs, check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger
-
 from ..wavelet.transform import epochs_to_wavelet
-from .decompose import clean_epochs
 from .covariances import compute_refcov
-from ..sensai.sensai import _sensai_to_eigen, _eigen_to_sensai, sensai_gridsearch, sensai_optimize
 
 
 def create_cosine_weights(n_samples):
@@ -39,13 +40,12 @@ def compute_required_duration(wavelet_level, sfreq):
     
     Returns
     -------
-
     duration : float
         Minimum duration in seconds required for the wavelet level.
     """
     if wavelet_level == 0:
         return 1.0  # Default for no decomposition
-    
+
     # For SWT, minimum length is 2^(level+1)
     min_samples = 2 ** (wavelet_level + 1)
     duration = min_samples / sfreq
@@ -77,13 +77,13 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     if wavelet_level == 0:
         # No constraint for level 0
         return target_duration, int(target_duration * sfreq)
-    
+
     # Convert target duration to samples
     target_samples = int(target_duration * sfreq)
-    
+
     # For SWT at level L, length must be divisible by 2^L
     divisor = 2 ** wavelet_level
-    
+
     # Find the smallest valid number of samples >= target_samples.
     # A valid number of samples must be a multiple of the divisor.
     if target_samples % divisor == 0:
@@ -91,14 +91,14 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     else:
         # If not a multiple, round up to the next multiple of the divisor.
         valid_samples = ((target_samples // divisor) + 1) * divisor
-    
+
     # Ensure we meet minimum length requirement (2^(level+1))
     min_samples = 2 ** (wavelet_level + 1)
     if valid_samples < min_samples:
         valid_samples = min_samples
-    
+
     valid_duration = valid_samples / sfreq
-    
+
     return valid_duration, valid_samples
 
 
@@ -115,7 +115,7 @@ def check_reference_cov(reference_cov):
 
 
 @fill_doc
-class Gedai():
+class Gedai:
     r"""Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
 
     Parameters
@@ -148,7 +148,7 @@ class Gedai():
                     sensai_method: str = 'optimize',
                     noise_multiplier: float = 3.0,
                     n_jobs: int = None,
-                    verbose: Optional[str] = None):
+                    verbose: str | None = None):
         """Fit the GEDAI model to the epochs data.
 
         Parameters
@@ -170,7 +170,7 @@ class Gedai():
         mat = os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/fsavLEADFIELD_4_GEDAI.mat'))
         reference_cov, ch_names = compute_refcov(epochs, mat)
 
-        # Tikhonov Regularization based on average diagonal power 
+        # Tikhonov Regularization based on average diagonal power
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
         epsilon = regularization_lambda * avg_diag_power
@@ -178,10 +178,10 @@ class Gedai():
 
         # Broadband data
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs)
-        
+
         # Store the actual levels used for consistency in transform
         self.levels_used = levels
-        
+
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -191,7 +191,7 @@ class Gedai():
                 covariance = np.cov(wavelet_epoch_data)
                 eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
                 epochs_eigenvalues[e] = eigenvalues
-  
+
             wavelet_epochs = mne.EpochsArray(wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False)
             min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
             n_pc = 3
@@ -221,12 +221,12 @@ class Gedai():
                 raw: BaseRaw,
                 duration: float = 1.0,
                 overlap: float = 0.5,
-                reject_by_annotation: Optional[bool] = False,
+                reject_by_annotation: bool | None = False,
                 reference_cov: str = 'leadfield',
                 sensai_method: str = 'optimize', # Changed default to 'optimize'
                 noise_multiplier: float = 3.0,
                 n_jobs: int = None,
-                verbose: Optional[str] = None):
+                verbose: str | None = None):
         """Fit the GEDAI model to the raw data.
 
         Parameters
@@ -257,7 +257,7 @@ class Gedai():
         check_sensai_method(sensai_method)
         check_type(noise_multiplier, (float,), 'noise_multiplier')
         n_jobs = _check_n_jobs(n_jobs)
-        
+
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(duration, self.wavelet_level, raw.info['sfreq'])
         if valid_duration != duration:
@@ -267,10 +267,10 @@ class Gedai():
                 f"({valid_samples} samples) to satisfy wavelet level {self.wavelet_level} requirements."
             )
         duration = valid_duration
-        
+
         # Convert overlap ratio to seconds for mne.make_fixed_length_epochs
         overlap_seconds = duration * overlap
-        
+
         epochs = mne.make_fixed_length_epochs(raw, duration=duration, overlap=overlap_seconds, reject_by_annotation=reject_by_annotation, preload=True, verbose=False)
         self.fit_epochs(epochs, noise_multiplier=noise_multiplier, reference_cov=reference_cov, sensai_method=sensai_method, n_jobs=n_jobs, verbose=False)
 
@@ -278,7 +278,7 @@ class Gedai():
     def transform_epochs(self,
                          epochs: BaseEpochs,
                          n_jobs: int = None,
-                         verbose: Optional[str] = None):
+                         verbose: str | None = None):
         """Transform epochs data using the fitted model.
 
         Parameters
@@ -295,25 +295,25 @@ class Gedai():
         """
         check_type(epochs, (BaseEpochs,), 'epochs')
         n_jobs = _check_n_jobs(n_jobs)
-        
+
         # Check if model was fitted
         if not hasattr(self, 'wavelets_fits'):
             raise RuntimeError("Model has not been fitted yet. Call fit_epochs() or fit_raw() first.")
 
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs)
-        
+
         # Validate that the decomposition matches the fitted model
         if levels != self.levels_used:
             raise ValueError(f"Wavelet decomposition levels mismatch. Model was fitted with levels {self.levels_used}, "
                              f"but transform got levels {levels}. This may happen if epoch lengths differ between fit and transform.")
-        
+
         cleaned_epochs_wavelet = epochs_wavelet.copy()
-        
+
         # Process each wavelet band sequentially, but parallelize across epochs within each band
         for wavelet_fit in self.wavelets_fits:
             band_idx = wavelet_fit['band_index']
             ignore = wavelet_fit['ignore']
-            
+
             if ignore:
                 # Zero out this band
                 cleaned_epochs_wavelet[:, :, band_idx, :] = 0
@@ -321,7 +321,7 @@ class Gedai():
                 wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
                 reference_cov = wavelet_fit['reference_cov']
                 threshold = wavelet_fit['threshold']
-                
+
                 if n_jobs == 1:
                     # Sequential processing
                     for e, epoch_data in enumerate(wavelet_epochs_data):
@@ -336,7 +336,7 @@ class Gedai():
                         for epoch_data in wavelet_epochs_data
                     )
                     cleaned_epochs_wavelet[:, :, band_idx, :] = np.array(cleaned_epochs_list)
-        
+
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
         cleaned_epochs = mne.EpochsArray(cleaned_epochs_data, epochs.info, tmin=epochs.tmin, verbose=verbose)
@@ -347,7 +347,7 @@ class Gedai():
                       duration: float = 1.0,
                       overlap: float = 0.5,
                       n_jobs: int = None,
-                      verbose: Optional[str] = None):
+                      verbose: str | None = None):
         """Transform raw data using the fitted model.
 
         Parameters
@@ -372,10 +372,10 @@ class Gedai():
         check_type(duration, (float, int), 'duration')
         check_type(overlap, (float, int), 'overlap')
         n_jobs = _check_n_jobs(n_jobs)
-        
+
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
-        
+
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(duration, self.wavelet_level, raw.info['sfreq'])
         if abs(valid_duration - duration) > 1e-6:  # Only warn if there's a significant difference
@@ -404,21 +404,21 @@ class Gedai():
         for start in starts:
             segment = raw_data[:, start:start + window_size]
             all_segments.append(segment)
-        
+
         # Convert to epochs array (n_epochs, n_channels, n_times)
         all_segments_array = np.array(all_segments)
         segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=False)
-        
+
         # Process all segments at once with parallelization
         corrected_segments_epochs = self.transform_epochs(segments_epochs, n_jobs=n_jobs, verbose=False)
         corrected_segments = corrected_segments_epochs.get_data(verbose=False)
-        
+
         # Apply windowing and reconstruct
         for s, start in enumerate(starts):
             corrected_segment = corrected_segments[s] * window
             raw_corrected[:, start:start + window_size] += corrected_segment
             weight_sum[:, start:start + window_size] += window
-        
+
         # Normalize the corrected signal by the weight sum
         weight_sum[weight_sum == 0] = 1  # Avoid division by zero
         raw_corrected /= weight_sum

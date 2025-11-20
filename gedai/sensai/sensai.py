@@ -58,7 +58,7 @@ def _eigen_to_sensai(eigenvalue, eigenvalues):
     T1 = threshold1 / np.percentile(log_eig_val_all, 95)
     sensai_value = 105 - T1 * 100
     return sensai_value
-    
+
 
 def sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
     epochs_data = epochs.get_data(verbose=False)
@@ -127,7 +127,7 @@ def sensai_optimize(epochs, reference_cov, n_pc, noise_multiplier, epochs_eigenv
         score, signal_subspace_similarity, noise_subspace_similarity = sensai_score(epochs, eigen_threshold, reference_cov, n_pc=n_pc, noise_multiplier=noise_multiplier)
         runs.append([eigen_threshold, score, signal_subspace_similarity, noise_subspace_similarity])
         return -score
-    
+
     result = minimize_scalar(objective_function, bounds=bounds, method='bounded')
 
     if not result.success:

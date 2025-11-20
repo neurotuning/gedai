@@ -1,8 +1,8 @@
 import numpy as np
 from mne.parallel import parallel_func
 
+from ..utils._checks import _check_n_jobs
 from ..utils._docs import fill_doc
-from ..utils._checks import check_type, _check_n_jobs
 from ._modwt import modwt, modwtmra
 
 
@@ -25,13 +25,13 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
     """
     n_channels, n_times = epoch_data.shape
     transformed_epoch = np.zeros((n_channels, level + 1, n_times))
-    
+
     for c, ch_data in enumerate(epoch_data):
         coeffs = modwt(ch_data, wavelet, level)
         modwtmra_data = modwtmra(coeffs, wavelet)
         modwtmra_data = np.squeeze(modwtmra_data, axis=-1)
         transformed_epoch[c, :, :] = modwtmra_data
-    
+
     return transformed_epoch
 
 @fill_doc
@@ -66,7 +66,7 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
     epochs_data = epochs.get_data()  # shape (n_epochs, n_channels, n_times)
     n_epochs, n_channels, n_times = epochs_data.shape
     sfreq = epochs.info['sfreq']
-    
+
     if level == 0:
         # No wavelet decomposition - return original data as single band
         transformed_data = epochs_data[:, :, np.newaxis, :]

@@ -1,11 +1,13 @@
 """Test Gedai."""
 
 
-from mne import Epochs, make_fixed_length_epochs
-from mne.io import concatenate_raws, read_raw_edf
+from mne import make_fixed_length_epochs
 from mne.datasets import eegbci
+from mne.io import concatenate_raws, read_raw_edf
+
 from gedai import Gedai, logger, set_log_level
 from gedai.gedai.gedai import compute_closest_valid_duration
+
 set_log_level("INFO")
 logger.propagate = True
 

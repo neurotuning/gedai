@@ -6,8 +6,9 @@ This tutorial demonstrates how to use Gedai to fit and transform EEG data.
 """
 
 # %% Import data
-from mne.io import concatenate_raws, read_raw_edf
 from mne.datasets import eegbci
+from mne.io import concatenate_raws, read_raw_edf
+
 from gedai import Gedai
 
 subjects = [1]  # may vary
@@ -29,6 +30,7 @@ gedai.fit_raw(raw)
 # %%
 # plot
 import matplotlib.pyplot as plt
+
 fig = gedai.plot_fit()
 plt.show()
 
@@ -39,4 +41,5 @@ raw_corrected = gedai.transform_raw(raw, verbose=False)
 # %%
 # Interactive plot
 from gedai.viz import plot_mne_style_overlay_interactive
+
 plot_mne_style_overlay_interactive(raw, raw_corrected)
