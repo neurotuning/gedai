@@ -1,3 +1,6 @@
+[![tests](https://github.com/neurotuning/pyGEDAI/actions/workflows/pytest.yaml/badge.svg?branch=main)](https://github.com/neurotuning/pyGEDAI/actions/workflows/pytest.yaml)
+[![doc](https://github.com/neurotuning/pyGEDAI/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/pyGEDAI/actions/workflows/doc.yaml)
+
 # pyGEDAI: GEDAI denoising in python
 
 ![pyGEDAI_logo](https://github.com/user-attachments/assets/5e06d5d4-1e68-4a74-b47c-cf59e850f379)
@@ -7,7 +10,7 @@ For more details about the GEDAI algorithm, please refer to the [MATLAB implemen
 
 ## Documentation
 
-TODO
+Detailed documentation can be found on : [pyGEDAI website](https://neurotuning.github.io/pyGEDAI).
 
 ## 📜 Citation
 
