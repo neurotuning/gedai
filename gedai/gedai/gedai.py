@@ -427,7 +427,13 @@ class Gedai():
         return raw_corrected
 
     def plot_fit(self):
-        """Plot the fitting results."""
+        """Plot the fitting results.
+
+        Returns
+        -------
+        figs : list of matplotlib.figure.Figure
+            The list of figures showing the fitting results.
+        """
         wavelet_fits = self.wavelets_fits
         figs = []
         for w, wavelet_fit in enumerate(wavelet_fits):
