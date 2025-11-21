@@ -12,7 +12,7 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'pre-commit-ci[bot]') && github.repository == 'vferat/Gedai'
+    if: (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'pre-commit-ci[bot]') && github.repository == 'neurotuning/gedai'
     steps:
       - name: Enable auto-merge for bot PRs
         run: gh pr merge --auto --squash "$PR_URL"
