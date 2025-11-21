@@ -19,12 +19,12 @@ import gedai
 # -- project information ---------------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "pyGEDAI"
+project = "gedai"
 author = "Neurotuning"
 copyright = f"{date.today().year}, {author}"  # noqa: A001
 release = gedai.__version__
 package = gedai.__name__
-gh_url = "https://github.com/neurotuning/pyGEDAI"
+gh_url = "https://github.com/neurotuning/gedai"
 
 # -- general configuration -------------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
