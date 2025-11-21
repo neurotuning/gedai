@@ -1,5 +1,7 @@
 name: publish
 on:  # yamllint disable-line rule:truthy
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -12,7 +14,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v6
         with:
-          python-version: 3.11
+          python-version: 3.12
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system -e .[build,stubs]
       - run: gedai sys-info --developer
