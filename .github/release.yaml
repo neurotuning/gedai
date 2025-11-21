@@ -1,6 +1,7 @@
 changelog:
   exclude:
     authors:
-      - dependabot
-      - pre-commit-ci
-      - github-actions
+      - autofix-ci[bot]
+      - dependabot[bot]
+      - github-actions[bot]
+      - pre-commit-ci[bot]

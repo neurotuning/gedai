@@ -2,7 +2,6 @@ name: publish
 on:  # yamllint disable-line rule:truthy
   release:
     types: [published]
-  workflow_dispatch:
 
 env:
   UV_LOCKED: true
@@ -23,7 +22,7 @@ jobs:
         with:
           activate-environment: true
       - run: uv sync -q --no-default-groups
-      - run: template sys-info --developer
+      - run: gedai sys-info --developer
       - run: uv build
       - uses: softprops/action-gh-release@v2
         with:
