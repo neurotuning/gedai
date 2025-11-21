@@ -93,10 +93,10 @@ test = [
 gedai = 'gedai.commands.main:run'
 
 [project.urls]
-documentation = 'https://github.com/neurotuning/pyGEDAI'
-homepage = 'https://github.com/neurotuning/pyGEDAI'
-source = 'https://github.com/neurotuning/pyGEDAI'
-tracker = 'https://github.com/neurotuning/pyGEDAI/issues'
+documentation = 'https://github.com/neurotuning/gedai'
+homepage = 'https://github.com/neurotuning/gedai'
+source = 'https://github.com/neurotuning/gedai'
+tracker = 'https://github.com/neurotuning/gedai/issues'
 
 [tool.codespell]
 check-filenames = true

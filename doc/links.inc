@@ -10,9 +10,9 @@
 
 .. project
 
-.. _project github: https://github.com/neurotuning/pyGEDAI
-.. _project license: https://github.com/neurotuning/pyGEDAI/blob/main/LICENSE
-.. _project issues: https://github.com/neurotuning/pyGEDAI/issues
+.. _project github: https://github.com/neurotuning/gedai
+.. _project license: https://github.com/neurotuning/gedai/blob/main/LICENSE
+.. _project issues: https://github.com/neurotuning/gedai/issues
 
 
 .. mne

@@ -4,7 +4,7 @@
 Development
 ===========
 
-pyGEDAI is maintained by `Victor Férat`_ and `Tomas Ros`_.
+gedai is maintained by `Victor Férat`_ and `Tomas Ros`_.
 
 The project accepts contributions in the form of bug reports, fixes, feature
 additions, and documentation improvements (including typo corrections).

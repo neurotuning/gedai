@@ -1,19 +1,19 @@
-[![doc](https://github.com/neurotuning/pyGEDAI/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/pyGEDAI/actions/workflows/doc.yaml)
+[![doc](https://github.com/neurotuning/gedai/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/gedai/actions/workflows/doc.yaml)
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/DOI-10.1101/2025.10.04.680449-green.svg)](https://doi.org/10.1101/2025.10.04.680449)
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/LIENSE-PolyFormNoncommercial_License_1.0.0-green.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
-[![tests](https://github.com/neurotuning/pyGEDAI/actions/workflows/pytest.yaml/badge.svg?branch=main)](https://github.com/neurotuning/pyGEDAI/actions/workflows/pytest.yaml)
-[![codecov](https://codecov.io/gh/neurotuning/pyGEDAI/graph/badge.svg?token=6JE0JDBCYB)](https://codecov.io/gh/neurotuning/pyGEDAI)
+[![tests](https://github.com/neurotuning/gedai/actions/workflows/pytest.yaml/badge.svg?branch=main)](https://github.com/neurotuning/gedai/actions/workflows/pytest.yaml)
+[![codecov](https://codecov.io/gh/neurotuning/gedai/graph/badge.svg?token=6JE0JDBCYB)](https://codecov.io/gh/neurotuning/gedai)
 
-# pyGEDAI: GEDAI denoising in python
-![pyGEDAI_logo](https://github.com/user-attachments/assets/5e06d5d4-1e68-4a74-b47c-cf59e850f379)
+# GEDAI denoising in python
+![GEDAI_logo](https://github.com/user-attachments/assets/5e06d5d4-1e68-4a74-b47c-cf59e850f379)
 
 
 For more details about the GEDAI algorithm, please refer to the [MATLAB implementation](https://github.com/neurotuning/GEDAI-master).
 
 ## Documentation
-[![doc](https://github.com/neurotuning/pyGEDAI/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/pyGEDAI/actions/workflows/doc.yaml)
+[![doc](https://github.com/neurotuning/GEDAI/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/GEDAI/actions/workflows/doc.yaml)
 
-Detailed documentation can be found on [pyGEDAI website](https://neurotuning.github.io/pyGEDAI).
+Detailed documentation can be found on [GEDAI website](https://neurotuning.github.io/gedai).
 
 ## 📜 Citation
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/DOI-10.1101/2025.10.04.680449-green.svg)](https://doi.org/10.1101/2025.10.04.680449)
