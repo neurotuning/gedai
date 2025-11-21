@@ -27,4 +27,4 @@ jobs:
         with:
           files: dist/*
           tag_name: ${{ github.event.release.tag_name }}
-      - run: uv publish --trusted-publishing always --publish-url https://test.pypi.org/legacy/
+      - run: uv publish --trusted-publishing always
