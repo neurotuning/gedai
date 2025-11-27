@@ -13,6 +13,7 @@
 .. _project github: https://github.com/neurotuning/gedai
 .. _project license: https://github.com/neurotuning/gedai/blob/main/LICENSE
 .. _project issues: https://github.com/neurotuning/gedai/issues
+.. _project pypi: https://pypi.org/project/gedai
 
 
 .. mne
@@ -28,11 +29,6 @@
 .. numpy
 
 .. _numpy: https://numpy.org/
-
-
-.. psychopy
-
-.. _psychopy: https://www.psychopy.org/
 
 
 .. sklearn

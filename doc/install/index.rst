@@ -15,6 +15,15 @@ Methods
 
 .. tab-set::
 
+    .. tab-item:: Pypi [Recommended]
+
+        ``gedai`` can be installed from `Pypi <project pypi_>`_:
+
+        .. code-block:: bash
+
+            $ pip install gedai
+
+
     .. tab-item:: Snapshot of the current version
 
         ``gedai`` can be installed from `GitHub <project github_>`_:
