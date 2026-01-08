@@ -1,6 +1,6 @@
 """
-GEDAI
-=====
+GEDAI basics
+============
 
 This tutorial demonstrates how to use GEDAI (Generalized Eigenvalue De-Artifacting 
 Instrument) to denoise EEG data. GEDAI is an unsupervised denoising method based 
