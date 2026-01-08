@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:27.372** total execution time for 1 file **from all galleries**:
+**02:54.602** total execution time for 3 files **from all galleries**:
 
 .. container::
 
@@ -32,6 +32,12 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
+   * - :ref:`sphx_glr_generated_tutorials_20_gedai_spectral.py` (``..\tutorials\20_gedai_spectral.py``)
+     - 01:44.528
+     - 297.4
    * - :ref:`sphx_glr_generated_tutorials_00_gedai.py` (``..\tutorials\00_gedai.py``)
-     - 00:27.372
-     - 244.5
+     - 00:51.458
+     - 247.4
+   * - :ref:`sphx_glr_generated_tutorials_10_gedai_sonline.py` (``..\tutorials\10_gedai_sonline.py``)
+     - 00:18.616
+     - 226.3

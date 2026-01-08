@@ -126,7 +126,7 @@ class Gedai:
 
     Parameters
     ----------
-    wavelet_type : int
+    wavelet_type : str
         Wavelet to use for the decomposition. The default is 'haar'.
         See :py:func:`pywt.wavedec` for complete list of available wavelet values.
     wavelet_level : int
@@ -134,9 +134,9 @@ class Gedai:
         If 0 (default), no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
     wavelet_low_cutoff : float | None
-        If float, zero out all bands whose upper frequency bound is below
-        this cutoff frequency (in Hz).
-        If None, no frequency band is zeroed out. The default is None.
+        If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper 
+        frequency bound is below this cutoff frequency (in Hz).
+        If ``None``, no frequency band is zeroed out. The default is ``None``.
 
     References
     ----------
@@ -276,7 +276,7 @@ class Gedai:
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "optimize",  # Changed default to 'optimize'
+        sensai_method: str = "optimize",
         noise_multiplier: float = 3.0,
         n_jobs: int = None,
         verbose: str | None = None,
