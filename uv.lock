@@ -2200,14 +2200,14 @@ wheels = [
 
 [[package]]
 name = "toml-sort"
-version = "0.24.2"
+version = "0.24.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0a/55/b128ee446606e9f2e49582bb1e462a255317401fd7adb0b2114e50006d01/toml_sort-0.24.2.tar.gz", hash = "sha256:20cb7c5e9de9c871990f1594f028aaf8bd0f78d7ce37995a22289dc157a45b79", size = 17973, upload-time = "2024-11-19T14:03:05.092Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/15/65/d62fb175769355a65c2c5e53a155cf28f2162af4e4067f11d8af89c0a4a3/toml_sort-0.24.3.tar.gz", hash = "sha256:74c3cab5c1ecaf76c8239addc15342de548fb39598694f1298550d0fe2673a81", size = 17773, upload-time = "2025-09-10T02:43:54.955Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/55/7a7c02de848eef670bd018b62122ce32a6e227203e5a626c96d4935958a6/toml_sort-0.24.2-py3-none-any.whl", hash = "sha256:d81d299789a1fd9dd306a4021951eab5fc0c5486599e277fcf8142c7735f3308", size = 20162, upload-time = "2024-11-19T14:03:03.338Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/1c/f5a9a4f918ff0e1578fdc3f607a7ec704c5da1b13ddc290fd0aefa97ff2e/toml_sort-0.24.3-py3-none-any.whl", hash = "sha256:d70642f54827b4c17a6cde788dcb45d598c1eb9833544a2fcec5eb7b0b744ed4", size = 16538, upload-time = "2025-09-10T02:43:53.67Z" },
 ]
 
 [[package]]
