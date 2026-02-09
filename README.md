@@ -17,6 +17,7 @@ Detailed documentation can be found on [GEDAI website](https://neurotuning.githu
 
 ## 📜 Citation
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/DOI-10.1101/2025.10.04.680449-green.svg)](https://doi.org/10.1101/2025.10.04.680449)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18185325.svg)](https://doi.org/10.5281/zenodo.18185325)
 
 
 If you use GEDAI in your research, please cite the original publication:
@@ -25,6 +26,10 @@ If you use GEDAI in your research, please cite the original publication:
 >*Return of the GEDAI: Unsupervised EEG Denoising based on Leadfield Filtering* (2025)  [bioRxiv]. [[DOI/Link to paper](https://www.biorxiv.org/content/10.1101/2025.10.04.680449v1)]  
 >Ros, T, Férat, V., Huang, Y., Colangelo, C., Kia S.M., Wolfers T., Vulliemoz, S., & Michela, A. 
 >
+
+As well as the specific version numbers of the software using the [DOI provided by Zenodo](https://zenodo.org/records/18185325).
+
+
 
 ## License
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/LIENSE-PolyFormNoncommercial_License_1.0.0-green.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
