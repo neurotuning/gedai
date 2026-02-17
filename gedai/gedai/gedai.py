@@ -18,7 +18,7 @@ from ..utils._checks import _check_n_jobs, check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger
 from ..wavelet.transform import epochs_to_wavelet
-from .covariances import _compute_refcov
+from .covariances import _ensure_cov, _pick_cov
 
 
 def create_cosine_weights(n_samples):
@@ -45,7 +45,6 @@ def compute_required_duration(wavelet_level, sfreq):
     """
     if wavelet_level == 0:
         return 1.0  # Default for no decomposition
-
     # For SWT, minimum length is 2^(level+1)
     min_samples = 2 ** (wavelet_level + 1)
     duration = min_samples / sfreq
@@ -110,16 +109,6 @@ def _check_sensai_method(method):
             f"got '{method}' instead."
         )
 
-
-def _check_reference_cov(reference_cov):
-    check_type(reference_cov, (str,), "reference_cov")
-    if reference_cov not in ["leadfield"]:
-        raise ValueError(
-            "Reference covariance must be 'leadfield' for now, "
-            f"got '{reference_cov}' instead."
-        )
-
-
 @fill_doc
 class Gedai:
     r"""Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
@@ -171,16 +160,16 @@ class Gedai:
         %(verbose)s
         """
         check_type(epochs, (BaseEpochs,), "epochs")
-        _check_reference_cov(reference_cov)
+        _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        mat = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
-        )
-        reference_cov, ch_names = _compute_refcov(epochs, mat)
+        cov = _ensure_cov(reference_cov)
+        cov  = _pick_cov(epochs, cov)
 
+        reference_cov = cov.data
+    
         # Tikhonov Regularization based on average diagonal power
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
@@ -321,7 +310,7 @@ class Gedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         check_type(reject_by_annotation, (bool,), "reject_by_annotation")
-        _check_reference_cov(reference_cov)
+        reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
