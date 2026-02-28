@@ -112,12 +112,16 @@ def _check_sensai_method(method):
 
 
 def _check_reference_cov(reference_cov):
-    check_type(reference_cov, (str,), "reference_cov")
-    if reference_cov not in ["leadfield"]:
+    if isinstance(reference_cov, str):
+        if reference_cov == "leadfield":
+            return
+        if os.path.exists(reference_cov):
+            return
         raise ValueError(
-            "Reference covariance must be 'leadfield' for now, "
+            "Reference covariance string must be 'leadfield' or a valid path, "
             f"got '{reference_cov}' instead."
         )
+    check_type(reference_cov, (mne.Forward, np.ndarray), "reference_cov")
 
 
 @fill_doc
@@ -176,10 +180,25 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        mat = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
-        )
-        reference_cov, ch_names = _compute_refcov(epochs, mat)
+        if isinstance(reference_cov, str) and reference_cov == "leadfield":
+            reference_cov = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat"
+                )
+            )
+        reference_cov, ch_names = _compute_refcov(epochs, reference_cov)
+
+        # NEW: Scale reference_cov to match data scale
+        # This prevents regularization from swamping the leadfield info
+        # especially for MEG/OPM data with tiny magnitudes.
+        epochs_data = epochs.get_data(verbose=False)
+        data_cov_trace = np.mean([np.trace(np.cov(d)) for d in epochs_data])
+        ref_cov_trace = np.trace(reference_cov)
+        
+        if ref_cov_trace > 0:
+            scale_factor = data_cov_trace / ref_cov_trace
+            reference_cov = reference_cov * scale_factor
+            logger.info(f"Scaled reference covariance by {scale_factor:.2e} to match data scale.")
 
         # Tikhonov Regularization based on average diagonal power
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
@@ -197,6 +216,7 @@ class Gedai:
 
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
+            print(f" - Fitting band {w+1}/{len(freq_bands)}: {fmin:.2f} - {fmax:.2f} Hz...", flush=True)
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
 
             epochs_eigenvalues = np.zeros(
@@ -266,6 +286,7 @@ class Gedai:
                     )
             wavelet_fit["ignore"] = ignore
             wavelets_fits.append(wavelet_fit)
+            print(f"   Band {w+1} complete. Optimal eigenvalue threshold: {threshold:.4e}", flush=True)
         self.wavelets_fits = wavelets_fits
 
     @fill_doc
@@ -523,11 +544,15 @@ class Gedai:
             weight_sum[:, start : start + window_size] += window
 
         # Normalize the corrected signal by the weight sum
-        weight_sum[weight_sum == 0] = 1  # Avoid division by zero
-        raw_corrected /= weight_sum
+        mask = weight_sum > 0
+        raw_corrected[mask] /= weight_sum[mask]
 
-        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
-        return raw_corrected
+        # Safely inject the new data into a copy of the original object
+        # This guarantees first_samp, times, and bads are perfectly preserved
+        raw_corrected_obj = raw.copy()
+        raw_corrected_obj._data = raw_corrected
+            
+        return raw_corrected_obj
 
     def plot_fit(self):
         """Plot the fitting results.

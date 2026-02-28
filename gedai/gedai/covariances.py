@@ -1,4 +1,6 @@
+import os
 import h5py
+import mne
 import numpy as np
 import sklearn.metrics
 
@@ -12,20 +14,33 @@ def _compute_distance_cov(raw):
     return cov
 
 
-def _compute_refcov(inst, mat):
+def _compute_refcov(inst, reference_cov):
     inst_ch_names = inst.info["ch_names"]
 
-    with h5py.File(mat, "r") as f:
-        leadfield_data = f["leadfield4GEDAI"]
-        # ch_names
-        leadfield_channel_data = leadfield_data["electrodes"]
-        leadfield_ch_names = [
-            f[ref[0]][()].tobytes().decode("utf-16le").lower()
-            for ref in leadfield_channel_data["Name"]
-        ]
-        # leadfield matrix
-        leadfield_gain_matrix = leadfield_data["gram_matrix_avref"]
-        leadfield_gain_matrix = np.array(leadfield_gain_matrix).T
+    if isinstance(reference_cov, (str, os.PathLike)):
+        with h5py.File(reference_cov, "r") as f:
+            leadfield_data = f["leadfield4GEDAI"]
+            # ch_names
+            leadfield_channel_data = leadfield_data["electrodes"]
+            leadfield_ch_names = [
+                f[ref[0]][()].tobytes().decode("utf-16le").lower()
+                for ref in leadfield_channel_data["Name"]
+            ]
+            # leadfield matrix
+            leadfield_gain_matrix = leadfield_data["gram_matrix_avref"]
+            leadfield_gain_matrix = np.array(leadfield_gain_matrix).T
+    elif isinstance(reference_cov, mne.Forward):
+        # Compute Gram matrix G G^T
+        leadfield_gain_matrix = reference_cov["sol"]["data"] @ reference_cov["sol"]["data"].T
+        leadfield_ch_names = [name.lower() for name in reference_cov.ch_names]
+    elif isinstance(reference_cov, np.ndarray):
+        # Assume it's already a Gram matrix matching inst channels exactly
+        if reference_cov.shape[0] != len(inst_ch_names):
+             raise ValueError(f"Reference covariance matrix shape {reference_cov.shape} "
+                            f"does not match number of channels {len(inst_ch_names)}")
+        return reference_cov, inst_ch_names
+    else:
+        raise TypeError(f"reference_cov must be path, mne.Forward or np.ndarray, got {type(reference_cov)}")
 
     # Two-pass matching: exact first, then substring
     ch_indices = []

@@ -44,20 +44,49 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
 
 def _sensai_to_eigen(sensai_value, eigenvalues):
     all_diagonals = np.abs(eigenvalues.T.flatten())
-    log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
+    valid_diags = all_diagonals[all_diagonals > 0]
+    if len(valid_diags) == 0:
+        return 0.0
+        
+    log_eig = np.log10(valid_diags)
+    min_log = np.min(log_eig)
+    
+    # Ensure all values are strictly positive before percentiles/multiplication
+    offset = np.abs(min_log) + 1.0
+    shifted_log = log_eig + offset
+    
     T1 = (105 - sensai_value) / 100
-    threshold1 = T1 * np.percentile(log_eig_val_all, 95)
-    eigenvalue = np.exp(threshold1 - 100)
-    return eigenvalue
+    threshold1 = T1 * np.percentile(shifted_log, 95)
+    
+    eigenvalue = 10 ** (threshold1 - offset)
+    return float(eigenvalue)
 
 
 def _eigen_to_sensai(eigenvalue, eigenvalues):
     all_diagonals = np.abs(eigenvalues.T.flatten())
-    log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
-    threshold1 = np.log(eigenvalue) + 100
-    T1 = threshold1 / np.percentile(log_eig_val_all, 95)
+    valid_diags = all_diagonals[all_diagonals > 0]
+    if len(valid_diags) == 0:
+        return 0.0
+        
+    log_eig = np.log10(valid_diags)
+    min_log = np.min(log_eig)
+    
+    offset = np.abs(min_log) + 1.0
+    shifted_log = log_eig + offset
+    
+    # Safe float mapping
+    if eigenvalue <= 0:
+        return 105.0 # Max out SENSAI
+
+    threshold1 = np.log10(eigenvalue) + offset
+    percentile_95 = np.percentile(shifted_log, 95)
+    
+    if percentile_95 == 0:
+        return 105.0
+        
+    T1 = threshold1 / percentile_95
     sensai_value = 105 - T1 * 100
-    return sensai_value
+    return float(sensai_value)
 
 
 def _sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
