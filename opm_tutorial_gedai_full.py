@@ -41,7 +41,7 @@ ax.grid(True)
 ax.set(title="Raw Data (No preprocessing)", **set_kwargs)
 
 # PSD settings (original data is 6000Hz, divided by 0.25 for 0.25 Hz freq res)
-psd_kwargs = dict(fmax=20, n_fft=int(round(raw.info["sfreq"] / 0.25)))
+psd_kwargs = dict(fmax=45, n_fft=int(round(raw.info["sfreq"] / 0.25)))
 psd_pre = raw.compute_psd(**psd_kwargs)
 
 # ==========================================
@@ -124,7 +124,7 @@ ax.set(title="After Bandpass & Broadband GEDAI", ylim=(-500, 500), xlim=time_ged
 
 # Calculate PSD on the continuous GEDAI data for shielding comparison
 # We must compute a new baseline PSD for the 200Hz downsampled & channel-matched raw_mag
-psd_kwargs_ds = dict(fmax=20, n_fft=int(round(raw_gedai.info["sfreq"] / 0.25)))
+psd_kwargs_ds = dict(fmax=45, n_fft=int(round(raw_gedai.info["sfreq"] / 0.25)))
 psd_pre_ds = raw_mag.compute_psd(**psd_kwargs_ds)
 psd_post_gedai = raw_gedai.compute_psd(**psd_kwargs_ds)
 
@@ -134,15 +134,15 @@ shielding_gedai = 10 * np.log10(psd_pre_ds[:] / psd_post_gedai[:])
 fig, axes = plt.subplots(1, 3, figsize=(18, 5), layout="constrained")
 axes[0].plot(psd_post_reg.freqs, shielding_reg.T, **plot_kwargs)
 axes[0].grid(True, ls=":")
-axes[0].set(xlim=(0, 20), title="Reference regression shielding", xlabel="Frequency (Hz)", ylabel="Shielding (dB)")
+axes[0].set(xlim=(0, 45), title="Reference regression shielding", xlabel="Frequency (Hz)", ylabel="Shielding (dB)")
 
 axes[1].plot(psd_post_hfc.freqs, shielding_hfc.T, **plot_kwargs)
 axes[1].grid(True, ls=":")
-axes[1].set(xlim=(0, 20), title="Ref Regr + HFC shielding", xlabel="Frequency (Hz)")
+axes[1].set(xlim=(0, 45), title="Ref Regr + HFC shielding", xlabel="Frequency (Hz)")
 
 axes[2].plot(psd_post_gedai.freqs, shielding_gedai.T, **plot_kwargs)
 axes[2].grid(True, ls=":")
-axes[2].set(xlim=(0, 20), title="GEDAI shielding", xlabel="Frequency (Hz)")
+axes[2].set(xlim=(0, 45), title="GEDAI shielding", xlabel="Frequency (Hz)")
 
 # Plot All PSD Curves
 scale_psd = 1e30  # T^2/Hz to fT^2/Hz
@@ -151,17 +151,17 @@ fig_psd, axes_psd = plt.subplots(1, 3, figsize=(18, 5), layout="constrained")
 axes_psd[0].plot(psd_pre.freqs, 10 * np.log10(psd_pre[:].T * scale_psd), color='gray', alpha=0.3, lw=1)
 axes_psd[0].plot(psd_post_reg.freqs, 10 * np.log10(psd_post_reg[:].T * scale_psd), color='blue', alpha=0.5, lw=1)
 axes_psd[0].grid(True, ls=":")
-axes_psd[0].set(xlim=(0, 20), title="Reference regression PSD", xlabel="Frequency (Hz)", ylabel="PSD (dB fT²/Hz)")
+axes_psd[0].set(xlim=(0, 45), ylim=(0, 100), title="Reference regression PSD", xlabel="Frequency (Hz)", ylabel="PSD (dB fT²/Hz)")
 
 axes_psd[1].plot(psd_pre.freqs, 10 * np.log10(psd_pre[:].T * scale_psd), color='gray', alpha=0.3, lw=1)
 axes_psd[1].plot(psd_post_hfc.freqs, 10 * np.log10(psd_post_hfc[:].T * scale_psd), color='orange', alpha=0.5, lw=1)
 axes_psd[1].grid(True, ls=":")
-axes_psd[1].set(xlim=(0, 20), title="Ref Regr + HFC PSD", xlabel="Frequency (Hz)")
+axes_psd[1].set(xlim=(0, 45), ylim=(0, 100), title="Ref Regr + HFC PSD", xlabel="Frequency (Hz)")
 
 axes_psd[2].plot(psd_pre_ds.freqs, 10 * np.log10(psd_pre_ds[:].T * scale_psd), color='gray', alpha=0.3, lw=1)
 axes_psd[2].plot(psd_post_gedai.freqs, 10 * np.log10(psd_post_gedai[:].T * scale_psd), color='green', alpha=0.5, lw=1)
 axes_psd[2].grid(True, ls=":")
-axes_psd[2].set(xlim=(0, 20), title="GEDAI PSD", xlabel="Frequency (Hz)")
+axes_psd[2].set(xlim=(0, 45), ylim=(0, 100), title="GEDAI PSD", xlabel="Frequency (Hz)")
 
 # ==========================================
 # 6. Generating Evoked Responses (ERP)
