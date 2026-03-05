@@ -186,6 +186,7 @@ class Gedai:
         # Set average reference
         logger.info("Setting average reference.")
         epochs = epochs.copy()
+        epochs.load_data()
         epochs.set_eeg_reference("average", projection=False)
 
         mat = os.path.abspath(
@@ -392,13 +393,9 @@ class Gedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         # Set average reference
-        logger.info("Setting average reference.")
-        epochs = epochs.copy()
-        epochs.set_eeg_reference("average", projection=False)
-
-        # Set average reference
         logger.info("Setting average reference to match leadfield covariance.")
         epochs = epochs.copy()
+        epochs.load_data()
         epochs.set_eeg_reference("average", projection=False)
 
         # Check if model was fitted
