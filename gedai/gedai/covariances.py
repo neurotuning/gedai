@@ -100,7 +100,7 @@ def _compute_refcov(inst, mat):
             f"Electrode matching: {n_matched}/{n_inst_channels} channels "
             f"matched ({n_exact} exact, {n_substring} substring). "
             f"Unmatched channels ({len(unmatched)}): "
-            f"{unmatched[:10]}{'...' if len(unmatched) > 10 else ''}",
+            f"{unmatched}",
             UserWarning,
             stacklevel=2,
         )
