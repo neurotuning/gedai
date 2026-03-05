@@ -122,7 +122,9 @@ def _check_reference_cov(reference_cov):
 
 @fill_doc
 class Gedai:
-    r"""Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+
+    See :footcite:`Ros2025`.
 
     Parameters
     ----------
@@ -138,6 +140,11 @@ class Gedai:
         frequency bound is below this cutoff frequency (in Hz).
         If ``None``, no frequency band is zeroed out. The default is ``None``.
 
+    .. warning:: For EEG channels, Gedai will set average reference internally
+                 to match the leadfield covariance reference. 
+                 Gedai will not modify the input data in-place, but will create
+                 copies when necessary to ensure the original data remains unchanged.
+    
     References
     ----------
     .. footbibliography::
@@ -175,6 +182,11 @@ class Gedai:
         _check_sensai_method(sensai_method)
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
+
+        # Set average reference
+        logger.info("Setting average reference.")
+        epochs = epochs.copy()
+        epochs.set_eeg_reference("average", projection=False)
 
         mat = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
@@ -378,6 +390,16 @@ class Gedai:
         """
         check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
+
+        # Set average reference
+        logger.info("Setting average reference.")
+        epochs = epochs.copy()
+        epochs.set_eeg_reference("average", projection=False)
+
+        # Set average reference
+        logger.info("Setting average reference to match leadfield covariance.")
+        epochs = epochs.copy()
+        epochs.set_eeg_reference("average", projection=False)
 
         # Check if model was fitted
         if not hasattr(self, "wavelets_fits"):
