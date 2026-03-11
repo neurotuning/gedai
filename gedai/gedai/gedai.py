@@ -179,7 +179,19 @@ class Gedai:
         mat = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
         )
-        reference_cov, ch_names = _compute_refcov(epochs, mat)
+
+        # Average referencing for EEG if using leadfield
+        epochs_to_fit = epochs
+        if reference_cov == "leadfield":
+            # Check if EEG channels are present
+            eeg_picks = mne.pick_types(epochs.info, eeg=True)
+            if len(eeg_picks) > 0:
+                # Check if already average referenced (crude check: mean of data)
+                # Or we just always apply it to be safe, like in Matlab
+                logger.info("Applying average referencing for EEG data before GEDAI")
+                epochs_to_fit = epochs.copy().set_eeg_reference("average", verbose=False)
+
+        reference_cov, ch_names = _compute_refcov(epochs_to_fit, mat)
 
         # Tikhonov Regularization based on average diagonal power
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
@@ -211,6 +223,13 @@ class Gedai:
                 wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False
             )
             min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+            
+            # Extend minThreshold for alpha range (7-13 Hz)
+            center_freq = (fmin + fmax) / 2
+            if 7 <= center_freq <= 13:
+                min_sensai_threshold = -6
+                logger.info(f"Alpha range detected ({fmin:.1f}-{fmax:.1f} Hz): extending minThreshold to {min_sensai_threshold}")
+
             n_pc = 3
             if sensai_method == "gridsearch":
                 sensai_thresholds = np.arange(
