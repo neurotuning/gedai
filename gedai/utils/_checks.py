@@ -102,7 +102,9 @@ def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
             (
                 (type(None),)
                 if type_ is None
-                else (type_,) if not isinstance(type_, str) else _types[type_]
+                else (type_,)
+                if not isinstance(type_, str)
+                else _types[type_]
             )
             for type_ in types
         ),
@@ -114,7 +116,9 @@ def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
             (
                 "None"
                 if cls_ is None
-                else cls_.__name__ if not isinstance(cls_, str) else cls_
+                else cls_.__name__
+                if not isinstance(cls_, str)
+                else cls_
             )
             for cls_ in types
         ]
