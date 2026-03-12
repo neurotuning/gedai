@@ -19,7 +19,6 @@ classifiers = [
   'Programming Language :: Python :: 3.13',
 ]
 dependencies = [
-  'joblib',
   'click',
   'numpy>=1.23,<3',
   'mne>=1.9.0',
@@ -27,12 +26,14 @@ dependencies = [
   'scikit-learn>=1.6.1',
   'packaging',
   'psutil',
+  'pywavelets>=1.8.0',
+  'scikit-learn>=1.6.1',
 ]
 description = 'GEDAI in python.'
 dynamic = ["version"]
 keywords = [
-  'python',
   'gedai',
+  'python',
 ]
 maintainers = [
   {email = 'victor.ferat@live.fr', name = 'Victor Férat'},
@@ -54,18 +55,18 @@ build = [
   'twine',
 ]
 doc = [
-  'pydata_sphinx_theme',
   'intersphinx_registry',
   'matplotlib',
   'memory-profiler',
+  'myst_parser',
   'numpydoc',
+  'pydata_sphinx_theme',
   'sphinx',
   'sphinx-copybutton',
   'sphinx-design',
   'sphinx-gallery',
   'sphinx-issues',
   'sphinxcontrib-bibtex',
-  'myst_parser',
 ]
 full = [
   'gedai[all]',
@@ -157,26 +158,22 @@ ignore-decorators = ["gedai.utils._docs.copy_doc"]
 [tool.setuptools]
 include-package-data = true
 
-[tool.setuptools_scm]
-version_file = "gedai/_version.py"
-version_scheme = "release-branch-semver"
+[tool.setuptools.package-data]
+'gedai' = [
+  'gedai/data/fsavLEADFIELD_4_GEDAI.mat',
+  'gedai/data/OPENMEEG_BEM_leadfield_4_GEDAI_343_electrodes.mat',
+]
 
 [tool.setuptools.packages.find]
 exclude = ['gedai*tests']
 include = ['gedai*']
 
-[tool.setuptools.package-data]
-'gedai' = [
-  'gedai/data/OPENMEEG_BEM_leadfield_4_GEDAI_343_electrodes.mat',
-  'gedai/data/fsavLEADFIELD_4_GEDAI.mat'
-]
+[tool.setuptools_scm]
+version_file = "gedai/_version.py"
+version_scheme = "release-branch-semver"
 
 [tool.tomlsort]
 all = true
 ignore_case = true
 spaces_before_inline_comment = 2
 trailing_comma_inline_array = true
-
-
-
-

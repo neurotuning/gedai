@@ -105,13 +105,20 @@ def _check_sensai_method(method):
     check_type(method, (str,), "method")
     if method not in ["gridsearch", "optimize"]:
         raise ValueError(
-            "Method must be either 'gridsearch' or 'optimize', "
-            f"got '{method}' instead."
+            f"Method must be either 'gridsearch' or 'optimize', got '{method}' instead."
         )
 
 @fill_doc
 class Gedai:
-    r"""Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+
+    See :footcite:`Ros2025`.
+
+    .. warning::
+        For EEG channels, Gedai will set average reference internally
+        to match the leadfield covariance reference.
+        Gedai will not modify the input data in-place, but will create
+        copies when necessary to ensure the original data remains unchanged.
 
     Parameters
     ----------
@@ -123,7 +130,7 @@ class Gedai:
         If 0 (default), no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
     wavelet_low_cutoff : float | None
-        If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper 
+        If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper
         frequency bound is below this cutoff frequency (in Hz).
         If ``None``, no frequency band is zeroed out. The default is ``None``.
 
@@ -368,6 +375,12 @@ class Gedai:
         check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # Set average reference
+        logger.info("Setting average reference to match leadfield covariance.")
+        epochs = epochs.copy()
+        epochs.load_data()
+        epochs.set_eeg_reference("average", projection=False)
+
         # Check if model was fitted
         if not hasattr(self, "wavelets_fits"):
             raise RuntimeError(
@@ -569,7 +582,7 @@ class Gedai:
             axes[1].legend()
 
             fig.suptitle(
-                f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz'
+                f"Band {w + 1}: {wavelet_fit['fmin']:.2f}-{wavelet_fit['fmax']:.2f} Hz"
             )
             figs.append(fig)
             axes[1].axvline(
@@ -582,7 +595,7 @@ class Gedai:
             axes[1].legend()
 
             fig.suptitle(
-                f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz'
+                f"Band {w + 1}: {wavelet_fit['fmin']:.2f}-{wavelet_fit['fmax']:.2f} Hz"
             )
             figs.append(fig)
         return figs

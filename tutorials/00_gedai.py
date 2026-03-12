@@ -2,8 +2,8 @@
 GEDAI basics
 ============
 
-This tutorial demonstrates how to use GEDAI (Generalized Eigenvalue De-Artifacting 
-Instrument) to denoise EEG data. GEDAI is an unsupervised denoising method based 
+This tutorial demonstrates how to use GEDAI (Generalized Eigenvalue De-Artifacting
+Instrument) to denoise EEG data. GEDAI is an unsupervised denoising method based
 on leadfield filtering that separates brain signals from noise and artifacts.
 
 """
@@ -37,7 +37,7 @@ raw.set_eeg_reference("average", projection=False)
 # %%
 # GEDAI
 # -----
-# ``GEDAI`` uses generalized eigenvalue decomposition to separate brain signals 
+# ``GEDAI`` uses generalized eigenvalue decomposition to separate brain signals
 # from noise based on a leadfield covariance model.
 # In this tutorial, we will focus on the default ``GEDAI`` implementation which
 # uses broadband EEG data. Please refers to the documentation if you want to learn
@@ -48,8 +48,9 @@ gedai = Gedai()
 # %%
 # Model Fitting
 # -------------
-# The fitting process estimates the optimal threshold to distinguish between signal 
-# and noise components. ``GEDAI`` can be fitted on :class:`~mne.io.Raw` or :class:`~mne.Epochs` objects.
+# The fitting process estimates the optimal threshold to distinguish between
+# signal and noise components. ``GEDAI`` can be fitted on :class:`~mne.io.Raw`
+# or :class:`~mne.Epochs` objects.
 # If raw data is used, it is internally segmented into epochs before fitting.
 # The ``duration`` parameter controls the epoch length, and the ``overlap`` parameter
 # controls the overlap between consecutive epochs.
@@ -124,28 +125,31 @@ fig = gedai.plot_fit()
 plt.show()
 
 # %%
-# ``SENSAI`` internally uses a custom scaling of the eigenvalues, called SENSAI scaling.
-# Higher SENSAI threshold values correspond to more aggressive denoising.
-# The ``signal similarity`` (blue curve) indicates how similar the cleaned data is to the
-# reference covariance. In our example, we can see that initially, as the SENSAI threshold increases,
-# the signal similarity also increases, indicating that artifactual components are being removed.
-# However, after a certain point, the signal similarity starts to decrease, which may indicate that
-# some brain signals are being removed as well.
-# Conversely, the ``noise similarity`` (red curve) remains low up to a certain SENSAI threshold,
-# indicating that the removed components are dissimilar to the reference covariance. However,
-# beyond that point, the noise similarity starts to increase, suggesting that brain signals
-# are being removed along with noise.
-# The ``SENSAI score`` (black curve) combines both signal and noise similarities to provide
-# an overall measure of denoising quality.
+# ``SENSAI`` internally uses a custom scaling of the eigenvalues, called
+# SENSAI scaling. Higher SENSAI threshold values correspond to more aggressive
+# denoising. The ``signal similarity`` (blue curve) indicates how similar the
+# cleaned data is to the reference covariance. In our example, we can see that
+# initially, as the SENSAI threshold increases, the signal similarity also
+# increases, indicating that artifactual components are being removed.
+# However, after a certain point, the signal similarity starts to decrease,
+# which may indicate that some brain signals are being removed as well.
+# Conversely, the ``noise similarity`` (red curve) remains low up to a certain
+# SENSAI threshold, indicating that the removed components are dissimilar to
+# the reference covariance. However, beyond that point, the noise similarity
+# starts to increase, suggesting that brain signals are being removed along
+# with noise. The ``SENSAI score`` (black curve) combines both signal and noise
+# similarities to provide an overall measure of denoising quality.
 
 # %%
 # Transform the Data (Denoising)
 # ------------------------------
-# Once fitted, the ``GEDAI`` model can be used to remove artifacts and noise from the data.
-# The transform operation projects out the noise components while preserving
-# the brain signals.
+# Once fitted, the ``GEDAI`` model can be used to remove artifacts and noise
+# from the data. The transform operation projects out the noise components
+# while preserving the brain signals.
 
-raw_corrected = gedai.transform_raw(raw, duration=duration, overlap=overlap, verbose=False)
+raw_corrected = gedai.transform_raw(
+    raw, duration=duration, overlap=overlap, verbose=False
+)
 
 # %%
 # We can visualize the difference between the original and denoised data using
