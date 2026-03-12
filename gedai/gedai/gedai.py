@@ -193,18 +193,7 @@ class Gedai:
             os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
         )
 
-        # Average referencing for EEG if using leadfield
-        epochs_to_fit = epochs
-        if reference_cov == "leadfield":
-            # Check if EEG channels are present
-            eeg_picks = mne.pick_types(epochs.info, eeg=True)
-            if len(eeg_picks) > 0:
-                # Check if already average referenced (crude check: mean of data)
-                # Or we just always apply it to be safe, like in Matlab
-                logger.info("Applying average referencing for EEG data before GEDAI")
-                epochs_to_fit = epochs.copy().set_eeg_reference("average", verbose=False)
-
-        reference_cov, ch_names = _compute_refcov(epochs_to_fit, mat)
+        reference_cov, ch_names = _compute_refcov(epochs, mat)
 
         # Tikhonov Regularization based on average diagonal power
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
