@@ -192,7 +192,6 @@ class Gedai:
         mat = os.path.abspath(
             os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
         )
-
         reference_cov, ch_names = _compute_refcov(epochs, mat)
 
         # Tikhonov Regularization based on average diagonal power
