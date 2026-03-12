@@ -336,7 +336,7 @@ class Gedai:
             overlap=overlap_seconds,
             reject_by_annotation=reject_by_annotation,
             preload=True,
-            verbose=False,
+            verbose=verbose,
         )
         self.fit_epochs(
             epochs,
@@ -344,7 +344,7 @@ class Gedai:
             reference_cov=reference_cov,
             sensai_method=sensai_method,
             n_jobs=n_jobs,
-            verbose=False,
+            verbose=verbose,
         )
 
     @fill_doc
