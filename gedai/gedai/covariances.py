@@ -11,6 +11,7 @@ def _compute_distance_cov(raw):
         ch_positions, metric="euclidean"
     )
     cov = 1 - ch_distance_matrix
+    
     return cov
 
 
@@ -27,25 +28,28 @@ def _ensure_cov(reference_cov):
     return reference_cov
 
 
-def _pick_cov(inst, cov):
-    inst_ch_names = inst.ch_names
+def _pick_cov(cov, ch_names):
     cov_ch_names = cov.ch_names
 
-    picks = []
+    picks_cov = []
+    picks_ch_names = []
     for cov_name in cov_ch_names:
-        for inst_name in inst_ch_names:
-            if inst_name.lower() == cov_name.lower():
-                picks.append(cov_name)
+        for ch_name in ch_names:
+            if ch_name.lower() == cov_name.lower():
+                picks_cov.append(cov_name)
+                picks_ch_names.append(ch_name)
                 break
-    if len(picks) == 0:
+    if len(picks_cov) == 0:
         raise ValueError("No matching channel names found between inst and cov.\n"
                          f"Available channels in covariance are {cov_ch_names}.\n"
-                         f"but instance has channels {inst_ch_names}.")
-    if len(picks) < len(inst_ch_names):
+                         f"but instance has channels {ch_names}.")
+    if len(picks_cov) < len(ch_names):
         raise ValueError("Only a subset of channels in the instance are present"
                          " in the covariance.\n"
-                        f"Use inst.pick_channels({picks}) to select only the channels"
+                        f"Use inst.pick_channels({picks_ch_names}) to select only the channels"
                         f" that are in the covariance or provide a covariance that contains"
                         f" all channels in the instance.")
-    cov = cov.copy().pick_channels(picks)
+    cov = cov.copy().pick_channels(picks_cov)
+    # Update the channel names in the covariance to match those in the instance
+    cov.update(names=ch_names)
     return cov
