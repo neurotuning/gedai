@@ -224,6 +224,16 @@ class Gedai:
                 wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False
             )
             min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+
+            # Extend minThreshold for alpha range (7-13 Hz)
+            center_freq = (fmin + fmax) / 2
+            if 7 <= center_freq <= 13:
+                min_sensai_threshold = -6
+                logger.info(
+                    f"Alpha range detected ({fmin:.1f}-{fmax:.1f} Hz):"
+                    f" extending minThreshold to {min_sensai_threshold}"
+                )
+
             n_pc = 3
             if sensai_method == "gridsearch":
                 sensai_thresholds = np.arange(
