@@ -190,6 +190,12 @@ class Gedai:
         ----------
         epochs : mne.Epochs
             The epochs data to fit the model to.
+        picks : str | list | slice
+            Channels to include. Note that all channels selected must have the same
+            type. Slices and lists of integers will be interpreted as channel indices.
+            In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
+            channels. Can also be the string values ``“all”`` to pick all channels, or
+            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all EEG channels.
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
@@ -325,6 +331,7 @@ class Gedai:
     def fit_raw(
         self,
         raw: BaseRaw,
+        picks: list | str = "eeg",
         duration: float = 1.0,
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
@@ -340,6 +347,12 @@ class Gedai:
         ----------
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
+        picks : str | list | slice
+            Channels to include. Note that all channels selected must have the same
+            type. Slices and lists of integers will be interpreted as channel indices.
+            In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
+            channels. Can also be the string values ``“all”`` to pick all channels, or
+            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all EEG channels.
         duration : float
             Duration of each epoch in seconds (default 1.0). Will be automatically
             adjusted to the closest valid duration for the wavelet level.
@@ -404,6 +417,7 @@ class Gedai:
         )
         self.fit_epochs(
             epochs,
+            picks=picks,
             noise_multiplier=noise_multiplier,
             reference_cov=reference_cov,
             sensai_method=sensai_method,
@@ -435,11 +449,19 @@ class Gedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         # Data
-        missing_ch = set(self._reference_cov.ch_names) - set(epochs.info["ch_names"])
+        missing_ch = set(self.ch_names) - set(epochs.info["ch_names"])
         if len(missing_ch) > 0:
             raise ValueError(
                 f"The following channels are missing in the input inst but were present "
                 f"during fitting: {missing_ch}. \n"
+                f"Please make sure to include the same channels during transform as were used during fit. \n"
+                f"See {self.__class__.__name__}.ch_names for the list of channels used during fit.")
+        extra_ch = set(epochs.info["ch_names"]) - set(self.ch_names)
+        if len(extra_ch) > 0:
+            raise ValueError(
+                f"The following channels are present in the input inst but were not present "
+                f"during fitting: {extra_ch}. \n"
+                f"These channels will be ignored during transformation. \n"
                 f"Please make sure to include the same channels during transform as were used during fit. \n"
                 f"See {self.__class__.__name__}.ch_names for the list of channels used during fit.")
 
