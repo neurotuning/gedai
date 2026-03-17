@@ -172,6 +172,12 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # Set average reference
+        logger.info("Setting average reference.")
+        epochs = epochs.copy()
+        epochs.load_data()
+        epochs.set_eeg_reference("average", projection=False)
+        
         cov = _ensure_cov(reference_cov)
         cov  = _pick_cov(epochs, cov)
 
