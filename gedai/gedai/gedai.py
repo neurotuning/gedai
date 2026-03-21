@@ -538,6 +538,33 @@ class Gedai:
                 )
             )
 
+        # ------------------------------------------------------------------
+        # Frequency-specific epoching path
+        # ------------------------------------------------------------------
+        # The duration here is only used for broadband reference-covariance
+        # epochs, which are NOT wavelet-decomposed, so no 2^level adjustment
+        # is needed or appropriate.
+        if self.epoch_size_in_cycles is not None:
+            logger.info(
+                f"Frequency-specific epoching enabled "
+                f"({self.epoch_size_in_cycles} cycles per band)."
+            )
+            self._fit_raw_frequency_specific(
+                raw=raw,
+                broadband_duration=duration,   # raw user-supplied value, no adjustment
+                overlap=overlap,
+                reject_by_annotation=reject_by_annotation,
+                reference_cov=_ref_cov,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+            )
+            return
+
+        # ------------------------------------------------------------------
+        # Fixed-duration path (original behaviour): adjustment IS needed here
+        # because epochs are individually wavelet-decomposed.
+        # ------------------------------------------------------------------
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(
             duration, self.wavelet_level, sfreq
@@ -549,26 +576,6 @@ class Gedai:
                 f" {self.wavelet_level} requirements."
             )
         duration = valid_duration
-
-        # ------------------------------------------------------------------
-        # Frequency-specific epoching path
-        # ------------------------------------------------------------------
-        if self.epoch_size_in_cycles is not None:
-            logger.info(
-                f"Frequency-specific epoching enabled "
-                f"({self.epoch_size_in_cycles} cycles per band)."
-            )
-            self._fit_raw_frequency_specific(
-                raw=raw,
-                broadband_duration=duration,
-                overlap=overlap,
-                reject_by_annotation=reject_by_annotation,
-                reference_cov=_ref_cov,
-                sensai_method=sensai_method,
-                noise_multiplier=noise_multiplier,
-                n_jobs=n_jobs,
-            )
-            return
 
         # ------------------------------------------------------------------
         # Fixed-duration path (original behaviour)
@@ -606,41 +613,56 @@ class Gedai:
     ):
         """Fit with frequency-specific epoch sizes (MATLAB port).
 
-        Each wavelet band receives epochs sized to contain exactly
-        ``self.epoch_size_in_cycles`` wave-cycles of the band's lower
-        cutoff frequency.
+        Architecture (matching MATLAB GEDAI exactly):
+
+        1. Run a **single** MODWT on the full raw signal to get the MRA for
+           all bands at once.
+        2. For each band, **slice** the band's MRA output into epochs sized
+           to contain ``self.epoch_size_in_cycles`` wave-cycles of the band's
+           lower cutoff frequency.
+        3. Fit GEDAI on those band-specific epoch slices.
+
+        This mirrors MATLAB's ``modwt_single_band`` + ``GEDAI_per_band`` loop
+        and avoids the O(n_bands) MODWT passes of the naive per-band approach.
 
         Parameters
         ----------
         raw : mne.io.BaseRaw
             The raw data.
         broadband_duration : float
-            Epoch duration used for the broadband (approximation) band.
+            Epoch duration used to resolve the reference covariance (broadband
+            approximation band).
         overlap : float
             Overlap ratio between consecutive epochs (0–1).
         reject_by_annotation : bool
-            Whether to drop annotated segments.
+            Whether to drop annotated segments when making broadband epochs.
         reference_cov : np.ndarray or str
-            Already-resolved path or array (not the 'leadfield' sentinel).
+            Already-resolved path or array (not the ``'leadfield'`` sentinel).
         sensai_method : str
             ``'gridsearch'`` or ``'optimize'``.
         noise_multiplier : float
-            Noise multiplier for SENSAI.
+            Noise multiplier for SENSAI scoring.
         n_jobs : int
             Number of parallel jobs.
         """
+        from ..wavelet._modwt import modwt, modwtmra
+
         sfreq = raw.info["sfreq"]
         n_times = raw.n_times
 
-        # Set average reference on a working copy if EEG is present
+        # ------------------------------------------------------------------
+        # 1. Average reference if EEG
+        # ------------------------------------------------------------------
         raw_work = raw
         if "eeg" in raw.get_channel_types():
             logger.info("Setting average reference to match leadfield/forward reference.")
             raw_work = raw.copy().load_data()
             raw_work.set_eeg_reference("average", projection=False)
 
-        # Use a short broadband epoch to resolve the reference covariance
-        _bb_epochs = mne.make_fixed_length_epochs(
+        # ------------------------------------------------------------------
+        # 2. Resolve reference covariance using broadband fixed-length epochs
+        # ------------------------------------------------------------------
+        bb_epochs = mne.make_fixed_length_epochs(
             raw_work,
             duration=broadband_duration,
             overlap=broadband_duration * overlap,
@@ -648,122 +670,148 @@ class Gedai:
             preload=True,
             verbose=False,
         )
-
-        # Resolve the reference covariance from the broadband epochs
         from .covariances import _compute_refcov
-        _ref_cov_arr, ch_names = _compute_refcov(_bb_epochs, reference_cov)
+        _ref_cov_arr, _ = _compute_refcov(bb_epochs, reference_cov)
         avg_diag_power = np.trace(_ref_cov_arr) / _ref_cov_arr.shape[0]
         regularization_lambda = 0.05
         epsilon = regularization_lambda * avg_diag_power
         _ref_cov_arr = _ref_cov_arr + epsilon * np.eye(_ref_cov_arr.shape[0])
 
-        # Determine the frequency bands for all wavelet levels
-        # (Use a short dummy epoch to call epochs_to_wavelet and get freq_bands)
-        _dummy_epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
-            _bb_epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=1
-        )
-        self.levels_used = levels
+        # ------------------------------------------------------------------
+        # 3. Compute frequency bands directly from sfreq and wavelet_level
+        #    (mirrors the band structure produced by epochs_to_wavelet)
+        # ------------------------------------------------------------------
+        level = self.wavelet_level
+        freq_bands = [(0.0, sfreq / 2 ** (level + 1))]  # approximation sub-band
+        for i in range(level, 0, -1):
+            freq_bands.append((sfreq / 2 ** (i + 1), sfreq / 2**i))
+        self.levels_used = level
 
-        # Compute per-band epoch durations
+        # ------------------------------------------------------------------
+        # 4. Single MODWT pass over the full signal
+        #    modwt input : (n_samples, n_channels)
+        #    modwt output: (n_bands, n_samples, n_channels)
+        #    modwtmra returns the time-domain MRA reconstruction per band,
+        #    same shape as the input coefficients.
+        # ------------------------------------------------------------------
+        print(
+            f"Running single MODWT (level {level}) on full signal "
+            f"({n_times} samples × {raw_work.info['nchan']} channels)...",
+            flush=True,
+        )
+        raw_data = raw_work.get_data()  # (n_channels, n_times)
+
+        # pywt.swt requires signal length divisible by 2^level.
+        # Pad to the nearest valid length with edge values, then trim afterward.
+        divisor = 2 ** level
+        pad_to = int(np.ceil(n_times / divisor) * divisor)
+        if pad_to > n_times:
+            print(
+                f"  Padding signal from {n_times} to {pad_to} samples "
+                f"(nearest multiple of 2^{level}={divisor}) for SWT.",
+                flush=True,
+            )
+            raw_data_padded = np.pad(
+                raw_data, ((0, 0), (0, pad_to - n_times)), mode="edge"
+            )
+        else:
+            raw_data_padded = raw_data
+
+        wpt = modwt(raw_data_padded.T, self.wavelet_type, level)   # (n_bands, pad_to, n_channels)
+        mra = modwtmra(wpt, self.wavelet_type)                      # (n_bands, pad_to, n_channels)
+        mra = mra[:, :n_times, :]   # trim back to original length
+        del wpt, raw_data, raw_data_padded  # free memory early
+
+
+        # ------------------------------------------------------------------
+        # 5. Compute per-band epoch durations
+        # ------------------------------------------------------------------
         epoch_durations = compute_epoch_sizes_per_band(
             freq_bands, self.epoch_size_in_cycles, sfreq, n_times
         )
 
-        logger.info(
-            "Frequency-specific epoch durations per band:\n"
-            + "\n".join(
-                f"  Band {i} ({fmin:.2f}-{fmax:.2f} Hz): "
-                + (f"{d:.3f} s" if d is not None else "SKIPPED (data too short)")
-                for i, ((fmin, fmax), d) in enumerate(zip(freq_bands, epoch_durations))
-            )
+        import time
+
+        # ------------------------------------------------------------------
+        # 6. Fit each wavelet band on its own frequency-appropriate epochs
+        # ------------------------------------------------------------------
+        _pass_through = dict(
+            threshold=0.0,
+            reference_cov=_ref_cov_arr,
+            epochs_eigenvalues=np.array([]),
+            sensai_runs=[],
+            ignore=True,
         )
 
         wavelets_fits = []
         for w, ((fmin, fmax), band_duration) in enumerate(
             zip(freq_bands, epoch_durations)
         ):
-            # Skip band if data is too short for the required epoch
+            base_fit = {"band_index": w, "fmin": fmin, "fmax": fmax}
+
+            # --- Skip: data too short for the required epoch ---
             if band_duration is None:
-                logger.warning(
-                    f"Band {w} ({fmin:.2f}-{fmax:.2f} Hz): data too short for "
-                    f"{self.epoch_size_in_cycles} cycles. Skipping (will pass through)."
+                print(
+                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): data too short "
+                    f"for {self.epoch_size_in_cycles} cycles — skipping.",
+                    flush=True,
                 )
-                # Create a pass-through fit (threshold=0, no cleaning)
-                wavelet_fit = {
-                    "band_index": w,
-                    "fmin": fmin,
-                    "fmax": fmax,
-                    "threshold": 0.0,
-                    "reference_cov": _ref_cov_arr,
-                    "epochs_eigenvalues": np.array([]),
-                    "sensai_runs": [],
-                    "ignore": True,
-                }
-                wavelets_fits.append(wavelet_fit)
+                wavelets_fits.append({**base_fit, **_pass_through})
                 continue
 
-            # Also flag bands below the low-cutoff
+            # --- Skip: below the low-frequency cutoff ---
             if self.wavelet_low_cutoff is not None and fmax < self.wavelet_low_cutoff:
-                logger.info(
-                    f"Band {w} ({fmin:.2f}-{fmax:.2f} Hz): below low cutoff "
-                    f"{self.wavelet_low_cutoff:.2f} Hz — zeroing."
+                print(
+                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): zeroed "
+                    f"(below {self.wavelet_low_cutoff} Hz cutoff).",
+                    flush=True,
                 )
-                wavelet_fit = {
-                    "band_index": w,
-                    "fmin": fmin,
-                    "fmax": fmax,
-                    "threshold": 0.0,
-                    "reference_cov": _ref_cov_arr,
-                    "epochs_eigenvalues": np.array([]),
-                    "sensai_runs": [],
-                    "ignore": True,
-                }
-                wavelets_fits.append(wavelet_fit)
+                wavelets_fits.append({**base_fit, **_pass_through})
                 continue
 
-            logger.info(
-                f"Fitting band {w} ({fmin:.2f}-{fmax:.2f} Hz) "
-                f"with {band_duration:.3f} s epochs "
-                f"({int(round(band_duration * sfreq))} samples)."
-            )
+            n_epoch_samples = int(round(band_duration * sfreq))
+            step = max(1, int(n_epoch_samples * (1.0 - overlap)))
+            n_epochs_approx = max(1, (n_times - n_epoch_samples) // step + 1)
 
-            # Epoch the raw data with the band-specific duration
-            band_overlap_s = band_duration * overlap
-            band_epochs = mne.make_fixed_length_epochs(
-                raw_work,
-                duration=band_duration,
-                overlap=band_overlap_s,
-                reject_by_annotation=reject_by_annotation,
-                preload=True,
-                verbose=False,
+            epoch_duration_s = n_epoch_samples / sfreq
+            print(
+                f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): "
+                f"{epoch_duration_s:.2f} s/epoch, ~{n_epochs_approx} epochs... ",
+                end="", flush=True,
             )
+            _t0 = time.time()
 
-            # Wavelet-decompose the band-specific epochs
-            band_epochs_wavelet, _, _ = epochs_to_wavelet(
-                band_epochs,
-                wavelet=self.wavelet_type,
-                level=self.wavelet_level,
-                n_jobs=n_jobs,
-            )
+            # Extract this band's MRA: (n_times, n_channels) → (n_channels, n_times)
+            band_signal = mra[w].T  # (n_channels, n_times)
 
-            # Extract the single wavelet sub-band that corresponds to this band
-            wavelet_epochs_data = band_epochs_wavelet[:, :, w, :]
+            # Sliding-window epoch slicing directly on the MRA band signal
+            starts = list(range(0, n_times - n_epoch_samples, step))
+            # Ensure the very last segment is always included
+            if not starts or starts[-1] + n_epoch_samples < n_times:
+                starts.append(n_times - n_epoch_samples)
+
+            wavelet_epochs_data = np.stack(
+                [band_signal[:, s: s + n_epoch_samples] for s in starts],
+                axis=0,
+            )  # (n_epochs, n_channels, n_epoch_samples)
 
             wavelet_fit = self._fit_single_band(
                 wavelet_epochs_data=wavelet_epochs_data,
                 band_index=w,
                 fmin=fmin,
                 fmax=fmax,
-                epochs_info=band_epochs.info,
-                epochs_tmin=band_epochs.tmin,
+                epochs_info=bb_epochs.info,
+                epochs_tmin=0.0,
                 reference_cov=_ref_cov_arr,
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 n_jobs=n_jobs,
             )
             wavelets_fits.append(wavelet_fit)
+            print(f"done ({time.time() - _t0:.1f} s)", flush=True)
 
         self.wavelets_fits = wavelets_fits
+
 
     @fill_doc
     def transform_epochs(
@@ -887,6 +935,12 @@ class Gedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
+        # ------------------------------------------------------------------
+        # Fast path for spectral GEDAI: single MODWT on full signal
+        # ------------------------------------------------------------------
+        if self.epoch_size_in_cycles is not None:
+            return self._transform_raw_frequency_specific(raw, n_jobs=n_jobs, verbose=verbose)
+
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(
             duration, self.wavelet_level, raw.info["sfreq"]
@@ -945,6 +999,441 @@ class Gedai:
         raw_corrected_obj = raw.copy()
         raw_corrected_obj._data = raw_corrected
 
+        return raw_corrected_obj
+
+    def _transform_raw_frequency_specific(
+        self,
+        raw: BaseRaw,
+        n_jobs: int = None,
+        verbose=None,
+    ):
+        """Fast transform path for spectral GEDAI (mirrors _fit_raw_frequency_specific).
+
+        Runs a **single** MODWT on the full signal, applies the fitted per-band
+        GEDAI filter sample-by-sample in MRA space, then sums the bands to
+        reconstruct the cleaned signal.  This avoids the O(n_windows × SWT)
+        cost of the naive sliding-window approach.
+
+        Parameters
+        ----------
+        raw : mne.io.BaseRaw
+            Raw data to transform (should be the same object passed to fit_raw).
+        n_jobs : int
+            Number of parallel jobs (currently unused; reserved for future use).
+        verbose : str | None
+            Verbosity.
+
+        Returns
+        -------
+        raw_corrected_obj : mne.io.BaseRaw
+            A copy of *raw* with the cleaned data.
+        """
+        from ..wavelet._modwt import modwt, modwtmra
+
+        if not hasattr(self, "wavelets_fits"):
+            raise RuntimeError(
+                "Model has not been fitted yet. Call fit_raw() first."
+            )
+
+        sfreq = raw.info["sfreq"]
+        raw_data = raw.get_data(verbose=False)   # (n_channels, n_times)
+        n_channels, n_times = raw_data.shape
+        level = self.wavelet_level
+
+        # ------------------------------------------------------------------
+        # 1. Pad → MODWT → MRA  (same logic as in fit)
+        # ------------------------------------------------------------------
+        divisor = 2 ** level
+        pad_to = int(np.ceil(n_times / divisor) * divisor)
+        if pad_to > n_times:
+            raw_data_padded = np.pad(
+                raw_data, ((0, 0), (0, pad_to - n_times)), mode="edge"
+            )
+        else:
+            raw_data_padded = raw_data
+
+        print(
+            f"[transform_raw] Running single MODWT (level {level}) on full signal "
+            f"({n_times} samples × {n_channels} channels)...",
+            flush=True,
+        )
+        wpt = modwt(raw_data_padded.T, self.wavelet_type, level)  # (n_bands, pad_to, n_ch)
+        mra = modwtmra(wpt, self.wavelet_type)                     # (n_bands, pad_to, n_ch)
+        mra = mra[:, :n_times, :]   # trim back to original length
+        del wpt, raw_data_padded
+
+        # ------------------------------------------------------------------
+        # 2. Apply per-band GEDAI filter directly in MRA space
+        # ------------------------------------------------------------------
+        # For each band we apply the fitted threshold to every sample of that
+        # band's MRA signal.  We use a single "epoch" = the entire band signal
+        # so that the spatial filter is estimated globally (consistent with how
+        # the broadband fixed-duration path works for transform, and simple).
+        # A more faithful approach would be to use overlapping windows per band,
+        # but the spatial filter only removes *spatial* artefact directions and
+        # does not change with time, so a single global application is exact.
+
+        cleaned_mra = mra.copy()  # (n_bands, n_times, n_channels)
+
+        print("[transform_raw] Applying per-band GEDAI filter...", flush=True)
+        for wavelet_fit in self.wavelets_fits:
+            w = wavelet_fit["band_index"]
+            ignore = wavelet_fit["ignore"]
+
+            if ignore:
+                cleaned_mra[w] = 0.0
+                continue
+
+            reference_cov = wavelet_fit["reference_cov"]
+            threshold = wavelet_fit["threshold"]
+
+            # band_signal: (n_channels, n_times)
+            band_signal = mra[w].T
+            cleaned_band = _process_single_epoch(band_signal, reference_cov, threshold)
+            cleaned_mra[w] = cleaned_band.T   # back to (n_times, n_channels)
+
+            print(
+                f"  Band {w} ({wavelet_fit['fmin']:.2f}–{wavelet_fit['fmax']:.2f} Hz): done",
+                flush=True,
+            )
+
+        # ------------------------------------------------------------------
+        # 3. Sum bands → reconstructed clean signal
+        # ------------------------------------------------------------------
+        # cleaned_mra : (n_bands, n_times, n_channels)
+        raw_corrected = np.sum(cleaned_mra, axis=0).T   # (n_channels, n_times)
+        del mra, cleaned_mra
+
+        raw_corrected_obj = raw.copy()
+        raw_corrected_obj._data = raw_corrected
+        print("[transform_raw] Done.", flush=True)
+        return raw_corrected_obj
+
+    @fill_doc
+    def fit_transform_raw(
+        self,
+        raw: BaseRaw,
+        duration: float = 1.0,
+        overlap: float = 0.5,
+        reject_by_annotation: bool | None = False,
+        reference_cov: str = "leadfield",
+        sensai_method: str = "optimize",
+        noise_multiplier: float = 3.0,
+        n_jobs: int = None,
+        verbose: str | None = None,
+    ):
+        """Fit and transform raw data in a single MODWT pass (spectral mode only).
+
+        This method is functionally equivalent to calling :meth:`fit_raw` followed
+        by :meth:`transform_raw`, but is significantly faster and more memory-efficient
+        when ``epoch_size_in_cycles`` is set: the MODWT is computed **once** and each
+        wavelet band is fitted and applied immediately before moving on to the next
+        band.  The cleaned bands are accumulated directly into the output array, so no
+        full ``cleaned_mra`` copy is ever allocated.
+
+        For the fixed-duration (broadband) path this method simply delegates to
+        :meth:`fit_raw` followed by :meth:`transform_raw` since the savings do not
+        apply there.
+
+        Parameters
+        ----------
+        raw : mne.io.BaseRaw
+            The raw data to fit and transform.
+        duration : float
+            Epoch duration in seconds (default 1.0). Ignored when
+            ``epoch_size_in_cycles`` is set.
+        overlap : float
+            Overlap ratio between consecutive epochs (0–1). Default is 0.5.
+        reject_by_annotation : bool
+            Whether to drop annotated segments when making broadband epochs.
+            Default is False.
+        %(reference_cov)s
+        %(sensai_method)s
+        %(noise_multiplier)s
+        %(n_jobs)s
+        %(verbose)s
+
+        Returns
+        -------
+        raw_corrected : mne.io.BaseRaw
+            A copy of *raw* with the cleaned data injected.
+
+        Notes
+        -----
+        After this call :attr:`wavelets_fits` is populated exactly as after
+        :meth:`fit_raw`, so :meth:`plot_fit` and a subsequent :meth:`transform_raw`
+        on a different dataset will work as expected.
+        """
+        check_type(raw, (BaseRaw,), "raw")
+        check_type(duration, (float, int), "duration")
+        check_type(overlap, (float, int), "overlap")
+        if not (0 <= overlap < 1):
+            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
+        check_type(reject_by_annotation, (bool,), "reject_by_annotation")
+        _check_reference_cov(reference_cov)
+        _check_sensai_method(sensai_method)
+        check_type(noise_multiplier, (float,), "noise_multiplier")
+        n_jobs = _check_n_jobs(n_jobs)
+
+        # ------------------------------------------------------------------
+        # Broadband path: no single-pass savings — just delegate
+        # ------------------------------------------------------------------
+        if self.epoch_size_in_cycles is None:
+            self.fit_raw(
+                raw,
+                duration=duration,
+                overlap=overlap,
+                reject_by_annotation=reject_by_annotation,
+                reference_cov=reference_cov,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+                verbose=verbose,
+            )
+            return self.transform_raw(raw, duration=duration, overlap=overlap,
+                                      n_jobs=n_jobs, verbose=verbose)
+
+        # ------------------------------------------------------------------
+        # Spectral path: single MODWT, fit+transform per band
+        # ------------------------------------------------------------------
+        return self._fit_transform_raw_frequency_specific(
+            raw=raw,
+            broadband_duration=duration,
+            overlap=overlap,
+            reject_by_annotation=reject_by_annotation,
+            reference_cov=reference_cov,
+            sensai_method=sensai_method,
+            noise_multiplier=noise_multiplier,
+            n_jobs=n_jobs,
+        )
+
+    def _fit_transform_raw_frequency_specific(
+        self,
+        raw: BaseRaw,
+        broadband_duration: float,
+        overlap: float,
+        reject_by_annotation: bool,
+        reference_cov,
+        sensai_method: str,
+        noise_multiplier: float,
+        n_jobs: int,
+    ):
+        """Single-pass fit + transform for spectral GEDAI.
+
+        Runs MODWT **once**, then for each wavelet band:
+        1. Fits the GEDAI spatial filter on frequency-appropriate epoch slices.
+        2. Immediately applies the filter to the full band MRA signal.
+        3. Accumulates the cleaned band directly into the output array.
+
+        The band's MRA slice is zeroed in-place after accumulation to reduce
+        the active memory footprint as the loop progresses.
+
+        Parameters
+        ----------
+        raw : mne.io.BaseRaw
+        broadband_duration : float
+        overlap : float
+        reject_by_annotation : bool
+        reference_cov : np.ndarray or str (already resolved)
+        sensai_method : str
+        noise_multiplier : float
+        n_jobs : int
+        """
+        import time
+        from ..wavelet._modwt import modwt, modwtmra
+
+        sfreq = raw.info["sfreq"]
+        n_times = raw.n_times
+        level = self.wavelet_level
+
+        # ------------------------------------------------------------------
+        # 1. Average reference if EEG
+        # ------------------------------------------------------------------
+        raw_work = raw
+        if "eeg" in raw.get_channel_types():
+            logger.info("Setting average reference to match leadfield/forward reference.")
+            raw_work = raw.copy().load_data()
+            raw_work.set_eeg_reference("average", projection=False)
+
+        # ------------------------------------------------------------------
+        # 2. Resolve reference covariance (broadband fixed-length epochs)
+        # ------------------------------------------------------------------
+        _ref_cov = reference_cov
+        if isinstance(_ref_cov, str) and _ref_cov == "leadfield":
+            _ref_cov = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat"
+                )
+            )
+
+        bb_epochs = mne.make_fixed_length_epochs(
+            raw_work,
+            duration=broadband_duration,
+            overlap=broadband_duration * overlap,
+            reject_by_annotation=reject_by_annotation,
+            preload=True,
+            verbose=False,
+        )
+        from .covariances import _compute_refcov
+        _ref_cov_arr, _ = _compute_refcov(bb_epochs, _ref_cov)
+        avg_diag_power = np.trace(_ref_cov_arr) / _ref_cov_arr.shape[0]
+        regularization_lambda = 0.05
+        epsilon = regularization_lambda * avg_diag_power
+        _ref_cov_arr += epsilon * np.eye(_ref_cov_arr.shape[0])
+
+        # ------------------------------------------------------------------
+        # 3. Frequency bands
+        # ------------------------------------------------------------------
+        freq_bands = [(0.0, sfreq / 2 ** (level + 1))]
+        for i in range(level, 0, -1):
+            freq_bands.append((sfreq / 2 ** (i + 1), sfreq / 2**i))
+        self.levels_used = level
+
+        # ------------------------------------------------------------------
+        # 4. Single MODWT pass
+        # ------------------------------------------------------------------
+        raw_data = raw_work.get_data()          # (n_channels, n_times)
+        n_channels = raw_data.shape[0]
+
+        divisor = 2 ** level
+        pad_to = int(np.ceil(n_times / divisor) * divisor)
+        if pad_to > n_times:
+            print(
+                f"Running single MODWT (level {level}) on full signal "
+                f"({n_times} samples × {n_channels} channels)...\n"
+                f"  Padding signal from {n_times} to {pad_to} samples "
+                f"(nearest multiple of 2^{level}={divisor}) for SWT.",
+                flush=True,
+            )
+            raw_data_padded = np.pad(
+                raw_data, ((0, 0), (0, pad_to - n_times)), mode="edge"
+            )
+        else:
+            print(
+                f"Running single MODWT (level {level}) on full signal "
+                f"({n_times} samples × {n_channels} channels)...",
+                flush=True,
+            )
+            raw_data_padded = raw_data
+
+        wpt = modwt(raw_data_padded.T, self.wavelet_type, level)  # (n_bands, pad_to, n_ch)
+        mra = modwtmra(wpt, self.wavelet_type)                     # (n_bands, pad_to, n_ch)
+        mra = mra[:, :n_times, :]   # trim to original length: (n_bands, n_times, n_ch)
+        del wpt, raw_data, raw_data_padded  # free raw arrays early
+
+        # ------------------------------------------------------------------
+        # 5. Per-band epoch sizes
+        # ------------------------------------------------------------------
+        epoch_durations = compute_epoch_sizes_per_band(
+            freq_bands, self.epoch_size_in_cycles, sfreq, n_times
+        )
+
+
+
+        # ------------------------------------------------------------------
+        # 6. Fit + transform each band, accumulate directly into output
+        # ------------------------------------------------------------------
+        _pass_through = dict(
+            threshold=0.0,
+            reference_cov=_ref_cov_arr,
+            epochs_eigenvalues=np.array([]),
+            sensai_runs=[],
+            ignore=True,
+        )
+
+        wavelets_fits = []
+        # Accumulate cleaned bands directly — no cleaned_mra copy needed
+        raw_corrected = np.zeros((n_channels, n_times), dtype=mra.dtype)
+
+        for w, ((fmin, fmax), band_duration) in enumerate(
+            zip(freq_bands, epoch_durations)
+        ):
+            base_fit = {"band_index": w, "fmin": fmin, "fmax": fmax}
+
+            # --- Skip: data too short ---
+            if band_duration is None:
+                print(
+                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): data too short "
+                    f"for {self.epoch_size_in_cycles} cycles — skipping.",
+                    flush=True,
+                )
+                wavelets_fits.append({**base_fit, **_pass_through})
+                mra[w] = 0.0  # free working memory in-place
+                continue
+
+            # --- Skip: below low-frequency cutoff (zeroed band) ---
+            if self.wavelet_low_cutoff is not None and fmax < self.wavelet_low_cutoff:
+                print(
+                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): zeroed "
+                    f"(below {self.wavelet_low_cutoff} Hz cutoff).",
+                    flush=True,
+                )
+                wavelets_fits.append({**base_fit, **_pass_through})
+                mra[w] = 0.0  # zeroed band contributes nothing to output
+                continue
+
+            n_epoch_samples = int(round(band_duration * sfreq))
+            step = max(1, int(n_epoch_samples * (1.0 - overlap)))
+            n_epochs_approx = max(1, (n_times - n_epoch_samples) // step + 1)
+            epoch_duration_s = n_epoch_samples / sfreq
+
+            print(
+                f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): "
+                f"{epoch_duration_s:.2f} s/epoch, ~{n_epochs_approx} epochs... ",
+                end="", flush=True,
+            )
+            _t0 = time.time()
+
+            band_signal = mra[w].T  # (n_channels, n_times) — view into mra
+
+            # Build epoch slices for fitting
+            starts = list(range(0, n_times - n_epoch_samples, step))
+            if not starts or starts[-1] + n_epoch_samples < n_times:
+                starts.append(n_times - n_epoch_samples)
+
+            wavelet_epochs_data = np.stack(
+                [band_signal[:, s: s + n_epoch_samples] for s in starts],
+                axis=0,
+            )  # (n_epochs, n_channels, n_epoch_samples)
+
+            # --- FIT ---
+            wavelet_fit = self._fit_single_band(
+                wavelet_epochs_data=wavelet_epochs_data,
+                band_index=w,
+                fmin=fmin,
+                fmax=fmax,
+                epochs_info=bb_epochs.info,
+                epochs_tmin=0.0,
+                reference_cov=_ref_cov_arr,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+            )
+            wavelets_fits.append(wavelet_fit)
+            del wavelet_epochs_data  # free epoch slices immediately
+
+            # --- TRANSFORM: apply filter to full band signal ---
+            cleaned_band = _process_single_epoch(
+                band_signal, wavelet_fit["reference_cov"], wavelet_fit["threshold"]
+            )
+
+            # Accumulate into output; then free this band's MRA slice
+            raw_corrected += cleaned_band          # (n_channels, n_times)
+            mra[w] = 0.0                           # zero in-place to reduce footprint
+            del cleaned_band
+
+            print(f"done ({time.time() - _t0:.1f} s)", flush=True)
+
+        del mra  # full MRA now freed
+
+        self.wavelets_fits = wavelets_fits
+
+        # ------------------------------------------------------------------
+        # 7. Inject cleaned data into a copy of the original Raw object
+        # ------------------------------------------------------------------
+        raw_corrected_obj = raw.copy()
+        raw_corrected_obj._data = raw_corrected
+        print("Done.", flush=True)
         return raw_corrected_obj
 
     def plot_fit(self):
