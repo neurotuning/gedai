@@ -148,16 +148,31 @@ class Gedai:
         If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper
         frequency bound is below this cutoff frequency (in Hz).
         If ``None``, no frequency band is zeroed out. The default is ``None``.
+    alpha_range : tuple
+        The frequency range in Hz for alpha-specific thresholding.
+        Default is (7, 13) Hz.
+    alpha_sensai_threshold : float
+        The minimum SENSAI threshold to use within the alpha range.
+        Default is -6.
 
     References
     ----------
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type="haar", wavelet_level=0, wavelet_low_cutoff=None):
+    def __init__(
+        self,
+        wavelet_type="haar",
+        wavelet_level=0,
+        wavelet_low_cutoff=None,
+        alpha_range=(7, 13),
+        alpha_sensai_threshold=-6,
+    ):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
         self.wavelet_low_cutoff = wavelet_low_cutoff
+        self.alpha_range = alpha_range
+        self.alpha_sensai_threshold = alpha_sensai_threshold
 
     @fill_doc
     def fit_epochs(
@@ -234,14 +249,18 @@ class Gedai:
             )
             min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
 
-            # Extend minThreshold for alpha range (7-13 Hz)
-            center_freq = (fmin + fmax) / 2
-            if 7 <= center_freq <= 13:
-                min_sensai_threshold = -6
-                logger.info(
-                    f"Alpha range detected ({fmin:.1f}-{fmax:.1f} Hz):"
-                    f" extending minThreshold to {min_sensai_threshold}"
-                )
+            # Alpha support logic (default)
+            target_min, target_max = self.alpha_range
+            # A band overlaps if fmin < target_max AND fmax > target_min
+            # However, for broadband (level 0), we only boost if the band includes the alpha range.
+            if fmin < target_max and fmax > target_min:
+                is_broadband = (fmax - fmin) > (target_max - target_min) * 5
+                if not is_broadband or self.wavelet_level == 0:
+                    min_sensai_threshold = self.alpha_sensai_threshold
+                    logger.info(
+                        f"Alpha range overlap detected ({fmin:.1f}-{fmax:.1f} Hz):"
+                        f" extending minThreshold to {min_sensai_threshold}"
+                    )
 
             n_pc = 3
             if sensai_method == "gridsearch":
