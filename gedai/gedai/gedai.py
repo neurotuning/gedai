@@ -202,6 +202,13 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # Set average reference if EEG is present
+        if "eeg" in epochs.get_channel_types():
+            logger.info("Setting average reference to match leadfield/forward reference.")
+            epochs = epochs.copy()
+            epochs.load_data()
+            epochs.set_eeg_reference("average", projection=False)
+
         # Manage built-in leadfield
         if isinstance(reference_cov, str) and reference_cov == "leadfield":
             reference_cov = os.path.abspath(
@@ -209,12 +216,6 @@ class Gedai:
                     os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat"
                 )
             )
-            # Set average reference for the default leadfield (which is EEG-based)
-            if "eeg" in epochs.get_channel_types():
-                logger.info("Setting average reference to match default leadfield.")
-                epochs = epochs.copy()
-                epochs.load_data()
-                epochs.set_eeg_reference("average", projection=False)
 
         reference_cov, ch_names = _compute_refcov(epochs, reference_cov)
 
@@ -432,7 +433,7 @@ class Gedai:
 
         # Set average reference if EEG is present
         if "eeg" in epochs.get_channel_types():
-            logger.info("Setting average reference to match leadfield covariance.")
+            logger.info("Setting average reference to match leadfield/forward reference.")
             epochs = epochs.copy()
             epochs.load_data()
             epochs.set_eeg_reference("average", projection=False)
