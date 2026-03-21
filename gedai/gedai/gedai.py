@@ -106,8 +106,7 @@ def _check_sensai_method(method):
     check_type(method, (str,), "method")
     if method not in ["gridsearch", "optimize"]:
         raise ValueError(
-            "Method must be either 'gridsearch' or 'optimize', "
-            f"got '{method}' instead."
+            f"Method must be either 'gridsearch' or 'optimize', got '{method}' instead."
         )
 
 
@@ -126,7 +125,15 @@ def _check_reference_cov(reference_cov):
 
 @fill_doc
 class Gedai:
-    r"""Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+
+    See :footcite:`Ros2025`.
+
+    .. warning::
+        For EEG channels, Gedai will set average reference internally
+        to match the leadfield covariance reference.
+        Gedai will not modify the input data in-place, but will create
+        copies when necessary to ensure the original data remains unchanged.
 
     Parameters
     ----------
@@ -138,7 +145,7 @@ class Gedai:
         If 0 (default), no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
     wavelet_low_cutoff : float | None
-        If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper 
+        If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper
         frequency bound is below this cutoff frequency (in Hz).
         If ``None``, no frequency band is zeroed out. The default is ``None``.
 
@@ -156,7 +163,7 @@ class Gedai:
     def fit_epochs(
         self,
         epochs: BaseEpochs,
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Forward | np.ndarray = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float = 3.0,
         n_jobs: int = None,
@@ -180,25 +187,21 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # Manage built-in leadfield
         if isinstance(reference_cov, str) and reference_cov == "leadfield":
             reference_cov = os.path.abspath(
                 os.path.join(
                     os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat"
                 )
             )
-        reference_cov, ch_names = _compute_refcov(epochs, reference_cov)
+            # Set average reference for the default leadfield (which is EEG-based)
+            if "eeg" in epochs.get_channel_types():
+                logger.info("Setting average reference to match default leadfield.")
+                epochs = epochs.copy()
+                epochs.load_data()
+                epochs.set_eeg_reference("average", projection=False)
 
-        # NEW: Scale reference_cov to match data scale
-        # This prevents regularization from swamping the leadfield info
-        # especially for MEG/OPM data with tiny magnitudes.
-        epochs_data = epochs.get_data(verbose=False)
-        data_cov_trace = np.mean([np.trace(np.cov(d)) for d in epochs_data])
-        ref_cov_trace = np.trace(reference_cov)
-        
-        if ref_cov_trace > 0:
-            scale_factor = data_cov_trace / ref_cov_trace
-            reference_cov = reference_cov * scale_factor
-            logger.info(f"Scaled reference covariance by {scale_factor:.2e} to match data scale.")
+        reference_cov, ch_names = _compute_refcov(epochs, reference_cov)
 
         # Tikhonov Regularization based on average diagonal power
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
@@ -216,7 +219,6 @@ class Gedai:
 
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
-            print(f" - Fitting band {w+1}/{len(freq_bands)}: {fmin:.2f} - {fmax:.2f} Hz...", flush=True)
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
 
             epochs_eigenvalues = np.zeros(
@@ -231,6 +233,16 @@ class Gedai:
                 wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False
             )
             min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+
+            # Extend minThreshold for alpha range (7-13 Hz)
+            center_freq = (fmin + fmax) / 2
+            if 7 <= center_freq <= 13:
+                min_sensai_threshold = -6
+                logger.info(
+                    f"Alpha range detected ({fmin:.1f}-{fmax:.1f} Hz):"
+                    f" extending minThreshold to {min_sensai_threshold}"
+                )
+
             n_pc = 3
             if sensai_method == "gridsearch":
                 sensai_thresholds = np.arange(
@@ -286,7 +298,6 @@ class Gedai:
                     )
             wavelet_fit["ignore"] = ignore
             wavelets_fits.append(wavelet_fit)
-            print(f"   Band {w+1} complete. Optimal eigenvalue threshold: {threshold:.4e}", flush=True)
         self.wavelets_fits = wavelets_fits
 
     @fill_doc
@@ -399,6 +410,13 @@ class Gedai:
         """
         check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
+
+        # Set average reference if EEG is present
+        if "eeg" in epochs.get_channel_types():
+            logger.info("Setting average reference to match leadfield covariance.")
+            epochs = epochs.copy()
+            epochs.load_data()
+            epochs.set_eeg_reference("average", projection=False)
 
         # Check if model was fitted
         if not hasattr(self, "wavelets_fits"):
@@ -551,7 +569,7 @@ class Gedai:
         # This guarantees first_samp, times, and bads are perfectly preserved
         raw_corrected_obj = raw.copy()
         raw_corrected_obj._data = raw_corrected
-            
+
         return raw_corrected_obj
 
     def plot_fit(self):
@@ -605,7 +623,7 @@ class Gedai:
             axes[1].legend()
 
             fig.suptitle(
-                f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz'
+                f"Band {w + 1}: {wavelet_fit['fmin']:.2f}-{wavelet_fit['fmax']:.2f} Hz"
             )
             figs.append(fig)
             axes[1].axvline(
@@ -618,7 +636,7 @@ class Gedai:
             axes[1].legend()
 
             fig.suptitle(
-                f'Band {w+1}: {wavelet_fit["fmin"]:.2f}-{wavelet_fit["fmax"]:.2f} Hz'
+                f"Band {w + 1}: {wavelet_fit['fmin']:.2f}-{wavelet_fit['fmax']:.2f} Hz"
             )
             figs.append(fig)
         return figs
