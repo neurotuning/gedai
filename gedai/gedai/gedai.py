@@ -52,6 +52,69 @@ def compute_required_duration(wavelet_level, sfreq):
     return duration
 
 
+def compute_epoch_sizes_per_band(freq_bands, epoch_size_in_cycles, sfreq, n_times):
+    """Compute frequency-specific epoch sizes, mirroring the MATLAB GEDAI logic.
+
+    For each wavelet band the epoch duration is chosen so that it spans exactly
+    ``epoch_size_in_cycles`` wave cycles of the band's *lower* boundary frequency::
+
+        epoch_size_s = epoch_size_in_cycles / lower_frequency_of_band
+
+    The broadband band (index 0 when ``level == 0``, or the approximation
+    sub-band) is treated separately and always receives a fixed 1-second epoch.
+
+    The returned durations are adjusted so that the number of samples is even
+    (to match the MATLAB implementation), and bands whose required epoch length
+    exceeds the available data are skipped (flagged as such).
+
+    Parameters
+    ----------
+    freq_bands : list of tuple
+        List of ``(fmin, fmax)`` pairs in Hz, one per wavelet band.  The first
+        entry is typically the approximation / broadband sub-band.
+    epoch_size_in_cycles : float
+        Number of wave cycles per epoch.  Default in MATLAB is ``12``.
+    sfreq : float
+        Sampling frequency in Hz.
+    n_times : int
+        Total number of time samples in the recording.
+
+    Returns
+    -------
+    epoch_durations : list of float
+        Epoch duration in seconds for each band.  Bands that are too short for
+        the required epoch are assigned ``None``.
+    """
+    epoch_durations = []
+    for fmin, fmax in freq_bands:
+        # Broadband / approximation band: use a fixed 1-second epoch
+        if fmin == 0 and fmax == freq_bands[0][1]:
+            target_duration = 1.0
+        else:
+            # epoch_size_in_cycles cycles of the lower band boundary
+            lower_freq = fmin if fmin > 0 else fmax / 2.0  # safety fallback
+            target_duration = epoch_size_in_cycles / lower_freq
+
+        # Round to the nearest *even* number of samples (MATLAB parity)
+        target_samples = target_duration * sfreq
+        rounded = round(target_samples)
+        if rounded % 2 != 0:
+            # Pick the closest even neighbour
+            lo, hi = rounded - 1, rounded + 1
+            rounded = lo if abs(target_samples - lo) < abs(target_samples - hi) else hi
+        rounded = max(rounded, 2)  # at least 2 samples
+
+        final_duration = rounded / sfreq
+
+        # If the epoch exceeds available data, mark as too long
+        if rounded > n_times:
+            epoch_durations.append(None)
+        else:
+            epoch_durations.append(final_duration)
+
+    return epoch_durations
+
+
 def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     """Compute the closest valid duration for a given wavelet level.
 
@@ -148,6 +211,24 @@ class Gedai:
         If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper
         frequency bound is below this cutoff frequency (in Hz).
         If ``None``, no frequency band is zeroed out. The default is ``None``.
+    epoch_size_in_cycles : float | None
+        When not ``None``, enables **frequency-specific epoching** (ported from the
+        MATLAB GEDAI implementation).  Each wavelet band is fitted using epochs whose
+        duration equals ``epoch_size_in_cycles`` wave-cycles of the band's lower
+        cutoff frequency::
+
+            epoch_duration_s = epoch_size_in_cycles / lower_frequency_of_band
+
+        This produces longer epochs for low-frequency bands (better statistical
+        estimation) and shorter epochs for high-frequency bands.  The MATLAB
+        default is ``12`` cycles.
+        When ``None`` (default), a single fixed epoch duration is used for all
+        bands, matching the original Python behaviour.
+
+        .. note::
+            This parameter only has an effect when calling :meth:`fit_raw`.
+            When :meth:`fit_epochs` is called directly the epochs are already
+            fixed-length; use :meth:`fit_raw` for frequency-specific epoching.
     alpha_range : tuple
         The frequency range in Hz for alpha-specific thresholding.
         Default is (7, 13) Hz.
@@ -165,14 +246,144 @@ class Gedai:
         wavelet_type="haar",
         wavelet_level=0,
         wavelet_low_cutoff=None,
+        epoch_size_in_cycles=None,
         alpha_range=(7, 13),
         alpha_sensai_threshold=-6,
     ):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
         self.wavelet_low_cutoff = wavelet_low_cutoff
+        self.epoch_size_in_cycles = epoch_size_in_cycles
         self.alpha_range = alpha_range
         self.alpha_sensai_threshold = alpha_sensai_threshold
+
+    def _fit_single_band(
+        self,
+        wavelet_epochs_data,
+        band_index,
+        fmin,
+        fmax,
+        epochs_info,
+        epochs_tmin,
+        reference_cov,
+        sensai_method,
+        noise_multiplier,
+        n_jobs,
+    ):
+        """Fit a single wavelet band and return its fit dict.
+
+        This is the inner loop extracted from :meth:`fit_epochs` so that
+        :meth:`fit_raw` can call it per-band with differently-sized epochs
+        when frequency-specific epoching is enabled.
+
+        Parameters
+        ----------
+        wavelet_epochs_data : np.ndarray, shape (n_epochs, n_channels, n_times)
+            Raw wavelet-band data for this band (already extracted from the
+            full wavelet decomposition).
+        band_index : int
+            Index of the band in the wavelet decomposition output.
+        fmin, fmax : float
+            Frequency bounds (Hz) of this band.
+        epochs_info : mne.Info
+            Info object to use when constructing :class:`mne.EpochsArray`.
+        epochs_tmin : float
+            ``tmin`` of the epochs.
+        reference_cov : np.ndarray
+            Regularised reference covariance matrix (already computed).
+        sensai_method : str
+            ``'gridsearch'`` or ``'optimize'``.
+        noise_multiplier : float
+            Noise multiplier for SENSAI scoring.
+        n_jobs : int
+            Number of parallel jobs.
+
+        Returns
+        -------
+        wavelet_fit : dict
+            Dictionary with keys ``band_index``, ``fmin``, ``fmax``,
+            ``threshold``, ``reference_cov``, ``epochs_eigenvalues``,
+            ``sensai_runs``, and ``ignore``.
+        """
+        epochs_eigenvalues = np.zeros(
+            (len(wavelet_epochs_data), wavelet_epochs_data.shape[1])
+        )
+        for e, wavelet_epoch_data in enumerate(wavelet_epochs_data):
+            covariance = np.cov(wavelet_epoch_data)
+            eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
+            epochs_eigenvalues[e] = eigenvalues
+
+        wavelet_epochs = mne.EpochsArray(
+            wavelet_epochs_data, epochs_info, tmin=epochs_tmin, verbose=False
+        )
+        min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+
+        # Alpha support logic
+        target_min, target_max = self.alpha_range
+        if fmin < target_max and fmax > target_min:
+            is_broadband = (fmax - fmin) > (target_max - target_min) * 5
+            if not is_broadband or self.wavelet_level == 0:
+                min_sensai_threshold = self.alpha_sensai_threshold
+                logger.info(
+                    f"Alpha range overlap detected ({fmin:.1f}-{fmax:.1f} Hz):"
+                    f" extending minThreshold to {min_sensai_threshold}"
+                )
+
+        n_pc = 3
+        if sensai_method == "gridsearch":
+            sensai_thresholds = np.arange(min_sensai_threshold, max_sensai_threshold, step)
+            eigen_thresholds = [
+                _sensai_to_eigen(sensai_value, epochs_eigenvalues)
+                for sensai_value in sensai_thresholds
+            ]
+            threshold, runs = _sensai_gridsearch(
+                wavelet_epochs,
+                reference_cov,
+                n_pc=n_pc,
+                noise_multiplier=noise_multiplier,
+                eigen_thresholds=eigen_thresholds,
+                n_jobs=n_jobs,
+            )
+        elif sensai_method == "optimize":
+            sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
+            threshold, runs = _sensai_optimize(
+                wavelet_epochs,
+                reference_cov,
+                n_pc=n_pc,
+                noise_multiplier=noise_multiplier,
+                epochs_eigenvalues=epochs_eigenvalues,
+                bounds=sensai_threshold_bounds,
+            )
+        else:
+            raise ValueError(
+                "Method must be either 'gridsearch' or 'optimize', "
+                f"got '{sensai_method}' instead."
+            )
+
+        # Build the fit dictionary
+        wavelet_fit = {
+            "band_index": band_index,
+            "fmin": fmin,
+            "fmax": fmax,
+            "threshold": threshold,
+            "reference_cov": reference_cov,
+            "epochs_eigenvalues": epochs_eigenvalues,
+            "sensai_runs": runs,
+        }
+
+        # Flag bands that fall below the low-cutoff
+        ignore = False
+        if self.wavelet_low_cutoff is not None:
+            if fmax < self.wavelet_low_cutoff:
+                ignore = True
+                logger.info(
+                    f"Wavelet index {band_index} ({fmin:.2f}-{fmax:.2f} Hz) "
+                    f"will be zeroed out during transformation "
+                    f"because its upper frequency {fmax:.2f} Hz "
+                    f"is below the low cutoff {self.wavelet_low_cutoff:.2f} Hz."
+                )
+        wavelet_fit["ignore"] = ignore
+        return wavelet_fit
 
     @fill_doc
     def fit_epochs(
@@ -195,6 +406,13 @@ class Gedai:
         %(noise_multiplier)s
         %(n_jobs)s
         %(verbose)s
+
+        Notes
+        -----
+        When ``epoch_size_in_cycles`` is set on the :class:`Gedai` object,
+        frequency-specific epoching is only applied via :meth:`fit_raw`.
+        Calling ``fit_epochs`` directly uses the fixed epoch length of
+        the supplied ``epochs`` object for all bands.
         """
         check_type(epochs, (BaseEpochs,), "epochs")
         _check_reference_cov(reference_cov)
@@ -236,87 +454,18 @@ class Gedai:
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
-
-            epochs_eigenvalues = np.zeros(
-                (len(wavelet_epochs_data), wavelet_epochs_data.shape[1])
+            wavelet_fit = self._fit_single_band(
+                wavelet_epochs_data=wavelet_epochs_data,
+                band_index=w,
+                fmin=fmin,
+                fmax=fmax,
+                epochs_info=epochs.info,
+                epochs_tmin=epochs.tmin,
+                reference_cov=reference_cov,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
             )
-            for e, wavelet_epoch_data in enumerate(wavelet_epochs_data):
-                covariance = np.cov(wavelet_epoch_data)
-                eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
-                epochs_eigenvalues[e] = eigenvalues
-
-            wavelet_epochs = mne.EpochsArray(
-                wavelet_epochs_data, epochs.info, tmin=epochs.tmin, verbose=False
-            )
-            min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
-
-            # Alpha support logic (default)
-            target_min, target_max = self.alpha_range
-            # A band overlaps if fmin < target_max AND fmax > target_min
-            # However, for broadband (level 0), we only boost if the band includes the alpha range.
-            if fmin < target_max and fmax > target_min:
-                is_broadband = (fmax - fmin) > (target_max - target_min) * 5
-                if not is_broadband or self.wavelet_level == 0:
-                    min_sensai_threshold = self.alpha_sensai_threshold
-                    logger.info(
-                        f"Alpha range overlap detected ({fmin:.1f}-{fmax:.1f} Hz):"
-                        f" extending minThreshold to {min_sensai_threshold}"
-                    )
-
-            n_pc = 3
-            if sensai_method == "gridsearch":
-                sensai_thresholds = np.arange(
-                    min_sensai_threshold, max_sensai_threshold, step
-                )
-                eigen_thresholds = [
-                    _sensai_to_eigen(sensai_value, epochs_eigenvalues)
-                    for sensai_value in sensai_thresholds
-                ]
-                threshold, runs = _sensai_gridsearch(
-                    wavelet_epochs,
-                    reference_cov,
-                    n_pc=n_pc,
-                    noise_multiplier=noise_multiplier,
-                    eigen_thresholds=eigen_thresholds,
-                    n_jobs=n_jobs,
-                )
-            elif sensai_method == "optimize":
-                sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
-                threshold, runs = _sensai_optimize(
-                    wavelet_epochs,
-                    reference_cov,
-                    n_pc=n_pc,
-                    noise_multiplier=noise_multiplier,
-                    epochs_eigenvalues=epochs_eigenvalues,
-                    bounds=sensai_threshold_bounds,
-                )
-            else:
-                raise ValueError(
-                    "Method must be either 'gridsearch' or 'optimize', "
-                    f"got '{sensai_method}' instead."
-                )
-            # Store band_index to map back
-            wavelet_fit = {
-                "band_index": w,
-                "fmin": fmin,
-                "fmax": fmax,
-                "threshold": threshold,
-                "reference_cov": reference_cov,
-                "epochs_eigenvalues": epochs_eigenvalues,
-                "sensai_runs": runs,
-            }
-            # ignore
-            ignore = False
-            if self.wavelet_low_cutoff is not None:
-                if fmax < self.wavelet_low_cutoff:
-                    ignore = True
-                    logger.info(
-                        f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
-                        f"will be zeroed out during transformation "
-                        f"because its upper frequency {fmax:.2f} Hz "
-                        f"is below the low cutoff {self.wavelet_low_cutoff:.2f} Hz."
-                    )
-            wavelet_fit["ignore"] = ignore
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
 
@@ -342,6 +491,8 @@ class Gedai:
         duration : float
             Duration of each epoch in seconds (default 1.0). Will be automatically
             adjusted to the closest valid duration for the wavelet level.
+            Ignored when ``epoch_size_in_cycles`` is set on the
+            :class:`Gedai` object (frequency-specific epoching mode).
         overlap : float
             The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
@@ -352,24 +503,20 @@ class Gedai:
         %(noise_multiplier)s
         %(n_jobs)s
         %(verbose)s
+
+        Notes
+        -----
+        When ``epoch_size_in_cycles`` is not ``None`` on the :class:`Gedai`
+        object, frequency-specific epoching is used: each wavelet band is
+        fitted on epochs whose duration is
+        ``epoch_size_in_cycles / lower_frequency_of_band`` seconds (mirroring
+        the MATLAB GEDAI implementation).  The ``duration`` argument is then
+        ignored for per-band fitting but is still used as the broadband epoch
+        length.
         """
         check_type(raw, (BaseRaw,), "raw")
-        check_type(
-            duration,
-            (
-                float,
-                int,
-            ),
-            "duration",
-        )
-        check_type(
-            overlap,
-            (
-                float,
-                int,
-            ),
-            "overlap",
-        )
+        check_type(duration, (float, int,), "duration")
+        check_type(overlap, (float, int,), "overlap")
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         check_type(reject_by_annotation, (bool,), "reject_by_annotation")
@@ -378,9 +525,22 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        sfreq = raw.info["sfreq"]
+
+        # ------------------------------------------------------------------
+        # Resolve and regularise the reference covariance once, upfront
+        # ------------------------------------------------------------------
+        _ref_cov = reference_cov
+        if isinstance(_ref_cov, str) and _ref_cov == "leadfield":
+            _ref_cov = os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat"
+                )
+            )
+
         # Adjust user's duration to closest valid duration
         valid_duration, valid_samples = compute_closest_valid_duration(
-            duration, self.wavelet_level, raw.info["sfreq"]
+            duration, self.wavelet_level, sfreq
         )
         if valid_duration != duration:
             logger.warn(
@@ -390,6 +550,29 @@ class Gedai:
             )
         duration = valid_duration
 
+        # ------------------------------------------------------------------
+        # Frequency-specific epoching path
+        # ------------------------------------------------------------------
+        if self.epoch_size_in_cycles is not None:
+            logger.info(
+                f"Frequency-specific epoching enabled "
+                f"({self.epoch_size_in_cycles} cycles per band)."
+            )
+            self._fit_raw_frequency_specific(
+                raw=raw,
+                broadband_duration=duration,
+                overlap=overlap,
+                reject_by_annotation=reject_by_annotation,
+                reference_cov=_ref_cov,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+            )
+            return
+
+        # ------------------------------------------------------------------
+        # Fixed-duration path (original behaviour)
+        # ------------------------------------------------------------------
         # Convert overlap ratio to seconds for mne.make_fixed_length_epochs
         overlap_seconds = duration * overlap
 
@@ -409,6 +592,178 @@ class Gedai:
             n_jobs=n_jobs,
             verbose=False,
         )
+
+    def _fit_raw_frequency_specific(
+        self,
+        raw: BaseRaw,
+        broadband_duration: float,
+        overlap: float,
+        reject_by_annotation: bool,
+        reference_cov,
+        sensai_method: str,
+        noise_multiplier: float,
+        n_jobs: int,
+    ):
+        """Fit with frequency-specific epoch sizes (MATLAB port).
+
+        Each wavelet band receives epochs sized to contain exactly
+        ``self.epoch_size_in_cycles`` wave-cycles of the band's lower
+        cutoff frequency.
+
+        Parameters
+        ----------
+        raw : mne.io.BaseRaw
+            The raw data.
+        broadband_duration : float
+            Epoch duration used for the broadband (approximation) band.
+        overlap : float
+            Overlap ratio between consecutive epochs (0–1).
+        reject_by_annotation : bool
+            Whether to drop annotated segments.
+        reference_cov : np.ndarray or str
+            Already-resolved path or array (not the 'leadfield' sentinel).
+        sensai_method : str
+            ``'gridsearch'`` or ``'optimize'``.
+        noise_multiplier : float
+            Noise multiplier for SENSAI.
+        n_jobs : int
+            Number of parallel jobs.
+        """
+        sfreq = raw.info["sfreq"]
+        n_times = raw.n_times
+
+        # Set average reference on a working copy if EEG is present
+        raw_work = raw
+        if "eeg" in raw.get_channel_types():
+            logger.info("Setting average reference to match leadfield/forward reference.")
+            raw_work = raw.copy().load_data()
+            raw_work.set_eeg_reference("average", projection=False)
+
+        # Use a short broadband epoch to resolve the reference covariance
+        _bb_epochs = mne.make_fixed_length_epochs(
+            raw_work,
+            duration=broadband_duration,
+            overlap=broadband_duration * overlap,
+            reject_by_annotation=reject_by_annotation,
+            preload=True,
+            verbose=False,
+        )
+
+        # Resolve the reference covariance from the broadband epochs
+        from .covariances import _compute_refcov
+        _ref_cov_arr, ch_names = _compute_refcov(_bb_epochs, reference_cov)
+        avg_diag_power = np.trace(_ref_cov_arr) / _ref_cov_arr.shape[0]
+        regularization_lambda = 0.05
+        epsilon = regularization_lambda * avg_diag_power
+        _ref_cov_arr = _ref_cov_arr + epsilon * np.eye(_ref_cov_arr.shape[0])
+
+        # Determine the frequency bands for all wavelet levels
+        # (Use a short dummy epoch to call epochs_to_wavelet and get freq_bands)
+        _dummy_epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
+            _bb_epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=1
+        )
+        self.levels_used = levels
+
+        # Compute per-band epoch durations
+        epoch_durations = compute_epoch_sizes_per_band(
+            freq_bands, self.epoch_size_in_cycles, sfreq, n_times
+        )
+
+        logger.info(
+            "Frequency-specific epoch durations per band:\n"
+            + "\n".join(
+                f"  Band {i} ({fmin:.2f}-{fmax:.2f} Hz): "
+                + (f"{d:.3f} s" if d is not None else "SKIPPED (data too short)")
+                for i, ((fmin, fmax), d) in enumerate(zip(freq_bands, epoch_durations))
+            )
+        )
+
+        wavelets_fits = []
+        for w, ((fmin, fmax), band_duration) in enumerate(
+            zip(freq_bands, epoch_durations)
+        ):
+            # Skip band if data is too short for the required epoch
+            if band_duration is None:
+                logger.warning(
+                    f"Band {w} ({fmin:.2f}-{fmax:.2f} Hz): data too short for "
+                    f"{self.epoch_size_in_cycles} cycles. Skipping (will pass through)."
+                )
+                # Create a pass-through fit (threshold=0, no cleaning)
+                wavelet_fit = {
+                    "band_index": w,
+                    "fmin": fmin,
+                    "fmax": fmax,
+                    "threshold": 0.0,
+                    "reference_cov": _ref_cov_arr,
+                    "epochs_eigenvalues": np.array([]),
+                    "sensai_runs": [],
+                    "ignore": True,
+                }
+                wavelets_fits.append(wavelet_fit)
+                continue
+
+            # Also flag bands below the low-cutoff
+            if self.wavelet_low_cutoff is not None and fmax < self.wavelet_low_cutoff:
+                logger.info(
+                    f"Band {w} ({fmin:.2f}-{fmax:.2f} Hz): below low cutoff "
+                    f"{self.wavelet_low_cutoff:.2f} Hz — zeroing."
+                )
+                wavelet_fit = {
+                    "band_index": w,
+                    "fmin": fmin,
+                    "fmax": fmax,
+                    "threshold": 0.0,
+                    "reference_cov": _ref_cov_arr,
+                    "epochs_eigenvalues": np.array([]),
+                    "sensai_runs": [],
+                    "ignore": True,
+                }
+                wavelets_fits.append(wavelet_fit)
+                continue
+
+            logger.info(
+                f"Fitting band {w} ({fmin:.2f}-{fmax:.2f} Hz) "
+                f"with {band_duration:.3f} s epochs "
+                f"({int(round(band_duration * sfreq))} samples)."
+            )
+
+            # Epoch the raw data with the band-specific duration
+            band_overlap_s = band_duration * overlap
+            band_epochs = mne.make_fixed_length_epochs(
+                raw_work,
+                duration=band_duration,
+                overlap=band_overlap_s,
+                reject_by_annotation=reject_by_annotation,
+                preload=True,
+                verbose=False,
+            )
+
+            # Wavelet-decompose the band-specific epochs
+            band_epochs_wavelet, _, _ = epochs_to_wavelet(
+                band_epochs,
+                wavelet=self.wavelet_type,
+                level=self.wavelet_level,
+                n_jobs=n_jobs,
+            )
+
+            # Extract the single wavelet sub-band that corresponds to this band
+            wavelet_epochs_data = band_epochs_wavelet[:, :, w, :]
+
+            wavelet_fit = self._fit_single_band(
+                wavelet_epochs_data=wavelet_epochs_data,
+                band_index=w,
+                fmin=fmin,
+                fmax=fmax,
+                epochs_info=band_epochs.info,
+                epochs_tmin=band_epochs.tmin,
+                reference_cov=_ref_cov_arr,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+            )
+            wavelets_fits.append(wavelet_fit)
+
+        self.wavelets_fits = wavelets_fits
 
     @fill_doc
     def transform_epochs(
