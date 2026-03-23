@@ -10,8 +10,8 @@ from scipy.linalg import eigh
 
 from ..sensai.sensai import (
     _eigen_to_sensai,
-    _sensai_gridsearch,
-    _sensai_optimize,
+    _sensai_gridsearch_fast,
+    _sensai_optimize_fast,
     _sensai_to_eigen,
 )
 from ..utils._checks import _check_n_jobs, check_type
@@ -286,9 +286,10 @@ class Gedai:
         fmin, fmax : float
             Frequency bounds (Hz) of this band.
         epochs_info : mne.Info
-            Info object to use when constructing :class:`mne.EpochsArray`.
+            Info object to use when constructing :class:`mne.EpochsArray`
+            (retained for API compatibility; no longer used in the fast path).
         epochs_tmin : float
-            ``tmin`` of the epochs.
+            ``tmin`` of the epochs (retained for API compat; unused in fast path).
         reference_cov : np.ndarray
             Regularised reference covariance matrix (already computed).
         sensai_method : str
@@ -305,17 +306,24 @@ class Gedai:
             ``threshold``, ``reference_cov``, ``epochs_eigenvalues``,
             ``sensai_runs``, and ``ignore``.
         """
-        epochs_eigenvalues = np.zeros(
-            (len(wavelet_epochs_data), wavelet_epochs_data.shape[1])
-        )
+        n_epochs, n_channels, _ = wavelet_epochs_data.shape
+        epochs_eigenvalues  = np.zeros((n_epochs, n_channels))
+        epochs_eigenvectors = np.zeros((n_epochs, n_channels, n_channels))
+
+        # Single GEVD pass — eigenvalues AND eigenvectors stored for reuse
+        # across all threshold evaluations (avoids re-running eigh per threshold).
         for e, wavelet_epoch_data in enumerate(wavelet_epochs_data):
             covariance = np.cov(wavelet_epoch_data)
-            eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
-            epochs_eigenvalues[e] = eigenvalues
+            eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+            epochs_eigenvalues[e]  = eigenvalues
+            epochs_eigenvectors[e] = eigenvectors
 
-        wavelet_epochs = mne.EpochsArray(
-            wavelet_epochs_data, epochs_info, tmin=epochs_tmin, verbose=False
-        )
+        # Pre-compute template (reference) subspace once per band.
+        # Regularisation is a diagonal shift → eigenvectors unchanged.
+        n_pc = 3
+        _, evecs_reference = eigh(reference_cov)
+        evecs_reference = evecs_reference[:, ::-1][:, :n_pc]  # top n_pc, (n_ch, n_pc)
+
         min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
 
         # Alpha support logic
@@ -329,16 +337,17 @@ class Gedai:
                     f" extending minThreshold to {min_sensai_threshold}"
                 )
 
-        n_pc = 3
         if sensai_method == "gridsearch":
             sensai_thresholds = np.arange(min_sensai_threshold, max_sensai_threshold, step)
             eigen_thresholds = [
                 _sensai_to_eigen(sensai_value, epochs_eigenvalues)
                 for sensai_value in sensai_thresholds
             ]
-            threshold, runs = _sensai_gridsearch(
-                wavelet_epochs,
+            threshold, runs = _sensai_gridsearch_fast(
+                epochs_eigenvalues,
+                epochs_eigenvectors,
                 reference_cov,
+                evecs_reference,
                 n_pc=n_pc,
                 noise_multiplier=noise_multiplier,
                 eigen_thresholds=eigen_thresholds,
@@ -346,12 +355,13 @@ class Gedai:
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
-            threshold, runs = _sensai_optimize(
-                wavelet_epochs,
+            threshold, runs = _sensai_optimize_fast(
+                epochs_eigenvalues,
+                epochs_eigenvectors,
                 reference_cov,
+                evecs_reference,
                 n_pc=n_pc,
                 noise_multiplier=noise_multiplier,
-                epochs_eigenvalues=epochs_eigenvalues,
                 bounds=sensai_threshold_bounds,
             )
         else:
