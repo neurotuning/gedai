@@ -123,15 +123,15 @@ print(
     flush=True,
 )
 gedai = Gedai(
-    wavelet_level=8,
-    wavelet_low_cutoff=0.5,
+    wavelet_level='auto',
+    wavelet_low_cutoff=1.0,
     epoch_size_in_cycles=12,
 )
 # Notch filter before GEDAI to remove line noise
 print("Applying notch filter (50 Hz) before GEDAI...", flush=True)
 raw_mag.notch_filter(50, notch_widths=4, verbose=False)
 
-raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=3.0, n_jobs=1)
+raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=2.0, n_jobs=1)
 
 # Compare before vs after GEDAI at matching bandwidth (0.5-70 Hz, before any further filtering)
 # Keys: left/right scroll, up/down scale, D=diff, N=denoised only, O=noisy only

@@ -305,6 +305,12 @@ class Gedai:
         preliminary_broadband_noise_multiplier=6.0,
     ):
         self.wavelet_type = wavelet_type
+        if wavelet_level != "auto" and (
+            not isinstance(wavelet_level, int) or wavelet_level < 0
+        ):
+            raise ValueError(
+                f"wavelet_level must be a non-negative int or 'auto', got {wavelet_level!r}."
+            )
         self.wavelet_level = wavelet_level
         self.wavelet_low_cutoff = wavelet_low_cutoff
         self.epoch_size_in_cycles = epoch_size_in_cycles
@@ -390,6 +396,32 @@ class Gedai:
         raw_hp = raw.copy()
         raw_hp._data = hp_data
         return raw_hp
+
+    def _resolve_wavelet_level(self, sfreq: float) -> int:
+        """Return the concrete wavelet decomposition level to use.
+
+        If ``self.wavelet_level`` is an integer, returns it unchanged.
+        If it is ``'auto'``, computes the minimum level *L* such that the
+        lowest detail band just covers ``wavelet_low_cutoff``::
+
+            L = ceil(log2(sfreq / wavelet_low_cutoff)) - 1
+
+        Falls back to ``wavelet_low_cutoff = 0.5`` when not set.
+        """
+        if self.wavelet_level != "auto":
+            return self.wavelet_level
+
+        import math
+        cutoff = self.wavelet_low_cutoff if self.wavelet_low_cutoff is not None else 0.5
+        level = max(1, math.ceil(math.log2(sfreq / cutoff)) - 1)
+        print(
+            f"[GEDAI] wavelet_level='auto': sfreq={sfreq} Hz, "
+            f"cutoff={cutoff} Hz -> level={level} "
+            f"(lowest band ~{sfreq / 2 ** (level + 1):.3f}-"
+            f"{sfreq / 2 ** level:.3f} Hz)",
+            flush=True,
+        )
+        return level
 
     def _fit_single_band(
         self,
@@ -911,7 +943,7 @@ class Gedai:
         # 3. Compute frequency bands directly from sfreq and wavelet_level
         #    (mirrors the band structure produced by epochs_to_wavelet)
         # ------------------------------------------------------------------
-        level = self.wavelet_level
+        level = self._resolve_wavelet_level(sfreq)
         freq_bands = [(0.0, sfreq / 2 ** (level + 1))]  # approximation sub-band
         for i in range(level, 0, -1):
             freq_bands.append((sfreq / 2 ** (i + 1), sfreq / 2**i))
@@ -1483,7 +1515,7 @@ class Gedai:
 
         sfreq = raw.info["sfreq"]
         n_times = raw.n_times
-        level = self.wavelet_level
+        level = self._resolve_wavelet_level(sfreq)
 
         # ------------------------------------------------------------------
         # Step 0: MODWT high-pass pre-processing
