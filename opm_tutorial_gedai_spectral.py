@@ -126,7 +126,7 @@ gedai = Gedai(
     wavelet_low_cutoff=0.5,
     epoch_size_in_cycles=12,
 )
-raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=3.0, n_jobs=1)
+raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=1.5, n_jobs=1)
 
 # Post-GEDAI filtering
 raw_gedai.notch_filter(50, notch_widths=4, verbose=False)

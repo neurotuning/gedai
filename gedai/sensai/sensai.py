@@ -34,7 +34,25 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return np.sort(angles_rad)
 
 
-def _sensai_to_eigen(sensai_value, eigenvalues):
+def _sensai_to_eigen(sensai_value, eigenvalues, percentile=95):
+    """Convert a SENSAI score (0-105 scale) to an eigenvalue threshold.
+
+    Parameters
+    ----------
+    sensai_value : float
+        SENSAI threshold on the 0–105 scale.
+    eigenvalues : np.ndarray
+        All per-epoch GEVD eigenvalues (used to calibrate the scale).
+    percentile : float
+        Percentile of the log-eigenvalue distribution used as the reference
+        point.  MATLAB uses **98** for EEG and **99** for MEG (the original
+        Python code was 95).  Default is 95 (backward compatible).
+
+    Returns
+    -------
+    eigenvalue : float
+        The corresponding raw eigenvalue threshold.
+    """
     all_diagonals = np.abs(eigenvalues.T.flatten())
     valid_diags = all_diagonals[all_diagonals > 0]
     if len(valid_diags) == 0:
@@ -47,13 +65,25 @@ def _sensai_to_eigen(sensai_value, eigenvalues):
     shifted_log = log_eig + offset
 
     T1 = (105 - sensai_value) / 100
-    threshold1 = T1 * np.percentile(shifted_log, 95)
+    threshold1 = T1 * np.percentile(shifted_log, percentile)
 
     eigenvalue = 10 ** (threshold1 - offset)
     return float(eigenvalue)
 
 
-def _eigen_to_sensai(eigenvalue, eigenvalues):
+def _eigen_to_sensai(eigenvalue, eigenvalues, percentile=95):
+    """Inverse of :func:`_sensai_to_eigen` — convert an eigenvalue threshold
+    back to the SENSAI 0–105 scale (used for plotting).
+
+    Parameters
+    ----------
+    eigenvalue : float
+        Raw eigenvalue threshold.
+    eigenvalues : np.ndarray
+        All per-epoch GEVD eigenvalues.
+    percentile : float
+        Must match the value used in the forward conversion.  Default 95.
+    """
     all_diagonals = np.abs(eigenvalues.T.flatten())
     valid_diags = all_diagonals[all_diagonals > 0]
     if len(valid_diags) == 0:
@@ -69,12 +99,12 @@ def _eigen_to_sensai(eigenvalue, eigenvalues):
         return 105.0
 
     threshold1 = np.log10(eigenvalue) + offset
-    percentile_95 = np.percentile(shifted_log, 95)
+    percentile_val = np.percentile(shifted_log, percentile)
 
-    if percentile_95 == 0:
+    if percentile_val == 0:
         return 105.0
 
-    T1 = threshold1 / percentile_95
+    T1 = threshold1 / percentile_val
     sensai_value = 105 - T1 * 100
     return float(sensai_value)
 
@@ -260,6 +290,7 @@ def _sensai_optimize_fast(
     n_pc,
     noise_multiplier,
     bounds,
+    percentile=95,
 ):
     """Optimize SENSAI threshold using the fast analytical scorer.
 
@@ -273,6 +304,10 @@ def _sensai_optimize_fast(
     noise_multiplier : float
     bounds : tuple of (float, float)
         SENSAI-scale bounds for the scalar minimisation.
+    percentile : float
+        Percentile of the log-eigenvalue distribution used for threshold
+        conversion.  Use **98** for EEG, **99** for MEG (MATLAB defaults).
+        Default is 95 (backward compatible).
 
     Returns
     -------
@@ -282,7 +317,9 @@ def _sensai_optimize_fast(
     runs = []
 
     def objective_function(sensai_threshold):
-        eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
+        eigen_threshold = _sensai_to_eigen(
+            sensai_threshold, epochs_eigenvalues, percentile=percentile
+        )
         score, sig_ss, noise_ss = _sensai_score_fast(
             eigen_threshold,
             epochs_eigenvalues,
@@ -297,7 +334,7 @@ def _sensai_optimize_fast(
 
     result = minimize_scalar(objective_function, bounds=bounds, method="bounded")
 
-    eigen_threshold = _sensai_to_eigen(result.x, epochs_eigenvalues)
+    eigen_threshold = _sensai_to_eigen(result.x, epochs_eigenvalues, percentile=percentile)
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
 

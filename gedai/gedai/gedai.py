@@ -21,6 +21,31 @@ from ..wavelet.transform import epochs_to_wavelet
 from .covariances import _compute_refcov
 
 
+def _detect_signal_type(info):
+    """Automatically detect whether data is EEG or MEG from MNE channel info.
+
+    Parameters
+    ----------
+    info : mne.Info
+        The MNE info object of the data being processed.
+
+    Returns
+    -------
+    signal_type : str
+        ``'eeg'`` if EEG channels are present (and no MEG), ``'meg'`` if
+        magnetometers or gradiometers are present.  When both types coexist
+        the first MEG-like type found takes priority.  Falls back to
+        ``'meg'`` when the channel type cannot be determined.
+    """
+    ch_types = set(info.get_channel_types())
+    if "mag" in ch_types or "grad" in ch_types:
+        return "meg"
+    if "eeg" in ch_types:
+        return "eeg"
+    # Unknown channel types (e.g. generic / misc) — treat conservatively as MEG
+    return "meg"
+
+
 def create_cosine_weights(n_samples):
     """Create cosine weights for a single epoch, mimicking the MATLAB implementation."""
     u = np.arange(1, n_samples + 1)
@@ -235,6 +260,21 @@ class Gedai:
     alpha_sensai_threshold : float
         The minimum SENSAI threshold to use within the alpha range.
         Default is -6.
+    signal_type : str
+        Type of neural signal.  Accepted values:
+
+        - ``'eeg'`` — Apply average referencing; use fixed 3 principal
+          components for the reference subspace (SENSAI); use the 98th
+          percentile of the log-eigenvalue distribution for threshold
+          conversion (matching the MATLAB implementation).
+        - ``'meg'`` — Skip average referencing; adaptively select the
+          number of reference PCs that explain >=85%% of the reference
+          covariance variance; use 4 PCs for the SSI comparison; use
+          the 99th percentile for threshold conversion.
+        - ``'auto'`` (default) — Automatically determined from the
+          MNE channel types of the data at fit time.  Magnetometers
+          (``mag``) and gradiometers (``grad``) map to ``'meg'``;
+          ``eeg`` channels map to ``'eeg'``.
 
     References
     ----------
@@ -249,6 +289,7 @@ class Gedai:
         epoch_size_in_cycles=None,
         alpha_range=(7, 13),
         alpha_sensai_threshold=-6,
+        signal_type="auto",
     ):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
@@ -256,6 +297,11 @@ class Gedai:
         self.epoch_size_in_cycles = epoch_size_in_cycles
         self.alpha_range = alpha_range
         self.alpha_sensai_threshold = alpha_sensai_threshold
+        if signal_type not in ("eeg", "meg", "auto"):
+            raise ValueError(
+                f"signal_type must be 'eeg', 'meg', or 'auto', got '{signal_type}'."
+            )
+        self.signal_type = signal_type
 
     def _fit_single_band(
         self,
@@ -269,6 +315,7 @@ class Gedai:
         sensai_method,
         noise_multiplier,
         n_jobs,
+        signal_type="meg",
     ):
         """Fit a single wavelet band and return its fit dict.
 
@@ -298,6 +345,11 @@ class Gedai:
             Noise multiplier for SENSAI scoring.
         n_jobs : int
             Number of parallel jobs.
+        signal_type : str
+            ``'eeg'`` or ``'meg'`` (already resolved from ``'auto'`` by the
+            caller).  Controls the number of reference PCs and the percentile
+            used for eigenvalue ↔ SENSAI conversion (mirroring the MATLAB
+            ``GEDAI_per_band.m`` and ``clean_SENSAI.m`` logic).
 
         Returns
         -------
@@ -318,11 +370,34 @@ class Gedai:
             epochs_eigenvalues[e]  = eigenvalues
             epochs_eigenvectors[e] = eigenvectors
 
+        # ------------------------------------------------------------------
+        # Signal-type dependent parameters (mirrors MATLAB GEDAI_per_band.m
+        # and clean_SENSAI.m).
+        # ------------------------------------------------------------------
+        if signal_type == "eeg":
+            # EEG: fixed 3 PCs for both reference template and SSI comparison;
+            # 98th percentile for eigenvalue <-> SENSAI conversion.
+            refcov_n_pc = 3
+            ssi_n_pc    = 3
+            eigen_percentile = 98
+        else:  # 'meg'
+            # MEG: adaptive PCs for reference template (≥85 % variance);
+            # 4 PCs for SSI comparison; 99th percentile.
+            all_evals = eigh(reference_cov, eigvals_only=True)[::-1]  # descending
+            cumvar = np.cumsum(all_evals) / np.sum(all_evals)
+            refcov_n_pc = int(np.searchsorted(cumvar, 0.85) + 1)
+            refcov_n_pc = max(1, min(refcov_n_pc, n_channels - 1))
+            ssi_n_pc    = 4
+            eigen_percentile = 99
+            if refcov_n_pc < ssi_n_pc:
+                logger.warning(
+                    "MEG refCOV variance is concentrated in too few PCs "
+                    f"({refcov_n_pc}). Verify the reference/leadfield matrix."
+                )
+
         # Pre-compute template (reference) subspace once per band.
-        # Regularisation is a diagonal shift → eigenvectors unchanged.
-        n_pc = 3
         _, evecs_reference = eigh(reference_cov)
-        evecs_reference = evecs_reference[:, ::-1][:, :n_pc]  # top n_pc, (n_ch, n_pc)
+        evecs_reference = evecs_reference[:, ::-1][:, :refcov_n_pc]  # (n_ch, n_pc)
 
         min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
 
@@ -340,7 +415,8 @@ class Gedai:
         if sensai_method == "gridsearch":
             sensai_thresholds = np.arange(min_sensai_threshold, max_sensai_threshold, step)
             eigen_thresholds = [
-                _sensai_to_eigen(sensai_value, epochs_eigenvalues)
+                _sensai_to_eigen(sensai_value, epochs_eigenvalues,
+                                 percentile=eigen_percentile)
                 for sensai_value in sensai_thresholds
             ]
             threshold, runs = _sensai_gridsearch_fast(
@@ -348,7 +424,7 @@ class Gedai:
                 epochs_eigenvectors,
                 reference_cov,
                 evecs_reference,
-                n_pc=n_pc,
+                n_pc=ssi_n_pc,
                 noise_multiplier=noise_multiplier,
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
@@ -360,9 +436,10 @@ class Gedai:
                 epochs_eigenvectors,
                 reference_cov,
                 evecs_reference,
-                n_pc=n_pc,
+                n_pc=ssi_n_pc,
                 noise_multiplier=noise_multiplier,
                 bounds=sensai_threshold_bounds,
+                percentile=eigen_percentile,
             )
         else:
             raise ValueError(
@@ -430,8 +507,14 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        # Set average reference if EEG is present
-        if "eeg" in epochs.get_channel_types():
+        # Resolve signal type (auto-detect from channel types if needed)
+        signal_type = self.signal_type
+        if signal_type == "auto":
+            signal_type = _detect_signal_type(epochs.info)
+            logger.info(f"Auto-detected signal type: '{signal_type}'.")
+
+        # Set average reference for EEG only
+        if signal_type == "eeg" and "eeg" in epochs.get_channel_types():
             logger.info("Setting average reference to match leadfield/forward reference.")
             epochs = epochs.copy()
             epochs.load_data()
@@ -475,6 +558,7 @@ class Gedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 n_jobs=n_jobs,
+                signal_type=signal_type,
             )
             wavelets_fits.append(wavelet_fit)
         self.wavelets_fits = wavelets_fits
@@ -535,6 +619,12 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # Resolve signal type (auto-detect from channel types if needed)
+        signal_type = self.signal_type
+        if signal_type == "auto":
+            signal_type = _detect_signal_type(raw.info)
+            logger.info(f"Auto-detected signal type: '{signal_type}'.")
+
         sfreq = raw.info["sfreq"]
 
         # ------------------------------------------------------------------
@@ -568,6 +658,7 @@ class Gedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 n_jobs=n_jobs,
+                signal_type=signal_type,
             )
             return
 
@@ -620,6 +711,7 @@ class Gedai:
         sensai_method: str,
         noise_multiplier: float,
         n_jobs: int,
+        signal_type: str = "meg",
     ):
         """Fit with frequency-specific epoch sizes (MATLAB port).
 
@@ -661,10 +753,10 @@ class Gedai:
         n_times = raw.n_times
 
         # ------------------------------------------------------------------
-        # 1. Average reference if EEG
+        # 1. Average reference for EEG only (MEG skips this step)
         # ------------------------------------------------------------------
         raw_work = raw
-        if "eeg" in raw.get_channel_types():
+        if signal_type == "eeg" and "eeg" in raw.get_channel_types():
             logger.info("Setting average reference to match leadfield/forward reference.")
             raw_work = raw.copy().load_data()
             raw_work.set_eeg_reference("average", projection=False)
@@ -816,6 +908,7 @@ class Gedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 n_jobs=n_jobs,
+                signal_type=signal_type,
             )
             wavelets_fits.append(wavelet_fit)
             print(f"done ({time.time() - _t0:.1f} s)", flush=True)
@@ -1185,6 +1278,12 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # Resolve signal type (auto-detect from channel types if needed)
+        signal_type = self.signal_type
+        if signal_type == "auto":
+            signal_type = _detect_signal_type(raw.info)
+            logger.info(f"Auto-detected signal type: '{signal_type}'.")
+
         # ------------------------------------------------------------------
         # Broadband path: no single-pass savings — just delegate
         # ------------------------------------------------------------------
@@ -1215,6 +1314,7 @@ class Gedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             n_jobs=n_jobs,
+            signal_type=signal_type,
         )
 
     def _fit_transform_raw_frequency_specific(
@@ -1227,6 +1327,7 @@ class Gedai:
         sensai_method: str,
         noise_multiplier: float,
         n_jobs: int,
+        signal_type: str = "meg",
     ):
         """Single-pass fit + transform for spectral GEDAI.
 
@@ -1257,10 +1358,10 @@ class Gedai:
         level = self.wavelet_level
 
         # ------------------------------------------------------------------
-        # 1. Average reference if EEG
+        # 1. Average reference for EEG only (MEG skips this step)
         # ------------------------------------------------------------------
         raw_work = raw
-        if "eeg" in raw.get_channel_types():
+        if signal_type == "eeg" and "eeg" in raw.get_channel_types():
             logger.info("Setting average reference to match leadfield/forward reference.")
             raw_work = raw.copy().load_data()
             raw_work.set_eeg_reference("average", projection=False)
@@ -1418,6 +1519,7 @@ class Gedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 n_jobs=n_jobs,
+                signal_type=signal_type,
             )
             wavelets_fits.append(wavelet_fit)
             del wavelet_epochs_data  # free epoch slices immediately
