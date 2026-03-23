@@ -27,8 +27,10 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
     transformed_epoch = np.zeros((n_channels, level + 1, n_times))
 
     for c, ch_data in enumerate(epoch_data):
-        coeffs = modwt(ch_data, wavelet, level)
-        modwtmra_data = modwtmra(coeffs, wavelet)
+        # n_jobs=1: this function is already dispatched in parallel over epochs;
+        # using n_jobs>1 here would cause oversubscription.
+        coeffs = modwt(ch_data, wavelet, level, n_jobs=1)
+        modwtmra_data = modwtmra(coeffs, wavelet, n_jobs=1)
         modwtmra_data = np.squeeze(modwtmra_data, axis=-1)
         transformed_epoch[c, :, :] = modwtmra_data
 

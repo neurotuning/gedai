@@ -381,9 +381,10 @@ class Gedai:
         else:
             padded = raw_data
 
-        # MODWT decomposition
-        wpt = modwt(padded.T, self.wavelet_type, level)  # (n_bands, pad_to, n_ch)
-        mra = modwtmra(wpt, self.wavelet_type)            # (n_bands, pad_to, n_ch)
+        # MODWT decomposition — top-level call (not inside a parallel loop);
+        # use all available cores across channels.
+        wpt = modwt(padded.T, self.wavelet_type, level, n_jobs=-1)  # (n_bands, pad_to, n_ch)
+        mra = modwtmra(wpt, self.wavelet_type, n_jobs=-1)            # (n_bands, pad_to, n_ch)
         del wpt, padded
 
         # Zero the approximation band (band index 0 = lowest frequencies)
@@ -979,8 +980,8 @@ class Gedai:
         else:
             raw_data_padded = raw_data
 
-        wpt = modwt(raw_data_padded.T, self.wavelet_type, level)   # (n_bands, pad_to, n_channels)
-        mra = modwtmra(wpt, self.wavelet_type)                      # (n_bands, pad_to, n_channels)
+        wpt = modwt(raw_data_padded.T, self.wavelet_type, level, n_jobs=-1)   # (n_bands, pad_to, n_channels)
+        mra = modwtmra(wpt, self.wavelet_type, n_jobs=-1)                      # (n_bands, pad_to, n_channels)
         mra = mra[:, :n_times, :]   # trim back to original length
         del wpt, raw_data, raw_data_padded  # free memory early
 
@@ -1561,12 +1562,14 @@ class Gedai:
         # ------------------------------------------------------------------
         # 2b. Preliminary broadband GEDAI pass (mirrors MATLAB GEDAI.m)
         # ------------------------------------------------------------------
+        _bb_enova = None
         if self.preliminary_broadband_noise_multiplier is not None:
             print(
                 f"[GEDAI] Preliminary broadband pass "
                 f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
                 flush=True,
             )
+            _bb_data_before = raw_work.get_data()
             _bb_gedai = Gedai(
                 wavelet_type=self.wavelet_type,
                 wavelet_level=0,
@@ -1580,6 +1583,10 @@ class Gedai:
                 noise_multiplier=float(self.preliminary_broadband_noise_multiplier),
                 sensai_method=sensai_method,
             )
+            _bb_data_after = raw_work.get_data()
+            _bb_var = float(np.var(_bb_data_before))
+            _bb_enova = float(np.var(_bb_data_before - _bb_data_after) / _bb_var) if _bb_var > 0 else 0.0
+            del _bb_data_before, _bb_data_after
 
         # ------------------------------------------------------------------
         # 3. Frequency bands
@@ -1644,6 +1651,7 @@ class Gedai:
         wavelets_fits = []
         # Accumulate cleaned bands directly — no cleaned_mra copy needed
         raw_corrected = np.zeros((n_channels, n_times), dtype=mra.dtype)
+        _band_table = []  # (band_idx, fmin, fmax, epoch_s, enova, status)
 
         for w, ((fmin, fmax), band_duration) in enumerate(
             zip(freq_bands, epoch_durations)
@@ -1653,22 +1661,24 @@ class Gedai:
             # --- Skip: data too short ---
             if band_duration is None:
                 print(
-                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): data too short "
-                    f"for {self.epoch_size_in_cycles} cycles — skipping.",
+                    f"  Band {w} ({fmin:.2f}-{fmax:.2f} Hz): data too short "
+                    f"for {self.epoch_size_in_cycles} cycles - skipping.",
                     flush=True,
                 )
                 wavelets_fits.append({**base_fit, **_pass_through})
+                _band_table.append((w, fmin, fmax, None, None, "too short"))
                 mra[w] = 0.0  # free working memory in-place
                 continue
 
             # --- Skip: below low-frequency cutoff (zeroed band) ---
             if self.wavelet_low_cutoff is not None and fmax < self.wavelet_low_cutoff:
                 print(
-                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): zeroed "
+                    f"  Band {w} ({fmin:.2f}-{fmax:.2f} Hz): zeroed "
                     f"(below {self.wavelet_low_cutoff} Hz cutoff).",
                     flush=True,
                 )
                 wavelets_fits.append({**base_fit, **_pass_through})
+                _band_table.append((w, fmin, fmax, None, None, "zeroed"))
                 mra[w] = 0.0  # zeroed band contributes nothing to output
                 continue
 
@@ -1678,7 +1688,7 @@ class Gedai:
             epoch_duration_s = n_epoch_samples / sfreq
 
             print(
-                f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): "
+                f"  Band {w} ({fmin:.2f}-{fmax:.2f} Hz): "
                 f"{epoch_duration_s:.2f} s/epoch, ~{n_epochs_approx} epochs... ",
                 end="", flush=True,
             )
@@ -1718,6 +1728,12 @@ class Gedai:
                 band_signal, wavelet_fit["reference_cov"], wavelet_fit["threshold"]
             )
 
+            # ENOVA: variance of removed noise / variance of original band
+            band_var = float(np.var(band_signal))
+            enova = float(np.var(band_signal - cleaned_band) / band_var) if band_var > 0 else 0.0
+            wavelet_fit["enova"] = enova
+            _band_table.append((w, fmin, fmax, epoch_duration_s, enova, "ok"))
+
             # Accumulate into output; then free this band's MRA slice
             raw_corrected += cleaned_band          # (n_channels, n_times)
             mra[w] = 0.0                           # zero in-place to reduce footprint
@@ -1726,6 +1742,29 @@ class Gedai:
             print(f"done ({time.time() - _t0:.1f} s)", flush=True)
 
         del mra  # full MRA now freed
+
+        # ------------------------------------------------------------------
+        # Summary table (mirrors MATLAB GEDAI.m per-band output)
+        # ------------------------------------------------------------------
+        _COL = 62
+        _hdr = f"  {'Band':>4}  {'Center(Hz)':>10}  {'Range(Hz)':>17}  {'Epoch(s)':>9}  {'ENOVA(%)':>9}"
+        print("\n" + "=" * _COL)
+        print(_hdr)
+        print("-" * _COL)
+        # Broadband row
+        if _bb_enova is not None:
+            print(f"  {'BB':>4}  {'---':>10}  {'broadband':>17}  {'1.00':>9}  {_bb_enova * 100:>9.2f}")
+        # Per-band rows
+        for _w, _fmin, _fmax, _dur, _enova, _status in _band_table:
+            _center = (_fmin + _fmax) / 2.0
+            _range_str = f"{_fmin:.3f}-{_fmax:.3f}"
+            if _status == "ok":
+                print(f"  {_w:>4}  {_center:>10.3f}  {_range_str:>17}  {_dur:>9.2f}  {_enova * 100:>9.2f}")
+            elif _status == "zeroed":
+                print(f"  {_w:>4}  {_center:>10.3f}  {_range_str:>17}  {'---':>9}  {'zeroed':>9}")
+            else:
+                print(f"  {_w:>4}  {_center:>10.3f}  {_range_str:>17}  {'---':>9}  {'skipped':>9}")
+        print("=" * _COL + "\n")
 
         self.wavelets_fits = wavelets_fits
 
