@@ -387,8 +387,9 @@ class Gedai:
         mra = modwtmra(wpt, self.wavelet_type, n_jobs=-1)            # (n_bands, pad_to, n_ch)
         del wpt, padded
 
-        # Zero the approximation band (band index 0 = lowest frequencies)
-        mra[0] = 0.0
+        # Zero the approximation band (last index = lowest frequencies).
+        # MRA order: [D_1(finest), ..., D_L(coarsest), S_L(approx)]
+        mra[-1] = 0.0
 
         # Reconstruct from detail bands only, trim padding
         hp_data = np.sum(mra, axis=0)[:n_times, :].T    # (n_ch, n_times)
@@ -923,7 +924,7 @@ class Gedai:
         if self.preliminary_broadband_noise_multiplier is not None:
             print(
                 f"[GEDAI] Preliminary broadband pass "
-                f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
+                f"(noise_multiplier={noise_multiplier:.1f})...",
                 flush=True,
             )
             _bb_gedai = Gedai(
@@ -936,7 +937,7 @@ class Gedai:
             raw_work = _bb_gedai.fit_transform_raw(
                 raw_work,
                 reference_cov=_ref_cov_arr,
-                noise_multiplier=float(self.preliminary_broadband_noise_multiplier),
+                noise_multiplier=noise_multiplier,
                 sensai_method=sensai_method,
             )
 
@@ -945,9 +946,12 @@ class Gedai:
         #    (mirrors the band structure produced by epochs_to_wavelet)
         # ------------------------------------------------------------------
         level = self._resolve_wavelet_level(sfreq)
-        freq_bands = [(0.0, sfreq / 2 ** (level + 1))]  # approximation sub-band
-        for i in range(level, 0, -1):
-            freq_bands.append((sfreq / 2 ** (i + 1), sfreq / 2**i))
+        # freq_bands matches MRA band order:
+        #   [D_1(highest freq), D_2, ..., D_L(lowest freq detail), S_L(approx)]
+        freq_bands = []
+        for k in range(1, level + 1):
+            freq_bands.append((sfreq / 2 ** (k + 1), sfreq / 2 ** k))
+        freq_bands.append((0.0, sfreq / 2 ** (level + 1)))
         self.levels_used = level
 
         # ------------------------------------------------------------------
@@ -1566,7 +1570,7 @@ class Gedai:
         if self.preliminary_broadband_noise_multiplier is not None:
             print(
                 f"[GEDAI] Preliminary broadband pass "
-                f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
+                f"(noise_multiplier={noise_multiplier:.1f})...",
                 flush=True,
             )
             _bb_data_before = raw_work.get_data()
@@ -1580,7 +1584,7 @@ class Gedai:
             raw_work = _bb_gedai.fit_transform_raw(
                 raw_work,
                 reference_cov=_ref_cov_arr,
-                noise_multiplier=float(self.preliminary_broadband_noise_multiplier),
+                noise_multiplier=noise_multiplier,
                 sensai_method=sensai_method,
             )
             _bb_data_after = raw_work.get_data()
@@ -1591,9 +1595,12 @@ class Gedai:
         # ------------------------------------------------------------------
         # 3. Frequency bands
         # ------------------------------------------------------------------
-        freq_bands = [(0.0, sfreq / 2 ** (level + 1))]
-        for i in range(level, 0, -1):
-            freq_bands.append((sfreq / 2 ** (i + 1), sfreq / 2**i))
+        # freq_bands matches MRA band order:
+        #   [D_1(highest freq), D_2, ..., D_L(lowest freq detail), S_L(approx)]
+        freq_bands = []
+        for k in range(1, level + 1):
+            freq_bands.append((sfreq / 2 ** (k + 1), sfreq / 2 ** k))
+        freq_bands.append((0.0, sfreq / 2 ** (level + 1)))
         self.levels_used = level
 
         # ------------------------------------------------------------------

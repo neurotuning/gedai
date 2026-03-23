@@ -73,16 +73,12 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
         freq_bands = [(0, sfreq / 2)]
         levels = 0
     else:
+        # freq_bands matches MRA band order:
+        #   [D_1(highest freq), D_2, ..., D_L(lowest freq detail), S_L(approx)]
         freq_bands = []
-
-        # Approximation (index 0): lowest frequencies
+        for k in range(1, level + 1):
+            freq_bands.append((sfreq / (2 ** (k + 1)), sfreq / (2 ** k)))
         freq_bands.append((0, sfreq / (2 ** (level + 1))))
-
-        # Details (indices 1 to level): from coarse to fine
-        for i in range(level, 0, -1):
-            fmin = sfreq / (2 ** (i + 1))
-            fmax = sfreq / (2**i)
-            freq_bands.append((fmin, fmax))
 
         # Parallelize the wavelet transform across epochs
         if n_jobs == 1:

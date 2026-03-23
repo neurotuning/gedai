@@ -120,24 +120,27 @@ def _mra_single_channel(wpt_ch, wavelet_type):
 
     mra_ch = np.empty_like(wpt_ch)
 
-    # Compute A_J … A_0 (A_0 ≡ full reconstruction)
-    # A_j  : keep details D1 … Dj  (zero_details_above = j-1 for 0-based indices)
-    # A_{j-1}: keep details D1 … D_{j-1}
-    # D_j  = A_j - A_{j-1}
+    # Cascade: A_J → A_{J-1} → … → A_0
+    #   A_J   = iSWT(all coefficients)          = full reconstruction
+    #   A_{j} = iSWT(keep details 1…j only)     = partial reconstruction
+    #   A_0   = iSWT(no details, only VJ)       = smooth approximation S_J
+    #
+    #   D_j = A_j − A_{j-1}     (detail band j)
+    #   S_J = A_0                (approximation band)
 
     # Start from the full reconstruction (keep all details)
     prev_approx = _iswt_channel(_build_coeffs(level - 1), wavelet_type)  # A_J
-    mra_ch[level] = prev_approx  # A_J is the last band
 
     for j in range(level, 0, -1):       # j = L … 1
-        detail_idx = j - 1              # D_j is at mra_ch[j-1]
-        if j == 1:
-            # A_0 = 0  (no approximation remains after removing all details)
-            curr_approx = np.zeros(n_samples)
-        else:
-            curr_approx = _iswt_channel(_build_coeffs(j - 2), wavelet_type)
+        detail_idx = j - 1              # D_j is stored at mra_ch[j-1]
+        # A_{j-1}: keep details D1…D_{j-1}, zero D_j…D_J
+        # For j=1: _build_coeffs(-1) zeros ALL details → A_0 = S_J
+        curr_approx = _iswt_channel(_build_coeffs(j - 2), wavelet_type)
         mra_ch[detail_idx] = prev_approx - curr_approx
         prev_approx = curr_approx
+
+    # After the loop, prev_approx = A_0 = smooth approximation S_J
+    mra_ch[level] = prev_approx
 
     return mra_ch
 
