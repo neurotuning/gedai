@@ -57,7 +57,7 @@ opm_coil_def_fname = data_path / "MEG" / "OPM" / "coil_def.dat"
 
 raws = dict()
 raw_erms = dict()
-new_sfreq = 60.0  # Nyquist frequency (30 Hz) < line noise freq (50 Hz)
+new_sfreq = 240.0  # Classical downsampling rate (Nyquist = 120 Hz)
 raws["vv"] = mne.io.read_raw_fif(vv_fname, verbose="error")  # ignore naming
 raws["vv"].load_data().resample(new_sfreq, method="polyphase")
 raw_erms["vv"] = mne.io.read_raw_fif(vv_erm_fname, verbose="error")
@@ -80,8 +80,6 @@ src = mne.setup_source_space(subject, "oct5", add_dist=False, subjects_dir=subje
 # We only do it here to save a bit of memory, in general this is not required.
 del src[0]["dist"], src[1]["dist"]
 bem = mne.read_bem_solution(bem_fname)
-# For speed, let's just use a 1-layer BEM
-bem = mne.make_bem_solution(bem["surfs"][-1:])
 fwd = dict()
 
 # Compute forward for VectorView
