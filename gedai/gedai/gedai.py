@@ -278,12 +278,14 @@ class Gedai:
     highpass_cutoff : float or None
         If not ``None``, apply a MODWT-based high-pass filter at
         approximately this frequency (Hz) **before** any GEDAI fitting or
-        transforming.  The filter zeroes the approximation (lowest-frequency)
-        band of a MODWT decomposition computed at the minimum level needed to
-        resolve the cutoff, then reconstructs from the remaining detail bands.
-        This stabilises per-epoch covariance estimates by removing slow DC
-        drift — particularly important for broadband GEDAI.
-        Default is ``0.1`` Hz.  Set to ``None`` to disable.
+        transforming.  Default is ``0.1`` Hz.  Set to ``None`` to disable.
+    preliminary_broadband_noise_multiplier : float or None
+        When spectral GEDAI is active (``epoch_size_in_cycles`` is set),
+        run a preliminary **broadband** single-pass GEDAI on the full signal
+        with this noise multiplier **before** the per-band wavelet pass.
+        This mirrors the MATLAB ``GEDAI.m`` pipeline which always performs a
+        broadband denoising step (noise_multiplier ~6) prior to the wavelet
+        analysis.  Default is ``6.0``.  Set to ``None`` to skip.
 
     References
     ----------
@@ -300,6 +302,7 @@ class Gedai:
         alpha_sensai_threshold=-6,
         signal_type="auto",
         highpass_cutoff=0.1,
+        preliminary_broadband_noise_multiplier=6.0,
     ):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
@@ -318,6 +321,7 @@ class Gedai:
                 f"got {highpass_cutoff}."
             )
         self.highpass_cutoff = highpass_cutoff
+        self.preliminary_broadband_noise_multiplier = preliminary_broadband_noise_multiplier
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -876,6 +880,32 @@ class Gedai:
         regularization_lambda = 0.05
         epsilon = regularization_lambda * avg_diag_power
         _ref_cov_arr = _ref_cov_arr + epsilon * np.eye(_ref_cov_arr.shape[0])
+
+        # ------------------------------------------------------------------
+        # 2b. Preliminary broadband GEDAI pass (mirrors MATLAB GEDAI.m)
+        #     Run a single-band broadband GEDAI on the full signal before
+        #     the per-band wavelet analysis, using a high noise_multiplier
+        #     to strip large-amplitude artefacts first.
+        # ------------------------------------------------------------------
+        if self.preliminary_broadband_noise_multiplier is not None:
+            print(
+                f"[GEDAI] Preliminary broadband pass "
+                f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
+                flush=True,
+            )
+            _bb_gedai = Gedai(
+                wavelet_type=self.wavelet_type,
+                wavelet_level=0,
+                signal_type="meg",   # avg-ref already applied to raw_work
+                highpass_cutoff=None,  # HP already applied
+                preliminary_broadband_noise_multiplier=None,  # no recursion
+            )
+            raw_work = _bb_gedai.fit_transform_raw(
+                raw_work,
+                reference_cov=_ref_cov_arr,
+                noise_multiplier=float(self.preliminary_broadband_noise_multiplier),
+                sensai_method=sensai_method,
+            )
 
         # ------------------------------------------------------------------
         # 3. Compute frequency bands directly from sfreq and wavelet_level
@@ -1495,6 +1525,29 @@ class Gedai:
         regularization_lambda = 0.05
         epsilon = regularization_lambda * avg_diag_power
         _ref_cov_arr += epsilon * np.eye(_ref_cov_arr.shape[0])
+
+        # ------------------------------------------------------------------
+        # 2b. Preliminary broadband GEDAI pass (mirrors MATLAB GEDAI.m)
+        # ------------------------------------------------------------------
+        if self.preliminary_broadband_noise_multiplier is not None:
+            print(
+                f"[GEDAI] Preliminary broadband pass "
+                f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
+                flush=True,
+            )
+            _bb_gedai = Gedai(
+                wavelet_type=self.wavelet_type,
+                wavelet_level=0,
+                signal_type="meg",   # avg-ref already applied to raw_work
+                highpass_cutoff=None,  # HP already applied
+                preliminary_broadband_noise_multiplier=None,  # no recursion
+            )
+            raw_work = _bb_gedai.fit_transform_raw(
+                raw_work,
+                reference_cov=_ref_cov_arr,
+                noise_multiplier=float(self.preliminary_broadband_noise_multiplier),
+                sensai_method=sensai_method,
+            )
 
         # ------------------------------------------------------------------
         # 3. Frequency bands

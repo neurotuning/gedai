@@ -131,7 +131,7 @@ gedai = Gedai(
 print("Applying notch filter (50 Hz) before GEDAI...", flush=True)
 raw_mag.notch_filter(50, notch_widths=4, verbose=False)
 
-raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=2.0, n_jobs=1)
+raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=3.0, n_jobs=1)
 
 # Compare before vs after GEDAI at matching bandwidth (0.5-70 Hz, before any further filtering)
 # Keys: left/right scroll, up/down scale, D=diff, N=denoised only, O=noisy only
