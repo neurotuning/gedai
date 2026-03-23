@@ -275,6 +275,15 @@ class Gedai:
           MNE channel types of the data at fit time.  Magnetometers
           (``mag``) and gradiometers (``grad``) map to ``'meg'``;
           ``eeg`` channels map to ``'eeg'``.
+    highpass_cutoff : float or None
+        If not ``None``, apply a MODWT-based high-pass filter at
+        approximately this frequency (Hz) **before** any GEDAI fitting or
+        transforming.  The filter zeroes the approximation (lowest-frequency)
+        band of a MODWT decomposition computed at the minimum level needed to
+        resolve the cutoff, then reconstructs from the remaining detail bands.
+        This stabilises per-epoch covariance estimates by removing slow DC
+        drift — particularly important for broadband GEDAI.
+        Default is ``0.1`` Hz.  Set to ``None`` to disable.
 
     References
     ----------
@@ -290,6 +299,7 @@ class Gedai:
         alpha_range=(7, 13),
         alpha_sensai_threshold=-6,
         signal_type="auto",
+        highpass_cutoff=0.1,
     ):
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
@@ -302,6 +312,80 @@ class Gedai:
                 f"signal_type must be 'eeg', 'meg', or 'auto', got '{signal_type}'."
             )
         self.signal_type = signal_type
+        if highpass_cutoff is not None and highpass_cutoff <= 0:
+            raise ValueError(
+                f"highpass_cutoff must be a positive frequency in Hz or None, "
+                f"got {highpass_cutoff}."
+            )
+        self.highpass_cutoff = highpass_cutoff
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _modwt_highpass(self, raw: BaseRaw) -> BaseRaw:
+        """Return a copy of *raw* with sub-cutoff content removed via MODWT.
+
+        Computes a Maximal Overlap Discrete Wavelet Transform at the minimum
+        level ``L`` such that the approximation band covers
+        ``[0, sfreq / 2^(L+1)]`` Hz <= ``self.highpass_cutoff``.  The
+        approximation coefficients are zeroed and the signal is reconstructed
+        by summing the remaining detail bands via MODWTMRA, producing a
+        high-passed copy of *raw*.
+
+        Parameters
+        ----------
+        raw : mne.io.BaseRaw
+            Input raw data (not modified in-place).
+
+        Returns
+        -------
+        raw_hp : mne.io.BaseRaw
+            A copy of *raw* with frequencies below ~``highpass_cutoff`` Hz
+            removed.
+        """
+        import math
+        from ..wavelet._modwt import modwt, modwtmra
+
+        sfreq = raw.info["sfreq"]
+        cutoff = self.highpass_cutoff
+
+        # Minimum level L such that  sfreq / 2^(L+1)  <=  cutoff
+        level = max(1, int(np.ceil(math.log2(sfreq / cutoff))) - 1)
+        actual_cutoff = sfreq / 2 ** (level + 1)
+        print(
+            f"[GEDAI] MODWT high-pass: level={level}, "
+            f"cutoff ~{actual_cutoff:.4f} Hz "
+            f"(requested {cutoff} Hz)",
+            flush=True,
+        )
+
+        raw_data = raw.get_data()          # (n_ch, n_times)
+        n_ch, n_times = raw_data.shape
+
+        # Pad to a length divisible by 2^level (required by SWT)
+        divisor = 2 ** level
+        pad_to = int(np.ceil(n_times / divisor) * divisor)
+        if pad_to > n_times:
+            padded = np.pad(raw_data, ((0, 0), (0, pad_to - n_times)), mode="edge")
+        else:
+            padded = raw_data
+
+        # MODWT decomposition
+        wpt = modwt(padded.T, self.wavelet_type, level)  # (n_bands, pad_to, n_ch)
+        mra = modwtmra(wpt, self.wavelet_type)            # (n_bands, pad_to, n_ch)
+        del wpt, padded
+
+        # Zero the approximation band (band index 0 = lowest frequencies)
+        mra[0] = 0.0
+
+        # Reconstruct from detail bands only, trim padding
+        hp_data = np.sum(mra, axis=0)[:n_times, :].T    # (n_ch, n_times)
+        del mra
+
+        raw_hp = raw.copy()
+        raw_hp._data = hp_data
+        return raw_hp
 
     def _fit_single_band(
         self,
@@ -381,7 +465,7 @@ class Gedai:
             ssi_n_pc    = 3
             eigen_percentile = 98
         else:  # 'meg'
-            # MEG: adaptive PCs for reference template (≥85 % variance);
+            # MEG: adaptive PCs for reference template (>=85 % variance);
             # 4 PCs for SSI comparison; 99th percentile.
             all_evals = eigh(reference_cov, eigvals_only=True)[::-1]  # descending
             cumvar = np.cumsum(all_evals) / np.sum(all_evals)
@@ -390,9 +474,16 @@ class Gedai:
             ssi_n_pc    = 4
             eigen_percentile = 99
             if refcov_n_pc < ssi_n_pc:
-                logger.warning(
-                    "MEG refCOV variance is concentrated in too few PCs "
-                    f"({refcov_n_pc}). Verify the reference/leadfield matrix."
+                # The adaptive threshold chose fewer PCs than needed for SSI
+                # comparison (common for small sensor arrays).  Raise refcov_n_pc
+                # to use as many PCs as available, up to ssi_n_pc.
+                refcov_n_pc = min(ssi_n_pc, n_channels - 1)
+                # If the array is so small that even n_channels-1 < ssi_n_pc,
+                # reduce ssi_n_pc to match.
+                ssi_n_pc = min(ssi_n_pc, refcov_n_pc)
+                logger.info(
+                    f"MEG: small sensor array ({n_channels} ch) — using "
+                    f"{refcov_n_pc} reference PCs and {ssi_n_pc} SSI PCs."
                 )
 
         # Pre-compute template (reference) subspace once per band.
@@ -619,11 +710,18 @@ class Gedai:
         check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        # ------------------------------------------------------------------
+        # Step 0: MODWT high-pass pre-processing
+        # ------------------------------------------------------------------
+        if self.highpass_cutoff is not None:
+            raw = self._modwt_highpass(raw)
+
         # Resolve signal type (auto-detect from channel types if needed)
         signal_type = self.signal_type
         if signal_type == "auto":
             signal_type = _detect_signal_type(raw.info)
             logger.info(f"Auto-detected signal type: '{signal_type}'.")
+
 
         sfreq = raw.info["sfreq"]
 
@@ -1356,6 +1454,12 @@ class Gedai:
         sfreq = raw.info["sfreq"]
         n_times = raw.n_times
         level = self.wavelet_level
+
+        # ------------------------------------------------------------------
+        # Step 0: MODWT high-pass pre-processing
+        # ------------------------------------------------------------------
+        if self.highpass_cutoff is not None:
+            raw = self._modwt_highpass(raw)
 
         # ------------------------------------------------------------------
         # 1. Average reference for EEG only (MEG skips this step)

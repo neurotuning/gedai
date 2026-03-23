@@ -6,6 +6,7 @@ import sys
 import os
 
 from gedai.gedai.gedai import Gedai
+from gedai.viz.compare import plot_mne_style_overlay_interactive
 
 # ==========================================
 # 1. Setup paths and load data
@@ -75,7 +76,7 @@ print("Preparing continuous data for GEDAI...", flush=True)
 
 events_orig = mne.find_events(raw, min_duration=0.1)
 raw, events = raw.resample(200, events=events_orig)
-raw.filter(0.5, 70.0, verbose="error")
+raw.filter(0.5, 45.0, verbose="error")
 
 # GEDAI operates on the 86 magnetometers. Mark bads first.
 bad_picks = mne.pick_channels_regexp(raw.ch_names, regexp="Flux.")
@@ -126,10 +127,19 @@ gedai = Gedai(
     wavelet_low_cutoff=0.5,
     epoch_size_in_cycles=12,
 )
-raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=1.5, n_jobs=1)
+# Notch filter before GEDAI to remove line noise
+print("Applying notch filter (50 Hz) before GEDAI...", flush=True)
+raw_mag.notch_filter(50, notch_widths=4, verbose=False)
 
-# Post-GEDAI filtering
-raw_gedai.notch_filter(50, notch_widths=4, verbose=False)
+raw_gedai = gedai.fit_transform_raw(raw_mag, reference_cov=fwd, noise_multiplier=2.0, n_jobs=1)
+
+# Compare before vs after GEDAI at matching bandwidth (0.5-70 Hz, before any further filtering)
+# Keys: left/right scroll, up/down scale, D=diff, N=denoised only, O=noisy only
+print("Plotting GEDAI comparison (close window to continue)...", flush=True)
+plot_mne_style_overlay_interactive(
+    raw_mag, raw_gedai,
+    title="OPM Magnetometers - Before vs After Spectral GEDAI", duration=10.0
+)
 
 # Plot GEDAI Filtered Continuous Trace
 stop_gedai = len(raw_gedai.times) - int(300 * (200 / 6000))
