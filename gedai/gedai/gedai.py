@@ -112,8 +112,9 @@ def compute_epoch_sizes_per_band(freq_bands, epoch_size_in_cycles, sfreq, n_time
     """
     epoch_durations = []
     for fmin, fmax in freq_bands:
-        # Broadband / approximation band: use a fixed 1-second epoch
-        if fmin == 0 and fmax == freq_bands[0][1]:
+        # Approximation band (fmin==0): use a fixed 1-second epoch.
+        # It is always at the last index in freq_bands (MRA order: [D1..DL, SL]).
+        if fmin == 0:
             target_duration = 1.0
         else:
             # epoch_size_in_cycles cycles of the lower band boundary
@@ -930,7 +931,7 @@ class Gedai:
             _bb_gedai = Gedai(
                 wavelet_type=self.wavelet_type,
                 wavelet_level=0,
-                signal_type="meg",   # avg-ref already applied to raw_work
+                signal_type=signal_type,
                 highpass_cutoff=None,  # HP already applied
                 preliminary_broadband_noise_multiplier=None,  # no recursion
             )
@@ -1021,6 +1022,16 @@ class Gedai:
                 print(
                     f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): data too short "
                     f"for {self.epoch_size_in_cycles} cycles — skipping.",
+                    flush=True,
+                )
+                wavelets_fits.append({**base_fit, **_pass_through})
+                continue
+
+            # --- Skip: approximation band (always zeroed in spectral output) ---
+            if fmin == 0:
+                print(
+                    f"  Band {w} ({fmin:.2f}–{fmax:.2f} Hz): zeroed "
+                    f"(approximation band — always excluded from spectral output).",
                     flush=True,
                 )
                 wavelets_fits.append({**base_fit, **_pass_through})
@@ -1577,7 +1588,7 @@ class Gedai:
             _bb_gedai = Gedai(
                 wavelet_type=self.wavelet_type,
                 wavelet_level=0,
-                signal_type="meg",   # avg-ref already applied to raw_work
+                signal_type=signal_type,
                 highpass_cutoff=None,  # HP already applied
                 preliminary_broadband_noise_multiplier=None,  # no recursion
             )
@@ -1675,6 +1686,18 @@ class Gedai:
                 wavelets_fits.append({**base_fit, **_pass_through})
                 _band_table.append((w, fmin, fmax, None, None, "too short"))
                 mra[w] = 0.0  # free working memory in-place
+                continue
+
+            # --- Skip: approximation band (always zeroed in spectral output) ---
+            if fmin == 0:
+                print(
+                    f"  Band {w} ({fmin:.2f}-{fmax:.2f} Hz): zeroed "
+                    f"(approximation band — always excluded from spectral output).",
+                    flush=True,
+                )
+                wavelets_fits.append({**base_fit, **_pass_through})
+                _band_table.append((w, fmin, fmax, None, None, "zeroed"))
+                mra[w] = 0.0
                 continue
 
             # --- Skip: below low-frequency cutoff (zeroed band) ---
