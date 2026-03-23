@@ -925,7 +925,7 @@ class Gedai:
         if self.preliminary_broadband_noise_multiplier is not None:
             print(
                 f"[GEDAI] Preliminary broadband pass "
-                f"(noise_multiplier={noise_multiplier:.1f})...",
+                f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
                 flush=True,
             )
             _bb_gedai = Gedai(
@@ -938,7 +938,7 @@ class Gedai:
             raw_work = _bb_gedai.fit_transform_raw(
                 raw_work,
                 reference_cov=_ref_cov_arr,
-                noise_multiplier=noise_multiplier,
+                noise_multiplier=self.preliminary_broadband_noise_multiplier,
                 sensai_method=sensai_method,
             )
 
@@ -1581,7 +1581,7 @@ class Gedai:
         if self.preliminary_broadband_noise_multiplier is not None:
             print(
                 f"[GEDAI] Preliminary broadband pass "
-                f"(noise_multiplier={noise_multiplier:.1f})...",
+                f"(noise_multiplier={self.preliminary_broadband_noise_multiplier:.1f})...",
                 flush=True,
             )
             _bb_data_before = raw_work.get_data()
@@ -1595,7 +1595,7 @@ class Gedai:
             raw_work = _bb_gedai.fit_transform_raw(
                 raw_work,
                 reference_cov=_ref_cov_arr,
-                noise_multiplier=noise_multiplier,
+                noise_multiplier=self.preliminary_broadband_noise_multiplier,
                 sensai_method=sensai_method,
             )
             _bb_data_after = raw_work.get_data()
