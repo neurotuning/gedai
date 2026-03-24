@@ -13,6 +13,7 @@ from ..sensai.sensai import (
     _sensai_gridsearch_fast,
     _sensai_optimize_fast,
     _sensai_to_eigen,
+    score_sensai_basic,
 )
 from ..utils._checks import _check_n_jobs, check_type
 from ..utils._docs import fill_doc
@@ -292,6 +293,8 @@ class Gedai:
     ----------
     .. footbibliography::
     """
+
+    score_sensai_basic = staticmethod(score_sensai_basic)
 
     def __init__(
         self,
@@ -726,7 +729,8 @@ class Gedai:
             Ignored when ``epoch_size_in_cycles`` is set on the
             :class:`Gedai` object (frequency-specific epoching mode).
         overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
+            The overlap ratio between epochs (0.5 to 1.0). Default is 0.5 (50%% overlap).
+            Values below 0.5 are not mathematically stable with cosine cross-fades.
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
         reject_by_annotation : bool
             Whether to reject epochs based on annotations. Default is False.
@@ -749,8 +753,11 @@ class Gedai:
         check_type(raw, (BaseRaw,), "raw")
         check_type(duration, (float, int,), "duration")
         check_type(overlap, (float, int,), "overlap")
-        if not (0 <= overlap < 1):
-            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
+        if not (0.5 <= overlap < 1):
+            raise ValueError(
+                f"overlap must be between 0.5 and 1.0 (got {overlap}) due to the "
+                "mathematical constraints of the squared-cosine cross-fade windowing."
+            )
         check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         _check_reference_cov(reference_cov)
         _check_sensai_method(sensai_method)
@@ -1204,7 +1211,8 @@ class Gedai:
             Duration of each epoch in seconds (default 1.0). Will be automatically
             adjusted to the closest valid duration for the wavelet level.
         overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
+            The overlap ratio between epochs (0.5 to 1.0). Default is 0.5 (50%% overlap).
+            Values below 0.5 are not mathematically stable with cosine cross-fades.
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
         %(n_jobs)s
         %(verbose)s
@@ -1219,8 +1227,11 @@ class Gedai:
         check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
 
-        if not (0 <= overlap < 1):
-            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
+        if not (0.5 <= overlap < 1):
+            raise ValueError(
+                f"overlap must be between 0.5 and 1.0 (got {overlap}) due to the "
+                "mathematical constraints of the squared-cosine cross-fade windowing."
+            )
 
         # ------------------------------------------------------------------
         # Fast path for spectral GEDAI: single MODWT on full signal
@@ -1454,8 +1465,11 @@ class Gedai:
         check_type(raw, (BaseRaw,), "raw")
         check_type(duration, (float, int), "duration")
         check_type(overlap, (float, int), "overlap")
-        if not (0 <= overlap < 1):
-            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
+        if not (0.5 <= overlap < 1):
+            raise ValueError(
+                f"overlap must be between 0.5 and 1.0 (got {overlap}) due to the "
+                "mathematical constraints of the squared-cosine cross-fade windowing."
+            )
         check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         _check_reference_cov(reference_cov)
         _check_sensai_method(sensai_method)
@@ -1467,6 +1481,9 @@ class Gedai:
         if signal_type == "auto":
             signal_type = _detect_signal_type(raw.info)
             logger.info(f"Auto-detected signal type: '{signal_type}'.")
+
+        import time
+        _t0 = time.perf_counter()
 
         # ------------------------------------------------------------------
         # Broadband path: no single-pass savings — just delegate
@@ -1483,23 +1500,64 @@ class Gedai:
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
-            return self.transform_raw(raw, duration=duration, overlap=overlap,
-                                      n_jobs=n_jobs, verbose=verbose)
+            raw_corrected = self.transform_raw(
+                raw, duration=duration, overlap=overlap, n_jobs=n_jobs, verbose=verbose
+            )
+        else:
+            # ------------------------------------------------------------------
+            # Spectral path: single MODWT, fit+transform per band
+            # ------------------------------------------------------------------
+            raw_corrected = self._fit_transform_raw_frequency_specific(
+                raw=raw,
+                broadband_duration=duration,
+                overlap=overlap,
+                reject_by_annotation=reject_by_annotation,
+                reference_cov=reference_cov,
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+                signal_type=signal_type,
+            )
 
         # ------------------------------------------------------------------
-        # Spectral path: single MODWT, fit+transform per band
+        # Compute and print Total Metrics summary
         # ------------------------------------------------------------------
-        return self._fit_transform_raw_frequency_specific(
-            raw=raw,
-            broadband_duration=duration,
-            overlap=overlap,
-            reject_by_annotation=reject_by_annotation,
-            reference_cov=reference_cov,
-            sensai_method=sensai_method,
-            noise_multiplier=noise_multiplier,
-            n_jobs=n_jobs,
-            signal_type=signal_type,
-        )
+        elapsed = time.perf_counter() - _t0
+
+        total_sensai = 0.0
+        total_weight = 0.0
+        for wf in getattr(self, "wavelets_fits", []):
+            if wf.get("ignore", False) or not wf.get("sensai_runs"):
+                continue
+            
+            # Find the chosen threshold run
+            if wf.get("threshold") is not None:
+                chosen = min(wf["sensai_runs"], key=lambda r: abs(r[0] - wf["threshold"]))
+            else:
+                chosen = wf["sensai_runs"][0]
+            
+            # Recompute score with noise_multiplier=1.0 (matching MATLAB SENSAI_basic)
+            # chosen = [eigen_threshold, original_score, sig_ss, noise_ss]
+            sig_ss, noise_ss = chosen[2], chosen[3]
+            score_at_1 = sig_ss - 1.0 * noise_ss
+            
+            total_sensai += score_at_1
+            total_weight += 1.0
+
+        total_sensai = total_sensai / total_weight if total_weight > 0 else 0.0
+
+        data_before = raw.get_data()
+        data_after = raw_corrected.get_data()
+        var_before = float(data_before.var())
+        enova_total = float((data_before - data_after).var() / var_before) if var_before > 0 else 0.0
+
+        print(f"\n{'='*45}")
+        print(f"  Total SENSAI score : {total_sensai:.4f}")
+        print(f"  Total ENOVA        : {enova_total * 100:.2f} %")
+        print(f"  Elapsed time       : {elapsed:.1f} s")
+        print(f"{'='*45}\n", flush=True)
+
+        return raw_corrected
 
     def _fit_transform_raw_frequency_specific(
         self,

@@ -447,3 +447,116 @@ def _sensai_optimize(
     eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
+
+
+def score_sensai_basic(
+    raw_clean_data: np.ndarray,
+    raw_artifacts_data: np.ndarray,
+    sfreq: float,
+    duration: float,
+    reference_cov: np.ndarray,
+    noise_multiplier: float = 1.0,
+    signal_type: str = "eeg",
+):
+    """
+    Direct Python port of MATLAB's SENSAI_basic.m.
+    Evaluates SENSAI over the global re-assembled broadband signals by parsing them
+    into non-overlapping discrete epochs and evaluating subspace similarities directly.
+
+    Parameters
+    ----------
+    raw_clean_data : np.ndarray, shape (n_channels, n_times)
+        The fully cleaned data array (e.g. from ``raw_clean.get_data()``)
+    raw_artifacts_data : np.ndarray, shape (n_channels, n_times)
+        The artefactual noise data array (e.g. ``raw.get_data() - raw_clean.get_data()``)
+    sfreq : float
+        The sampling frequency.
+    duration : float
+        The epoch size in seconds (typically the same as broadband epoch size).
+    reference_cov : np.ndarray, shape (n_channels, n_channels)
+        The unregularized BEM leadfield or reference covariance matrix.
+    noise_multiplier : float
+        The multiplier for the noise term (default 1.0 to match MATLAB's final calculation).
+    signal_type : str
+        'eeg' or 'meg'.
+
+    Returns
+    -------
+    sensai_score : float
+        The composite analytical SENSAI score.
+    signal_ss : float
+        The global signal subspace similarity (0-100%%).
+    noise_ss : float
+        The global noise subspace similarity (0-100%%).
+    mean_enova : float
+        The mean Explained Noise Variance per epoch.
+    enova_per_epoch : np.ndarray
+        Array of ENOVA ratios evaluated per epoch.
+    """
+    n_ch, pnts = raw_clean_data.shape
+    epoch_samples = int(round(sfreq * duration))
+    num_epochs = pnts // epoch_samples
+
+    if num_epochs == 0:
+        raise ValueError("Data is too short to extract even a single epoch.")
+
+    # Truncate to whole epochs
+    valid_len = num_epochs * epoch_samples
+    clean = raw_clean_data[:, :valid_len]
+    artifacts = raw_artifacts_data[:, :valid_len]
+
+    # Reshape into (n_epochs, n_channels, n_samples)
+    clean_epoched = clean.reshape(n_ch, num_epochs, epoch_samples).transpose((1, 0, 2))
+    artifacts_epoched = artifacts.reshape(n_ch, num_epochs, epoch_samples).transpose((1, 0, 2))
+
+    # Regularize reference covariance identically to GEVD
+    reg_lambda = 0.05
+    reg_val = np.trace(reference_cov) / n_ch
+    ref_cov_reg = (1 - reg_lambda) * reference_cov + reg_lambda * reg_val * np.eye(n_ch)
+
+    if signal_type.lower() == "meg":
+        refcov_top_pcs = 5
+    else:
+        refcov_top_pcs = 3
+
+    top_pcs = 3
+
+    # Top PCs of Reference Covariance
+    evals_ref, evecs_ref = eigh(ref_cov_reg)
+    evecs_ref = evecs_ref[:, ::-1][:, :refcov_top_pcs]
+
+    signal_similarities = np.zeros(num_epochs)
+    noise_similarities = np.zeros(num_epochs)
+    enova_per_epoch = np.zeros(num_epochs)
+
+    for e in range(num_epochs):
+        c_ep = clean_epoched[e]
+        a_ep = artifacts_epoched[e]
+        
+        # Signal Subspace
+        c_cov = np.cov(c_ep)
+        evals_c, evecs_c = eigh(c_cov)
+        evecs_c = evecs_c[:, ::-1][:, :top_pcs]
+        sig_angles = subspace_angles(evecs_c, evecs_ref)
+        signal_similarities[e] = np.prod(np.cos(sig_angles))
+
+        # Noise Subspace
+        a_cov = np.cov(a_ep)
+        evals_a, evecs_a = eigh(a_cov)
+        evecs_a = evecs_a[:, ::-1][:, :top_pcs]
+        noise_angles = subspace_angles(evecs_a, evecs_ref)
+        noise_similarities[e] = np.prod(np.cos(noise_angles))
+
+        # ENOVA
+        orig_ep = c_ep + a_ep
+        var_orig = np.var(orig_ep)
+        var_noise = np.var(a_ep)
+        enova_per_epoch[e] = var_noise / var_orig if var_orig > 0 else 0.0
+
+    sig_ss = 100.0 * np.mean(signal_similarities)
+    noise_ss = 100.0 * np.mean(noise_similarities)
+    mean_enova = np.mean(enova_per_epoch)
+    
+    sensai_score = sig_ss - noise_multiplier * noise_ss
+
+    return sensai_score, sig_ss, noise_ss, mean_enova, enova_per_epoch

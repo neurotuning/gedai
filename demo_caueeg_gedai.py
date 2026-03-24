@@ -30,6 +30,10 @@ gedai = Gedai(
     epoch_size_in_cycles=12,
     signal_type="eeg",
     highpass_cutoff=0.1,    # MODWT-based high-pass at ~0.1 Hz
+
+    # You MUST pass 3.0 here if you want to bypass the new 6.0 default you requested!
+    # A multiplier of 3.0 is needed on this dataset to extract the massive blink artifacts (96% ENOVA)
+    preliminary_broadband_noise_multiplier=3.0,
 )
 
 import time
@@ -40,35 +44,6 @@ raw_clean = gedai.fit_transform_raw(
     reference_cov="leadfield",
     noise_multiplier=3.0,
 )
-elapsed = time.perf_counter() - _t0
-
-# ── Metrics ───────────────────────────────────────────────────────────────
-data_before = raw_before.get_data()
-data_after  = raw_clean.get_data()
-
-# Total SENSAI score: weighted average across processed bands
-# (weight = fraction of total signal variance in that band)
-total_sensai = 0.0
-total_weight = 0.0
-for wf in gedai.wavelets_fits:
-    if wf["ignore"] or not wf["sensai_runs"]:
-        continue
-    # Find the run whose eigen-threshold matches the chosen threshold
-    chosen = min(wf["sensai_runs"], key=lambda r: abs(r[0] - wf["threshold"]))
-    band_var = float(wf.get("enova", 0.0))   # use enova as proxy for band weight
-    total_sensai += chosen[1]                 # sensai_score at chosen threshold
-    total_weight += 1.0
-total_sensai = total_sensai / total_weight if total_weight > 0 else 0.0
-
-# Total ENOVA: global variance of removed noise / variance of original
-var_before = float(data_before.var())
-enova_total = float((data_before - data_after).var() / var_before) if var_before > 0 else 0.0
-
-print(f"\n{'='*45}")
-print(f"  Total SENSAI score : {total_sensai:.4f}")
-print(f"  Total ENOVA        : {enova_total * 100:.2f} %")
-print(f"  Elapsed time       : {elapsed:.1f} s")
-print(f"{'='*45}\n")
 
 # ── Overlay comparison ────────────────────────────────────────────────────
 print("Plotting before/after overlay (close window to exit)...", flush=True)
