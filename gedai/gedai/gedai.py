@@ -1524,32 +1524,34 @@ class Gedai:
         # ------------------------------------------------------------------
         elapsed = time.perf_counter() - _t0
 
-        total_sensai = 0.0
-        total_weight = 0.0
-        for wf in getattr(self, "wavelets_fits", []):
-            if wf.get("ignore", False) or not wf.get("sensai_runs"):
-                continue
-            
-            # Find the chosen threshold run
-            if wf.get("threshold") is not None:
-                chosen = min(wf["sensai_runs"], key=lambda r: abs(r[0] - wf["threshold"]))
-            else:
-                chosen = wf["sensai_runs"][0]
-            
-            # Recompute score with noise_multiplier=1.0 (matching MATLAB SENSAI_basic)
-            # chosen = [eigen_threshold, original_score, sig_ss, noise_ss]
-            sig_ss, noise_ss = chosen[2], chosen[3]
-            score_at_1 = sig_ss - 1.0 * noise_ss
-            
-            total_sensai += score_at_1
-            total_weight += 1.0
-
-        total_sensai = total_sensai / total_weight if total_weight > 0 else 0.0
-
         data_before = raw.get_data()
         data_after = raw_corrected.get_data()
         var_before = float(data_before.var())
         enova_total = float((data_before - data_after).var() / var_before) if var_before > 0 else 0.0
+
+        _ref_cov = reference_cov
+        if isinstance(_ref_cov, str) and _ref_cov == "leadfield":
+            _ref_cov = os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
+            )
+        _ref_cov_arr, _ = _compute_refcov(raw, _ref_cov)
+
+        try:
+            total_sensai, _, _, _, _ = Gedai.score_sensai_basic(
+                raw_clean_data=data_after,
+                raw_artifacts_data=data_before - data_after,
+                sfreq=raw.info["sfreq"],
+                duration=duration,
+                reference_cov=_ref_cov_arr,
+                noise_multiplier=1.0,
+                signal_type=signal_type,
+            )
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            total_sensai = 0.0
+
+
 
         print(f"\n{'='*45}")
         print(f"  Total SENSAI score : {total_sensai:.4f}")

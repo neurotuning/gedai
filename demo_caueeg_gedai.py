@@ -33,7 +33,7 @@ gedai = Gedai(
 
     # You MUST pass 3.0 here if you want to bypass the new 6.0 default you requested!
     # A multiplier of 3.0 is needed on this dataset to extract the massive blink artifacts (96% ENOVA)
-    preliminary_broadband_noise_multiplier=3.0,
+    preliminary_broadband_noise_multiplier=6.0
 )
 
 import time
