@@ -363,19 +363,27 @@ class Gedai:
 
         sfreq = raw.info["sfreq"]
         cutoff = self.highpass_cutoff
-
-        # Minimum level L such that  sfreq / 2^(L+1)  <=  cutoff
-        level = max(1, int(np.ceil(math.log2(sfreq / cutoff))) - 1)
-        actual_cutoff = sfreq / 2 ** (level + 1)
-        print(
-            f"[GEDAI] MODWT high-pass: level={level}, "
-            f"cutoff ~{actual_cutoff:.4f} Hz "
-            f"(requested {cutoff} Hz)",
-            flush=True,
-        )
-
+        
         raw_data = raw.get_data()          # (n_ch, n_times)
         n_ch, n_times = raw_data.shape
+
+        # MATLAB generic 0.1 Hz structural ceiling logic
+        highpass_frequency = 0.1
+        hp_wavelet_levels = int(np.ceil(np.log2(sfreq / highpass_frequency)) - 1)
+        
+        # Limit to maximum possible level given data length
+        max_possible_level = int(np.floor(np.log2(n_times))) if n_times > 0 else 3
+        hp_wavelet_levels = min(hp_wavelet_levels, max_possible_level)
+        hp_wavelet_levels = max(hp_wavelet_levels, 3)
+        
+        level = hp_wavelet_levels
+
+        print(
+            f"[GEDAI] MODWT high-pass: level={level}, "
+            f"cutoff structural={highpass_frequency} Hz "
+            f"(target zeroes <= {cutoff} Hz)",
+            flush=True,
+        )
 
         # Pad to a length divisible by 2^level (required by SWT)
         divisor = 2 ** level
@@ -385,17 +393,21 @@ class Gedai:
         else:
             padded = raw_data
 
-        # MODWT decomposition — top-level call (not inside a parallel loop);
-        # use all available cores across channels.
+        # MODWT decomposition
         wpt = modwt(padded.T, self.wavelet_type, level, n_jobs=-1)  # (n_bands, pad_to, n_ch)
         mra = modwtmra(wpt, self.wavelet_type, n_jobs=-1)            # (n_bands, pad_to, n_ch)
         del wpt, padded
 
-        # Zero the approximation band (last index = lowest frequencies).
-        # MRA order: [D_1(finest), ..., D_L(coarsest), S_L(approx)]
-        mra[-1] = 0.0
+        # Identify wavelet bands to remove based on cutoff
+        num_bands_hp = mra.shape[0] # n_levels + 1
+        # Bands 1 to num_bands_hp corresponding to Detail 1..L, Approx L
+        upper_bounds = np.array([sfreq / (2 ** i) for i in range(1, num_bands_hp + 1)])
+        bands_to_zero = np.where(upper_bounds <= cutoff)[0]
+        
+        if len(bands_to_zero) > 0:
+            mra[bands_to_zero, :, :] = 0.0
 
-        # Reconstruct from detail bands only, trim padding
+        # Reconstruct from sum of bands, trim padding
         hp_data = np.sum(mra, axis=0)[:n_times, :].T    # (n_ch, n_times)
         del mra
 
