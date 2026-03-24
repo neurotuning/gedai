@@ -532,7 +532,7 @@ class Gedai:
         _, evecs_reference = eigh(reference_cov)
         evecs_reference = evecs_reference[:, ::-1][:, :refcov_n_pc]  # (n_ch, n_pc)
 
-        min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+        min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.25
 
         # Alpha support logic
         target_min, target_max = self.alpha_range
@@ -1063,7 +1063,7 @@ class Gedai:
                 continue
 
             n_epoch_samples = int(round(band_duration * sfreq))
-            step = max(1, int(n_epoch_samples * (1.0 - overlap)))
+            step = n_epoch_samples
             n_epochs_approx = max(1, (n_times - n_epoch_samples) // step + 1)
 
             epoch_duration_s = n_epoch_samples / sfreq
@@ -1262,7 +1262,7 @@ class Gedai:
         raw_corrected = np.zeros_like(raw_data)
         weight_sum = np.zeros_like(raw_data)
 
-        step = int(window_size * (1 - overlap))
+        step = window_size
         starts = np.arange(0, n_times - window_size, step)
         starts = np.append(starts, n_times - window_size)
 
@@ -1537,25 +1537,24 @@ class Gedai:
         _ref_cov_arr, _ = _compute_refcov(raw, _ref_cov)
 
         try:
-            total_sensai, _, _, _, _ = Gedai.score_sensai_basic(
+            total_sensai, _, _, mean_enova, _ = Gedai.score_sensai_basic(
                 raw_clean_data=data_after,
                 raw_artifacts_data=data_before - data_after,
                 sfreq=raw.info["sfreq"],
                 duration=duration,
                 reference_cov=_ref_cov_arr,
-                noise_multiplier=1.0,
+                noise_multiplier=noise_multiplier,
                 signal_type=signal_type,
             )
         except Exception as e:
             import traceback
             traceback.print_exc()
             total_sensai = 0.0
-
-
+            mean_enova = 0.0
 
         print(f"\n{'='*45}")
-        print(f"  Total SENSAI score : {total_sensai:.4f}")
-        print(f"  Total ENOVA        : {enova_total * 100:.2f} %")
+        print(f"  Total SENSAI score : {total_sensai:.4f}  (Evaluated with Noise Penalty {noise_multiplier:.1f})")
+        print(f"  Mean ENOVA         : {mean_enova * 100:.2f} %")
         print(f"  Elapsed time       : {elapsed:.1f} s")
         print(f"{'='*45}\n", flush=True)
 
@@ -1781,7 +1780,7 @@ class Gedai:
                 continue
 
             n_epoch_samples = int(round(band_duration * sfreq))
-            step = max(1, int(n_epoch_samples * (1.0 - overlap)))
+            step = n_epoch_samples
             n_epochs_approx = max(1, (n_times - n_epoch_samples) // step + 1)
             epoch_duration_s = n_epoch_samples / sfreq
 

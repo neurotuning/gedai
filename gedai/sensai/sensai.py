@@ -58,16 +58,17 @@ def _sensai_to_eigen(sensai_value, eigenvalues, percentile=95):
     if len(valid_diags) == 0:
         return 0.0
 
-    log_eig = np.log10(valid_diags)
-    min_log = np.min(log_eig)
+    # Auto-adjust scale back to EEGLAB microvolts for the non-invariant Math
+    scale_factor = 1.0
+    if np.median(valid_diags) < 1e-5:
+        scale_factor = 1e12
+        
+    log_eig = np.log(valid_diags * scale_factor) + 100.0
 
-    offset = np.abs(min_log) + 1.0
-    shifted_log = log_eig + offset
+    T1 = (105.0 - sensai_value) / 100.0
+    threshold1 = T1 * np.percentile(log_eig, percentile)
 
-    T1 = (105 - sensai_value) / 100
-    threshold1 = T1 * np.percentile(shifted_log, percentile)
-
-    eigenvalue = 10 ** (threshold1 - offset)
+    eigenvalue = np.exp(threshold1 - 100.0) / scale_factor
     return float(eigenvalue)
 
 
@@ -89,23 +90,22 @@ def _eigen_to_sensai(eigenvalue, eigenvalues, percentile=95):
     if len(valid_diags) == 0:
         return 0.0
 
-    log_eig = np.log10(valid_diags)
-    min_log = np.min(log_eig)
-
-    offset = np.abs(min_log) + 1.0
-    shifted_log = log_eig + offset
-
     if eigenvalue <= 0:
         return 105.0
 
-    threshold1 = np.log10(eigenvalue) + offset
-    percentile_val = np.percentile(shifted_log, percentile)
+    scale_factor = 1.0
+    if np.median(valid_diags) < 1e-5:
+        scale_factor = 1e12
+        
+    log_eig = np.log(valid_diags * scale_factor) + 100.0
+    threshold1 = np.log(eigenvalue * scale_factor) + 100.0
+    percentile_val = np.percentile(log_eig, percentile)
 
     if percentile_val == 0:
         return 105.0
 
     T1 = threshold1 / percentile_val
-    sensai_value = 105 - T1 * 100
+    sensai_value = 105.0 - T1 * 100.0
     return float(sensai_value)
 
 
@@ -282,6 +282,98 @@ def _sensai_gridsearch_fast(
     return best_threshold, sensai_data
 
 
+def _sign(x):
+    return -1 if x < 0 else 0 if x == 0 else 1
+
+def _minimize_scalar_bounded(func, x1, x2, xtol=1e-5, maxiter=500):
+    if x1 > x2:
+        raise ValueError("The lower bound exceeds the upper bound.")
+
+    import math
+    sqrt_eps = math.sqrt(2.2e-16)
+    golden_mean = 0.5 * (3.0 - math.sqrt(5.0))
+    a, b = x1, x2
+    fulc = a + golden_mean * (b - a)
+    nfc, xf = fulc, fulc
+    rat = e = 0.0
+    x = xf
+    fx = func(x)
+    num = 1
+    fmin_data = (1, xf, fx)
+    fu = float("inf")
+
+    ffulc = fnfc = fx
+    xm = 0.5 * (a + b)
+    tol1 = sqrt_eps * abs(xf) + xtol / 3.0
+    tol2 = 2.0 * tol1
+
+    while (abs(xf - xm) > (tol2 - 0.5 * (b - a))):
+        golden = 1
+        if abs(e) > tol1:
+            golden = 0
+            r = (xf - nfc) * (fx - ffulc)
+            q = (xf - fulc) * (fx - fnfc)
+            p = (xf - fulc) * q - (xf - nfc) * r
+            q = 2.0 * (q - r)
+            if q > 0.0:
+                p = -p
+            q = abs(q)
+            r = e
+            e = rat
+
+            if ((abs(p) < abs(0.5*q*r)) and (p > q*(a - xf)) and
+                    (p < q * (b - xf))):
+                rat = (p + 0.0) / q
+                x = xf + rat
+
+                if ((x - a) < tol2) or ((b - x) < tol2):
+                    si = _sign(xm - xf) + ((xm - xf) == 0)
+                    rat = tol1 * si
+            else:
+                golden = 1
+
+        if golden:
+            if xf >= xm:
+                e = a - xf
+            else:
+                e = b - xf
+            rat = golden_mean*e
+
+        si = _sign(rat) + (rat == 0)
+        x = xf + si * max(abs(rat), tol1)
+        fu = func(x)
+        num += 1
+
+        if fu <= fx:
+            if x >= xf:
+                a = xf
+            else:
+                b = xf
+            fulc, ffulc = nfc, fnfc
+            nfc, fnfc = xf, fx
+            xf, fx = x, fu
+        else:
+            if x < xf:
+                a = x
+            else:
+                b = x
+            if (fu <= fnfc) or (nfc == xf):
+                fulc, ffulc = nfc, fnfc
+                nfc, fnfc = x, fu
+            elif (fu <= ffulc) or (fulc == xf) or (fulc == nfc):
+                fulc, ffulc = x, fu
+
+        xm = 0.5 * (a + b)
+        tol1 = sqrt_eps * abs(xf) + xtol / 3.0
+        tol2 = 2.0 * tol1
+
+        if num >= maxiter:
+            break
+
+    fval = fx
+    return xf, fval
+
+
 def _sensai_optimize_fast(
     epochs_eigenvalues,
     epochs_eigenvectors,
@@ -332,9 +424,9 @@ def _sensai_optimize_fast(
         runs.append([eigen_threshold, score, sig_ss, noise_ss])
         return -score
 
-    result = minimize_scalar(objective_function, bounds=bounds, method="bounded")
+    best_thresh, _ = _minimize_scalar_bounded(objective_function, bounds[0], bounds[1], xtol=0.01)
 
-    eigen_threshold = _sensai_to_eigen(result.x, epochs_eigenvalues, percentile=percentile)
+    eigen_threshold = _sensai_to_eigen(best_thresh, epochs_eigenvalues, percentile=percentile)
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
 
