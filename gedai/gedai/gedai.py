@@ -1075,7 +1075,7 @@ class Gedai:
                 continue
 
             n_epoch_samples = int(round(band_duration * sfreq))
-            step = n_epoch_samples
+            step = max(1, int(n_epoch_samples * (1.0 - overlap)))
             n_epochs_approx = max(1, (n_times - n_epoch_samples) // step + 1)
 
             epoch_duration_s = n_epoch_samples / sfreq
@@ -1274,7 +1274,7 @@ class Gedai:
         raw_corrected = np.zeros_like(raw_data)
         weight_sum = np.zeros_like(raw_data)
 
-        step = window_size
+        step = int(window_size * (1 - overlap))
         starts = np.arange(0, n_times - window_size, step)
         starts = np.append(starts, n_times - window_size)
 
@@ -1792,7 +1792,7 @@ class Gedai:
                 continue
 
             n_epoch_samples = int(round(band_duration * sfreq))
-            step = n_epoch_samples
+            step = max(1, int(n_epoch_samples * (1.0 - overlap)))
             n_epochs_approx = max(1, (n_times - n_epoch_samples) // step + 1)
             epoch_duration_s = n_epoch_samples / sfreq
 
