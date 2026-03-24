@@ -536,7 +536,15 @@ class Gedai:
         if fmin < target_max and fmax > target_min:
             is_broadband = (fmax - fmin) > (target_max - target_min) * 5
             if not is_broadband or self.wavelet_level == 0:
-                min_sensai_threshold = self.alpha_sensai_threshold
+                # Apply alpha threshold override if within alpha range
+                # Note: exact match to MATLAB logic
+                center_freq = (fmin + fmax) / 2
+                min_sensai_threshold = 0.0
+                if (
+                    self.alpha_sensai_threshold is not None
+                    and self.alpha_range[0] <= center_freq <= self.alpha_range[1]
+                ):
+                    min_sensai_threshold = self.alpha_sensai_threshold
                 logger.info(
                     f"Alpha range overlap detected ({fmin:.1f}-{fmax:.1f} Hz):"
                     f" extending minThreshold to {min_sensai_threshold}"
