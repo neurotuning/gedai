@@ -1543,7 +1543,7 @@ class Gedai:
                 sfreq=raw.info["sfreq"],
                 duration=duration,
                 reference_cov=_ref_cov_arr,
-                noise_multiplier=noise_multiplier,
+                noise_multiplier=1.0,
                 signal_type=signal_type,
             )
         except Exception as e:
@@ -1553,7 +1553,7 @@ class Gedai:
             mean_enova = 0.0
 
         print(f"\n{'='*45}")
-        print(f"  Total SENSAI score : {total_sensai:.4f}  (Evaluated with Noise Penalty {noise_multiplier:.1f})")
+        print(f"  Total SENSAI score : {total_sensai:.4f}")
         print(f"  Mean ENOVA         : {mean_enova * 100:.2f} %")
         print(f"  Elapsed time       : {elapsed:.1f} s")
         print(f"{'='*45}\n", flush=True)
