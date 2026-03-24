@@ -943,6 +943,21 @@ class Gedai:
         epsilon = regularization_lambda * avg_diag_power
         _ref_cov_arr = _ref_cov_arr + epsilon * np.eye(_ref_cov_arr.shape[0])
 
+        if signal_type == "eeg":
+            ssi_n_pc = 3
+            refcov_n_pc = 3
+        else:
+            from scipy.linalg import eigh
+            n_channels = _ref_cov_arr.shape[0]
+            all_evals = eigh(_ref_cov_arr, eigvals_only=True)[::-1]
+            cumvar = np.cumsum(all_evals) / np.sum(all_evals)
+            refcov_n_pc = int(np.searchsorted(cumvar, 0.85) + 1)
+            refcov_n_pc = max(1, min(refcov_n_pc, n_channels - 1))
+            ssi_n_pc = 4
+            if refcov_n_pc < ssi_n_pc:
+                ssi_n_pc = min(ssi_n_pc, refcov_n_pc)
+        print(f"[GEDAI] SENSAI evaluation using {ssi_n_pc} PCs (refCOV PCs: {refcov_n_pc})", flush=True)
+
         # ------------------------------------------------------------------
         # 2b. Preliminary broadband GEDAI pass (mirrors MATLAB GEDAI.m)
         #     Run a single-band broadband GEDAI on the full signal before
@@ -1652,6 +1667,21 @@ class Gedai:
         regularization_lambda = 0.05
         epsilon = regularization_lambda * avg_diag_power
         _ref_cov_arr += epsilon * np.eye(_ref_cov_arr.shape[0])
+
+        if signal_type == "eeg":
+            ssi_n_pc = 3
+            refcov_n_pc = 3
+        else:
+            from scipy.linalg import eigh
+            n_channels = _ref_cov_arr.shape[0]
+            all_evals = eigh(_ref_cov_arr, eigvals_only=True)[::-1]
+            cumvar = np.cumsum(all_evals) / np.sum(all_evals)
+            refcov_n_pc = int(np.searchsorted(cumvar, 0.85) + 1)
+            refcov_n_pc = max(1, min(refcov_n_pc, n_channels - 1))
+            ssi_n_pc = 4
+            if refcov_n_pc < ssi_n_pc:
+                ssi_n_pc = min(ssi_n_pc, refcov_n_pc)
+        print(f"[GEDAI] SENSAI evaluation using {ssi_n_pc} PCs (refCOV PCs: {refcov_n_pc})", flush=True)
 
         # ------------------------------------------------------------------
         # 2b. Preliminary broadband GEDAI pass (mirrors MATLAB GEDAI.m)

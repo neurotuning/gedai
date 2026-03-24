@@ -93,6 +93,25 @@ with mne.use_coil_def(opm_coil_def_fname):
         raws["opm"].info, opm_trans, src, bem, eeg=False, verbose=True
     )
 
+print("Visualizing VectorView coregistration...", flush=True)
+fig_coreg_vv = mne.viz.plot_alignment(
+    raws["vv"].info, subjects_dir=subjects_dir, subject=subject, trans=vv_trans_fname,
+    surfaces={"head": 0.1, "inner_skull": 0.2, "white": 1.0},
+    meg=["helmet", "sensors"], verbose="error", bem=bem_fname, src=src,
+)
+input("Press Enter to close the VectorView coregistration and view OPM...")
+mne.viz.close_3d_figure(fig_coreg_vv)
+
+print("Visualizing OPM coregistration...", flush=True)
+with mne.use_coil_def(opm_coil_def_fname):
+    fig_coreg_opm = mne.viz.plot_alignment(
+        raws["opm"].info, subjects_dir=subjects_dir, subject=subject, trans=opm_trans,
+        surfaces={"head": 0.1, "inner_skull": 0.2, "white": 1.0},
+        meg="sensors", verbose="error", bem=bem_fname, src=src,
+    )
+input("Press Enter to close the OPM coregistration and start GEDAI denoising...")
+mne.viz.close_3d_figure(fig_coreg_opm)
+
 del src, bem
 
 ##############################################################################
@@ -109,7 +128,7 @@ raw_vv_grad = raws["vv"].copy().pick("grad")
 raw_vv_grad.filter(0.5, None, verbose=False)   # high-pass to stabilise epoch covariances
 gedai_grad = Gedai(wavelet_level='auto', wavelet_low_cutoff=0.5, epoch_size_in_cycles=12, signal_type="meg", highpass_cutoff=None)
 raw_vv_grad_clean = gedai_grad.fit_transform_raw(
-    raw_vv_grad, reference_cov=fwd["vv"], noise_multiplier=2.0
+    raw_vv_grad, reference_cov=fwd["vv"], noise_multiplier=3.0
 )
 grad_picks = mne.pick_types(raws["vv"].info, meg="grad")
 raws["vv"]._data[grad_picks] = raw_vv_grad_clean.get_data()
@@ -120,7 +139,7 @@ raw_vv_mag = raws["vv"].copy().pick("mag")
 raw_vv_mag.filter(0.5, None, verbose=False)    # high-pass to stabilise epoch covariances
 gedai_mag = Gedai(wavelet_level='auto', wavelet_low_cutoff=0.5, epoch_size_in_cycles=12, signal_type="meg", highpass_cutoff=None)
 raw_vv_mag_clean = gedai_mag.fit_transform_raw(
-    raw_vv_mag, reference_cov=fwd["vv"], noise_multiplier=2.0
+    raw_vv_mag, reference_cov=fwd["vv"], noise_multiplier=3.0
 )
 mag_picks = mne.pick_types(raws["vv"].info, meg="mag")
 raws["vv"]._data[mag_picks] = raw_vv_mag_clean.get_data()
@@ -131,7 +150,7 @@ raw_opm_meg = raws["opm"].copy().pick("mag")
 raw_opm_meg.filter(0.5, None, verbose=False)   # high-pass to stabilise epoch covariances
 gedai_opm = Gedai(wavelet_level='auto', wavelet_low_cutoff=0.5, epoch_size_in_cycles=12, signal_type="meg", highpass_cutoff=None)
 raw_opm_clean = gedai_opm.fit_transform_raw(
-    raw_opm_meg, reference_cov=fwd["opm"], noise_multiplier=2.0
+    raw_opm_meg, reference_cov=fwd["opm"], noise_multiplier=3.0
 )
 opm_meg_picks = mne.pick_types(raws["opm"].info, meg=True)
 raws["opm"]._data[opm_meg_picks] = raw_opm_clean.get_data()
