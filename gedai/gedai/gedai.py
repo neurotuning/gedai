@@ -1363,7 +1363,7 @@ class Gedai:
         sfreq = raw.info["sfreq"]
         raw_data = raw.get_data(verbose=False)   # (n_channels, n_times)
         n_channels, n_times = raw_data.shape
-        level = self.wavelet_level
+        level = self.levels_used
 
         # ------------------------------------------------------------------
         # 1. Pad → MODWT → MRA  (same logic as in fit)
