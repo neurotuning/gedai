@@ -657,7 +657,7 @@ class Gedai:
         check_type(epochs, (BaseEpochs,), "epochs")
         _check_reference_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        check_type(noise_multiplier, (float, int), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
         # Resolve signal type (auto-detect from channel types if needed)
@@ -773,7 +773,7 @@ class Gedai:
         check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         _check_reference_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        check_type(noise_multiplier, (float, int), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
         # ------------------------------------------------------------------
@@ -1500,7 +1500,7 @@ class Gedai:
         check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         _check_reference_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        check_type(noise_multiplier, (float, int), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
         # Resolve signal type (auto-detect from channel types if needed)
