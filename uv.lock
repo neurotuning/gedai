@@ -1281,7 +1281,7 @@ wheels = [
 
 [[package]]
 name = "mne"
-version = "1.11.0"
+version = "1.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "decorator" },
@@ -1294,9 +1294,9 @@ dependencies = [
     { name = "scipy" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/4f/ed4c27b6179665235a7ce3a738b24a05cafe9fa67f728994361598b27c2f/mne-1.11.0.tar.gz", hash = "sha256:0a89b8fc44133b81218a35cdcba74ad0f8ae2e265136249b365b9ce04864c688", size = 7152794, upload-time = "2025-11-21T19:34:45.907Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/86/ecba264bac2234dbdb99237d32980711f3c05fc1e6fd049a9cae2df6fae8/mne-1.12.0.tar.gz", hash = "sha256:29ff8331ba58626b5ce361dee66c0de5e331a0fd8217ac7543fb552ce667f522", size = 7210993, upload-time = "2026-04-07T19:37:12.941Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/60/a9b51009f6df38b491a874b3ca5db1ce37395c6327faca1008e71e9814e6/mne-1.11.0-py3-none-any.whl", hash = "sha256:993f25b0c92e563c23cb272c42c6c0298be10f40ed50abe4dd2deeba8d184ac2", size = 7451119, upload-time = "2025-11-21T19:34:43.463Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/d5/8567fa9c30ce930885bb00f6f1d380a977f959d7c03f8b4212d28c70d280/mne-1.12.0-py3-none-any.whl", hash = "sha256:d78741df4d7dc1b5e784bbcae937ccc55d1659c3115b5e250346140a76f7f403", size = 7508692, upload-time = "2026-04-07T19:37:09.663Z" },
 ]
 
 [[package]]
