@@ -68,13 +68,15 @@ def compute_covariance_from_forward(forward):
     cov : instance of mne.Covariance
         The computed covariance matrix.
     """
-    check_type(forward, mne.Forward, "forward")
+    check_type(forward, (mne.Forward,), "forward")
 
     data = forward["sol"]["data"] @ forward["sol"]["data"].T
     ch_names = forward["info"]["ch_names"]
     bads = forward["info"]["bads"]
-    projs = forward["info"]["projs"]
-    cov = mne.Covariance(data, ch_names, bads, projs, verbose=None)
+    nfree = len(ch_names)  # TODO: fix
+    cov = mne.Covariance(
+        data, names=ch_names, bads=bads, projs=[], nfree=nfree, verbose=None
+    )
     return cov
 
 
