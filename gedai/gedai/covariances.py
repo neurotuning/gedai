@@ -105,7 +105,8 @@ def compute_covariance_from_channel_positions(info):
     data = sigma2 * np.exp(-(ch_distance_matrix**2) / (2 * ell**2))
     data += eps * np.eye(data.shape[0])
 
-    cov = mne.Covariance(
-        data, info["ch_names"], info["bads"], info["projs"], verbose=None
-    )
+    ch_names = info["ch_names"]
+    bads = info["bads"]
+    nfree = len(ch_names)  # TODO: fix
+    cov = mne.Covariance(data, ch_names, bads, nfree=nfree, projs=[], verbose=None)
     return cov
