@@ -20,6 +20,7 @@ raw.pick_types(meg=False, eeg=True)
 info = raw.info
 
 
+@testing.requires_testing_data
 def test_ensure_cov():
     """Test _ensure_cov."""
     # test with a covariance object
@@ -35,6 +36,7 @@ def test_ensure_cov():
         _ensure_cov("invalid_string")
 
 
+@testing.requires_testing_data
 def test_pick_cov():
     """Test _pick_cov."""
     cov = mne.make_ad_hoc_cov(info)
@@ -60,12 +62,14 @@ def test_pick_cov():
         _pick_cov(cov, ch_names)
 
 
+@testing.requires_testing_data
 def test_compute_covariance_from_channel_positions():
     """Test compute_covariance_from_channel_positions."""
     cov = compute_covariance_from_channel_positions(info)
     assert isinstance(cov, mne.Covariance)
 
 
+@testing.requires_testing_data
 def test_compute_covariance_from_forward():
     """Test compute_covariance_from_forward."""
     forward = mne.read_forward_solution(fname_fwd)
