@@ -1,12 +1,11 @@
-import os
-import numpy as np
-from scipy.linalg import eigh
 import matplotlib.pyplot as plt
 import mne
+import numpy as np
+from mne import BaseEpochs
 from mne._fiff.pick import _picks_to_idx
-from mne import BaseEpochs, pick_info
 from mne.io import BaseRaw
 from mne.parallel import parallel_func
+from scipy.linalg import eigh
 
 from ..sensai.sensai import (
     _eigen_to_sensai,
@@ -14,7 +13,7 @@ from ..sensai.sensai import (
     _sensai_optimize,
     _sensai_to_eigen,
 )
-from ..utils._checks import _check_n_jobs, check_type, _check_picks_uniqueness
+from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
@@ -108,6 +107,7 @@ def _check_sensai_method(method):
             f"Method must be either 'gridsearch' or 'optimize', got '{method}' instead."
         )
 
+
 @fill_doc
 class Gedai:
     """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
@@ -153,8 +153,7 @@ class Gedai:
         """Check if the Gedai is fitted."""
         if not self.fitted:
             raise RuntimeError(
-                "Gedai must be fitted before using "
-                f"{self.__class__.__name__}"
+                f"Gedai must be fitted before using {self.__class__.__name__}"
             )
         # sanity-check
         assert self._wavelets_fits is not None
@@ -165,13 +164,12 @@ class Gedai:
         """Check if the Gedai is unfitted."""
         if self.fitted:
             raise RuntimeError(
-                "Gedai must be unfitted before using "
-                f"{self.__class__.__name__}."
+                f"Gedai must be unfitted before using {self.__class__.__name__}."
             )
         assert self._wavelets_fits is None
         assert self._reference_cov is None
         assert self._levels is None
-        
+
     @fill_doc
     @verbose
     def fit_epochs(
@@ -195,7 +193,8 @@ class Gedai:
             type. Slices and lists of integers will be interpreted as channel indices.
             In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
             channels. Can also be the string values ``“all”`` to pick all channels, or
-            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all EEG channels.
+            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all
+            EEG channels.
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
@@ -214,7 +213,7 @@ class Gedai:
         _check_picks_uniqueness(epochs.info, picks)
         epochs = epochs.copy()
         epochs.load_data()
-        epochs = epochs.pick(picks)  
+        epochs = epochs.pick(picks)
         logger.info("Setting average reference.")
         epochs.set_eeg_reference("average", projection=False)
         data = epochs.get_data()
@@ -236,7 +235,7 @@ class Gedai:
             sfreq=epochs.info["sfreq"],
             wavelet=self.wavelet_type,
             level=self.wavelet_level,
-            n_jobs=n_jobs
+            n_jobs=n_jobs,
         )
 
         # Store the actual levels used for consistency in transform
@@ -352,7 +351,8 @@ class Gedai:
             type. Slices and lists of integers will be interpreted as channel indices.
             In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
             channels. Can also be the string values ``“all”`` to pick all channels, or
-            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all EEG channels.
+            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all
+            EEG channels.
         duration : float
             Duration of each epoch in seconds (default 1.0). Will be automatically
             adjusted to the closest valid duration for the wavelet level.
@@ -452,23 +452,33 @@ class Gedai:
         missing_ch = set(self.ch_names) - set(epochs.info["ch_names"])
         if len(missing_ch) > 0:
             raise ValueError(
-                f"The following channels are missing in the input inst but were present "
-                f"during fitting: {missing_ch}. \n"
-                f"Please make sure to include the same channels during transform as were used during fit. \n"
-                f"See {self.__class__.__name__}.ch_names for the list of channels used during fit.")
+                "The following channels are missing in the input inst but were "
+                "present during fitting: "
+                f"{missing_ch}. \n"
+                "Please make sure to include the same channels during transform "
+                "as were used during fit. \n"
+                "See "
+                f"{self.__class__.__name__}.ch_names "
+                "for the list of channels used during fit."
+            )
         extra_ch = set(epochs.info["ch_names"]) - set(self.ch_names)
         if len(extra_ch) > 0:
             raise ValueError(
-                f"The following channels are present in the input inst but were not present "
-                f"during fitting: {extra_ch}. \n"
-                f"These channels will be ignored during transformation. \n"
-                f"Please make sure to include the same channels during transform as were used during fit. \n"
-                f"See {self.__class__.__name__}.ch_names for the list of channels used during fit.")
+                "The following channels are present in the input inst but were "
+                "not present during fitting: "
+                f"{extra_ch}. \n"
+                "These channels will be ignored during transformation. \n"
+                "Please make sure to include the same channels during transform "
+                "as were used during fit. \n"
+                "See "
+                f"{self.__class__.__name__}.ch_names "
+                "for the list of channels used during fit."
+            )
 
         picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
         epochs = epochs.copy()
         epochs.load_data()
-        epochs = epochs.pick(picks)  
+        epochs = epochs.pick(picks)
         logger.info("Setting average reference.")
         epochs.set_eeg_reference("average", projection=False)
         data = epochs.get_data()
@@ -481,7 +491,7 @@ class Gedai:
             sfreq=epochs.info["sfreq"],
             wavelet=self.wavelet_type,
             level=self.wavelet_level,
-            n_jobs=n_jobs
+            n_jobs=n_jobs,
         )
 
         # Validate that the decomposition matches the fitted model
@@ -692,7 +702,7 @@ class Gedai:
             )
             figs.append(fig)
         return figs
-    
+
     @property
     def ch_names(self):
         """Get the channel names used during fitting."""

@@ -135,6 +135,7 @@ def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
             f"{item_name} must be an instance of {type_name}, got {type(item)} instead."
         )
 
+
 def _check_picks_uniqueness(info, picks):
     """Check that the provided picks yield a single channel type."""
     info = pick_info(info, picks, copy=True)
@@ -148,6 +149,7 @@ def _check_picks_uniqueness(info, picks):
         raise ValueError(
             f"Only one datatype can be selected, but 'picks' results in {channels_msg}."
         )
+
 
 def check_value(
     item: Any,

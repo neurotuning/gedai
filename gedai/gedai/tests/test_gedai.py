@@ -1,5 +1,6 @@
 """Test Gedai."""
 
+import pytest
 from mne import make_fixed_length_epochs
 from mne.datasets import eegbci
 from mne.io import concatenate_raws, read_raw_edf
@@ -7,7 +8,6 @@ from mne.io import concatenate_raws, read_raw_edf
 from gedai import Gedai, logger, set_log_level
 from gedai.gedai.gedai import compute_closest_valid_duration
 
-import pytest
 set_log_level("INFO")
 logger.propagate = True
 
@@ -85,15 +85,23 @@ def test_gedai_epochs_picks():
     gedai = Gedai(wavelet_level=0)
     gedai.fit_epochs(epochs_eeg, picks=raw.ch_names[:10])
     assert gedai.ch_names == raw.ch_names[:10]
-    with pytest.raises(ValueError, match="The following channels are present in the input inst but were not present"):
+    with pytest.raises(
+        ValueError,
+        match=(
+            "The following channels are present in the input inst but were not present"
+        ),
+    ):
         gedai.transform_epochs(epochs_eeg)
-    
-    with pytest.raises(ValueError, match="The following channels are missing in the input inst but were present"):
-        epochs_test = epochs_eeg.copy()
-        epochs_test.load_data()
-        epochs_test.pick_channels(raw.ch_names[:5])
+
+    epochs_test = epochs_eeg.copy()
+    epochs_test.load_data()
+    epochs_test.pick_channels(raw.ch_names[:5])
+    with pytest.raises(
+        ValueError,
+        match="The following channels are missing in the input inst but were present",
+    ):
         gedai.transform_epochs(epochs_test)
-    
+
     epochs_test = epochs_eeg.copy()
     epochs_test.load_data()
     epochs_test.pick_channels(raw.ch_names[:10])
