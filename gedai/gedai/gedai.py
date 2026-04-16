@@ -13,7 +13,7 @@ from ..sensai.sensai import (
     _sensai_optimize,
     _sensai_to_eigen,
 )
-from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, check_type
+from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
@@ -101,7 +101,7 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
 
 
 def _check_sensai_method(method):
-    check_type(method, (str,), "method")
+    _check_type(method, (str,), "method")
     if method not in ["gridsearch", "optimize"]:
         raise ValueError(
             f"Method must be either 'gridsearch' or 'optimize', got '{method}' instead."
@@ -202,10 +202,10 @@ class Gedai:
         %(verbose)s
         """
         self._check_unfitted()
-        check_type(epochs, (BaseEpochs,), "epochs")
+        _check_type(epochs, (BaseEpochs,), "epochs")
         _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
         # Data
@@ -367,8 +367,8 @@ class Gedai:
         %(n_jobs)s
         %(verbose)s
         """
-        check_type(raw, (BaseRaw,), "raw")
-        check_type(
+        _check_type(raw, (BaseRaw,), "raw")
+        _check_type(
             duration,
             (
                 float,
@@ -376,7 +376,7 @@ class Gedai:
             ),
             "duration",
         )
-        check_type(
+        _check_type(
             overlap,
             (
                 float,
@@ -386,10 +386,10 @@ class Gedai:
         )
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
-        check_type(reject_by_annotation, (bool,), "reject_by_annotation")
+        _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
         # Adjust user's duration to closest valid duration
@@ -397,7 +397,7 @@ class Gedai:
             duration, self.wavelet_level, raw.info["sfreq"]
         )
         if valid_duration != duration:
-            logger.warn(
+            logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
                 f"({valid_samples} samples) to satisfy wavelet level"
                 f" {self.wavelet_level} requirements."
@@ -445,7 +445,7 @@ class Gedai:
             The transformed epochs.
         """
         self._check_fit()
-        check_type(epochs, (BaseEpochs,), "epochs")
+        _check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
 
         # Data
@@ -570,9 +570,9 @@ class Gedai:
         raw_corrected : mne.io.BaseRaw
             The corrected raw data.
         """
-        check_type(raw, (BaseRaw,), "raw")
-        check_type(duration, (float, int), "duration")
-        check_type(overlap, (float, int), "overlap")
+        _check_type(raw, (BaseRaw,), "raw")
+        _check_type(duration, (float, int), "duration")
+        _check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
 
         if not (0 <= overlap < 1):
@@ -585,7 +585,7 @@ class Gedai:
         if (
             abs(valid_duration - duration) > 1e-6
         ):  # Only warn if there's a significant difference
-            logger.warn(
+            logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s"
                 f" ({valid_samples} samples) to satisfy wavelet level"
                 f" {self.wavelet_level} requirements."

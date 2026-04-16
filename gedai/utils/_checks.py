@@ -79,7 +79,7 @@ _types = {
 }
 
 
-def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
+def _check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
     """Check that item is an instance of types.
 
     Parameters
@@ -151,7 +151,7 @@ def _check_picks_uniqueness(info, picks):
         )
 
 
-def check_value(
+def _check_value(
     item: Any,
     allowed_values: tuple | dict[Any, Any],
     item_name: str | None = None,
@@ -200,7 +200,7 @@ def check_value(
 
 
 @fill_doc
-def ensure_verbose(verbose: Any) -> int:
+def _ensure_verbose(verbose: Any) -> int:
     """Ensure that the value of verbose is valid.
 
     Parameters
@@ -220,13 +220,13 @@ def ensure_verbose(verbose: Any) -> int:
         CRITICAL=logging.CRITICAL,
     )
 
-    check_type(verbose, (bool, str, "int-like", None), item_name="verbose")
+    _check_type(verbose, (bool, str, "int-like", None), item_name="verbose")
 
     if verbose is None:
         verbose = logging.WARNING
     elif isinstance(verbose, str):
         verbose = verbose.upper()
-        check_value(verbose, logging_types, item_name="verbose")
+        _check_value(verbose, logging_types, item_name="verbose")
         verbose = logging_types[verbose]
     elif isinstance(verbose, bool):
         if verbose:
@@ -244,7 +244,7 @@ def ensure_verbose(verbose: Any) -> int:
     return verbose
 
 
-def ensure_path(item: Any, must_exist: bool) -> Path:
+def _ensure_path(item: Any, must_exist: bool) -> Path:
     """Ensure a variable is a Path.
 
     Parameters

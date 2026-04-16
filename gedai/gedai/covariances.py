@@ -4,11 +4,11 @@ import mne
 import numpy as np
 import sklearn.metrics
 
-from ..utils._checks import check_type
+from ..utils._checks import _check_type
 
 
 def _ensure_cov(reference_cov):
-    check_type(reference_cov, (str, mne.Covariance), "reference_cov")
+    _check_type(reference_cov, (str, mne.Covariance), "reference_cov")
     if isinstance(reference_cov, str):
         if reference_cov == "leadfield":
             reference_cov = mne.read_cov(
@@ -68,7 +68,7 @@ def compute_covariance_from_forward(forward):
     cov : instance of mne.Covariance
         The computed covariance matrix.
     """
-    check_type(forward, (mne.Forward,), "forward")
+    _check_type(forward, (mne.Forward,), "forward")
 
     data = forward["sol"]["data"] @ forward["sol"]["data"].T
     ch_names = forward["info"]["ch_names"]
