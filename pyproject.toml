@@ -54,6 +54,7 @@ build = [
 ]
 doc = [
   'intersphinx_registry',
+  'ipywidgets',
   'matplotlib',
   'memory-profiler',
   'myst_parser',
