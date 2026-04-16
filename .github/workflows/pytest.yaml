@@ -33,6 +33,9 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system .[test]
       - run: gedai sys-info --developer
+      - name: Download testing data
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
       - uses: codecov/codecov-action@v5
         with:
