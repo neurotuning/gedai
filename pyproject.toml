@@ -54,14 +54,13 @@ build = [
 ]
 doc = [
   'intersphinx_registry',
+  'ipywidgets',
   'matplotlib',
   'memory-profiler',
   'myst_parser',
   'nilearn',
   'numpydoc',
   'pydata_sphinx_theme',
-  'pyside6',
-  'pyvistaqt',
   'sphinx',
   'sphinx-copybutton',
   'sphinx-design',
