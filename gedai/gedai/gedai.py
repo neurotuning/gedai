@@ -222,6 +222,11 @@ class Gedai:
         cov = _ensure_cov(reference_cov)
         cov = _pick_cov(cov, epochs.info["ch_names"])
         reference_cov = cov.data
+
+        # TODO:
+        # Non-rank-deficient average reference (formula: G - sum(G)/(N+1))
+        # reference_cov -= reference_cov.mean(axis=0)[:, np.newaxis] / (reference_cov.shape[0] + 1)
+
         # Tikhonov Regularization based on average diagonal power
         # TODO. move ?
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
