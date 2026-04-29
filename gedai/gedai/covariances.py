@@ -69,7 +69,8 @@ def compute_covariance_from_forward(forward):
         The computed covariance matrix.
     """
     _check_type(forward, (mne.Forward,), "forward")
-
+    if forward["coord_frame"] != mne._fiff.constants.FIFF.FIFFV_COORD_HEAD:
+        raise ValueError("Forward solution must be in head coordinates.")
     data = forward["sol"]["data"] @ forward["sol"]["data"].T
     ch_names = forward["info"]["ch_names"]
     bads = forward["info"]["bads"]
