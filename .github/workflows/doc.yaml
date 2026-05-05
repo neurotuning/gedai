@@ -25,7 +25,7 @@ jobs:
       - name: Download data
         run: |
           python -c 'import mne; mne.datasets.fetch_fsaverage()'
-      - run: xvfb-run -a make -C doc html
+      - run: xvfb-run -a env MPLBACKEND=Agg QT_QPA_PLATFORM=offscreen PYVISTA_OFF_SCREEN=true make -C doc html
       - name: Prune sphinx environment
         run: rm -R ./doc/_build/html/.doctrees
       - uses: actions/upload-artifact@v7
