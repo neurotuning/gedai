@@ -225,7 +225,8 @@ class Gedai:
 
         # TODO:
         # Non-rank-deficient average reference (formula: G - sum(G)/(N+1))
-        # reference_cov -= reference_cov.mean(axis=0)[:, np.newaxis] / (reference_cov.shape[0] + 1)
+        # c = reference_cov.mean(axis=0)[:, np.newaxis] / (reference_cov.shape[0] + 1)
+        # reference_cov -= c
 
         # Tikhonov Regularization based on average diagonal power
         # TODO. move ?
