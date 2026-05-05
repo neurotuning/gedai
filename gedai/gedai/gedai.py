@@ -404,9 +404,9 @@ class Gedai:
 
         # Set average reference
         logger.info("Setting average reference to match leadfield covariance.")
-        epochs = epochs.copy()
-        epochs.load_data()
-        epochs.set_eeg_reference("average", projection=False)
+        epochs_copy = epochs.copy()
+        epochs_copy.load_data()
+        epochs_copy.set_eeg_reference("average", projection=False)
 
         # Check if model was fitted
         if not hasattr(self, "wavelets_fits"):
@@ -415,7 +415,10 @@ class Gedai:
             )
 
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
-            epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs
+            epochs_copy,
+            wavelet=self.wavelet_type,
+            level=self.wavelet_level,
+            n_jobs=n_jobs,
         )
 
         # Validate that the decomposition matches the fitted model
@@ -460,9 +463,8 @@ class Gedai:
 
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
-        cleaned_epochs = mne.EpochsArray(
-            cleaned_epochs_data, epochs.info, tmin=epochs.tmin, verbose=verbose
-        )
+        cleaned_epochs = epochs.copy()
+        cleaned_epochs._data = cleaned_epochs_data
         return cleaned_epochs
 
     @fill_doc
