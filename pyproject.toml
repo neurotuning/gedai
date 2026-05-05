@@ -54,6 +54,7 @@ build = [
 ]
 doc = [
   'intersphinx_registry',
+  'ipyevents',
   'ipywidgets',
   'matplotlib',
   'memory-profiler',
@@ -61,6 +62,7 @@ doc = [
   'nilearn',
   'numpydoc',
   'pydata_sphinx_theme',
+  'pyvistaqt',
   'sphinx',
   'sphinx-copybutton',
   'sphinx-design',
