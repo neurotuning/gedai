@@ -62,6 +62,7 @@ doc = [
   'nilearn',
   'numpydoc',
   'pydata_sphinx_theme',
+  'PyQt5',
   'pyvistaqt',
   'sphinx',
   'sphinx-copybutton',
