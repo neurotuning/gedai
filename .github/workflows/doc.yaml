@@ -18,7 +18,24 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - run: sudo apt update && sudo apt install -y optipng xvfb
+      - run: |
+          sudo apt update
+          sudo apt install -y \
+            optipng \
+            xvfb \
+            libegl1 \
+            libgl1 \
+            libxkbcommon-x11-0 \
+            libx11-xcb1 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system .[doc]
       - run: gedai sys-info --developer
