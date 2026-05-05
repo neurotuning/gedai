@@ -1,6 +1,6 @@
 """
 GEDAI forward
-============
+=============
 
 This tutorial demonstrates how to use a custom covariance matrix in ``GEDAI``
 derived from the leadfield of a forward solution.
