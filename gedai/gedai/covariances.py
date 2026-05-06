@@ -1,109 +1,113 @@
-import h5py
+import os
+
+import mne
 import numpy as np
 import sklearn.metrics
 
+from ..utils._checks import _check_type
 
-def _compute_distance_cov(raw):
-    ch_positions = [raw.info["chs"][i]["loc"][:3] for i in range(raw.info["nchan"])]
-    ch_distance_matrix = sklearn.metrics.pairwise_distances(
-        ch_positions, metric="euclidean"
-    )
-    cov = 1 - ch_distance_matrix
+
+def _ensure_cov(reference_cov):
+    _check_type(reference_cov, (str, mne.Covariance), "reference_cov")
+    if isinstance(reference_cov, str):
+        if reference_cov == "leadfield":
+            reference_cov = mne.read_cov(
+                os.path.join(
+                    os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI-cov.fif"
+                )
+            )
+        else:
+            raise ValueError(
+                "Reference covariance must be 'leadfield'"
+                f"got '{reference_cov}' instead."
+            )
+    return reference_cov
+
+
+def _pick_cov(cov, ch_names):
+    cov_ch_names = cov.ch_names
+
+    picks_cov = []
+    picks_ch_names = []
+    for cov_name in cov_ch_names:
+        for ch_name in ch_names:
+            if ch_name.lower() == cov_name.lower():
+                picks_cov.append(cov_name)
+                picks_ch_names.append(ch_name)
+                break
+    if len(picks_cov) == 0:
+        raise ValueError(
+            "No matching channel names found between inst and cov.\n"
+            f"Available channels in covariance are {cov_ch_names}.\n"
+            f"but instance has channels {ch_names}."
+        )
+    if len(picks_cov) < len(ch_names):
+        raise ValueError(
+            "Only a subset of channels in the instance are present"
+            " in the covariance.\n"
+            f"Use inst.pick_channels({picks_ch_names}) to select only the channels"
+            f" that are in the covariance or provide a covariance that contains"
+            f" all channels in the instance."
+        )
+    cov = cov.copy().pick_channels(picks_cov)
+    # Update the channel names in the covariance to match those in the instance
+    cov.update(names=ch_names)
     return cov
 
 
-def _compute_refcov(inst, mat):
-    inst_ch_names = inst.info["ch_names"]
+def compute_covariance_from_forward(forward):
+    """Compute covariance matrix from the leadfield of a forward solution.
 
-    with h5py.File(mat, "r") as f:
-        leadfield_data = f["leadfield4GEDAI"]
-        # ch_names
-        leadfield_channel_data = leadfield_data["electrodes"]
-        leadfield_ch_names = [
-            f[ref[0]][()].tobytes().decode("utf-16le").lower()
-            for ref in leadfield_channel_data["Name"]
-        ]
-        # leadfield matrix
-        leadfield_gain_matrix = leadfield_data["gram_matrix_avref"]
-        leadfield_gain_matrix = np.array(leadfield_gain_matrix).T
+    Parameters
+    ----------
+    forward : mne.Forward
+        The forward solution from which to compute the covariance matrix.
 
-    # Two-pass matching: exact first, then substring
-    ch_indices = []
-    ch_names = []
-    matched_inst_indices = set()
-    match_types = []  # Track match quality for logging
+    Returns
+    -------
+    cov : mne.Covariance
+        The computed covariance matrix.
+    """
+    _check_type(forward, (mne.Forward,), "forward")
+    if forward["coord_frame"] != mne._fiff.constants.FIFF.FIFFV_COORD_HEAD:
+        raise ValueError("Forward solution must be in head coordinates.")
+    data = forward["sol"]["data"] @ forward["sol"]["data"].T
+    ch_names = forward["info"]["ch_names"]
+    bads = forward["info"]["bads"]
+    nfree = len(ch_names)  # TODO: fix
+    cov = mne.Covariance(
+        data, names=ch_names, bads=bads, projs=[], nfree=nfree, verbose=None
+    )
+    return cov
 
-    # Pass 1: Exact matching (case-insensitive)
-    for inst_idx, inst_ch_name in enumerate(inst_ch_names):
-        for leadfield_ch_index, leadfield_ch_name in enumerate(leadfield_ch_names):
-            if inst_ch_name.lower() == leadfield_ch_name.lower():
-                ch_indices.append(leadfield_ch_index)
-                ch_names.append(leadfield_ch_name)
-                matched_inst_indices.add(inst_idx)
-                match_types.append("exact")
-                break  # Move to next inst channel after finding exact match
 
-    # Pass 2: Substring matching for unmatched channels
-    for inst_idx, inst_ch_name in enumerate(inst_ch_names):
-        if inst_idx in matched_inst_indices:
-            continue  # Already matched exactly
+def compute_covariance_from_channel_positions(info):
+    """Compute covariance matrix from channel positions.
 
-        inst_lower = inst_ch_name.lower()
-        best_match = None
-        best_match_length = 0
+    Parameters
+    ----------
+    info : instance of mne.Info
+        The info structure containing channel information.
 
-        for leadfield_ch_index, leadfield_ch_name in enumerate(leadfield_ch_names):
-            leadfield_lower = leadfield_ch_name.lower()
+    Returns
+    -------
+    cov : instance of mne.Covariance
+        The computed covariance matrix.
+    """
+    ch_positions = [info["chs"][i]["loc"][:3] for i in range(info["nchan"])]
+    ch_distance_matrix = sklearn.metrics.pairwise_distances(
+        ch_positions, metric="euclidean"
+    )
+    nonzero = ch_distance_matrix[ch_distance_matrix > 0]
+    ell = np.median(nonzero) if nonzero.size else 1.0
+    sigma2 = 1.0
+    eps = 1e-6
 
-            # Check if leadfield name is substring of inst name
-            # or inst name is substring of leadfield name
-            if leadfield_lower in inst_lower or inst_lower in leadfield_lower:
-                # Prefer longer matches to avoid false positives
-                match_length = min(len(leadfield_lower), len(inst_lower))
-                if match_length > best_match_length:
-                    best_match = leadfield_ch_index
-                    best_match_length = match_length
+    data = sigma2 * np.exp(-(ch_distance_matrix**2) / (2 * ell**2))
+    data += eps * np.eye(data.shape[0])
 
-        if best_match is not None:
-            ch_indices.append(best_match)
-            ch_names.append(leadfield_ch_names[best_match])
-            matched_inst_indices.add(inst_idx)
-            match_types.append("substring")
-
-    # Validation and warnings
-    n_inst_channels = len(inst_ch_names)
-    n_matched = len(ch_indices)
-
-    if n_matched == 0:
-        raise ValueError(
-            f"No electrode matches found between data and leadfield "
-            f"template.\n"
-            f"Your channels: {inst_ch_names[:10]}\n"
-            f"Leadfield channels: {leadfield_ch_names[:10]}\n"
-            f"Please check that your electrode names follow standard "
-            f"conventions (e.g., Fp1, Fp2, F3, F4)."
-        )
-
-    # Always warn if any channels didn't match
-    if n_matched < n_inst_channels:
-        import warnings
-
-        unmatched = [
-            inst_ch_names[i]
-            for i in range(n_inst_channels)
-            if i not in matched_inst_indices
-        ]
-        n_exact = match_types.count("exact")
-        n_substring = match_types.count("substring")
-
-        warnings.warn(
-            f"Electrode matching: {n_matched}/{n_inst_channels} channels "
-            f"matched ({n_exact} exact, {n_substring} substring). "
-            f"Unmatched channels ({len(unmatched)}): "
-            f"{unmatched}",
-            UserWarning,
-            stacklevel=2,
-        )
-
-    refCOV = leadfield_gain_matrix[np.ix_(ch_indices, ch_indices)]
-    return (refCOV, ch_names)
+    ch_names = info["ch_names"]
+    bads = info["bads"]
+    nfree = len(ch_names)  # TODO: fix
+    cov = mne.Covariance(data, ch_names, bads, nfree=nfree, projs=[], verbose=None)
+    return cov

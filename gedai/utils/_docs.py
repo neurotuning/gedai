@@ -58,13 +58,18 @@ noise_multiplier : float
 # -- Q ---------------------------------------------------------------------------------
 # -- R ---------------------------------------------------------------------------------
 docdict["reference_cov"] = """
-reference_cov : str
-    The reference covariance to use. Only 'leadfield' is supported for now."""
+reference_cov : str | mne.Covariance
+    The reference covariance to use. If ``'leadfield'``, use a pre-computed covariance.
+    The precomputed covariance if computed from a leadfield made using 1005 EEG channels
+    layout and fsaverage head model.
+    If :class:`mne.Covariance`, use a pre-computed covariance.
+    See :func:`~gedai.gedai.compute_covariance_from_forward` for more details on how
+    compute a covariance from a forward solution."""
 # -- S ---------------------------------------------------------------------------------
 docdict["sensai_method"] = """
 sensai_method : str
-    The method to use for threshold optimization. Can be 'gridsearch' or
-    'optimize'. The default is 'optimize'."""
+    The method to use for threshold optimization. Can be ``'gridsearch'`` or
+    ``'optimize'``. The default is ``'optimize'``."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------

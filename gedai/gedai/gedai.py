@@ -1,9 +1,8 @@
-import os
-
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
 from mne import BaseEpochs
+from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 from mne.parallel import parallel_func
 from scipy.linalg import eigh
@@ -14,11 +13,11 @@ from ..sensai.sensai import (
     _sensai_optimize,
     _sensai_to_eigen,
 )
-from ..utils._checks import _check_n_jobs, check_type
+from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
 from ..utils._docs import fill_doc
-from ..utils.logs import logger
+from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
-from .covariances import _compute_refcov
+from .covariances import _ensure_cov, _pick_cov
 
 
 def create_cosine_weights(n_samples):
@@ -45,7 +44,6 @@ def compute_required_duration(wavelet_level, sfreq):
     """
     if wavelet_level == 0:
         return 1.0  # Default for no decomposition
-
     # For SWT, minimum length is 2^(level+1)
     min_samples = 2 ** (wavelet_level + 1)
     duration = min_samples / sfreq
@@ -103,19 +101,10 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
 
 
 def _check_sensai_method(method):
-    check_type(method, (str,), "method")
+    _check_type(method, (str,), "method")
     if method not in ["gridsearch", "optimize"]:
         raise ValueError(
             f"Method must be either 'gridsearch' or 'optimize', got '{method}' instead."
-        )
-
-
-def _check_reference_cov(reference_cov):
-    check_type(reference_cov, (str,), "reference_cov")
-    if reference_cov not in ["leadfield"]:
-        raise ValueError(
-            "Reference covariance must be 'leadfield' for now, "
-            f"got '{reference_cov}' instead."
         )
 
 
@@ -151,14 +140,42 @@ class Gedai:
     """
 
     def __init__(self, wavelet_type="haar", wavelet_level=0, wavelet_low_cutoff=None):
+        self.fitted = False
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
         self.wavelet_low_cutoff = wavelet_low_cutoff
 
+        self._wavelets_fits = None
+        self._reference_cov = None
+        self._levels = None
+
+    def _check_fit(self):
+        """Check if the Gedai is fitted."""
+        if not self.fitted:
+            raise RuntimeError(
+                f"Gedai must be fitted before using {self.__class__.__name__}"
+            )
+        # sanity-check
+        assert self._wavelets_fits is not None
+        assert self._reference_cov is not None
+        assert self._levels is not None
+
+    def _check_unfitted(self):
+        """Check if the Gedai is unfitted."""
+        if self.fitted:
+            raise RuntimeError(
+                f"Gedai must be unfitted before using {self.__class__.__name__}."
+            )
+        assert self._wavelets_fits is None
+        assert self._reference_cov is None
+        assert self._levels is None
+
     @fill_doc
+    @verbose
     def fit_epochs(
         self,
         epochs: BaseEpochs,
+        picks: list | str = "eeg",
         reference_cov: str = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float = 3.0,
@@ -171,43 +188,63 @@ class Gedai:
         ----------
         epochs : mne.Epochs
             The epochs data to fit the model to.
+        picks : str | list | slice
+            Channels to include. Note that all channels selected must have the same
+            type. Slices and lists of integers will be interpreted as channel indices.
+            In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
+            channels. Can also be the string values ``“all”`` to pick all channels, or
+            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all
+            EEG channels.
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
         %(n_jobs)s
         %(verbose)s
         """
-        check_type(epochs, (BaseEpochs,), "epochs")
-        _check_reference_cov(reference_cov)
+        self._check_unfitted()
+        _check_type(epochs, (BaseEpochs,), "epochs")
+        _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        # Set average reference
-        logger.info("Setting average reference.")
+        # Data
+        picks = _picks_to_idx(epochs.info, picks, none="all", exclude=[])
+        _check_picks_uniqueness(epochs.info, picks)
         epochs = epochs.copy()
         epochs.load_data()
+        epochs = epochs.pick(picks)
+        logger.info("Setting average reference.")
         epochs.set_eeg_reference("average", projection=False)
+        data = epochs.get_data()
 
-        mat = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI.mat")
-        )
-        reference_cov, ch_names = _compute_refcov(epochs, mat)
+        # reference covariance
+        cov = _ensure_cov(reference_cov)
+        cov = _pick_cov(cov, epochs.info["ch_names"])
+        reference_cov = cov.data
+
+        # TODO:
+        # Non-rank-deficient average reference (formula: G - sum(G)/(N+1))
+        # c = reference_cov.mean(axis=0)[:, np.newaxis] / (reference_cov.shape[0] + 1)
+        # reference_cov -= c
 
         # Tikhonov Regularization based on average diagonal power
+        # TODO. move ?
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
         epsilon = regularization_lambda * avg_diag_power
         reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
 
-        # Broadband data
+        # Wavelet Decomposition
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
-            epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs
+            data,
+            sfreq=epochs.info["sfreq"],
+            wavelet=self.wavelet_type,
+            level=self.wavelet_level,
+            n_jobs=n_jobs,
         )
 
         # Store the actual levels used for consistency in transform
-        self.levels_used = levels
-
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -272,7 +309,6 @@ class Gedai:
                 "fmin": fmin,
                 "fmax": fmax,
                 "threshold": threshold,
-                "reference_cov": reference_cov,
                 "epochs_eigenvalues": epochs_eigenvalues,
                 "sensai_runs": runs,
             }
@@ -289,12 +325,18 @@ class Gedai:
                     )
             wavelet_fit["ignore"] = ignore
             wavelets_fits.append(wavelet_fit)
-        self.wavelets_fits = wavelets_fits
+
+        self._levels = levels
+        self._wavelets_fits = wavelets_fits
+        self._reference_cov = cov
+        self.fitted = True
 
     @fill_doc
+    @verbose
     def fit_raw(
         self,
         raw: BaseRaw,
+        picks: list | str = "eeg",
         duration: float = 1.0,
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
@@ -310,6 +352,13 @@ class Gedai:
         ----------
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
+        picks : str | list | slice
+            Channels to include. Note that all channels selected must have the same
+            type. Slices and lists of integers will be interpreted as channel indices.
+            In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
+            channels. Can also be the string values ``“all”`` to pick all channels, or
+            ``“data”`` to pick data channels. The default is ``“eeg”`` to pick all
+            EEG channels.
         duration : float
             Duration of each epoch in seconds (default 1.0). Will be automatically
             adjusted to the closest valid duration for the wavelet level.
@@ -324,8 +373,8 @@ class Gedai:
         %(n_jobs)s
         %(verbose)s
         """
-        check_type(raw, (BaseRaw,), "raw")
-        check_type(
+        _check_type(raw, (BaseRaw,), "raw")
+        _check_type(
             duration,
             (
                 float,
@@ -333,7 +382,7 @@ class Gedai:
             ),
             "duration",
         )
-        check_type(
+        _check_type(
             overlap,
             (
                 float,
@@ -343,10 +392,10 @@ class Gedai:
         )
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
-        check_type(reject_by_annotation, (bool,), "reject_by_annotation")
-        _check_reference_cov(reference_cov)
+        _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
+        reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        check_type(noise_multiplier, (float,), "noise_multiplier")
+        _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
         # Adjust user's duration to closest valid duration
@@ -354,7 +403,7 @@ class Gedai:
             duration, self.wavelet_level, raw.info["sfreq"]
         )
         if valid_duration != duration:
-            logger.warn(
+            logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
                 f"({valid_samples} samples) to satisfy wavelet level"
                 f" {self.wavelet_level} requirements."
@@ -370,18 +419,20 @@ class Gedai:
             overlap=overlap_seconds,
             reject_by_annotation=reject_by_annotation,
             preload=True,
-            verbose=False,
+            verbose=verbose,
         )
         self.fit_epochs(
             epochs,
+            picks=picks,
             noise_multiplier=noise_multiplier,
             reference_cov=reference_cov,
             sensai_method=sensai_method,
             n_jobs=n_jobs,
-            verbose=False,
+            verbose=verbose,
         )
 
     @fill_doc
+    @verbose
     def transform_epochs(
         self, epochs: BaseEpochs, n_jobs: int = None, verbose: str | None = None
     ):
@@ -399,37 +450,68 @@ class Gedai:
         epochs : mne.Epochs
             The transformed epochs.
         """
-        check_type(epochs, (BaseEpochs,), "epochs")
+        self._check_fit()
+        _check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
 
-        # Set average reference
-        logger.info("Setting average reference to match leadfield covariance.")
-        epochs = epochs.copy()
-        epochs.load_data()
-        epochs.set_eeg_reference("average", projection=False)
-
-        # Check if model was fitted
-        if not hasattr(self, "wavelets_fits"):
-            raise RuntimeError(
-                "Model has not been fitted yet. Call fit_epochs() or fit_raw() first."
+        # Data
+        missing_ch = set(self.ch_names) - set(epochs.info["ch_names"])
+        if len(missing_ch) > 0:
+            raise ValueError(
+                "The following channels are missing in the input inst but were "
+                "present during fitting: "
+                f"{missing_ch}. \n"
+                "Please make sure to include the same channels during transform "
+                "as were used during fit. \n"
+                "See "
+                f"{self.__class__.__name__}.ch_names "
+                "for the list of channels used during fit."
+            )
+        extra_ch = set(epochs.info["ch_names"]) - set(self.ch_names)
+        if len(extra_ch) > 0:
+            raise ValueError(
+                "The following channels are present in the input inst but were "
+                "not present during fitting: "
+                f"{extra_ch}. \n"
+                "These channels will be ignored during transformation. \n"
+                "Please make sure to include the same channels during transform "
+                "as were used during fit. \n"
+                "See "
+                f"{self.__class__.__name__}.ch_names "
+                "for the list of channels used during fit."
             )
 
+        picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
+        epochs_copy = epochs.copy()
+        epochs_copy.load_data()
+        epochs_copy = epochs_copy.pick(picks)
+        logger.info("Setting average reference.")
+        epochs_copy.set_eeg_reference("average", projection=False)
+        data = epochs_copy.get_data()
+
+        # reference covariance
+        reference_cov = self._reference_cov.data
+
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
-            epochs, wavelet=self.wavelet_type, level=self.wavelet_level, n_jobs=n_jobs
+            data,
+            sfreq=epochs_copy.info["sfreq"],
+            wavelet=self.wavelet_type,
+            level=self.wavelet_level,
+            n_jobs=n_jobs,
         )
 
         # Validate that the decomposition matches the fitted model
-        if levels != self.levels_used:
+        if levels != self._levels:
             raise ValueError(
                 f"Wavelet decomposition levels mismatch. \n"
-                f"Model was fitted with levels {self.levels_used}, "
+                f"Model was fitted with levels {self._levels}, "
                 f"but transform got levels {levels}. \n"
                 f"This may happen if epoch lengths differ between fit and transform."
             )
 
         cleaned_epochs_wavelet = epochs_wavelet.copy()
 
-        for wavelet_fit in self.wavelets_fits:
+        for wavelet_fit in self._wavelets_fits:
             band_idx = wavelet_fit["band_index"]
             ignore = wavelet_fit["ignore"]
 
@@ -438,7 +520,6 @@ class Gedai:
                 cleaned_epochs_wavelet[:, :, band_idx, :] = 0
             else:
                 wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
-                reference_cov = wavelet_fit["reference_cov"]
                 threshold = wavelet_fit["threshold"]
 
                 if n_jobs == 1:
@@ -460,12 +541,12 @@ class Gedai:
 
         # Recreate broadband signal
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
-        cleaned_epochs = mne.EpochsArray(
-            cleaned_epochs_data, epochs.info, tmin=epochs.tmin, verbose=verbose
-        )
+        cleaned_epochs = epochs.copy()
+        cleaned_epochs._data = cleaned_epochs_data
         return cleaned_epochs
 
     @fill_doc
+    @verbose
     def transform_raw(
         self,
         raw: BaseRaw,
@@ -494,9 +575,9 @@ class Gedai:
         raw_corrected : mne.io.BaseRaw
             The corrected raw data.
         """
-        check_type(raw, (BaseRaw,), "raw")
-        check_type(duration, (float, int), "duration")
-        check_type(overlap, (float, int), "overlap")
+        _check_type(raw, (BaseRaw,), "raw")
+        _check_type(duration, (float, int), "duration")
+        _check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
 
         if not (0 <= overlap < 1):
@@ -509,7 +590,7 @@ class Gedai:
         if (
             abs(valid_duration - duration) > 1e-6
         ):  # Only warn if there's a significant difference
-            logger.warn(
+            logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s"
                 f" ({valid_samples} samples) to satisfy wavelet level"
                 f" {self.wavelet_level} requirements."
@@ -537,13 +618,13 @@ class Gedai:
 
         # Convert to epochs array (n_epochs, n_channels, n_times)
         all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=False)
+        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=verbose)
 
         # Process all segments at once with parallelization
         corrected_segments_epochs = self.transform_epochs(
-            segments_epochs, n_jobs=n_jobs, verbose=False
+            segments_epochs, n_jobs=n_jobs, verbose=verbose
         )
-        corrected_segments = corrected_segments_epochs.get_data(verbose=False)
+        corrected_segments = corrected_segments_epochs.get_data(verbose=verbose)
 
         # Apply windowing and reconstruct
         for s, start in enumerate(starts):
@@ -555,7 +636,7 @@ class Gedai:
         weight_sum[weight_sum == 0] = 1  # Avoid division by zero
         raw_corrected /= weight_sum
 
-        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
+        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=verbose)
         return raw_corrected
 
     def plot_fit(self):
@@ -566,7 +647,7 @@ class Gedai:
         figs : list of matplotlib.figure.Figure
             The list of figures showing the fitting results.
         """
-        wavelet_fits = self.wavelets_fits
+        wavelet_fits = self._wavelets_fits
         figs = []
         for w, wavelet_fit in enumerate(wavelet_fits):
             if wavelet_fit["ignore"]:
@@ -626,6 +707,12 @@ class Gedai:
             )
             figs.append(fig)
         return figs
+
+    @property
+    def ch_names(self):
+        """Get the channel names used during fitting."""
+        self._check_fit()
+        return self._reference_cov.ch_names
 
 
 def _process_single_epoch(epoch_data, reference_cov, threshold):
