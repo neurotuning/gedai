@@ -33,7 +33,10 @@ raw = mne.io.read_raw_edf(raw_fname, preload=True)
 eegbci.standardize(raw)
 montage = mne.channels.make_standard_montage("standard_1005")
 raw.set_montage(montage)
-raw.set_eeg_reference()
+raw.crop(0, 15)
+raw.pick("eeg").load_data().apply_proj()
+raw.set_eeg_reference("average", projection=False)
+
 
 # %%
 # Check that the locations of EEG electrodes is correct with respect to MRI
