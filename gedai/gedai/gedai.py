@@ -482,7 +482,7 @@ class Gedai:
             )
 
         picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
-        epochs = epochs.copy()
+        epochs_copy = epochs.copy()
         epochs.load_data()
         epochs = epochs.pick(picks)
         logger.info("Setting average reference.")
