@@ -3,8 +3,6 @@ from typing import IO
 
 from packaging.requirements import Requirement
 
-from ._checks import check_type as check_type
-
 def sys_info(fid: IO | None = None, developer: bool = False):
     """Print the system information for debugging.
 

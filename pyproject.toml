@@ -20,8 +20,6 @@ classifiers = [
 ]
 dependencies = [
   'click',
-  'h5py',
-  'joblib',
   'mne>=1.9.0',
   'numpy>=1.23,<3',
   'packaging',
@@ -56,11 +54,16 @@ build = [
 ]
 doc = [
   'intersphinx_registry',
+  'ipyevents',
+  'ipywidgets',
   'matplotlib',
   'memory-profiler',
   'myst_parser',
+  'nilearn',
   'numpydoc',
   'pydata_sphinx_theme',
+  'PyQt5',
+  'pyvistaqt',
   'sphinx',
   'sphinx-copybutton',
   'sphinx-design',
