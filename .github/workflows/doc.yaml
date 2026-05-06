@@ -18,11 +18,31 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: 3.11
-      - run: sudo apt update && sudo apt install -y optipng
+      - run: |
+          sudo apt update
+          sudo apt install -y \
+            optipng \
+            xvfb \
+            libegl1 \
+            libgl1 \
+            libxkbcommon-x11-0 \
+            libx11-xcb1 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system .[doc]
       - run: gedai sys-info --developer
-      - run: make -C doc html
+      - name: Download data
+        run: |
+          python -c 'import mne; mne.datasets.fetch_fsaverage()'
+      - run: xvfb-run -a -s "-screen 0 1920x1080x24" env MPLBACKEND=Agg QT_API=pyqt5 MNE_3D_BACKEND=pyvistaqt make -C doc html
       - name: Prune sphinx environment
         run: rm -R ./doc/_build/html/.doctrees
       - uses: actions/upload-artifact@v7

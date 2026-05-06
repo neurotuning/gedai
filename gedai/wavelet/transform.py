@@ -36,13 +36,15 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
 
 
 @fill_doc
-def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
+def epochs_to_wavelet(data, sfreq, wavelet, level, n_jobs=None, verbose=None):
     """Apply MODWT to each epoch in the epochs object.
 
     Parameters
     ----------
-    epochs : mne.Epochs
-        The epochs to transform.
+    data : np.ndarray
+        The epochs data with shape (n_epochs, n_channels, n_times).
+    sfreq : float
+        The sampling frequency of the data.
     wavelet : str
         The type of wavelet to use (e.g., 'haar', 'db4', etc.).
     level : int
@@ -60,14 +62,11 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
         The actual decomposition level used.
     """
     n_jobs = _check_n_jobs(n_jobs)
-
-    epochs_data = epochs.get_data()  # shape (n_epochs, n_channels, n_times)
-    n_epochs, n_channels, n_times = epochs_data.shape
-    sfreq = epochs.info["sfreq"]
+    n_epochs, n_channels, n_times = data.shape
 
     if level == 0:
         # No wavelet decomposition - return original data as single band
-        transformed_data = epochs_data[:, :, np.newaxis, :]
+        transformed_data = data[:, :, np.newaxis, :]
         freq_bands = [(0, sfreq / 2)]
         levels = 0
     else:
@@ -86,13 +85,13 @@ def epochs_to_wavelet(epochs, wavelet, level, n_jobs=None, verbose=None):
         if n_jobs == 1:
             # Sequential processing
             transformed_data = np.zeros((n_epochs, n_channels, level + 1, n_times))
-            for e, epoch in enumerate(epochs_data):
+            for e, epoch in enumerate(data):
                 transformed_data[e] = _process_epoch_wavelet(epoch, wavelet, level)
         else:
             # Parallel processing using MNE's parallel_func
             parallel, p_fun, n_jobs = parallel_func(_process_epoch_wavelet, n_jobs)
             transformed_epochs = parallel(
-                p_fun(epoch, wavelet, level) for epoch in epochs_data
+                p_fun(epoch, wavelet, level) for epoch in data
             )
             transformed_data = np.array(transformed_epochs)
 

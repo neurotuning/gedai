@@ -33,6 +33,9 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system .[test]
       - run: gedai sys-info --developer
+      - name: Download testing data
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
       - uses: codecov/codecov-action@v6
         with:
@@ -63,6 +66,9 @@ jobs:
           uv pip install --quiet --system .[test]
           uv pip install --quiet --system --upgrade --prerelease allow --only-binary :all: -i https://pypi.anaconda.org/scientific-python-nightly-wheels/simple numpy
       - run: gedai sys-info --developer
+      - name: Download testing data
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
       - uses: codecov/codecov-action@v6
         with:
