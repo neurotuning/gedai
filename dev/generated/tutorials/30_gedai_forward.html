@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
 
-    <script src="../../_static/documentation_options.js?v=85d23f89"></script>
+    <script src="../../_static/documentation_options.js?v=43708f2c"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -53,6 +53,13 @@
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/30_gedai_forward';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -213,21 +220,25 @@
   <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
 </button></div>
       
-        <div class="navbar-item"><ul class="navbar-icon-links"
-    aria-label="Icon Links">
-        <li class="nav-item">
-          
-          
-          
-          
-          
-          
-          
-          
-          <a href="https://github.com/neurotuning/gedai" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github-square fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
-        </li>
-</ul></div>
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
       
     </div>
     
@@ -330,21 +341,25 @@
   <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
 </button></div>
         
-          <div class="navbar-item"><ul class="navbar-icon-links"
-    aria-label="Icon Links">
-        <li class="nav-item">
-          
-          
-          
-          
-          
-          
-          
-          
-          <a href="https://github.com/neurotuning/gedai" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fab fa-github-square fa-lg" aria-hidden="true"></i>
-            <span class="sr-only">GitHub</span></a>
-        </li>
-</ul></div>
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
         
       </div>
     
@@ -465,7 +480,9 @@ derived from the leadfield of a forward solution.</p>
 <a href="https://mne.tools/stable/generated/mne.datasets.eegbci.standardize.html#mne.datasets.eegbci.standardize" title="mne.datasets.eegbci.standardize" class="sphx-glr-backref-module-mne-datasets-eegbci sphx-glr-backref-type-py-function"><span class="n">eegbci</span><span class="o">.</span><span class="n">standardize</span></a><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
 <a href="https://mne.tools/stable/generated/mne.channels.DigMontage.html#mne.channels.DigMontage" title="mne.channels.DigMontage" class="sphx-glr-backref-module-mne-channels sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">montage</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.channels.make_standard_montage.html#mne.channels.make_standard_montage" title="mne.channels.make_standard_montage" class="sphx-glr-backref-module-mne-channels sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">channels</span><span class="o">.</span><span class="n">make_standard_montage</span></a><span class="p">(</span><span class="s2">&quot;standard_1005&quot;</span><span class="p">)</span>
 <span class="n">raw</span><span class="o">.</span><span class="n">set_montage</span><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.channels.DigMontage.html#mne.channels.DigMontage" title="mne.channels.DigMontage" class="sphx-glr-backref-module-mne-channels sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">montage</span></a><span class="p">)</span>
-<span class="n">raw</span><span class="o">.</span><span class="n">set_eeg_reference</span><span class="p">()</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="s2">&quot;eeg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span><span class="o">.</span><span class="n">apply_proj</span><span class="p">()</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">set_eeg_reference</span><span class="p">(</span><span class="s2">&quot;average&quot;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="output_subarea output_html rendered_html output_result">
@@ -616,9 +633,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-88fd903a-1391-4fcb-9b6c-2574a46db088"
+<tr class="mne-repr-section-header general-ba961408-6a65-4150-b1b6-ec12b94b5fbe"
      title="Hide section"
-    onclick="toggleVisibility('general-88fd903a-1391-4fcb-9b6c-2574a46db088')">
+    onclick="toggleVisibility('general-ba961408-6a65-4150-b1b6-ec12b94b5fbe')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -630,7 +647,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-88fd903a-1391-4fcb-9b6c-2574a46db088 ">
+<tr class="repr-element general-ba961408-6a65-4150-b1b6-ec12b94b5fbe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -641,19 +658,19 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-88fd903a-1391-4fcb-9b6c-2574a46db088 ">
+<tr class="repr-element general-ba961408-6a65-4150-b1b6-ec12b94b5fbe ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEDF</td>
 </tr>
-<tr class="repr-element general-88fd903a-1391-4fcb-9b6c-2574a46db088 ">
+<tr class="repr-element general-ba961408-6a65-4150-b1b6-ec12b94b5fbe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>2009-08-12 at 16:15:00 UTC</td>
 
 </tr>
-<tr class="repr-element general-88fd903a-1391-4fcb-9b6c-2574a46db088 ">
+<tr class="repr-element general-ba961408-6a65-4150-b1b6-ec12b94b5fbe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
@@ -662,7 +679,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 </tr>
-<tr class="repr-element general-88fd903a-1391-4fcb-9b6c-2574a46db088 ">
+<tr class="repr-element general-ba961408-6a65-4150-b1b6-ec12b94b5fbe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -677,9 +694,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-604d9082-06c1-4d7b-b7b4-c0c59e17e541"
+<tr class="mne-repr-section-header acquisition-6c6561cf-1d81-4e92-9dbe-a61301414599"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-604d9082-06c1-4d7b-b7b4-c0c59e17e541')">
+    onclick="toggleVisibility('acquisition-6c6561cf-1d81-4e92-9dbe-a61301414599')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -691,10 +708,10 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-604d9082-06c1-4d7b-b7b4-c0c59e17e541 ">
+<tr class="repr-element acquisition-6c6561cf-1d81-4e92-9dbe-a61301414599 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
-    <td>00:02:05 (HH:MM:SS)</td>
+    <td>00:00:16 (HH:MM:SS)</td>
 </tr>
 
 
@@ -704,17 +721,17 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-604d9082-06c1-4d7b-b7b4-c0c59e17e541 ">
+<tr class="repr-element acquisition-6c6561cf-1d81-4e92-9dbe-a61301414599 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>160.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-604d9082-06c1-4d7b-b7b4-c0c59e17e541 ">
+<tr class="repr-element acquisition-6c6561cf-1d81-4e92-9dbe-a61301414599 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
-    <td>20,000</td>
+    <td>2,401</td>
 </tr>
 
 
@@ -726,9 +743,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-6756d689-4297-4ecb-bb0c-89bb12ca993b"
+<tr class="mne-repr-section-header channels-90ba0984-28bf-42cd-9b2f-73d775dc91ce"
      title="Hide section"
-    onclick="toggleVisibility('channels-6756d689-4297-4ecb-bb0c-89bb12ca993b')">
+    onclick="toggleVisibility('channels-90ba0984-28bf-42cd-9b2f-73d775dc91ce')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -741,7 +758,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-6756d689-4297-4ecb-bb0c-89bb12ca993b ">
+<tr class="repr-element channels-90ba0984-28bf-42cd-9b2f-73d775dc91ce ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -754,7 +771,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-6756d689-4297-4ecb-bb0c-89bb12ca993b ">
+<tr class="repr-element channels-90ba0984-28bf-42cd-9b2f-73d775dc91ce ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -769,9 +786,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-32545451-1ab5-4c27-96e1-d3b812c1d33e"
+<tr class="mne-repr-section-header filters-a5f57619-a3f8-44ed-94a1-f6534ab3872a"
      title="Hide section"
-    onclick="toggleVisibility('filters-32545451-1ab5-4c27-96e1-d3b812c1d33e')">
+    onclick="toggleVisibility('filters-a5f57619-a3f8-44ed-94a1-f6534ab3872a')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -783,14 +800,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-32545451-1ab5-4c27-96e1-d3b812c1d33e ">
+<tr class="repr-element filters-a5f57619-a3f8-44ed-94a1-f6534ab3872a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-32545451-1ab5-4c27-96e1-d3b812c1d33e ">
+<tr class="repr-element filters-a5f57619-a3f8-44ed-94a1-f6534ab3872a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>80.00 Hz</td>
@@ -812,7 +829,7 @@ this file apply (plus whatever default styling the IDE applies).
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7f389fb34850&gt;
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7f7ccc965790&gt;
 </pre></div>
 </div>
 <p>generate the forward solution</p>
@@ -843,8 +860,8 @@ this file apply (plus whatever default styling the IDE applies).
 <img src="../../_images/sphx_glr_30_gedai_forward_001.png" srcset="../../_images/sphx_glr_30_gedai_forward_001.png" alt="30 gedai forward" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x3600 with 1 Axes&gt;, &lt;Axes: xlabel=&#39;Time (s)&#39;, ylabel=&#39;Channels&#39;&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (45 minutes 35.765 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  1187 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (6 minutes 30.936 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  1124 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-30-gedai-forward-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/db217e1bad296fd46c2430ed8443d0f0/30_gedai_forward.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">30_gedai_forward.ipynb</span></code></a></p>
