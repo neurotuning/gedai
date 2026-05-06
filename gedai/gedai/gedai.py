@@ -483,19 +483,18 @@ class Gedai:
 
         picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
         epochs_copy = epochs.copy()
-        epochs.load_data()
-        epochs = epochs.pick(picks)
+        epochs_copy.load_data()
+        epochs_copy = epochs_copy.pick(picks)
         logger.info("Setting average reference.")
-        epochs.set_eeg_reference("average", projection=False)
-        data = epochs.get_data()
+        epochs_copy.set_eeg_reference("average", projection=False)
+        data = epochs_copy.get_data()
 
         # reference covariance
         reference_cov = self._reference_cov.data
 
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
-            epochs_copy,
             data,
-            sfreq=epochs.info["sfreq"],
+            sfreq=epochs_copy.info["sfreq"],
             wavelet=self.wavelet_type,
             level=self.wavelet_level,
             n_jobs=n_jobs,
