@@ -68,10 +68,13 @@ def test_gedai_transform_epochs():
     """Test Gedai transform on epochs data."""
     gedai = Gedai(wavelet_level=0)
     gedai.fit_epochs(epochs_eeg)
-    gedai.transform_epochs(epochs_eeg)
+    transformed_epochs = gedai.transform_epochs(epochs_eeg)
+    assert epochs_eeg.metadata == transformed_epochs.metadata
 
     gedai = Gedai(wavelet_level=wavelet_level)
     gedai.fit_epochs(epochs_eeg)
+    transformed_epochs = gedai.transform_epochs(epochs_eeg)
+    assert epochs_eeg.metadata == transformed_epochs.metadata
     gedai.transform_epochs(epochs_eeg)
 
 

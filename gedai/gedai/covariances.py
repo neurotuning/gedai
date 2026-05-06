@@ -60,12 +60,12 @@ def compute_covariance_from_forward(forward):
 
     Parameters
     ----------
-    forward : instance of mne.Forward
+    forward : mne.Forward
         The forward solution from which to compute the covariance matrix.
 
     Returns
     -------
-    cov : instance of mne.Covariance
+    cov : mne.Covariance
         The computed covariance matrix.
     """
     _check_type(forward, (mne.Forward,), "forward")

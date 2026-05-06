@@ -13,4 +13,5 @@ Gedai
    :toctree: generated/
 
    Gedai
+   compute_covariance_from_forward
 
