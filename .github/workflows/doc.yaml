@@ -51,7 +51,7 @@ jobs:
           target-folder: dev
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
-          single-commit: true
+          single-commit: false
           force: true
 
   deploy-release:
@@ -73,7 +73,7 @@ jobs:
           target-folder: ${{ github.event.release.tag_name }}
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
-          single-commit: true
+          single-commit: false
           force: true
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
@@ -81,5 +81,5 @@ jobs:
           target-folder: latest
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
-          single-commit: true
+          single-commit: false
           force: true
