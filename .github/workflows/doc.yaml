@@ -87,10 +87,11 @@ jobs:
         with:
           folder: ./doc
           target-folder: dev
+          clean-exclude: pr-preview/
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
           single-commit: false
-          force: true
+          force: false
 
   deploy-release:
     if: github.event_name == 'release'
@@ -109,15 +110,17 @@ jobs:
         with:
           folder: ./doc
           target-folder: ${{ github.event.release.tag_name }}
+          clean-exclude: pr-preview/
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
           single-commit: false
-          force: true
+          force: false
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: ./doc
           target-folder: latest
+          clean-exclude: pr-preview/
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
           single-commit: false
-          force: true
+          force: false
