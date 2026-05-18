@@ -29,8 +29,8 @@ def _pick_cov(cov, ch_names):
 
     picks_cov = []
     picks_ch_names = []
-    for cov_name in cov_ch_names:
-        for ch_name in ch_names:
+    for ch_name in ch_names:
+        for cov_name in cov_ch_names:
             if ch_name.lower() == cov_name.lower():
                 picks_cov.append(cov_name)
                 picks_ch_names.append(ch_name)

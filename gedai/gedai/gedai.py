@@ -235,6 +235,9 @@ class Gedai:
         epsilon = regularization_lambda * avg_diag_power
         reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
 
+        # Update the cov object with the regularized reference covariance
+        cov.update(data=reference_cov)
+
         # Wavelet Decomposition
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
             data,
