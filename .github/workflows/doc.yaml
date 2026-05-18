@@ -52,6 +52,24 @@ jobs:
           name: doc
           path: ./doc/_build/html
 
+  deploy-preview:
+    if: github.event_name == 'pull_request'
+    needs: build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: doc
+          path: ./doc
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./doc
+
   deploy-push:
     if: github.event_name == 'push'
     needs: build
