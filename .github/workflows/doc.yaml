@@ -1,8 +1,4 @@
 name: doc
-permissions:
-  contents: write
-  pull-requests: write
-  issues: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
   cancel-in-progress: true
@@ -68,6 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/download-artifact@v8
