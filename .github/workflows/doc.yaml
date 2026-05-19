@@ -2,6 +2,7 @@ name: doc
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.number }}-${{ github.event.ref }}
   cancel-in-progress: true
