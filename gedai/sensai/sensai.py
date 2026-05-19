@@ -68,11 +68,11 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
     to derive signal and noise covariances analytically without reconstructing
     time series::
 
-        V_bad_rows  = V_bad.T  @ B          # (K_bad,  N)
-        cov_noise   = V_bad_rows.T @ (V_bad_rows  * d_bad [:, None])
+        V_bad_rows = V_bad.T @ B  # (K_bad,  N)
+        cov_noise = V_bad_rows.T @ (V_bad_rows * d_bad[:, None])
 
-        V_good_rows = V_good.T @ B          # (K_good, N)
-        cov_signal  = V_good_rows.T @ (V_good_rows * d_good[:, None])
+        V_good_rows = V_good.T @ B  # (K_good, N)
+        cov_signal = V_good_rows.T @ (V_good_rows * d_good[:, None])
 
     Parameters
     ----------
@@ -113,23 +113,33 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
 
         # --- Artefact noise subspace ---
         if np.any(bad_mask):
-            V_bad = eigenvectors[:, bad_mask]               # (n_ch, K_bad)
-            V_bad_rows = V_bad.T @ reference_cov            # (K_bad, n_ch)
-            d_bad = np.abs(eigenvalues[bad_mask])           # (K_bad,)
-            epoch_artefact_covariance = V_bad_rows.T @ (V_bad_rows * d_bad[:, np.newaxis])
-            epoch_artefact_covariance = (epoch_artefact_covariance + epoch_artefact_covariance.T) * 0.5
+            V_bad = eigenvectors[:, bad_mask]  # (n_ch, K_bad)
+            V_bad_rows = V_bad.T @ reference_cov  # (K_bad, n_ch)
+            d_bad = np.abs(eigenvalues[bad_mask])  # (K_bad,)
+            epoch_artefact_covariance = V_bad_rows.T @ (
+                V_bad_rows * d_bad[:, np.newaxis]
+            )
+            epoch_artefact_covariance = (
+                epoch_artefact_covariance + epoch_artefact_covariance.T
+            ) * 0.5
             _, epoch_artefact_eigenvectors = eigh(epoch_artefact_covariance)
             epoch_artefact_eigenvectors = epoch_artefact_eigenvectors[:, ::-1][:, :n_pc]
-            angles = subspace_angles(epoch_artefact_eigenvectors, reference_eigenvectors)
+            angles = subspace_angles(
+                epoch_artefact_eigenvectors, reference_eigenvectors
+            )
             noise_subspace_similarity[e] = np.prod(np.cos(angles))
 
         # --- Clean signal subspace ---
         if np.any(good_mask):
-            V_good = eigenvectors[:, good_mask]             # (n_ch, K_good)
-            V_good_rows = V_good.T @ reference_cov         # (K_good, n_ch)
-            d_good = np.abs(eigenvalues[good_mask])        # (K_good,)
-            epoch_clean_covariance = V_good_rows.T @ (V_good_rows * d_good[:, np.newaxis])
-            epoch_clean_covariance = (epoch_clean_covariance + epoch_clean_covariance.T) * 0.5
+            V_good = eigenvectors[:, good_mask]  # (n_ch, K_good)
+            V_good_rows = V_good.T @ reference_cov  # (K_good, n_ch)
+            d_good = np.abs(eigenvalues[good_mask])  # (K_good,)
+            epoch_clean_covariance = V_good_rows.T @ (
+                V_good_rows * d_good[:, np.newaxis]
+            )
+            epoch_clean_covariance = (
+                epoch_clean_covariance + epoch_clean_covariance.T
+            ) * 0.5
             _, epoch_clean_eigenvectors = eigh(epoch_clean_covariance)
             epoch_clean_eigenvectors = epoch_clean_eigenvectors[:, ::-1][:, :n_pc]
             angles = subspace_angles(epoch_clean_eigenvectors, reference_eigenvectors)
