@@ -55,6 +55,14 @@ noise_multiplier : float
     The noise multiplier to use for artefact threshold rejection optimization."""
 # -- O ---------------------------------------------------------------------------------
 # -- P ---------------------------------------------------------------------------------
+docdict["picks"] = """
+picks : str | list | slice
+    Channels to include. Note that all channels selected must have the same
+    type. Slices and lists of integers will be interpreted as channel indices.
+    In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
+    channels. Can also be the string values ``"all"`` to pick all channels, or
+    ``"data"`` to pick data channels. The default is ``"eeg"`` to pick all
+    EEG channels."""
 # -- Q ---------------------------------------------------------------------------------
 # -- R ---------------------------------------------------------------------------------
 docdict["reference_cov"] = """

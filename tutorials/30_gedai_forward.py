@@ -11,7 +11,7 @@ derived from the leadfield of a forward solution.
 import mne
 from mne.datasets import eegbci, fetch_fsaverage
 
-from gedai import Gedai
+from gedai import Gedai, MultibandGedai
 from gedai.gedai.covariances import compute_covariance_from_forward
 from gedai.viz import plot_mne_style_overlay_interactive
 
@@ -65,13 +65,15 @@ gedai_broadband = Gedai()
 gedai_broadband.fit_raw(raw, reference_cov=reference_cov, noise_multiplier=6.0)
 raw_broadband_corrected = gedai_broadband.transform_raw(raw, verbose=False)
 
-gedai_spectral = Gedai(wavelet_type="haar", wavelet_level=5, wavelet_low_cutoff=2)
-gedai_spectral.fit_raw(
+gedai_multiband = MultibandGedai(
+    wavelet_type="haar", wavelet_level=5, wavelet_low_cutoff=2
+)
+gedai_multiband.fit_raw(
     raw_broadband_corrected, reference_cov=reference_cov, noise_multiplier=3.0
 )
-raw_spectral_corrected = gedai_spectral.transform_raw(
+raw_multiband_corrected = gedai_multiband.transform_raw(
     raw_broadband_corrected, verbose=False
 )
 
-plot_mne_style_overlay_interactive(raw, raw_spectral_corrected)
+plot_mne_style_overlay_interactive(raw, raw_multiband_corrected)
 # %%

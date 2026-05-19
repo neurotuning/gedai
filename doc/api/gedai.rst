@@ -13,5 +13,6 @@ Gedai
    :toctree: generated/
 
    Gedai
+   MultibandGedai
    compute_covariance_from_forward
 

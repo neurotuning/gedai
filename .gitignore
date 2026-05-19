@@ -135,3 +135,4 @@ test.ipynb
 /validation/*
 /benchmark/*
 doc/sg_execution_times.rst
+/temp
