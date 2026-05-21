@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
 
-    <script src="../../_static/documentation_options.js?v=fb620901"></script>
+    <script src="../../_static/documentation_options.js?v=5678cf4b"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/30_gedai_forward';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
+        DOCUMENTATION_OPTIONS.theme_version = '0.18.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -214,11 +214,18 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
         <div class="navbar-item">
 <div class="version-switcher__container dropdown pst-js-only">
@@ -335,11 +342,18 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
           <div class="navbar-item">
 <div class="version-switcher__container dropdown pst-js-only">
@@ -633,9 +647,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-46ef5e2e-e0f1-4435-aa05-596c19da7921"
+<tr class="mne-repr-section-header general-71bb9aec-fffc-4696-9a9f-f7a82be44c90"
      title="Hide section"
-    onclick="toggleVisibility('general-46ef5e2e-e0f1-4435-aa05-596c19da7921')">
+    onclick="toggleVisibility('general-71bb9aec-fffc-4696-9a9f-f7a82be44c90')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -647,7 +661,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-46ef5e2e-e0f1-4435-aa05-596c19da7921 ">
+<tr class="repr-element general-71bb9aec-fffc-4696-9a9f-f7a82be44c90 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -658,19 +672,19 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-46ef5e2e-e0f1-4435-aa05-596c19da7921 ">
+<tr class="repr-element general-71bb9aec-fffc-4696-9a9f-f7a82be44c90 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEDF</td>
 </tr>
-<tr class="repr-element general-46ef5e2e-e0f1-4435-aa05-596c19da7921 ">
+<tr class="repr-element general-71bb9aec-fffc-4696-9a9f-f7a82be44c90 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>2009-08-12 at 16:15:00 UTC</td>
 
 </tr>
-<tr class="repr-element general-46ef5e2e-e0f1-4435-aa05-596c19da7921 ">
+<tr class="repr-element general-71bb9aec-fffc-4696-9a9f-f7a82be44c90 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
@@ -679,7 +693,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 </tr>
-<tr class="repr-element general-46ef5e2e-e0f1-4435-aa05-596c19da7921 ">
+<tr class="repr-element general-71bb9aec-fffc-4696-9a9f-f7a82be44c90 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -694,9 +708,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-901d9d11-ad71-4638-a6b7-8077c7f1f173"
+<tr class="mne-repr-section-header acquisition-b58cdae9-6e8b-4ddf-a1c2-a3224073efbb"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-901d9d11-ad71-4638-a6b7-8077c7f1f173')">
+    onclick="toggleVisibility('acquisition-b58cdae9-6e8b-4ddf-a1c2-a3224073efbb')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -708,7 +722,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-901d9d11-ad71-4638-a6b7-8077c7f1f173 ">
+<tr class="repr-element acquisition-b58cdae9-6e8b-4ddf-a1c2-a3224073efbb ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:16 (HH:MM:SS)</td>
@@ -721,14 +735,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-901d9d11-ad71-4638-a6b7-8077c7f1f173 ">
+<tr class="repr-element acquisition-b58cdae9-6e8b-4ddf-a1c2-a3224073efbb ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>160.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-901d9d11-ad71-4638-a6b7-8077c7f1f173 ">
+<tr class="repr-element acquisition-b58cdae9-6e8b-4ddf-a1c2-a3224073efbb ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>2,401</td>
@@ -743,9 +757,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-00237aee-2a41-4930-94d2-273df8f39680"
+<tr class="mne-repr-section-header channels-aa49743e-fb2f-4302-a045-c611d9dd1d9c"
      title="Hide section"
-    onclick="toggleVisibility('channels-00237aee-2a41-4930-94d2-273df8f39680')">
+    onclick="toggleVisibility('channels-aa49743e-fb2f-4302-a045-c611d9dd1d9c')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -758,7 +772,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-00237aee-2a41-4930-94d2-273df8f39680 ">
+<tr class="repr-element channels-aa49743e-fb2f-4302-a045-c611d9dd1d9c ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -771,7 +785,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-00237aee-2a41-4930-94d2-273df8f39680 ">
+<tr class="repr-element channels-aa49743e-fb2f-4302-a045-c611d9dd1d9c ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -786,9 +800,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-ee2e9a92-ac8b-4aea-a916-7e59ca13e014"
+<tr class="mne-repr-section-header filters-a1102ec7-9d6c-4330-a1a7-2871e64b43dc"
      title="Hide section"
-    onclick="toggleVisibility('filters-ee2e9a92-ac8b-4aea-a916-7e59ca13e014')">
+    onclick="toggleVisibility('filters-a1102ec7-9d6c-4330-a1a7-2871e64b43dc')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -800,14 +814,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-ee2e9a92-ac8b-4aea-a916-7e59ca13e014 ">
+<tr class="repr-element filters-a1102ec7-9d6c-4330-a1a7-2871e64b43dc ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-ee2e9a92-ac8b-4aea-a916-7e59ca13e014 ">
+<tr class="repr-element filters-a1102ec7-9d6c-4330-a1a7-2871e64b43dc ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>80.00 Hz</td>
@@ -829,7 +843,7 @@ this file apply (plus whatever default styling the IDE applies).
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7fd64b794210&gt;
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7f086eee8d90&gt;
 </pre></div>
 </div>
 <p>generate the forward solution</p>
@@ -862,8 +876,8 @@ this file apply (plus whatever default styling the IDE applies).
 <img src="../../_images/sphx_glr_30_gedai_forward_001.png" srcset="../../_images/sphx_glr_30_gedai_forward_001.png" alt="30 gedai forward" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x3600 with 1 Axes&gt;, &lt;Axes: xlabel=&#39;Time (s)&#39;, ylabel=&#39;Channels&#39;&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 36.736 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  1116 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 33.747 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  1085 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-30-gedai-forward-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../_downloads/db217e1bad296fd46c2430ed8443d0f0/30_gedai_forward.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">30_gedai_forward.ipynb</span></code></a></p>
@@ -924,8 +938,8 @@ this file apply (plus whatever default styling the IDE applies).
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -951,7 +965,7 @@ this file apply (plus whatever default styling the IDE applies).
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
 </p></div>
       
     </div>
