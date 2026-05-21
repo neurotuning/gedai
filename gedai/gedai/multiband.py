@@ -227,7 +227,7 @@ class MultibandGedai:
             }
 
             ignore = False
-            if self.wavelet_low_cutoff is not None and fmax < self.wavelet_low_cutoff:
+            if self.wavelet_low_cutoff is not None and fmin < self.wavelet_low_cutoff:
                 ignore = True
                 logger.info(
                     f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
