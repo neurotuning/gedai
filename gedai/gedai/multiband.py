@@ -278,6 +278,7 @@ class MultibandGedai:
         %(n_jobs)s
         %(verbose)s
         """
+        self._check_unfitted()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
         _check_type(overlap, (float, int), "overlap")
@@ -449,6 +450,7 @@ class MultibandGedai:
         raw_corrected : mne.io.BaseRaw
             The corrected raw data.
         """
+        self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
         _check_type(overlap, (float, int), "overlap")
