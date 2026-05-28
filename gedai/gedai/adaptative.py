@@ -12,41 +12,40 @@ from .gedai import Gedai, create_cosine_weights
 from .multiband import compute_closest_valid_duration
 
 
-def _compute_wavelet_parameters(sfreq, level, min_cycles_per_wavelet=0.0):
+def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet=2):
     """Compute wavelet band metadata matching ``epochs_to_wavelet`` ordering."""
-    _check_type(min_cycles_per_wavelet, (float, int), "min_cycles_per_wavelet")
+    _check_type(cycles_per_wavelet, (float, int), "cycles_per_wavelet")
+    if cycles_per_wavelet <= 0:
+        raise ValueError(
+            "cycles_per_wavelet must be strictly positive, "
+            f"got {cycles_per_wavelet}"
+        )
+    if level < 0:
+        raise ValueError(f"wavelet_level must be >= 0, got {level}")
 
-    if level == 0:
-        freq_bounds = [(0, sfreq / 2)]
-    else:
-        freq_bounds = [(0, sfreq / (2 ** (level + 1)))]
-        for i in range(level, 0, -1):
-            fmin = sfreq / (2 ** (i + 1))
-            fmax = sfreq / (2**i)
-            freq_bounds.append((fmin, fmax))
+    # Index 0 is approximation, then details from coarse to fine.
+    band_definitions = [(0.0, sfreq / (2 ** (level + 1)), level + 1)]
+    for i in range(level, 0, -1):
+        band_definitions.append((sfreq / (2 ** (i + 1)), sfreq / (2**i), i))
 
-    freq_bands = []
-    for band_index, (fmin, fmax) in enumerate(freq_bounds):
-        representative_freq = fmin if fmin > 0 else fmax
-        duration_target = 1.0
-        if min_cycles_per_wavelet > 0:
-            duration_target = min_cycles_per_wavelet / representative_freq
-
-        duration_valid, n_samples = compute_closest_valid_duration(
-            duration_target,
+    wavelet_parameters = []
+    for band_index, (fmin, fmax, cycle_power) in enumerate(band_definitions):
+        target_duration = 1 / fmin * cycles_per_wavelet  if fmin > 0 else 10.0
+        duration, n_samples = compute_closest_valid_duration(
+            target_duration,
             level,
             sfreq,
         )
-        freq_bands.append(
+        wavelet_parameters.append(
             {
                 "band_index": band_index,
                 "fmin": fmin,
                 "fmax": fmax,
-                "duration": duration_valid,
-                "samples": n_samples,
+                "duration": duration,
+                "samples": int(n_samples),
             }
         )
-    return freq_bands
+    return wavelet_parameters
 
 
 def _compute_window_starts(n_times, window_size, overlap):
@@ -94,7 +93,7 @@ class AdaptativeMultibandGedai:
         Decomposition level (must be >= 0). The default is 4.
         If 0, no wavelet decomposition is performed.
         See :py:func:`pywt.wavedec` more details.
-    min_cycles_per_wavelet : float
+    cycles_per_wavelet : float
         Minimum number of cycles targeted per wavelet band when fitting and
         transforming raw data. Lower-frequency bands use longer epochs to satisfy
         this target. The default is 5.
@@ -108,12 +107,12 @@ class AdaptativeMultibandGedai:
         self,
         wavelet_type="haar",
         wavelet_level=4,
-        min_cycles_per_wavelet=5.0,
+        cycles_per_wavelet=2.0,
     ):
         self.fitted = False
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
-        self.min_cycles_per_wavelet = min_cycles_per_wavelet
+        self.cycles_per_wavelet = cycles_per_wavelet
 
         self._wavelets_fits = None
         self._reference_cov = None
@@ -184,36 +183,43 @@ class AdaptativeMultibandGedai:
         _check_picks_uniqueness(raw.info, picks)
 
         raw_fit = raw.copy().load_data().pick(picks)
+        sfreq = raw_fit.info["sfreq"]
+        #TODO: check raw.info['highpass']
         logger.info("Setting average reference.")
         raw_fit.set_eeg_reference("average", projection=False)
 
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
-        sfreq = raw_fit.info["sfreq"]
+
         wavelet_parameters = _compute_wavelet_parameters(
                 sfreq,
                 self.wavelet_level,
-                min_cycles_per_wavelet=self.min_cycles_per_wavelet,
+                cycles_per_wavelet=self.cycles_per_wavelet,
             )
 
         wavelets_fits = []
-        for band in wavelet_parameters:
-            w = band["band_index"]
-            fmin = band["fmin"]
-            fmax = band["fmax"]
-            band_duration = band["duration"]
-            band_samples = band["samples"]
+        for wavelet_parameter in wavelet_parameters:
+            w = wavelet_parameter["band_index"]
+            fmin = wavelet_parameter["fmin"]
+            fmax = wavelet_parameter["fmax"]
+            duration = wavelet_parameter["duration"]
+            samples = wavelet_parameter["samples"]
 
-            if band_samples > raw_fit.n_times:
+            logger.info(
+                f"Adaptive wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz): "
+                f"duration={duration:.3f}s ({samples} samples)."
+            )
+
+            if samples > raw_fit.n_times:
                 raise ValueError(
                     f"Adaptive duration for wavelet index {w} "
-                    f"({band_duration:.3f}s / {band_samples} samples) is longer than "
+                    f"({duration:.3f}s / {samples} samples) is longer than "
                     f"the available raw recording ({raw_fit.n_times} samples)."
                 )
 
-            overlap_seconds = band_duration * overlap
+            overlap_seconds = duration * overlap
             epochs = mne.make_fixed_length_epochs(
                 raw_fit,
-                duration=band_duration,
+                duration=duration,
                 overlap=overlap_seconds,
                 reject_by_annotation=reject_by_annotation,
                 preload=True,
@@ -227,6 +233,7 @@ class AdaptativeMultibandGedai:
                 level=self.wavelet_level,
                 n_jobs=n_jobs,
             )
+            del epochs
 
             freq_fmin, freq_fmax = freq_bands[w]
             if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
@@ -235,12 +242,14 @@ class AdaptativeMultibandGedai:
                 )
 
             wavelet_epochs_data = epochs_wavelet[:, :, w, :]
+            del epochs_wavelet
             wavelet_epochs = mne.EpochsArray(
                 wavelet_epochs_data,
                 epochs.info,
                 tmin=epochs.tmin,
                 verbose=False,
             )
+            del wavelet_epochs_data
 
             model = Gedai()
             model.fit_epochs(
@@ -259,14 +268,9 @@ class AdaptativeMultibandGedai:
                     "fmin": fmin,
                     "fmax": fmax,
                     "model": model,
-                    "duration": band_duration,
-                    "samples": band_samples,
+                    "duration": duration,
+                    "samples": samples,
                 }
-            )
-
-            logger.info(
-                f"Adaptive wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz): "
-                f"duration={band_duration:.3f}s ({band_samples} samples)."
             )
 
         self._wavelets_fits = wavelets_fits
@@ -343,7 +347,6 @@ class AdaptativeMultibandGedai:
             window_size = wavelet_fit["samples"]
             fmin = wavelet_fit["fmin"]
             fmax = wavelet_fit["fmax"]
-            band_index = wavelet_fit["band_index"]
 
             starts = _compute_window_starts(n_times, window_size, overlap)
             window = create_cosine_weights(window_size)
@@ -353,8 +356,8 @@ class AdaptativeMultibandGedai:
                 start = int(start)
                 segment = raw_data[:, start : start + window_size]
                 all_segments.append(segment)
-            all_segments_array = np.array(all_segments)
 
+            all_segments_array = np.array(all_segments)
             segments_wavelet, freq_bands, _ = epochs_to_wavelet(
                 all_segments_array,
                 sfreq=sfreq,
@@ -362,8 +365,9 @@ class AdaptativeMultibandGedai:
                 level=self.wavelet_level,
                 n_jobs=n_jobs,
             )
+            del all_segments_array
 
-            freq_fmin, freq_fmax = freq_bands[band_index]
+            freq_fmin, freq_fmax = freq_bands[band_idx]
             if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
                 raise RuntimeError(
                     "Wavelet frequency band mismatch while building adaptive epochs."
@@ -376,12 +380,15 @@ class AdaptativeMultibandGedai:
                 tmin=0.0,
                 verbose=False,
             )
+            del segments_wavelet
+
             corrected_segments_epochs = wavelet_fit["model"].transform_epochs(
                 segments_epochs,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
             corrected_segments = corrected_segments_epochs.get_data(verbose=False)
+            del corrected_segments_epochs
 
             # Reconstruct the corrected wavelet band
             weight_sum = np.zeros_like(raw_data)

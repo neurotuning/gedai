@@ -22,7 +22,7 @@ def test_adaptative_fit_raw_():
     model = AdaptativeMultibandGedai(
         wavelet_type="haar",
         wavelet_level=wavelet_level,
-        min_cycles_per_wavelet=3,
+        cycles_per_wavelet=4,
     )
     model.fit_raw(raw, overlap=0.5, reference_cov="leadfield", n_jobs=1)
     band_samples = [fit["samples"] for fit in model._wavelets_fits]
