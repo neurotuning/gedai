@@ -87,11 +87,11 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
 
 @fill_doc
 class MultibandGedai:
-    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Multiband Generalized Eigenvalue De-Artifacting Instrument.
 
-    A multiband extension of the standard GEDAI method that applies GEDAI algorithm
-    separately to different frequency bands obtained via wavelet decomposition. This
-    approach allows for more targeted artifact removal while preserving neural signals.
+    A multiband extension of the standard :class:`~gedai.gedai.Gedai` that applies 
+    GEDAI algorithm separately to different frequency bands (via wavelet decomposition).
+    This approach allows for more targeted artifact removal while preserving neural signals.
     See :footcite:`Ros2025`.
 
     .. warning::
@@ -227,7 +227,7 @@ class MultibandGedai:
             }
 
             ignore = False
-            if self.wavelet_low_cutoff is not None and fmin < self.wavelet_low_cutoff:
+            if self.wavelet_low_cutoff is not None and fmax < self.wavelet_low_cutoff:
                 ignore = True
                 logger.info(
                     f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "

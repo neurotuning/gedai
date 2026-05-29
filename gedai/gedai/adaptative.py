@@ -71,12 +71,19 @@ def _compute_window_starts(n_times, window_size, overlap):
 
 @fill_doc
 class AdaptativeMultibandGedai:
-    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Adaptative Multiband Generalized Eigenvalue De-Artifacting Instrument.
 
-    A multiband extension of the standard GEDAI method that applies GEDAI algorithm
-    separately to different frequency bands obtained via wavelet decomposition. This
-    approach allows for more targeted artifact removal while preserving neural signals.
+    A extension of :class:`~gedai.gedai.MultibandGedai` that uses
+    adaptative window lengths for each wavelet band to ensure 
+    wavelet decomposition has enough cycles for accurate decomposition.
+    
     See :footcite:`Ros2025`.
+
+    .. note::
+        Since different epoch lengths are used for each wavelet band,
+        it is not possible to fit the model on epoched data. Thus, 
+        the model is not adapted for real-time applications. For
+        real-time applications, consider using  :class:`~gedai.gedai.MultibandGedai`
 
     .. warning::
         For EEG channels, Gedai will set average reference internally
@@ -150,7 +157,7 @@ class AdaptativeMultibandGedai:
         n_jobs: int = None,
         verbose: str | None = None,
     ):
-        """Fit the GEDAI model to the raw data.
+        """Fit the model to raw data.
 
         Parameters
         ----------
@@ -292,7 +299,7 @@ class AdaptativeMultibandGedai:
         Parameters
         ----------
         raw : mne.io.BaseRaw
-            The raw data to fit the model to.
+            The raw data to transform.
         overlap : float
             The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
             For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
