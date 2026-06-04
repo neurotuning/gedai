@@ -509,8 +509,7 @@ class MultibandGedai:
         _, n_times = raw_data.shape
 
         # all models are fitted with the same duration
-        duration = self._wavelet_fits[0]["model"]._duration
-        window_size = int(raw.info["sfreq"] * duration)
+        window_size = self._wavelets_fits[0]["model"]._n_samples
         window = create_cosine_weights(window_size)
 
         raw_corrected = np.zeros_like(raw_data)

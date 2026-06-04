@@ -20,6 +20,7 @@ from mne.io import concatenate_raws, read_raw_edf
 from gedai import Gedai, MultibandGedai
 from gedai.viz import plot_mne_style_overlay_interactive
 
+n_jobs = -1
 # %% Load sample EEG data
 subjects = [1]  # may vary
 runs = [4]  # may vary
@@ -49,7 +50,7 @@ raw.set_eeg_reference("average", projection=False)
 # to define the type of wavelet used for the decomposition by setting the
 # ``wavelet_type`` parameter.
 
-multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=5)
+multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=8)
 
 # %%
 # Model Fitting
@@ -59,7 +60,10 @@ multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=5)
 # estimates the optimal threshold to distinguish between signal and noise
 # components.
 
-multiband_gedai.fit_raw(raw, verbose=True)
+multiband_gedai.fit_raw(raw, 
+                        sensai_method="gridsearch",
+                        n_jobs=n_jobs,
+                        verbose=True)
 # %%
 # .. note::
 #
@@ -81,7 +85,9 @@ plt.show()
 # components while preserving the brain signals for each frequency band
 # separately before recombining them.
 
-denoised_raw = multiband_gedai.transform_raw(raw, verbose=False)
+denoised_raw = multiband_gedai.transform_raw(raw,
+                                             n_jobs=n_jobs,
+                                             verbose=False)
 
 # %%
 # .. warning::
