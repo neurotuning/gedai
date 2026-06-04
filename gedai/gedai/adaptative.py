@@ -71,20 +71,19 @@ def _compute_window_starts(n_times, window_size, overlap):
 
 @fill_doc
 class AdaptativeMultibandGedai:
-    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Adaptative Multiband Generalized Eigenvalue De-Artifacting Instrument.
 
-    A extension of the :py:class:`~gedai.gedai.MultibandGedai` method that
-    uses adaptive epoch durations for each wavelet band. Tihs methods
-    allows to better capture the frequency content of each wavelet band.
+    A extension of :class:`~gedai.gedai.MultibandGedai` that uses
+    adaptative window lengths for each wavelet band to ensure 
+    wavelet decomposition has enough cycles for accurate decomposition.
+    
     See :footcite:`Ros2025`.
 
-    
     .. note::
-        Since epoch duration is adapted for each wavelet band, it
-        is not possible to use :func:`~mne.Epochs` objects with
-        this model. If you want to use :func:`~mne.Epochs` objects, 
-        check the :py:class:`~gedai.gedai.MultibandGedai` class which
-        uses a fixed epoch duration for all wavelet bands.
+        Since different epoch lengths are used for each wavelet band,
+        it is not possible to fit the model using :class:`~mne.Epochs`.
+        If you want to use epochs, consider using  :class:`~gedai.gedai.MultibandGedai`
+        instead, which uses fixed epoch lengths across all wavelet bands.
 
     .. warning::
         For EEG channels, Gedai will set average reference internally
@@ -150,7 +149,7 @@ class AdaptativeMultibandGedai:
         n_jobs: int = None,
         verbose: str | None = None,
     ):
-        """Fit the GEDAI model to the raw data.
+        """Fit the model to raw data.
 
         Parameters
         ----------
