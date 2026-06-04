@@ -147,7 +147,7 @@ plt.show()
 # from the data. The transform operation projects out the noise components
 # while preserving the brain signals.
 
-raw_corrected = gedai.transform_raw(
+denoised_raw = gedai.transform_raw(
     raw, duration=duration, overlap=overlap, verbose=False
 )
 
@@ -156,4 +156,4 @@ raw_corrected = gedai.transform_raw(
 # an interactive plot. This allows you to inspect individual channels and see
 # how ``GEDAI`` has removed artifacts while preserving neural signals.
 
-plot_mne_style_overlay_interactive(raw, raw_corrected)
+plot_mne_style_overlay_interactive(raw, denoised_raw)

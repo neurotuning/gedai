@@ -73,10 +73,18 @@ def _compute_window_starts(n_times, window_size, overlap):
 class AdaptativeMultibandGedai:
     """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
 
-    A multiband extension of the standard GEDAI method that applies GEDAI algorithm
-    separately to different frequency bands obtained via wavelet decomposition. This
-    approach allows for more targeted artifact removal while preserving neural signals.
+    A extension of the :py:class:`~gedai.gedai.MultibandGedai` method that
+    uses adaptive epoch durations for each wavelet band. Tihs methods
+    allows to better capture the frequency content of each wavelet band.
     See :footcite:`Ros2025`.
+
+    
+    .. note::
+        Since epoch duration is adapted for each wavelet band, it
+        is not possible to use :func:`~mne.Epochs` objects with
+        this model. If you want to use :func:`~mne.Epochs` objects, 
+        check the :py:class:`~gedai.gedai.MultibandGedai` class which
+        uses a fixed epoch duration for all wavelet bands.
 
     .. warning::
         For EEG channels, Gedai will set average reference internally
@@ -86,17 +94,9 @@ class AdaptativeMultibandGedai:
 
     Parameters
     ----------
-    wavelet_type : str
-        Wavelet to use for the decomposition. The default is 'haar'.
-        See :py:func:`pywt.wavedec` for complete list of available wavelet values.
-    wavelet_level : int
-        Decomposition level (must be >= 0). The default is 4.
-        If 0, no wavelet decomposition is performed.
-        See :py:func:`pywt.wavedec` more details.
-    cycles_per_wavelet : float
-        Minimum number of cycles targeted per wavelet band when fitting and
-        transforming raw data. Lower-frequency bands use longer epochs to satisfy
-        this target. The default is 5.
+    %(wavelet_type)s
+    %(wavelet_level)s
+    %(cycles_per_wavelet)s
 
     References
     ----------
@@ -157,11 +157,8 @@ class AdaptativeMultibandGedai:
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
         %(picks)s
-        overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
-            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
-        reject_by_annotation : bool
-            Whether to reject epochs based on annotations. Default is False.
+        %(overlap)s
+        %(reject_by_annotation)s
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
@@ -233,7 +230,6 @@ class AdaptativeMultibandGedai:
                 level=self.wavelet_level,
                 n_jobs=n_jobs,
             )
-            del epochs
 
             freq_fmin, freq_fmax = freq_bands[w]
             if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
@@ -293,9 +289,7 @@ class AdaptativeMultibandGedai:
         ----------
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
-        overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
-            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
+        %(overlap)s
         %(n_jobs)s
         %(verbose)s
 

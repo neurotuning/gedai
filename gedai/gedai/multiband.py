@@ -102,17 +102,9 @@ class MultibandGedai:
 
     Parameters
     ----------
-    wavelet_type : str
-        Wavelet to use for the decomposition. The default is 'haar'.
-        See :py:func:`pywt.wavedec` for complete list of available wavelet values.
-    wavelet_level : int
-        Decomposition level (must be >= 0). The default is 4.
-        If 0, no wavelet decomposition is performed.
-        See :py:func:`pywt.wavedec` more details.
-    wavelet_low_cutoff : float | None
-        If ``float``, zero out all wavelet levels (i.e frequency bands) whose upper
-        frequency bound is below this cutoff frequency (in Hz).
-        If ``None``, no frequency band is zeroed out. The default is ``None``.
+    %(wavelet_type)s
+    %(wavelet_level)s
+    %(wavelet_low_cutoff)s
 
     References
     ----------
@@ -265,13 +257,9 @@ class MultibandGedai:
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
         %(picks)s
-        duration : float
-            Duration of each epoch in seconds (default 1.0).
-        overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
-            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
-        reject_by_annotation : bool
-            Whether to reject epochs based on annotations. Default is False.
+        %(duration)s
+        %(overlap)s
+        %(reject_by_annotation)s
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
@@ -437,11 +425,8 @@ class MultibandGedai:
         ----------
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
-        duration : float
-            Duration of each epoch in seconds (default 1.0).
-        overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
-            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
+        %(duration)s
+        %(overlap)s
         %(n_jobs)s
         %(verbose)s
 

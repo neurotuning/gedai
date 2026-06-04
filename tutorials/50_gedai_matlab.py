@@ -22,7 +22,7 @@ from gedai.viz import plot_mne_style_overlay_interactive
 
 # %% Load sample EEG data
 subjects = [1]  # may vary
-runs = [4, 8, 12]  # may vary
+runs = [4]  # may vary
 raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
 raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
 # Concatenate runs from the same subject
@@ -32,7 +32,7 @@ eegbci.standardize(raw)
 
 # Crop to the first 30 seconds for demonstration purposes
 # (Remove or adjust this for full data analysis)
-#raw.crop(0, 30)
+raw.crop(0, 30)
 raw.pick("eeg").load_data().apply_proj()
 
 # Apply average reference (standard preprocessing for EEG)
@@ -49,7 +49,9 @@ raw.set_eeg_reference("average", projection=False)
 # to define the type of wavelet used for the decomposition by setting the
 # ``wavelet_type`` parameter.
 
-gedai_adaptative_multiband = AdaptativeMultibandGedai(wavelet_type="haar", wavelet_level=5, cycles_per_wavelet=10)
+adaptive_multiband_gedai = AdaptativeMultibandGedai(
+    wavelet_type="haar", wavelet_level=5, cycles_per_wavelet=10
+)
 
 # %%
 # Model Fitting
@@ -59,7 +61,7 @@ gedai_adaptative_multiband = AdaptativeMultibandGedai(wavelet_type="haar", wavel
 # estimates the optimal threshold to distinguish between signal and noise
 # components.
 
-gedai_adaptative_multiband.fit_raw(raw, verbose=True)
+adaptive_multiband_gedai.fit_raw(raw, verbose=True)
 # %%
 # .. note::
 #
@@ -72,11 +74,14 @@ gedai_adaptative_multiband.fit_raw(raw, verbose=True)
 # For each wavelet level, a specific duration is computed to optimally capture the frequency content of that band.
 # Lower frequency bands will typically require longer durations to be properly captured, while higher frequency bands can be captured with shorter durations.
 
-durations = [wavelet_fit['duration'] for wavelet_fit in gedai_adaptative_multiband._wavelets_fits]
+durations = [
+    wavelet_fit["duration"]
+    for wavelet_fit in adaptive_multiband_gedai._wavelets_fits
+]
 durations
 # %%
 
-fig = gedai_adaptative_multiband.plot_fit()
+fig = adaptive_multiband_gedai.plot_fit()
 plt.show()
 
 # %%
@@ -87,7 +92,7 @@ plt.show()
 # components while preserving the brain signals for each frequency band
 # separately before recombining them.
 
-raw_corrected = gedai_adaptative_multiband.transform_raw(raw, verbose=False)
+denoised_raw = adaptive_multiband_gedai.transform_raw(raw, verbose=False)
 
 # %%
 # .. warning::
@@ -101,7 +106,7 @@ raw_corrected = gedai_adaptative_multiband.transform_raw(raw, verbose=False)
 #       issue by excluding lower frequency bands that may not be well
 #       estimated during the fitting process.
 
-plot_mne_style_overlay_interactive(raw, raw_corrected)
+plot_mne_style_overlay_interactive(raw, denoised_raw)
 
 
 # %%
@@ -116,18 +121,18 @@ plot_mne_style_overlay_interactive(raw, raw_corrected)
 # removal while maintaining the integrity of neural signals across different
 # frequency bands.
 
-gedai_broadband = Gedai()
-gedai_broadband.fit_raw(raw, noise_multiplier=6.0)
-raw_broadband_corrected = gedai_broadband.transform_raw(raw, verbose=False)
+broadband_gedai = Gedai()
+broadband_gedai.fit_raw(raw, noise_multiplier=6.0)
+broadband_denoised_raw = broadband_gedai.transform_raw(raw, verbose=False)
 
-gedai_multiband = AdaptativeMultibandGedai(
+adaptive_multiband_gedai = AdaptativeMultibandGedai(
     wavelet_type="haar", wavelet_level=5, cycles_per_wavelet=10
 )
-gedai_multiband.fit_raw(raw_broadband_corrected, noise_multiplier=3.0)
-raw_multiband_corrected = gedai_multiband.transform_raw(
-    raw_broadband_corrected, verbose=False
+adaptive_multiband_gedai.fit_raw(broadband_denoised_raw, noise_multiplier=3.0)
+adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
+    broadband_denoised_raw, verbose=False
 )
 
-plot_mne_style_overlay_interactive(raw, raw_multiband_corrected)
+plot_mne_style_overlay_interactive(raw, adaptive_multiband_denoised_raw)
 
 # %%

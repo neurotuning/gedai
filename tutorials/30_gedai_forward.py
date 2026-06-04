@@ -61,19 +61,19 @@ fwd = mne.make_forward_solution(
 reference_cov = compute_covariance_from_forward(fwd)
 
 # %% Use the custom covariance in GEDAI
-gedai_broadband = Gedai()
-gedai_broadband.fit_raw(raw, reference_cov=reference_cov, noise_multiplier=6.0)
-raw_broadband_corrected = gedai_broadband.transform_raw(raw, verbose=False)
+broadband_gedai = Gedai()
+broadband_gedai.fit_raw(raw, reference_cov=reference_cov, noise_multiplier=6.0)
+broadband_denoised_raw = broadband_gedai.transform_raw(raw, verbose=False)
 
-gedai_multiband = MultibandGedai(
+multiband_gedai = MultibandGedai(
     wavelet_type="haar", wavelet_level=5, wavelet_low_cutoff=2
 )
-gedai_multiband.fit_raw(
-    raw_broadband_corrected, reference_cov=reference_cov, noise_multiplier=3.0
+multiband_gedai.fit_raw(
+    broadband_denoised_raw, reference_cov=reference_cov, noise_multiplier=3.0
 )
-raw_multiband_corrected = gedai_multiband.transform_raw(
-    raw_broadband_corrected, verbose=False
+multiband_denoised_raw = multiband_gedai.transform_raw(
+    broadband_denoised_raw, verbose=False
 )
 
-plot_mne_style_overlay_interactive(raw, raw_multiband_corrected)
+plot_mne_style_overlay_interactive(raw, multiband_denoised_raw)
 # %%

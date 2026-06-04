@@ -14,7 +14,7 @@ from gedai import Gedai
 
 # %% Load sample EEG data
 subjects = [1]  # may vary
-runs = [4, 8, 12]  # may vary
+runs = [4]  # may vary
 raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
 raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
 # Concatenate runs from the same subject
@@ -56,6 +56,6 @@ gedai.fit_epochs(baseline_epochs, verbose=True)
 # %%
 # After fitting, we can apply the fitted ``GEDAI`` model to each incoming
 # epoch for denoising.
-for i in range(20, len(epochs)):
-    epoch = epochs[i : i + 1]  # Get the current epoch
+for epoch_idx in range(20, len(epochs)):
+    epoch = epochs[epoch_idx : epoch_idx + 1]  # Get the current epoch
     denoised_epoch = gedai.transform_epochs(epoch)

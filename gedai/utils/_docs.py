@@ -40,6 +40,9 @@ del key
 # -- B ---------------------------------------------------------------------------------
 # -- C ---------------------------------------------------------------------------------
 # -- D ---------------------------------------------------------------------------------
+docdict["duration"] = """
+duration : float
+    Duration of each epoch in seconds. The default is ``1.0``."""
 # -- E ---------------------------------------------------------------------------------
 # -- F ---------------------------------------------------------------------------------
 # -- G ---------------------------------------------------------------------------------
@@ -54,6 +57,11 @@ docdict["noise_multiplier"] = """
 noise_multiplier : float
     The noise multiplier to use for artefact threshold rejection optimization."""
 # -- O ---------------------------------------------------------------------------------
+docdict["overlap"] = """
+overlap : float
+    The overlap ratio between consecutive epochs, between ``0`` and ``1``.
+    The default is ``0.5`` (50%% overlap). For example, ``0.5`` means 50%%
+    overlap and ``0.75`` means 75%% overlap."""
 # -- P ---------------------------------------------------------------------------------
 docdict["picks"] = """
 picks : str | list | slice
@@ -73,6 +81,12 @@ reference_cov : str | mne.Covariance
     If :class:`mne.Covariance`, use a pre-computed covariance.
     See :func:`~gedai.gedai.compute_covariance_from_forward` for more details on how
     compute a covariance from a forward solution."""
+docdict["reject_by_annotation"] = """
+reject_by_annotation : bool
+    Whether annotated bad segments should be rejected.
+    It is recommended to set this to ``False`` for fitting. since
+    the algorithm needs to learn  from bad segments.
+    The default is ``False``."""
 # -- S ---------------------------------------------------------------------------------
 docdict["sensai_method"] = """
 sensai_method : str
@@ -89,9 +103,27 @@ verbose : int | str | bool | None
     ``"WARNING"`` for False and to ``"INFO"`` for True."""
 
 # -- W ---------------------------------------------------------------------------------
+docdict["wavelet_level"] = """
+wavelet_level : int
+    Wavelet decomposition level. Must be greater than ``0``.
+    The default is ``4``."""
+docdict["wavelet_low_cutoff"] = """
+wavelet_low_cutoff : float | None
+    If a float is provided, zero out all wavelet levels whose upper frequency
+    bound is below this cutoff frequency in Hz. If ``None``, no frequency band
+    is zeroed out. The default is ``None``."""
+docdict["wavelet_type"] = """
+wavelet_type : str
+    Wavelet to use for the decomposition. The default is ``'haar'``.
+    See :py:func:`pywt.wavedec` for the list of available wavelets."""
 # -- X ---------------------------------------------------------------------------------
 # -- Y ---------------------------------------------------------------------------------
 # -- Z ---------------------------------------------------------------------------------
+docdict["cycles_per_wavelet"] = """
+cycles_per_wavelet : float
+    Minimum number of cycles targeted per wavelet band.
+    Lower-frequency bands use longer epochs to satisfy
+    this target. The default is ``2.0``."""
 
 # -- Documentation functions -----------------------------------------------------------
 docdict_indented: dict[int, dict[str, str]] = dict()

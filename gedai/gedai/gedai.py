@@ -200,13 +200,9 @@ class Gedai:
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
         %(picks)s
-        duration : float
-            Duration of each epoch in seconds (default 1.0).
-        overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
-            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
-        reject_by_annotation : bool
-            Whether to reject epochs based on annotations. Default is False.
+        %(duration)s
+        %(overlap)s
+        %(reject_by_annotation)s
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
@@ -336,11 +332,8 @@ class Gedai:
         ----------
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
-        duration : float
-            Duration of each epoch in seconds (default 1.0).
-        overlap : float
-            The overlap ratio between epochs (0 to 1). Default is 0.5 (50%% overlap).
-            For example, 0.5 means 50%% overlap, 0.75 means 75%% overlap.
+        %(duration)s
+        %(overlap)s
         %(n_jobs)s
         %(verbose)s
 

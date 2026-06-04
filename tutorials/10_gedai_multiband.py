@@ -22,7 +22,7 @@ from gedai.viz import plot_mne_style_overlay_interactive
 
 # %% Load sample EEG data
 subjects = [1]  # may vary
-runs = [4, 8, 12]  # may vary
+runs = [4]  # may vary
 raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
 raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
 # Concatenate runs from the same subject
@@ -49,7 +49,7 @@ raw.set_eeg_reference("average", projection=False)
 # to define the type of wavelet used for the decomposition by setting the
 # ``wavelet_type`` parameter.
 
-gedai_multiband = MultibandGedai(wavelet_type="haar", wavelet_level=5)
+multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=5)
 
 # %%
 # Model Fitting
@@ -59,7 +59,7 @@ gedai_multiband = MultibandGedai(wavelet_type="haar", wavelet_level=5)
 # estimates the optimal threshold to distinguish between signal and noise
 # components.
 
-gedai_multiband.fit_raw(raw, verbose=True)
+multiband_gedai.fit_raw(raw, verbose=True)
 # %%
 # .. note::
 #
@@ -70,7 +70,7 @@ gedai_multiband.fit_raw(raw, verbose=True)
 
 # %%
 
-fig = gedai_multiband.plot_fit()
+fig = multiband_gedai.plot_fit()
 plt.show()
 
 # %%
@@ -81,7 +81,7 @@ plt.show()
 # components while preserving the brain signals for each frequency band
 # separately before recombining them.
 
-raw_corrected = gedai_multiband.transform_raw(raw, verbose=False)
+denoised_raw = multiband_gedai.transform_raw(raw, verbose=False)
 
 # %%
 # .. warning::
@@ -95,7 +95,7 @@ raw_corrected = gedai_multiband.transform_raw(raw, verbose=False)
 #       issue by excluding lower frequency bands that may not be well
 #       estimated during the fitting process.
 
-plot_mne_style_overlay_interactive(raw, raw_corrected)
+plot_mne_style_overlay_interactive(raw, denoised_raw)
 
 
 # %%
@@ -110,16 +110,16 @@ plot_mne_style_overlay_interactive(raw, raw_corrected)
 # removal while maintaining the integrity of neural signals across different
 # frequency bands.
 
-gedai_broadband = Gedai()
-gedai_broadband.fit_raw(raw, noise_multiplier=6.0)
-raw_broadband_corrected = gedai_broadband.transform_raw(raw, verbose=False)
+broadband_gedai = Gedai()
+broadband_gedai.fit_raw(raw, noise_multiplier=6.0)
+broadband_denoised_raw = broadband_gedai.transform_raw(raw, verbose=False)
 
-gedai_multiband = MultibandGedai(
+multiband_gedai = MultibandGedai(
     wavelet_type="haar", wavelet_level=5, wavelet_low_cutoff=2
 )
-gedai_multiband.fit_raw(raw_broadband_corrected, noise_multiplier=3.0)
-raw_multiband_corrected = gedai_multiband.transform_raw(
-    raw_broadband_corrected, verbose=False
+multiband_gedai.fit_raw(broadband_denoised_raw, noise_multiplier=3.0)
+multiband_denoised_raw = multiband_gedai.transform_raw(
+    broadband_denoised_raw, verbose=False
 )
 
-plot_mne_style_overlay_interactive(raw, raw_multiband_corrected)
+plot_mne_style_overlay_interactive(raw, multiband_denoised_raw)
