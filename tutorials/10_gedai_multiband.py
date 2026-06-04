@@ -115,9 +115,9 @@ broadband_gedai.fit_raw(raw, noise_multiplier=6.0)
 broadband_denoised_raw = broadband_gedai.transform_raw(raw, verbose=False)
 
 multiband_gedai = MultibandGedai(
-    wavelet_type="haar", wavelet_level=5, wavelet_low_cutoff=2
+    wavelet_type="haar", wavelet_level=8)
 )
-multiband_gedai.fit_raw(broadband_denoised_raw, noise_multiplier=3.0)
+multiband_gedai.fit_raw(broadband_denoised_raw, noise_multiplier=3.0, wavelet_low_cutoff=2)
 multiband_denoised_raw = multiband_gedai.transform_raw(
     broadband_denoised_raw, verbose=False
 )

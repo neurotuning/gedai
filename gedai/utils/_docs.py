@@ -111,7 +111,12 @@ docdict["wavelet_low_cutoff"] = """
 wavelet_low_cutoff : float | None
     If a float is provided, zero out all wavelet levels whose upper frequency
     bound is below this cutoff frequency in Hz. If ``None``, no frequency band
-    is zeroed out. The default is ``None``."""
+    is zeroed out. If ``"auto"``, the cutoff is automatically determined based
+    on the info['highpass'] value of the fitted instance. While reading data
+    from a file, info['highpass'] might be missing (i.e., equal to 0.0). If
+    you know that your data has been high-pass filtered, make sure to set
+    ``wavelet_low_cutoff`` to the high-pass cutoff frequency.
+    The default is ``"auto"``."""
 docdict["wavelet_type"] = """
 wavelet_type : str
     Wavelet to use for the decomposition. The default is ``'haar'``.
@@ -120,10 +125,10 @@ wavelet_type : str
 # -- Y ---------------------------------------------------------------------------------
 # -- Z ---------------------------------------------------------------------------------
 docdict["cycles_per_wavelet"] = """
-cycles_per_wavelet : float
+cycles_per_wavelet : int
     Minimum number of cycles targeted per wavelet band.
     Lower-frequency bands use longer epochs to satisfy
-    this target. The default is ``2.0``."""
+    this target. The default is ``12``."""
 
 # -- Documentation functions -----------------------------------------------------------
 docdict_indented: dict[int, dict[str, str]] = dict()

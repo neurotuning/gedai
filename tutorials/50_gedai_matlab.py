@@ -1,15 +1,9 @@
 """
-GEDAI Multiband
-===============
+GEDAI Matlab
+============
 
-This tutorial demonstrates how to use multiband ``GEDAI``.
-``Multiband GEDAI`` is a frequency-specific denoising method that extends the
-generalized eigenvalue decomposition approach of ``GEDAI``.
-Its approach focuses on isolating and removing artifacts within specific
-frequency bands. For that, the multiband ``GEDAI`` first decomposes the EEG
-data into its frequency components using wavelet transform, then applies
-``GEDAI`` to each frequency band separately. Finally, the denoised frequency
-components are recombined to reconstruct the cleaned EEG signal.
+This tutorial discusses how to use the python implementation of ``GEDAI`` 
+as a replacement for the original Matlab implementation of ``GEDAI``. 
 """
 
 # %%

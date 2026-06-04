@@ -58,6 +58,8 @@ class Gedai:
         self.fitted = False
         self._fit = None
         self._reference_cov = None
+        self._info = None
+        self._n_samples = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -67,6 +69,8 @@ class Gedai:
             )
         assert self._fit is not None
         assert self._reference_cov is not None
+        assert self._info is not None
+        assert self._n_samples is not None
 
     def _check_unfitted(self):
         """Check if the Gedai is unfitted."""
@@ -76,6 +80,8 @@ class Gedai:
             )
         assert self._fit is None
         assert self._reference_cov is None
+        assert self._info is None
+        assert self._n_samples is None
 
     @fill_doc
     @verbose
@@ -113,10 +119,10 @@ class Gedai:
         _check_picks_uniqueness(epochs.info, picks)
         epochs = epochs.copy()
         epochs.load_data()
-        epochs = epochs.pick(picks)
+        epochs = epochs.pick(picks, verbose=False)
         logger.info("Setting average reference.")
-        epochs.set_eeg_reference("average", projection=False)
-        data = epochs.get_data()
+        epochs.set_eeg_reference("average", projection=False, verbose=False)
+        data = epochs.get_data(verbose=False)
 
         cov = _ensure_cov(reference_cov)
         cov = _pick_cov(cov, epochs.info["ch_names"])
@@ -135,7 +141,7 @@ class Gedai:
             epochs_eigenvalues[e] = eigenvalues
 
         fit_epochs = mne.EpochsArray(data, epochs.info, tmin=epochs.tmin, verbose=False)
-        min_sensai_threshold, max_sensai_threshold, step = 0, 12, 0.1
+        min_sensai_threshold, max_sensai_threshold, step = -6, 12, 0.1 # MATLAB min_sensai_threshold 0 for f > 60Hz.
         n_pc = 3
 
         if sensai_method == "gridsearch":
@@ -153,6 +159,7 @@ class Gedai:
                 noise_multiplier=noise_multiplier,
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
+                verbose=verbose,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -177,6 +184,8 @@ class Gedai:
         }
         self._reference_cov = cov
         self.fitted = True
+        self._info = epochs.info.copy()
+        self._n_samples = data.shape[-1]
 
     @fill_doc
     @verbose
@@ -185,7 +194,7 @@ class Gedai:
         raw: BaseRaw,
         picks: list | str = "eeg",
         duration: float = 1.0,
-        overlap: float = 0.5,
+        overlap: float = 0.75,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
         sensai_method: str = "optimize",
@@ -227,7 +236,7 @@ class Gedai:
             overlap=overlap_seconds,
             reject_by_annotation=reject_by_annotation,
             preload=True,
-            verbose=verbose,
+            verbose=False,
         )
         self.fit_epochs(
             epochs,
@@ -288,13 +297,31 @@ class Gedai:
                 "for the list of channels used during fit."
             )
 
+        if epochs.info["sfreq"] != self._info["sfreq"]:
+            raise ValueError(
+                f"Sampling frequency mismatch between fitted model and input instance."
+                f"nFitted model sfreq: {self._info['sfreq']} Hz, input instance sfreq:"
+                f" {epochs.info['sfreq']} Hz.")
+        
+
+        if epochs.get_data(verbose=False).shape[-1] != self._n_samples:
+            input_duration = (epochs.get_data(verbose=False).shape[-1] - 1) / epochs.info["sfreq"]
+            raise ValueError(
+                f"Duration mismatch between fitted model and input instance. "
+                f"Fitted model epoch duration: {self._duration} s, input instance "
+                f"epoch duration: {input_duration} s."
+                "Please make sure the epoch duration of the input instance matches the"
+                " one of the data used during fit."
+            )
+
+
         picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
         epochs_copy = epochs.copy()
         epochs_copy.load_data()
         epochs_copy = epochs_copy.pick(picks)
         logger.info("Setting average reference.")
         epochs_copy.set_eeg_reference("average", projection=False)
-        data = epochs_copy.get_data()
+        data = epochs_copy.get_data(verbose=False)
 
         reference_cov = self._reference_cov.data
         threshold = self._fit["threshold"]
@@ -306,7 +333,10 @@ class Gedai:
                     epoch_data, reference_cov, threshold
                 )
         else:
-            parallel, p_fun, _ = parallel_func(_process_single_epoch, n_jobs)
+            parallel, p_fun, _ = parallel_func(_process_single_epoch, 
+                                              n_jobs,
+                                              total=len(data),
+                                              verbose=verbose)
             cleaned_epochs_list = parallel(
                 p_fun(epoch_data, reference_cov, threshold) for epoch_data in data
             )
@@ -321,8 +351,7 @@ class Gedai:
     def transform_raw(
         self,
         raw: BaseRaw,
-        duration: float = 1.0,
-        overlap: float = 0.5,
+        overlap: float = 0.75,
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -343,7 +372,6 @@ class Gedai:
             The corrected raw data.
         """
         _check_type(raw, (BaseRaw,), "raw")
-        _check_type(duration, (float, int), "duration")
         _check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
 
@@ -353,7 +381,7 @@ class Gedai:
         raw_data = raw.get_data(verbose=False)
         n_channels, n_times = raw_data.shape
 
-        window_size = int(raw.info["sfreq"] * duration)
+        window_size = self._n_samples
         window = create_cosine_weights(window_size)
 
         raw_corrected = np.zeros_like(raw_data)
@@ -369,12 +397,12 @@ class Gedai:
             all_segments.append(segment)
 
         all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=verbose)
+        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=False)
 
         corrected_segments_epochs = self.transform_epochs(
-            segments_epochs, n_jobs=n_jobs, verbose=verbose
+            segments_epochs, n_jobs=n_jobs, verbose=False
         )
-        corrected_segments = corrected_segments_epochs.get_data(verbose=verbose)
+        corrected_segments = corrected_segments_epochs.get_data(verbose=False)
 
         for s, start in enumerate(starts):
             corrected_segment = corrected_segments[s] * window
@@ -384,7 +412,7 @@ class Gedai:
         weight_sum[weight_sum == 0] = 1
         raw_corrected /= weight_sum
 
-        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=verbose)
+        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
         return raw_corrected
 
     def plot_fit(self):
