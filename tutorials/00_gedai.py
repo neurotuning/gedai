@@ -1,10 +1,15 @@
 """
-GEDAI basics
-============
+GEDAI model description
+=======================
 
-This tutorial demonstrates how to use GEDAI (Generalized Eigenvalue De-Artifacting
-Instrument) to denoise EEG data. GEDAI is an unsupervised denoising method based
-on leadfield filtering that separates brain signals from noise and artifacts.
+In this first tutorial, we will introduce an overview and description of the GEDAI
+(Generalized Eigenvalue De-Artifacting Instrument) model. GEDAI is an unsupervised
+method for denoising EEG data.
+
+.. note:: This tutorial explains how the GEDAI model works. If you want
+          to see how to apply the GEDAI model to your data, please refer to:
+          -  the :ref:`standard GEDAI pipeline <50_gedai_offline_pipeline>`  for offline analysis.
+          -  the :ref:`online GEDAI pipeline <20_gedai_online>` for real-time applications. 
 
 """
 
@@ -16,9 +21,13 @@ from mne.io import concatenate_raws, read_raw_edf
 from gedai import Gedai
 from gedai.viz import plot_mne_style_overlay_interactive
 
-# %% Load sample EEG data
+
+# %%
+# The GEDAI model can be fitted on :class:`~mne.io.Raw` or :class:`~mne.Epochs` objects.
+# In this tutorial, we will use a sample EEG dataset from the PhysioNet EEG Motor Movement/Imagery Dataset.
+
 subjects = [1]  # may vary
-runs = [4, 8, 12]  # may vary
+runs = [4]  # may vary
 raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
 raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
 # Concatenate runs from the same subject
@@ -26,12 +35,20 @@ raw = concatenate_raws(raws)
 # Make channel names follow standard conventions
 eegbci.standardize(raw)
 
-# Crop to the first 15 seconds for demonstration purposes
-# (Remove or adjust this for full data analysis)
-raw.crop(0, 15)
+#%%
+# For simplicity, we will only use the first 30 seconds of the data in this tutorial.
+# In practice, it is recommended to use the full recording for fitting the GEDAI model, 
+# as this allows the model to better capture the noise characteristics of the data.
+
+raw.crop(0, 30)
 raw.pick("eeg").load_data().apply_proj()
 
-# Apply average reference (standard preprocessing for EEG)
+#%%
+# GEDAI will automatically apply an average reference before fitting or transforming the data.
+# If the data was referenced to a different reference during acquisition, it is recommended
+# to add the reference channel to the data before using GEDAI. This way the rank of the data will be preserved.
+# and you will be able to reference the data to another reference after denoising if needed.
+
 raw.set_eeg_reference("average", projection=False)
 
 # %%
@@ -148,7 +165,7 @@ plt.show()
 # while preserving the brain signals.
 
 denoised_raw = gedai.transform_raw(
-    raw, duration=duration, overlap=overlap, verbose=False
+    raw, overlap=overlap, verbose=False
 )
 
 # %%

@@ -2,8 +2,8 @@
 GEDAI forward
 =============
 
-This tutorial demonstrates how to use a custom covariance matrix in ``GEDAI``
-derived from the leadfield of a forward solution.
+This tutorial demonstrates how to compute a custom covariance 
+matrix using a :class:`mne.forward.Forward` solution.
 """
 
 # %%
@@ -43,7 +43,7 @@ raw.set_eeg_reference("average", projection=False)
 mne.viz.plot_alignment(
     raw.info,
     src=src,
-    eeg=["original", "projected"],
+    eeg=["projected"],
     trans=trans,
     show_axes=True,
     mri_fiducials=True,
@@ -59,21 +59,3 @@ fwd = mne.make_forward_solution(
 # %%
 # compute the covariance matrix from the forward solution
 reference_cov = compute_covariance_from_forward(fwd)
-
-# %% Use the custom covariance in GEDAI
-broadband_gedai = Gedai()
-broadband_gedai.fit_raw(raw, reference_cov=reference_cov, noise_multiplier=6.0)
-broadband_denoised_raw = broadband_gedai.transform_raw(raw, verbose=False)
-
-multiband_gedai = MultibandGedai(
-    wavelet_type="haar", wavelet_level=5, wavelet_low_cutoff=2
-)
-multiband_gedai.fit_raw(
-    broadband_denoised_raw, reference_cov=reference_cov, noise_multiplier=3.0
-)
-multiband_denoised_raw = multiband_gedai.transform_raw(
-    broadband_denoised_raw, verbose=False
-)
-
-plot_mne_style_overlay_interactive(raw, multiband_denoised_raw)
-# %%

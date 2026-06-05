@@ -60,7 +60,8 @@ multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=8)
 # estimates the optimal threshold to distinguish between signal and noise
 # components.
 
-multiband_gedai.fit_raw(raw, 
+multiband_gedai.fit_raw(raw,
+                        duration=2.0,
                         sensai_method="gridsearch",
                         n_jobs=n_jobs,
                         verbose=True)
@@ -117,15 +118,17 @@ plot_mne_style_overlay_interactive(raw, denoised_raw)
 # frequency bands.
 
 broadband_gedai = Gedai()
-broadband_gedai.fit_raw(raw, noise_multiplier=6.0)
-broadband_denoised_raw = broadband_gedai.transform_raw(raw, verbose=False)
+broadband_gedai.fit_raw(raw,
+                        n_jobs=n_jobs,
+                        noise_multiplier=6.0)
+broadband_denoised_raw = broadband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
 
 multiband_gedai = MultibandGedai(
-    wavelet_type="haar", wavelet_level=8)
+    wavelet_type="haar", wavelet_level=8
 )
-multiband_gedai.fit_raw(broadband_denoised_raw, noise_multiplier=3.0, wavelet_low_cutoff=2)
+multiband_gedai.fit_raw(broadband_denoised_raw, n_jobs=n_jobs, noise_multiplier=3.0, wavelet_low_cutoff=2)
 multiband_denoised_raw = multiband_gedai.transform_raw(
-    broadband_denoised_raw, verbose=False
+    broadband_denoised_raw, n_jobs=n_jobs, verbose=False
 )
 
 plot_mne_style_overlay_interactive(raw, multiband_denoised_raw)

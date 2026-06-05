@@ -196,21 +196,29 @@ class AdaptativeMultibandGedai:
                 cycles_per_wavelet=self.cycles_per_wavelet,
             )
         
+        filter_cutoff =  raw_fit.info['highpass']
         duration_cutoff = wavelet_parameters[0]["fmax"]
 
         if wavelet_low_cutoff is None:
             wavelet_low_cutoff = 0
 
         if wavelet_low_cutoff == "auto":
-            wavelet_low_cutoff = duration_cutoff
-            logger.info(
-                f"Automatically setting wavelet_low_cutoff to {wavelet_low_cutoff:.2f} Hz "
-                f"based on wavelet_level ({self.wavelet_level})."
-            )
-
+            if filter_cutoff > duration_cutoff:
+                wavelet_low_cutoff = filter_cutoff
+                logger.info(
+                    f"Automatically setting ``wavelet_low_cutoff`` to {wavelet_low_cutoff:.2f} Hz "
+                    f"based on wavelet_level ``raw_fit.info['highpass']`` ({filter_cutoff:.2f} Hz)."
+                )
+            else:
+                wavelet_low_cutoff = duration_cutoff
+                logger.info(
+                    f"Automatically setting ``wavelet_low_cutoff`` to {wavelet_low_cutoff:.2f} Hz "
+                    f"based on wavelet_level ``{self.wavelet_level}``."
+                )
+    
         if wavelet_low_cutoff < duration_cutoff:
             logger.warning(
-                f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
+                f"``wavelet_low_cutoff`` ({wavelet_low_cutoff:.2f} Hz) is below the "
                 f"frequency cutoff ( {duration_cutoff:.2f} Hz) that can be "
                 f"resolved with the chosen cycles_per_wavelet ({self.cycles_per_wavelet}) "
                 f"and duration ({duration:.3f}s)."
