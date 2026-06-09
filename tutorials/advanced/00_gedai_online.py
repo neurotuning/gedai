@@ -1,6 +1,6 @@
 """
-GEDAI online
-============
+Using GEDAI for online (real-time) denoising
+============================================
 
 This tutorial demonstrates how to use ``GEDAI`` for online (real-time) denoising.
 """
@@ -41,7 +41,7 @@ epochs = make_fixed_length_epochs(raw, duration=1.0, overlap=0.5, preload=True)
 
 
 # %%
-# We first fit need to fit the ``GEDAI`` model on some initial data segment.
+# We first need to fit the ``GEDAI`` model on an initial data segment.
 # This segment should be representative of the data to be denoised, including
 # typical artifacts. A common approach is to use a baseline period at the
 # beginning of the recording for this purpose.

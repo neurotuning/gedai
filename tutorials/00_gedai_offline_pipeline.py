@@ -1,6 +1,6 @@
 """
-The standard GEDAI pipeline
-===========================
+The recommended pipeline for offline EEG denoising using GEDAI
+==============================================================
 
 This tutorial serves as a template for offline EEG denoising.
 """

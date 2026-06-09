@@ -1,5 +1,5 @@
 """
-The GEDAI Adaptative Multiband model
+The GEDAI adaptive Multiband model
 ====================================
 
 This tutorial 
@@ -7,19 +7,20 @@ This tutorial
 
 # %%
 import matplotlib.pyplot as plt
+
 from mne.io import concatenate_raws, read_raw
 
-from gedai import Gedai, AdaptativeMultibandGedai
+from gedai import AdaptiveMultibandGedai, Gedai
+from gedai.data import get_contaminated_eeg_set_path
 from gedai.viz import plot_mne_style_overlay_interactive
 
 n_jobs = -1
 
 # %% Load sample EEG data                        n_jobs=n_jobs,
-raw_path = "../gedai/data/SNR=0.35481 contamination=25 clean_EEG_dataset_2.set + EOG_EMG_NOISE_dataset_1.set"
-raw = read_raw(raw_path, preload=True)
+raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 raw.filter(l_freq=0.5, h_freq=None, n_jobs=n_jobs)
 #%%
-# Before using the :class:`~gedai.gedai.AdaptativeMultibandGedai` model,
+# Before using the ``AdaptiveMultibandGedai`` model,
 # it is recommended to first apply the broadband :class:`~gedai.gedai.Gedai` model
 # to remove large artifacts while preserving most of the neural signals.
 # For that, we use a conservative ``noise_multiplier`` (e.g., ``6.0``) 
@@ -33,9 +34,9 @@ broadband_denoised_raw = broadband_gedai.transform_raw(raw,
                                                        n_jobs=n_jobs,
                                                        verbose=False)
 # %%
-# GEDAI Adaptative Multiband model
+# GEDAI Adaptive Multiband model
 # --------------------------------
-# The :class:`~gedai.gedai.AdaptativeMultibandGedai` model uses wavelet decomposition to 
+# The ``AdaptiveMultibandGedai`` model uses wavelet decomposition to
 # separate the EEG data into different frequency bands and applies GEDAI separately to each band.
 # The wavelet decomposition is controlled by the
 # - ``wavelet_type`` 
@@ -68,9 +69,9 @@ wavelet_type = "haar"
 wavelet_level = 9
 
 # %%
-# For each wavelet level, :class:`~gedai.gedai.AdaptativeMultibandGedai` will automatically determine the optimal
+# For each wavelet level, ``AdaptiveMultibandGedai`` will automatically determine the optimal
 # epoch duration: slower frequency bands will be estimated on longer epochs, while faster frequency bands will be estimated on shorter epochs.
-# This adaptative approach allows to capture both transient and sustained artifacts across different frequency ranges.
+# This adaptive approach allows to capture both transient and sustained artifacts across different frequency ranges.
 # The ``cycles_per_wavelet`` parameter controls the number of cycles of the wavelet that are included in each epoch. Higher values will
 # lead to longer epochs while lower values will lead to shorter epochs. A minimum of 2 cycles per wavelet is recommended to ensure
 # proper estimation of the covariance matrix.
@@ -79,7 +80,7 @@ cycles_per_wavelet = 10
 
 # %%
 # With these parameters defined, we can now instanciate the model:
-adaptive_multiband_gedai = AdaptativeMultibandGedai(
+adaptive_multiband_gedai = AdaptiveMultibandGedai(
     wavelet_type=wavelet_type,
     wavelet_level=wavelet_level,
     cycles_per_wavelet=cycles_per_wavelet
@@ -87,7 +88,7 @@ adaptive_multiband_gedai = AdaptativeMultibandGedai(
 
 
 # %%
-# The fitting process of :class:`~gedai.gedai.AdaptativeMultibandGedai` is similar to that of the standard
+# The fitting process of ``AdaptiveMultibandGedai`` is similar to that of the standard
 # :class:`~gedai.gedai.Gedai`. The main difference is that the fitting process is performed separately for each wavelet level (i.e., frequency band).
 # As seens previously, some wavelet levels contains very low frequencies. This frequency content would require very long epochs to be properly estimated, 
 # In addition, these frequency bands often fall below the high-pass filter cutoff frequency and therefore do not contain meaningful information. To

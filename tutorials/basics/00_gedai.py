@@ -1,15 +1,16 @@
 """
-GEDAI model description
-=======================
+Understanding the GEDAI model 
+=============================
 
-In this first tutorial, we will introduce an overview and description of the GEDAI
-(Generalized Eigenvalue De-Artifacting Instrument) model. GEDAI is an unsupervised
-method for denoising EEG data.
+In this first tutorial, we introduce the GEDAI
+(Generalized Eigenvalue De-Artifacting Instrument) model. GEDAI is an
+unsupervised method for denoising EEG data.
 
-.. note:: This tutorial explains how the GEDAI model works. If you want
-          to see how to apply the GEDAI model to your data, please refer to:
-          -  the :ref:`standard GEDAI pipeline <50_gedai_offline_pipeline>`  for offline analysis.
-          -  the :ref:`online GEDAI pipeline <20_gedai_online>` for real-time applications. 
+.. note::
+
+    This tutorial focuses on model understanding. For practical workflows,
+    continue with tutorials from the ``use`` section (offline templates)
+    and the ``advanced`` section (online and forward-model workflows).
 
 """
 
@@ -85,10 +86,11 @@ reject_by_annotation = False  # default
 
 # %%
 # The reference covariance defines what good data should look like.
-# For now, only ``leadfield`` is supported, which loads a precomputed
-# leadfield covariance matrix based on the standard 10-20 montage.
-# Future versions may allow user-defined reference covariances, including
-# custom montages and subject-specific leadfield matrices.
+# The dfault ``leadfield`` option uses a covariance matrix 
+# based on a generic head model and the standard 10-20 montage.
+# It is possible to use a custom reference covariance matrix instead,
+# for example, by using the :func:`~gedai.gedai.compute_covariance_from_forward`
+# function. This topic is covered in the ``advanced`` section of the tutorials.
 
 reference_cov = "leadfield"
 

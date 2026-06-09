@@ -361,7 +361,6 @@ class Gedai:
         ----------
         raw : mne.io.BaseRaw
             The raw data to fit the model to.
-        %(duration)s
         %(overlap)s
         %(n_jobs)s
         %(verbose)s

@@ -1,45 +1,32 @@
 """Test Gedai."""
 
 import pytest
+import mne
 from mne import make_fixed_length_epochs
 from mne.datasets import testing
-from mne.io import read_raw_brainvision
+from gedai.data import (
+    get_contaminated_eeg_set_path
+)
+from gedai import Gedai
 
-from gedai import Gedai, logger, set_log_level
-
-set_log_level("INFO")
-logger.propagate = True
-
-
-subjects = [1]  # may vary
-runs = [4, 8, 12]  # may vary
-data_path = testing.data_path(download=False)
-# from mne.datasets import testing
-raw_fname = data_path / "antio" / "CA_208" / "test_CA_208_start_stop.vhdr"
-with pytest.warns():
-    raw = read_raw_brainvision(raw_fname, eog=["EOG"], preload=True)
-raw.pick_types(meg=False, eeg=True)
+raw_fname = get_contaminated_eeg_set_path()
+raw = mne.io.read_raw(raw_fname, preload=True)
 raw.drop_channels([ch_name for ch_name in raw.ch_names if "BIP" in ch_name])
-
-# epochs
 epochs_eeg = make_fixed_length_epochs(raw, duration=1.0, overlap=0)
 
 
-@testing.requires_testing_data
 def test_gedai_fit_epochs():
     """Test Gedai fit on epochs data."""
     model = Gedai()
     model.fit_epochs(epochs_eeg)
 
 
-@testing.requires_testing_data
 def test_gedai_fit_raw():
     """Test Gedai fit on raw data."""
     model = Gedai()
     model.fit_raw(raw)
 
 
-@testing.requires_testing_data
 def test_gedai_transform_epochs():
     """Test Gedai transform on epochs data."""
     gedai = Gedai()
@@ -48,7 +35,6 @@ def test_gedai_transform_epochs():
     assert epochs_eeg.metadata == transformed_epochs.metadata
 
 
-@testing.requires_testing_data
 def test_gedai_transform_raw():
     """Test Gedai transform on raw data."""
     gedai = Gedai()
@@ -56,7 +42,6 @@ def test_gedai_transform_raw():
     gedai.transform_raw(raw)
 
 
-@testing.requires_testing_data
 def test_gedai_epochs_picks():
     """Test Gedai fit on epochs data."""
     gedai = Gedai()

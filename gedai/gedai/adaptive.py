@@ -61,11 +61,11 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
 
 
 @fill_doc
-class AdaptativeMultibandGedai:
-    """Adaptative Multiband Generalized Eigenvalue De-Artifacting Instrument.
+class AdaptiveMultibandGedai:
+    """Adaptive Multiband Generalized Eigenvalue De-Artifacting Instrument.
 
     A extension of :class:`~gedai.gedai.MultibandGedai` that uses
-    adaptative window lengths for each wavelet band to ensure 
+    adaptive window lengths for each wavelet band to ensure 
     wavelet decomposition has enough cycles for accurate decomposition.
     
     See :footcite:`Ros2025`.

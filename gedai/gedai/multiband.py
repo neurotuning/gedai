@@ -150,7 +150,6 @@ class MultibandGedai:
     """
 
     def __init__(self, wavelet_type="haar", wavelet_level=8):
-
         _check_type(wavelet_level, (int,), "wavelet_level")
         _check_type(wavelet_type, (str,), "wavelet_type")
         self.wavelet_type = wavelet_type
@@ -170,12 +169,12 @@ class MultibandGedai:
             )
         assert self._wavelets_fits is not None
         for wavelet_fit in self._wavelets_fits:
-            wavelet_fit['model']._check_fit()
+            if not wavelet_fit["ignore"]:
+                wavelet_fit['model']._check_fit()
         assert self._reference_cov is not None
         assert self._levels is not None
         assert self._wavelet_low_cutoff is not None
         
-
     def _check_unfitted(self):
         """Check if the Gedai is unfitted."""
         if self.fitted:
@@ -246,10 +245,10 @@ class MultibandGedai:
             level=self.wavelet_level,
             n_jobs=n_jobs,
         )
+        n_samples = epochs_wavelet.shape[-1]
 
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
-            ignore = False
             if fmax < wavelet_low_cutoff:
                 logger.info(
                     f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
@@ -263,6 +262,7 @@ class MultibandGedai:
                     "fmax": fmax,
                     "model": None,
                     "ignore": True,
+                    "n_samples": n_samples
                 }
             else:
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -287,8 +287,9 @@ class MultibandGedai:
                     "fmax": fmax,
                     "model": model,
                     "ignore": False,
+                    "n_samples": n_samples
                 }
-                wavelets_fits.append(wavelet_fit)
+            wavelets_fits.append(wavelet_fit)
 
         self._levels = levels
         self._wavelets_fits = wavelets_fits
@@ -509,7 +510,8 @@ class MultibandGedai:
         _, n_times = raw_data.shape
 
         # all models are fitted with the same duration
-        window_size = self._wavelets_fits[0]["model"]._n_samples
+        n_samples = [fit['n_samples'] for fit in self._wavelets_fits if not fit["ignore"]]
+        window_size = max(n_samples) 
         window = create_cosine_weights(window_size)
 
         raw_corrected = np.zeros_like(raw_data)

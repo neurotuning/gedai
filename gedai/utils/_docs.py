@@ -39,6 +39,11 @@ del key
 # -- A ---------------------------------------------------------------------------------
 # -- B ---------------------------------------------------------------------------------
 # -- C ---------------------------------------------------------------------------------
+docdict["cycles_per_wavelet"] = """
+cycles_per_wavelet : int
+    Minimum number of cycles targeted per wavelet band.
+    Lower-frequency bands use longer epochs to satisfy
+    this target. The default is ``12``."""
 # -- D ---------------------------------------------------------------------------------
 docdict["duration"] = """
 duration : float
@@ -124,12 +129,6 @@ wavelet_type : str
 # -- X ---------------------------------------------------------------------------------
 # -- Y ---------------------------------------------------------------------------------
 # -- Z ---------------------------------------------------------------------------------
-docdict["cycles_per_wavelet"] = """
-cycles_per_wavelet : int
-    Minimum number of cycles targeted per wavelet band.
-    Lower-frequency bands use longer epochs to satisfy
-    this target. The default is ``12``."""
-
 # -- Documentation functions -----------------------------------------------------------
 docdict_indented: dict[int, dict[str, str]] = dict()
 

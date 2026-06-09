@@ -3,7 +3,6 @@
 import mne
 import pytest
 from mne.datasets import testing
-
 from gedai.gedai.covariances import (
     _ensure_cov,
     _pick_cov,

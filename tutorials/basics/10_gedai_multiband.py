@@ -1,6 +1,6 @@
 """
-GEDAI Multiband
-===============
+Understanding the spectral extension of GEDAI 
+=============================================
 
 This tutorial demonstrates how to use multiband ``GEDAI``.
 ``Multiband GEDAI`` is a frequency-specific denoising method that extends the

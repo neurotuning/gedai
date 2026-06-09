@@ -12,7 +12,7 @@ from datetime import date
 from importlib import import_module
 
 from intersphinx_registry import get_intersphinx_mapping
-from sphinx_gallery.sorting import FileNameSortKey
+from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
 
 import gedai
 
@@ -275,6 +275,12 @@ sphinx_gallery_conf = {
     "reference_url": {f"{package}": None},
     "remove_config_comments": True,
     "show_memory": True,
+        [
+            "../tutorials/basics",
+            "../tutorials/use",
+            "../tutorials/advanced",
+        ]
+    ),
     "within_subsection_order": FileNameSortKey,
 }
 

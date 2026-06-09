@@ -2,8 +2,8 @@
 GEDAI forward
 =============
 
-This tutorial demonstrates how to compute a custom covariance 
-matrix using a :class:`mne.forward.Forward` solution.
+This tutorial demonstrates how to compute a custom covariance
+matrix using a :class:`mne.Forward` solution.
 """
 
 # %%
