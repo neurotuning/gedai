@@ -37,7 +37,7 @@ jobs:
         run: |
           python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests  # optional
@@ -70,7 +70,7 @@ jobs:
         run: |
           python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests  # optional
