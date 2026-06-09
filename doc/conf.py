@@ -275,6 +275,7 @@ sphinx_gallery_conf = {
     "reference_url": {f"{package}": None},
     "remove_config_comments": True,
     "show_memory": True,
+    "subsection_order": ExplicitOrder(
         [
             "../tutorials/basics",
             "../tutorials/use",
