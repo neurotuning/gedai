@@ -36,6 +36,12 @@ for key in _KEYS_MNE:
     docdict[key] = entry
 del key
 
+# Override n_jobs to avoid fragile intersphinx resolution of joblib in some builds.
+docdict["n_jobs"] = """
+n_jobs : int | None
+    The number of jobs to run in parallel. If ``-1``, use all available CPU cores.
+    If ``1`` or ``None``, computations are run serially."""
+
 # -- A ---------------------------------------------------------------------------------
 # -- B ---------------------------------------------------------------------------------
 # -- C ---------------------------------------------------------------------------------
