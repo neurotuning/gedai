@@ -14,5 +14,4 @@ Gedai
 
    Gedai
    MultibandGedai
-   compute_covariance_from_forward
-
+   AdaptiveMultibandGedai

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Tutorials &#8212; gedai</title>
+    <title>GEDAI Tutorials &#8212; gedai</title>
   
   
   
@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=0790524f97105ba85085" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
-    <script src="../../_static/documentation_options.js?v=5678cf4b"></script>
+    <script src="../../_static/documentation_options.js?v=ae9ac72a"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/index';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.18.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.19.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -63,7 +63,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="GEDAI basics" href="00_gedai.html" />
+    <link rel="next" title="Basics: Understanding GEDAI Models" href="basics/index.html" />
     <link rel="prev" title="gedai.set_log_level" href="../../api/generated/gedai.set_log_level.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -175,7 +175,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
-    Tutorials
+    GEDAI Tutorials
   </a>
 </li>
 
@@ -263,6 +263,10 @@
   
 
   
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
 
     </header>
@@ -312,7 +316,7 @@
 
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="#">
-    Tutorials
+    GEDAI Tutorials
   </a>
 </li>
 
@@ -392,10 +396,21 @@
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
   <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="00_gedai.html">GEDAI basics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="10_gedai_multiband.html">GEDAI Multiband</a></li>
-<li class="toctree-l1"><a class="reference internal" href="20_gedai_online.html">GEDAI online</a></li>
-<li class="toctree-l1"><a class="reference internal" href="30_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="basics/index.html">Basics: Understanding GEDAI Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="basics/00_gedai.html">Understanding the GEDAI model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basics/10_gedai_multiband.html">Understanding the multiband extension of GEDAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="basics/30_gedai_adaptive.html">Understanding the adaptive extension of multiband GEDAI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="use/index.html">Practical Pipelines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="use/00_gedai_offline_pipeline.html">Recommended Offline EEG Denoising Pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced/10_gedai_forward.html">GEDAI forward</a></li>
+</ul>
+</details></li>
 </ul>
 </div>
 </nav></div>
@@ -436,7 +451,7 @@
         <i class="fa-solid fa-home"></i>
       </a>
     </li>
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Tutorials</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">GEDAI Tutorials</span></li>
   </ul>
 </nav>
 </div>
@@ -453,19 +468,61 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="tutorials">
-<h1>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading">🔗</a></h1>
-<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use GEDAI (Generalized Eigenvalue De-Artifacting Instrument) to denoise EEG data. GEDAI is an unsupervised denoising method based on leadfield filtering that separates brain signals from noise and artifacts."><img alt="" src="../../_images/sphx_glr_00_gedai_thumb.png" />
-<p><a class="reference internal" href="00_gedai.html"><span class="doc">GEDAI basics</span></a></p>
-  <div class="sphx-glr-thumbnail-title">GEDAI basics</div>
+  <section id="gedai-tutorials">
+<h1>GEDAI Tutorials<a class="headerlink" href="#gedai-tutorials" title="Link to this heading">🔗</a></h1>
+<p>This gallery is organized as a learning path so users can start quickly and
+then move to advanced workflows.</p>
+<section id="how-to-use-this-gallery">
+<h2>How to use this gallery<a class="headerlink" href="#how-to-use-this-gallery" title="Link to this heading">🔗</a></h2>
+<ol class="arabic simple">
+<li><p>Start with the <code class="docutils literal notranslate"><span class="pre">basics</span></code> section to understand model behavior and core parameters.</p></li>
+<li><p>Continue with <code class="docutils literal notranslate"><span class="pre">practical</span> <span class="pre">pipelines</span></code> for recommended and reusable denoising pipelines.</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">advanced</span></code> if you want to dive into online processing and custom reference covariance workflows.</p></li>
+</ol>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"></div></section>
+</section>
+<section id="basics-understanding-gedai-models">
+<h1>Basics: Understanding GEDAI Models<a class="headerlink" href="#basics-understanding-gedai-models" title="Link to this heading">🔗</a></h1>
+<p>This section introduces the core GEDAI methods and when to use each one.</p>
+<ul class="simple">
+<li><p>How the standard <code class="docutils literal notranslate"><span class="pre">Gedai</span></code> model separates signal and noise subspaces.</p></li>
+<li><p>How <code class="docutils literal notranslate"><span class="pre">MultibandGedai</span></code> extends denoising to frequency-specific artifacts.</p></li>
+<li><p>How <code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code> adapts epoch duration across wavelet bands.</p></li>
+</ul>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="In this first tutorial, we introduce the GEDAI (Generalized Eigenvalue De-Artifacting Instrument) model. GEDAI is an unsupervised method for denoising EEG data."><img alt="" src="../../_images/sphx_glr_00_gedai_thumb.png" />
+<p><a class="reference internal" href="basics/00_gedai.html"><span class="doc">Understanding the GEDAI model</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Understanding the GEDAI model</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use multiband GEDAI. Multiband GEDAI is a frequency-specific denoising method that extends the generalized eigenvalue decomposition approach of GEDAI. Its approach focuses on isolating and removing artifacts within specific frequency bands. For that, the multiband GEDAI first decomposes the EEG data into its frequency components using wavelet transform, then applies GEDAI to each frequency band separately. Finally, the denoised frequency components are recombined to reconstruct the cleaned EEG signal."><img alt="" src="../../_images/sphx_glr_10_gedai_multiband_thumb.png" />
-<p><a class="reference internal" href="10_gedai_multiband.html"><span class="doc">GEDAI Multiband</span></a></p>
-  <div class="sphx-glr-thumbnail-title">GEDAI Multiband</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use GEDAI for online (real-time) denoising."><img alt="" src="../../_images/sphx_glr_20_gedai_online_thumb.png" />
-<p><a class="reference internal" href="20_gedai_online.html"><span class="doc">GEDAI online</span></a></p>
-  <div class="sphx-glr-thumbnail-title">GEDAI online</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use a custom covariance matrix in GEDAI derived from the leadfield of a forward solution."><img alt="" src="../../_images/sphx_glr_30_gedai_forward_thumb.png" />
-<p><a class="reference internal" href="30_gedai_forward.html"><span class="doc">GEDAI forward</span></a></p>
+<p><a class="reference internal" href="basics/10_gedai_multiband.html"><span class="doc">Understanding the multiband extension of GEDAI</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Understanding the multiband extension of GEDAI</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use Adaptive Multiband GEDAI. The method tackles the limitations of the standard multiband GEDAI  by automatically determining the optimal epoch duration for each band (i.e., wavelet level) based on the frequency content of the band. By doing so, it allows to capture both transient and sustained artifacts across different frequency ranges."><img alt="" src="../../_images/sphx_glr_30_gedai_adaptive_thumb.png" />
+<p><a class="reference internal" href="basics/30_gedai_adaptive.html"><span class="doc">Understanding the adaptive extension of multiband GEDAI</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Understanding the adaptive extension of multiband GEDAI</div>
+</div></div></section>
+<section id="practical-pipelines">
+<h1>Practical Pipelines<a class="headerlink" href="#practical-pipelines" title="Link to this heading">🔗</a></h1>
+<p>This section contains end-to-end templates designed to be copied and adapted
+to your own data.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">00_gedai_offline_pipeline.py</span></code>: recommended offline denoising pipeline.</p></li>
+</ul>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial provides a practical, end-to-end offline denoising workflow using GEDAI on EEG data."><img alt="" src="../../_images/sphx_glr_00_gedai_offline_pipeline_thumb.png" />
+<p><a class="reference internal" href="use/00_gedai_offline_pipeline.html"><span class="doc">Recommended Offline EEG Denoising Pipeline</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Recommended Offline EEG Denoising Pipeline</div>
+</div></div></section>
+<section id="advanced-workflows">
+<h1>Advanced Workflows<a class="headerlink" href="#advanced-workflows" title="Link to this heading">🔗</a></h1>
+<p>This section covers specialized workflows for users who already know the basic
+GEDAI pipeline.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">00_gedai_online.py</span></code>: online denoising with chunked/epoch-wise processing.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">10_gedai_forward.py</span></code>: building a custom reference covariance from an MNE forward model.</p></li>
+</ul>
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use GEDAI for online (real-time) denoising."><img alt="" src="../../_images/sphx_glr_00_gedai_online_thumb.png" />
+<p><a class="reference internal" href="advanced/00_gedai_online.html"><span class="doc">Using GEDAI for online (real-time) denoising</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Using GEDAI for online (real-time) denoising</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to compute a custom covariance matrix using a mne.Forward solution."><img alt="" src="../../_images/sphx_glr_10_gedai_forward_thumb.png" />
+<p><a class="reference internal" href="advanced/10_gedai_forward.html"><span class="doc">GEDAI forward</span></a></p>
   <div class="sphx-glr-thumbnail-title">GEDAI forward</div>
 </div></div><div class="toctree-wrapper compound">
 </div>
@@ -500,11 +557,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="00_gedai.html"
+       href="basics/index.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">GEDAI basics</p>
+        <p class="prev-next-title">Basics: Understanding GEDAI Models</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -514,6 +571,31 @@
             </div>
             
             
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">GEDAI Tutorials</a><ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#how-to-use-this-gallery">How to use this gallery</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#basics-understanding-gedai-models">Basics: Understanding GEDAI Models</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#practical-pipelines">Practical Pipelines</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-workflows">Advanced Workflows</a></li>
+</ul>
+
+  </nav></div>
+
+</div></div>
               
             
           </div>
@@ -526,8 +608,8 @@
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=0790524f97105ba85085"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=0790524f97105ba85085"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -553,7 +635,7 @@
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.18.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
 </p></div>
       
     </div>
