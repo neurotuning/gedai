@@ -79,7 +79,7 @@ reject_by_annotation = False  # default
 # The dfault ``leadfield`` option uses a covariance matrix 
 # based on a generic head model and the standard 10-20 montage.
 # It is possible to use a custom reference covariance matrix instead,
-# for example, by using the :func:`~gedai.gedai.compute_covariance_from_forward`
+# for example, by using the :func:`~gedai.covariance.compute_covariance_from_forward`
 # function. This topic is covered in the ``advanced`` section of the tutorials.
 
 reference_cov = "leadfield"
