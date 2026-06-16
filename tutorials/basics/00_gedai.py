@@ -16,25 +16,16 @@ unsupervised method for denoising EEG data.
 
 # %%
 import matplotlib.pyplot as plt
-from mne.datasets import eegbci
-from mne.io import concatenate_raws, read_raw_edf
+from mne.io import read_raw
 
 from gedai import Gedai
 from gedai.viz import plot_mne_style_overlay_interactive
-
+from gedai.data import get_contaminated_eeg_set_path
 
 # %%
 # The GEDAI model can be fitted on :class:`~mne.io.Raw` or :class:`~mne.Epochs` objects.
-# In this tutorial, we will use a sample EEG dataset from the PhysioNet EEG Motor Movement/Imagery Dataset.
-
-subjects = [1]  # may vary
-runs = [4]  # may vary
-raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
-raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
-# Concatenate runs from the same subject
-raw = concatenate_raws(raws)
-# Make channel names follow standard conventions
-eegbci.standardize(raw)
+# %% Load sample EEG data
+raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
 #%%
 # For simplicity, we will only use the first 30 seconds of the data in this tutorial.
@@ -42,7 +33,6 @@ eegbci.standardize(raw)
 # as this allows the model to better capture the noise characteristics of the data.
 
 raw.crop(0, 30)
-raw.pick("eeg").load_data().apply_proj()
 
 #%%
 # GEDAI will automatically apply an average reference before fitting or transforming the data.

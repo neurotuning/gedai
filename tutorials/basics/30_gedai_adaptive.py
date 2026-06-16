@@ -1,14 +1,25 @@
 """
-The GEDAI adaptive Multiband model
-====================================
+Understanding the adaptive extension of multiband GEDAI 
+=======================================================
 
-This tutorial 
+This tutorial demonstrates how to use ``Adaptive Multiband GEDAI``.
+The method tackles the limitations of the standard multiband ``GEDAI`` 
+by automatically determining the optimal epoch duration for each
+band (i.e., wavelet level) based on the frequency content of the band.
+By doing so, it allows to capture both transient and sustained artifacts
+across different frequency ranges.
 """
 
 # %%
-import matplotlib.pyplot as plt
+# .. note::
+#
+#     This purpose of this tutorial is to explain the differrent parameters of the :class:`~gedai.gedai.AdaptiveMultibandGedai` 
+#     model to get a better understanding of the underlying algorithm. If you want to learn how to use ``Adaptive Multiband GEDAI`` 
+#     in a practical, end-to-end offline denoising workflow, please refer to the
+#     :ref:`Practical Pipelines <sphx_glr_generated_tutorials_use>` section.
 
-from mne.io import concatenate_raws, read_raw
+# %%
+from mne.io import read_raw
 
 from gedai import AdaptiveMultibandGedai, Gedai
 from gedai.data import get_contaminated_eeg_set_path
@@ -16,10 +27,18 @@ from gedai.viz import plot_mne_style_overlay_interactive
 
 n_jobs = -1
 
-# %% Load sample EEG data                        n_jobs=n_jobs,
+# %% Load sample EEG data                 
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 raw.filter(l_freq=0.5, h_freq=None, n_jobs=n_jobs)
+
 #%%
+# For simplicity, we will only use the first 30 seconds of the data in this tutorial.
+# In practice, it is recommended to use the full recording for fitting the GEDAI model, 
+# as this allows the model to better capture the noise characteristics of the data.
+
+raw.crop(0, 30)
+
+# %%
 # Before using the ``AdaptiveMultibandGedai`` model,
 # it is recommended to first apply the broadband :class:`~gedai.gedai.Gedai` model
 # to remove large artifacts while preserving most of the neural signals.

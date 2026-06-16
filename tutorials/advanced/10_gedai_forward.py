@@ -12,7 +12,7 @@ import mne
 from mne.datasets import eegbci, fetch_fsaverage
 
 from gedai import Gedai, MultibandGedai
-from gedai.gedai.covariances import compute_covariance_from_forward
+from gedai.covariance import compute_covariance_from_forward
 from gedai.viz import plot_mne_style_overlay_interactive
 
 # %%

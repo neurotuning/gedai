@@ -16,7 +16,7 @@ from ..sensai.sensai import (
 from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
-from .covariances import _ensure_cov, _pick_cov
+from ..covariance.covariance import _ensure_cov, _pick_cov
 
 
 def create_cosine_weights(n_samples):

@@ -37,11 +37,6 @@ for key in _KEYS_MNE:
 del key
 
 # Override n_jobs to avoid fragile intersphinx resolution of joblib in some builds.
-docdict["n_jobs"] = """
-n_jobs : int | None
-    The number of jobs to run in parallel. If ``-1``, use all available CPU cores.
-    If ``1`` or ``None``, computations are run serially."""
-
 # -- A ---------------------------------------------------------------------------------
 # -- B ---------------------------------------------------------------------------------
 # -- C ---------------------------------------------------------------------------------
@@ -64,6 +59,10 @@ duration : float
 # -- L ---------------------------------------------------------------------------------
 # -- M ---------------------------------------------------------------------------------
 # -- N ---------------------------------------------------------------------------------
+docdict["n_jobs"] = """
+n_jobs : int | None
+    The number of jobs to run in parallel. If ``-1``, use all available CPU cores.
+    If ``1`` or ``None``, computations are run serially."""
 docdict["noise_multiplier"] = """
 noise_multiplier : float
     The noise multiplier to use for artefact threshold rejection optimization."""
@@ -90,7 +89,7 @@ reference_cov : str | mne.Covariance
     The precomputed covariance if computed from a leadfield made using 1005 EEG channels
     layout and fsaverage head model.
     If :class:`mne.Covariance`, use a pre-computed covariance.
-    See :func:`~gedai.gedai.compute_covariance_from_forward` for more details on how
+    See :func:`~gedai.covariance.compute_covariance_from_forward` for more details on how
     compute a covariance from a forward solution."""
 docdict["reject_by_annotation"] = """
 reject_by_annotation : bool

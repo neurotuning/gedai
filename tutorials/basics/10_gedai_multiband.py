@@ -1,6 +1,6 @@
 """
-Understanding the spectral extension of GEDAI 
-=============================================
+Understanding the multiband extension of GEDAI 
+==============================================
 
 This tutorial demonstrates how to use multiband ``GEDAI``.
 ``Multiband GEDAI`` is a frequency-specific denoising method that extends the
@@ -13,31 +13,31 @@ components are recombined to reconstruct the cleaned EEG signal.
 """
 
 # %%
+# .. note::
+#
+#     This purpose of this tutorial is to explain the differrent parameters of the :class:`~gedai.gedai.MultibandGedai` 
+#     model to get a better understanding of the underlying algorithm. If you want to learn how to use ``Multiband GEDAI`` 
+#     in a practical, end-to-end offline denoising workflow, please refer to the
+#     :ref:`Practical Pipelines <sphx_glr_generated_tutorials_use>` section.
+#
+# %%
 import matplotlib.pyplot as plt
-from mne.datasets import eegbci
-from mne.io import concatenate_raws, read_raw_edf
+from mne.io import read_raw
 
-from gedai import Gedai, MultibandGedai
+from gedai.data import get_contaminated_eeg_set_path
+from gedai import MultibandGedai
 from gedai.viz import plot_mne_style_overlay_interactive
 
 n_jobs = -1
 # %% Load sample EEG data
-subjects = [1]  # may vary
-runs = [4]  # may vary
-raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
-raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
-# Concatenate runs from the same subject
-raw = concatenate_raws(raws)
-# Make channel names follow standard conventions
-eegbci.standardize(raw)
+raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
-# Crop to the first 15 seconds for demonstration purposes
-# (Remove or adjust this for full data analysis)
-raw.crop(0, 15)
-raw.pick("eeg").load_data().apply_proj()
+#%%
+# For simplicity, we will only use the first 30 seconds of the data in this tutorial.
+# In practice, it is recommended to use the full recording for fitting the GEDAI model, 
+# as this allows the model to better capture the noise characteristics of the data.
 
-# Apply average reference (standard preprocessing for EEG)
-raw.set_eeg_reference("average", projection=False)
+raw.crop(0, 30)
 
 # %%
 # GEDAI
@@ -103,32 +103,3 @@ denoised_raw = multiband_gedai.transform_raw(raw,
 #       estimated during the fitting process.
 
 plot_mne_style_overlay_interactive(raw, denoised_raw)
-
-
-# %%
-# Recommended pipeline
-# --------------------
-#
-# For optimal results, we recommend to first fit the standard ``GEDAI`` on
-# broadband data with a conservative ``noise_multiplier`` (e.g., ``6.0``) to
-# preserve most neural signals while only removing large artifacts. Then, use
-# the resulting cleaned data to fit the ``Multiband GEDAI`` model. This two-step
-# approach leverages the strengths of both methods, ensuring effective artifact
-# removal while maintaining the integrity of neural signals across different
-# frequency bands.
-
-broadband_gedai = Gedai()
-broadband_gedai.fit_raw(raw,
-                        n_jobs=n_jobs,
-                        noise_multiplier=6.0)
-broadband_denoised_raw = broadband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
-
-multiband_gedai = MultibandGedai(
-    wavelet_type="haar", wavelet_level=8
-)
-multiband_gedai.fit_raw(broadband_denoised_raw, n_jobs=n_jobs, noise_multiplier=3.0, wavelet_low_cutoff=2)
-multiband_denoised_raw = multiband_gedai.transform_raw(
-    broadband_denoised_raw, n_jobs=n_jobs, verbose=False
-)
-
-plot_mne_style_overlay_interactive(raw, multiband_denoised_raw)

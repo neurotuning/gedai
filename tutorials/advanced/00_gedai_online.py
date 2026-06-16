@@ -7,25 +7,17 @@ This tutorial demonstrates how to use ``GEDAI`` for online (real-time) denoising
 
 # %%
 from mne import make_fixed_length_epochs
-from mne.datasets import eegbci
-from mne.io import concatenate_raws, read_raw_edf
+from mne.io import read_raw
 
 from gedai import Gedai
+from gedai.data import get_contaminated_eeg_set_path
 
 # %% Load sample EEG data
-subjects = [1]  # may vary
-runs = [4]  # may vary
-raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
-raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
-# Concatenate runs from the same subject
-raw = concatenate_raws(raws)
-# Make channel names follow standard conventions
-eegbci.standardize(raw)
+raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
 # Crop to the first 15 seconds for demonstration purposes
 # (Remove or adjust this for full data analysis)
 raw.crop(0, 30)
-raw.pick("eeg").load_data().apply_proj()
 
 # Apply average reference (standard preprocessing for EEG)
 raw.set_eeg_reference("average", projection=False)
