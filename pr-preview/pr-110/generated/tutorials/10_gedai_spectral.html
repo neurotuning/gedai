@@ -1,0 +1,1063 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>GEDAI spectral &#8212; gedai</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=a95f357e85573c9b56d5" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=fd6457a4" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/style.css?v=0bd98ae2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../_static/scripts/fontawesome.js?digest=a95f357e85573c9b56d5"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
+
+    <script src="../../_static/documentation_options.js?v=6d34cbbb"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/10_gedai_spectral';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.19.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="GEDAI online" href="20_gedai_online.html" />
+    <link rel="prev" title="GEDAI basics" href="00_gedai.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../_static/searchtools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <script src="../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is in early development, and has not yet reached a stable version Use for testing only.</div>
+</aside>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">gedai</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../index.html">
+    GEDAI
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/index.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API References
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../license/index.html">
+    License
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../dev/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../index.html">
+    GEDAI
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../install/index.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../api/index.html">
+    API References
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="index.html">
+    Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../license/index.html">
+    License
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../dev/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar"><svg class="pst-icon svg-inline--fa" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="00_gedai.html">GEDAI basics</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">GEDAI spectral</a></li>
+<li class="toctree-l1"><a class="reference internal" href="20_gedai_online.html">GEDAI online</a></li>
+<li class="toctree-l1"><a class="reference internal" href="30_gedai_forward.html">GEDAI forward</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Tutorials</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">GEDAI spectral</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-generated-tutorials-10-gedai-spectral-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="gedai-spectral">
+<span id="sphx-glr-generated-tutorials-10-gedai-spectral-py"></span><h1>GEDAI spectral<a class="headerlink" href="#gedai-spectral" title="Link to this heading">🔗</a></h1>
+<p>This tutorial demonstrates how to use spectral <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code>.
+<code class="docutils literal notranslate"><span class="pre">Spectral</span> <span class="pre">GEDAI</span></code> is a frequency-specific denoising method that extends the
+generalized eigenvalue decomposition approach of <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code>.
+Its approach focuses on isolating and removing artifacts within specific
+frequency bands. For that, the spectral <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> first decomposes the EEG
+data into its frequency components using wavelet transform, then applies
+<code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> to each frequency band separately. Finally, the denoised frequency
+components are recombined to reconstruct the cleaned EEG signal.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mne.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">eegbci</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mne.io</span><span class="w"> </span><span class="kn">import</span> <a href="https://mne.tools/stable/generated/mne.concatenate_raws.html#mne.concatenate_raws" title="mne.concatenate_raws" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">concatenate_raws</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.io.read_raw_edf.html#mne.io.read_raw_edf" title="mne.io.read_raw_edf" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function"><span class="n">read_raw_edf</span></a>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <span class="n">Gedai</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gedai.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_mne_style_overlay_interactive</span>
+</pre></div>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># may vary</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">runs</span></a> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">12</span><span class="p">]</span>  <span class="c1"># may vary</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_fnames</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.datasets.eegbci.load_data.html#mne.datasets.eegbci.load_data" title="mne.datasets.eegbci.load_data" class="sphx-glr-backref-module-mne-datasets-eegbci sphx-glr-backref-type-py-function"><span class="n">eegbci</span><span class="o">.</span><span class="n">load_data</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">runs</span></a><span class="p">,</span> <span class="n">update_path</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raws</span></a> <span class="o">=</span> <span class="p">[</span><a href="https://mne.tools/stable/generated/mne.io.read_raw_edf.html#mne.io.read_raw_edf" title="mne.io.read_raw_edf" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function"><span class="n">read_raw_edf</span></a><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_fnames</span></a><span class="p">]</span>
+<span class="c1"># Concatenate runs from the same subject</span>
+<span class="n">raw</span> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.concatenate_raws.html#mne.concatenate_raws" title="mne.concatenate_raws" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">concatenate_raws</span></a><span class="p">(</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raws</span></a><span class="p">)</span>
+<span class="c1"># Make channel names follow standard conventions</span>
+<a href="https://mne.tools/stable/generated/mne.datasets.eegbci.standardize.html#mne.datasets.eegbci.standardize" title="mne.datasets.eegbci.standardize" class="sphx-glr-backref-module-mne-datasets-eegbci sphx-glr-backref-type-py-function"><span class="n">eegbci</span><span class="o">.</span><span class="n">standardize</span></a><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+
+<span class="c1"># Crop to the first 15 seconds for demonstration purposes</span>
+<span class="c1"># (Remove or adjust this for full data analysis)</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">)</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="s2">&quot;eeg&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span><span class="o">.</span><span class="n">apply_proj</span><span class="p">()</span>
+
+<span class="c1"># Apply average reference (standard preprocessing for EEG)</span>
+<span class="n">raw</span><span class="o">.</span><span class="n">set_eeg_reference</span><span class="p">(</span><span class="s2">&quot;average&quot;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="output_subarea output_html rendered_html output_result">
+<script type="text/javascript">
+    // must be `var` (not `const`) because this can get embedded multiple times on a page
+var toggleVisibility = (className) => {
+
+    const elements = document.querySelectorAll(`.${className}`);
+
+    elements.forEach(element => {
+        if (element.classList.contains("mne-repr-section-header")) {
+            return  // Don't collapse the section header row
+        }
+        element.classList.toggle("mne-repr-collapsed");
+    });
+
+    // trigger caret to rotate
+    var sel = `.mne-repr-section-header.${className} > th.mne-repr-section-toggle > button`;
+    const button = document.querySelector(sel);
+    button.classList.toggle("collapsed");
+
+    // adjust tooltip
+    sel = `tr.mne-repr-section-header.${className}`;
+    const secHeadRow = document.querySelector(sel);
+    secHeadRow.classList.toggle("collapsed");
+    secHeadRow.title = secHeadRow.title === "Hide section" ? "Show section" : "Hide section";
+}
+</script>
+
+<style type="text/css">
+    /*
+Styles in this section apply both to the sphinx-built website docs and to notebooks
+rendered in an IDE or in Jupyter. In our web docs, styles here are complemented by
+doc/_static/styles.css and other CSS files (e.g. from the sphinx theme, sphinx-gallery,
+or bootstrap). In IDEs/Jupyter, those style files are unavailable, so only the rules in
+this file apply (plus whatever default styling the IDE applies).
+*/
+.mne-repr-table {
+    display: inline;  /* prevent using full container width */
+}
+.mne-repr-table tr.mne-repr-section-header > th {
+    padding-top: 1rem;
+    text-align: left;
+    vertical-align: middle;
+}
+.mne-repr-section-toggle > button {
+    all: unset;
+    display: block;
+    height: 1rem;
+    width: 1rem;
+}
+.mne-repr-section-toggle > button > svg {
+    height: 60%;
+}
+
+/* transition (rotation) effects on the collapser button */
+.mne-repr-section-toggle > button.collapsed > svg {
+    transition: 0.1s ease-out;
+    transform: rotate(-90deg);
+}
+.mne-repr-section-toggle > button:not(.collapsed) > svg {
+    transition: 0.1s ease-out;
+    transform: rotate(0deg);
+}
+
+/* hide collapsed table rows */
+.mne-repr-collapsed {
+    display: none;
+}
+
+
+@layer {
+    /*
+    Selectors in a `@layer` will always be lower-precedence than selectors outside the
+    layer. So even though e.g. `div.output_html` is present in the sphinx-rendered
+    website docs, the styles here won't take effect there as long as some other rule
+    somewhere in the page's CSS targets the same element.
+
+    In IDEs or Jupyter notebooks, though, the CSS files from the sphinx theme,
+    sphinx-gallery, and bootstrap are unavailable, so these styles will apply.
+
+    Notes:
+
+    - the selector `.accordion-body` is for MNE Reports
+    - the selector `.output_html` is for VSCode's notebook interface
+    - the selector `.jp-RenderedHTML` is for Jupyter notebook
+    - variables starting with `--theme-` are VSCode-specific.
+    - variables starting with `--jp-` are Jupyter styles, *some of which* are also
+      available in VSCode. Here we try the `--theme-` variable first, then fall back to
+      the `--jp-` ones.
+    */
+    .mne-repr-table {
+        --mne-toggle-color: var(--theme-foreground, var(--jp-ui-font-color1));
+        --mne-button-bg-color: var(--theme-button-background, var(--jp-info-color0, var(--jp-content-link-color)));
+        --mne-button-fg-color: var(--theme-button-foreground, var(--jp-ui-inverse-font-color0, var(--jp-editor-background)));
+        --mne-button-hover-bg-color: var(--theme-button-hover-background, var(--jp-info-color1));
+        --mne-button-radius: var(--jp-border-radius, 0.25rem);
+    }
+    /* chevron position/alignment; in VSCode it looks ok without adjusting */
+    .accordion-body .mne-repr-section-toggle > button,
+    .jp-RenderedHTML .mne-repr-section-toggle > button {
+        padding: 0 0 45% 25% !important;
+    }
+    /* chevron color; MNE Report doesn't have light/dark mode */
+    div.output_html .mne-repr-section-toggle > button > svg > path,
+    .jp-RenderedHTML .mne-repr-section-toggle > button > svg > path {
+        fill: var(--mne-toggle-color);
+    }
+    .accordion-body .mne-ch-names-btn,
+    div.output_html .mne-ch-names-btn,
+    .jp-RenderedHTML .mne-ch-names-btn {
+        -webkit-border-radius: var(--mne-button-radius);
+        -moz-border-radius: var(--mne-button-radius);
+        border-radius: var(--mne-button-radius);
+        border: none;
+        background-image: none;
+        background-color: var(--mne-button-bg-color);
+        color: var(--mne-button-fg-color);
+        font-size: inherit;
+        min-width: 1.5rem;
+        padding: 0.25rem;
+        text-align: center;
+        text-decoration: none;
+    }
+    .accordion-body .mne-ch-names-btn:hover,
+    div.output_html .mne.ch-names-btn:hover,
+    .jp-RenderedHTML .mne-ch-names-btn:hover {
+        background-color: var(--mne-button-hover-bg-color);
+        text-decoration: underline;
+    }
+    .accordion-body .mne-ch-names-btn:focus-visible,
+    div.output_html .mne-ch-names-btn:focus-visible,
+    .jp-RenderedHTML .mne-ch-names-btn:focus-visible {
+        outline: 0.1875rem solid var(--mne-button-bg-color) !important;
+        outline-offset: 0.1875rem !important;
+    }
+}
+</style>
+
+
+
+<table class="table mne-repr-table">
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header general-65197ce9-6580-457f-af67-e4b991d3af57"
+     title="Hide section"
+    onclick="toggleVisibility('general-65197ce9-6580-457f-af67-e4b991d3af57')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>General</strong>
+    </th>
+</tr>
+
+
+<tr class="repr-element general-65197ce9-6580-457f-af67-e4b991d3af57 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Filename(s)</td>
+    <td>
+
+        S001R04.edf
+
+
+    </td>
+</tr>
+
+<tr class="repr-element general-65197ce9-6580-457f-af67-e4b991d3af57 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>MNE object type</td>
+    <td>RawEDF</td>
+</tr>
+<tr class="repr-element general-65197ce9-6580-457f-af67-e4b991d3af57 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Measurement date</td>
+
+    <td>2009-08-12 at 16:15:00 UTC</td>
+
+</tr>
+<tr class="repr-element general-65197ce9-6580-457f-af67-e4b991d3af57 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Participant</td>
+
+
+    <td>X</td>
+
+
+</tr>
+<tr class="repr-element general-65197ce9-6580-457f-af67-e4b991d3af57 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Experimenter</td>
+
+    <td>Unknown</td>
+
+</tr>
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header acquisition-9f476e42-4522-47bd-991a-64f7ee915697"
+     title="Hide section"
+    onclick="toggleVisibility('acquisition-9f476e42-4522-47bd-991a-64f7ee915697')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>Acquisition</strong>
+    </th>
+</tr>
+
+
+<tr class="repr-element acquisition-9f476e42-4522-47bd-991a-64f7ee915697 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Duration</td>
+    <td>00:00:16 (HH:MM:SS)</td>
+</tr>
+
+
+
+
+
+
+
+
+<tr class="repr-element acquisition-9f476e42-4522-47bd-991a-64f7ee915697 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Sampling frequency</td>
+    <td>160.00 Hz</td>
+</tr>
+
+
+<tr class="repr-element acquisition-9f476e42-4522-47bd-991a-64f7ee915697 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Time points</td>
+    <td>2,401</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header channels-afa23256-c199-4c15-94d8-1f058ba5cfa3"
+     title="Hide section"
+    onclick="toggleVisibility('channels-afa23256-c199-4c15-94d8-1f058ba5cfa3')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>Channels</strong>
+    </th>
+</tr>
+
+
+
+<tr class="repr-element channels-afa23256-c199-4c15-94d8-1f058ba5cfa3 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>EEG</td>
+    <td>
+        <button class="mne-ch-names-btn sd-sphinx-override sd-btn sd-btn-info sd-text-wrap sd-shadow-sm" onclick="alert('Good EEG:\n\nFC5, FC3, FC1, FCz, FC2, FC4, FC6, C5, C3, C1, Cz, C2, C4, C6, CP5, CP3, CP1, CPz, CP2, CP4, CP6, Fp1, Fpz, Fp2, AF7, AF3, AFz, AF4, AF8, F7, F5, F3, F1, Fz, F2, F4, F6, F8, FT7, FT8, T7, T8, T9, T10, TP7, TP8, P7, P5, P3, P1, Pz, P2, P4, P6, P8, PO7, PO3, POz, PO4, PO8, O1, Oz, O2, Iz')" title="(Click to open in popup)&#13;&#13;FC5, FC3, FC1, FCz, FC2, FC4, FC6, C5, C3, C1, Cz, C2, C4, C6, CP5, CP3, CP1, CPz, CP2, CP4, CP6, Fp1, Fpz, Fp2, AF7, AF3, AFz, AF4, AF8, F7, F5, F3, F1, Fz, F2, F4, F6, F8, FT7, FT8, T7, T8, T9, T10, TP7, TP8, P7, P5, P3, P1, Pz, P2, P4, P6, P8, PO7, PO3, POz, PO4, PO8, O1, Oz, O2, Iz">
+            64
+        </button>
+
+
+    </td>
+</tr>
+
+
+<tr class="repr-element channels-afa23256-c199-4c15-94d8-1f058ba5cfa3 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Head & sensor digitization</td>
+
+    <td>Not available</td>
+
+</tr>
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header filters-483d6ba1-f21a-4f89-9a51-462c978a510f"
+     title="Hide section"
+    onclick="toggleVisibility('filters-483d6ba1-f21a-4f89-9a51-462c978a510f')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>Filters</strong>
+    </th>
+</tr>
+
+
+<tr class="repr-element filters-483d6ba1-f21a-4f89-9a51-462c978a510f ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Highpass</td>
+    <td>0.00 Hz</td>
+</tr>
+
+
+<tr class="repr-element filters-483d6ba1-f21a-4f89-9a51-462c978a510f ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Lowpass</td>
+    <td>80.00 Hz</td>
+</tr>
+
+
+</table>
+</div>
+<br />
+<br /><section id="gedai">
+<h2>GEDAI<a class="headerlink" href="#gedai" title="Link to this heading">🔗</a></h2>
+<p>To use <code class="docutils literal notranslate"><span class="pre">spectral</span> <span class="pre">GEDAI</span></code>, we initialize the <a class="reference internal" href="../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.gedai.Gedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">Gedai</span></code></a>
+object by specifying the <code class="docutils literal notranslate"><span class="pre">wavelet_levels</span></code> parameter, which defines the
+number of frequency bands to decompose the EEG data into. Each level
+corresponds to a specific frequency band, allowing for targeted denoising
+within those bands. It is also possible to define the type of wavelet used
+for the decomposition by setting the <code class="docutils literal notranslate"><span class="pre">wavelet_type</span></code> parameter.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">gedai</span> <span class="o">=</span> <span class="n">Gedai</span><span class="p">(</span><span class="n">wavelet_type</span><span class="o">=</span><span class="s2">&quot;haar&quot;</span><span class="p">,</span> <span class="n">wavelet_level</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-fitting">
+<h2>Model Fitting<a class="headerlink" href="#model-fitting" title="Link to this heading">🔗</a></h2>
+<p>The fitting process of <code class="docutils literal notranslate"><span class="pre">spectral</span> <span class="pre">GEDAI</span></code> is similar to that of the standard
+<code class="docutils literal notranslate"><span class="pre">GEDAI</span></code>. For each wavelet level (i.e., frequency band), the fitting process
+estimates the optimal threshold to distinguish between signal and noise
+components.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">gedai</span><span class="o">.</span><span class="n">fit_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>    343 x 343 full covariance (kind = 1) found.
+Not setting metadata
+29 matching events found
+No baseline correction applied
+0 projection items activated
+Using data from preloaded Raw for 29 events and 160 original time points ...
+0 bad epochs dropped
+[gedai.fit_epochs] INFO: Setting average reference.
+EEG channel type selected for re-referencing
+Applying average reference.
+Applying a custom (&#39;EEG&#39;,) reference.
+[gedai.fit_epochs] INFO: Alpha range detected (5.0-10.0 Hz): extending minThreshold to -6
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Since <code class="docutils literal notranslate"><span class="pre">spectral</span> <span class="pre">GEDAI</span></code> uses spectral decomposition, the fitting
+process will automatically adjust the epoch duration to ensure that
+each epoch contains a number of samples appropriate for the wavelet
+decomposition.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fig</span></a> <span class="o">=</span> <span class="n">gedai</span><span class="o">.</span><span class="n">plot_fit</span><span class="p">()</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
+</pre></div>
+</div>
+<ul class="sphx-glr-horizontal">
+<li><img src="../../_images/sphx_glr_10_gedai_spectral_001.png" srcset="../../_images/sphx_glr_10_gedai_spectral_001.png" alt="Band 1: 0.00-2.50 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_10_gedai_spectral_002.png" srcset="../../_images/sphx_glr_10_gedai_spectral_002.png" alt="Band 2: 2.50-5.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_10_gedai_spectral_003.png" srcset="../../_images/sphx_glr_10_gedai_spectral_003.png" alt="Band 3: 5.00-10.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_10_gedai_spectral_004.png" srcset="../../_images/sphx_glr_10_gedai_spectral_004.png" alt="Band 4: 10.00-20.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_10_gedai_spectral_005.png" srcset="../../_images/sphx_glr_10_gedai_spectral_005.png" alt="Band 5: 20.00-40.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../_images/sphx_glr_10_gedai_spectral_006.png" srcset="../../_images/sphx_glr_10_gedai_spectral_006.png" alt="Band 6: 40.00-80.00 Hz" class = "sphx-glr-multi-img"/></li>
+</ul>
+</section>
+<section id="transform-the-data-denoising">
+<h2>Transform the Data (Denoising)<a class="headerlink" href="#transform-the-data-denoising" title="Link to this heading">🔗</a></h2>
+<p>Once fitted, the <code class="docutils literal notranslate"><span class="pre">Spectral</span> <span class="pre">GEDAI</span></code> model can be used to remove artifacts
+and noise from the data. The transform operation projects out the noise
+components while preserving the brain signals for each frequency band
+separately before recombining them.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_corrected</span></a> <span class="o">=</span> <span class="n">gedai</span><span class="o">.</span><span class="n">transform_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Since the <code class="docutils literal notranslate"><span class="pre">spectral</span> <span class="pre">GEDAI</span></code> operates on epoched data internally,
+some frequency content more particularly in lower frequency bands may
+be not be captured properly if the epoch duration is too short. On the
+other hand, using very long epochs may prevent to capture short
+transient artifacts. Setting the <code class="docutils literal notranslate"><span class="pre">wavelet_low_cutoff</span></code> parameter to a
+value of the order of <code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">/</span> <span class="pre">epoch_duration</span></code> can help mitigate this
+issue by excluding lower frequency bands that may not be well
+estimated during the fitting process.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">plot_mne_style_overlay_interactive</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_corrected</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_10_gedai_spectral_007.png" srcset="../../_images/sphx_glr_10_gedai_spectral_007.png" alt="10 gedai spectral" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x3600 with 1 Axes&gt;, &lt;Axes: xlabel=&#39;Time (s)&#39;, ylabel=&#39;Channels&#39;&gt;)
+</pre></div>
+</div>
+</section>
+<section id="recommended-pipeline">
+<h2>Recommended pipeline<a class="headerlink" href="#recommended-pipeline" title="Link to this heading">🔗</a></h2>
+<p>For optimal results, we recommend to first fit the standard <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> on
+broadband data with a conservative <code class="docutils literal notranslate"><span class="pre">noise_multiplier</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">6.0</span></code>) to
+preserve most neural signals while only removing large artifacts. Then, use
+the resulting cleaned data to fit the <code class="docutils literal notranslate"><span class="pre">spectral</span> <span class="pre">GEDAI</span></code> model. This two-step
+approach leverages the strengths of both methods, ensuring effective artifact
+removal while maintaining the integrity of neural signals across different
+frequency bands.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">gedai_broadband</span> <span class="o">=</span> <span class="n">Gedai</span><span class="p">()</span>
+<span class="n">gedai_broadband</span><span class="o">.</span><span class="n">fit_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">noise_multiplier</span><span class="o">=</span><span class="mf">6.0</span><span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_broadband_corrected</span></a> <span class="o">=</span> <span class="n">gedai_broadband</span><span class="o">.</span><span class="n">transform_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="n">gedai_spectral</span> <span class="o">=</span> <span class="n">Gedai</span><span class="p">(</span><span class="n">wavelet_type</span><span class="o">=</span><span class="s2">&quot;haar&quot;</span><span class="p">,</span> <span class="n">wavelet_level</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">wavelet_low_cutoff</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">gedai_spectral</span><span class="o">.</span><span class="n">fit_raw</span><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_broadband_corrected</span></a><span class="p">,</span> <span class="n">noise_multiplier</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_spectral_corrected</span></a> <span class="o">=</span> <span class="n">gedai_spectral</span><span class="o">.</span><span class="n">transform_raw</span><span class="p">(</span>
+    <a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_broadband_corrected</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+
+<span class="n">plot_mne_style_overlay_interactive</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_spectral_corrected</span></a><span class="p">)</span>
+</pre></div>
+</div>
+<img src="../../_images/sphx_glr_10_gedai_spectral_008.png" srcset="../../_images/sphx_glr_10_gedai_spectral_008.png" alt="10 gedai spectral" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x3600 with 1 Axes&gt;, &lt;Axes: xlabel=&#39;Time (s)&#39;, ylabel=&#39;Channels&#39;&gt;)
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (3 minutes 13.744 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  325 MB</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-10-gedai-spectral-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/dcc79dcf90a087608f8cb66aec2ce475/10_gedai_spectral.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_spectral.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/1ac77d28231b829cc76a8690449603d4/10_gedai_spectral.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">10_gedai_spectral.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/8b41dc3669420925143a6b25b9dc1aea/10_gedai_spectral.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">10_gedai_spectral.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="00_gedai.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">GEDAI basics</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="20_gedai_online.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">GEDAI online</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai">GEDAI</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-fitting">Model Fitting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform-the-data-denoising">Transform the Data (Denoising)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recommended-pipeline">Recommended pipeline</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Neurotuning.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.19.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
