@@ -1,15 +1,14 @@
 """Tests for multiband GEDAI."""
 
 import mne
-import pytest
 from mne import make_fixed_length_epochs
+
 from gedai import MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.gedai.multiband import (
     compute_closest_valid_duration,
     compute_required_duration,
 )
-
 
 raw_fname = get_contaminated_eeg_set_path()
 raw = mne.io.read_raw(raw_fname, preload=True)
@@ -44,11 +43,9 @@ def test_multiband_fit_transform_raw():
 
 def test_multiband_low_cutoff_marks_ignored_bands():
     """Low cutoff should mark at least one low-frequency band as ignored."""
-    model = MultibandGedai(
-        wavelet_type="haar", wavelet_level=wavelet_level
-    )
+    model = MultibandGedai(wavelet_type="haar", wavelet_level=wavelet_level)
 
-    model.fit_epochs(epochs_eeg,  wavelet_low_cutoff=5.0, n_jobs=1)
+    model.fit_epochs(epochs_eeg, wavelet_low_cutoff=5.0, n_jobs=1)
     ignored = [fit["ignore"] for fit in model._wavelets_fits]
     assert any(ignored)
     assert any(not flag for flag in ignored)

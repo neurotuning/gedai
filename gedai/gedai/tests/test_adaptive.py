@@ -1,8 +1,8 @@
 """Tests for Adaptive multiband GEDAI."""
 
-import pytest
 import mne
 from mne import make_fixed_length_epochs
+
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.gedai.adaptive import AdaptiveMultibandGedai
 
@@ -13,6 +13,7 @@ wavelet_level = 8
 
 
 def test_adaptive_fit_raw_():
+    """Fit the adaptive model on the bundled raw sample."""
     model = AdaptiveMultibandGedai(
         wavelet_type="haar",
         wavelet_level=wavelet_level,

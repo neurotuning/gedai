@@ -89,13 +89,13 @@ reference_cov : str | mne.Covariance
     The precomputed covariance if computed from a leadfield made using 1005 EEG channels
     layout and fsaverage head model.
     If :class:`mne.Covariance`, use a pre-computed covariance.
-    See :func:`~gedai.covariance.compute_covariance_from_forward` for more details on how
-    compute a covariance from a forward solution."""
+    See :func:`~gedai.covariance.compute_covariance_from_forward` for more
+    details on how to compute a covariance from a forward solution."""
 docdict["reject_by_annotation"] = """
 reject_by_annotation : bool
     Whether annotated bad segments should be rejected.
-    It is recommended to set this to ``False`` for fitting. since
-    the algorithm needs to learn  from bad segments.
+    It is recommended to set this to ``False`` for fitting, since the
+    algorithm needs to learn from bad segments.
     The default is ``False``."""
 # -- S ---------------------------------------------------------------------------------
 docdict["sensai_method"] = """

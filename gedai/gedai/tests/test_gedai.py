@@ -1,13 +1,11 @@
 """Test Gedai."""
 
-import pytest
 import mne
+import pytest
 from mne import make_fixed_length_epochs
-from mne.datasets import testing
-from gedai.data import (
-    get_contaminated_eeg_set_path
-)
+
 from gedai import Gedai
+from gedai.data import get_contaminated_eeg_set_path
 
 raw_fname = get_contaminated_eeg_set_path()
 raw = mne.io.read_raw(raw_fname, preload=True)

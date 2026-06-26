@@ -4,22 +4,23 @@ from mne import BaseEpochs
 from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 
+from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
-from ..covariance.covariance import _ensure_cov, _pick_cov
 from .gedai import Gedai, create_cosine_weights
 
 
 def _ensure_wavelet_low_cutoff(wavelet_low_cutoff, filter_highpass, epoch_duration):
-    duration_highpass = 2 / epoch_duration # 2 cycles  
+    duration_highpass = 2 / epoch_duration  # 2 cycles
     if wavelet_low_cutoff == "auto":
         if filter_highpass > duration_highpass:
             logger.info(
                 f"Setting wavelet_low_cutoff to {filter_highpass} Hz based on "
                 f"high-pass filter cutoff frequency in data info"
-                f" (info['highpass'] = {filter_highpass} Hz).")
+                f" (info['highpass'] = {filter_highpass} Hz)."
+            )
             wavelet_low_cutoff = filter_highpass
 
         else:
@@ -34,20 +35,21 @@ def _ensure_wavelet_low_cutoff(wavelet_low_cutoff, filter_highpass, epoch_durati
         wavelet_low_cutoff = wavelet_low_cutoff
 
     if duration_highpass > wavelet_low_cutoff:
-       logger.warning(
-              f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
-              f"frequency cutoff ( {duration_highpass:.2f} Hz) that can be "
-              f"resolved with an epoch duration of {1 / duration_highpass:.2f} Hz."
-              f"Lower frequency bands may not be well estimated. Consider "
-              f"increasing wavelet_low_cutoff or using longer window durations during fitting."
-            )
+        logger.warning(
+            f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
+            f"frequency cutoff ( {duration_highpass:.2f} Hz) that can be "
+            f"resolved with an epoch duration of {1 / duration_highpass:.2f} Hz."
+            "Lower frequency bands may not be well estimated. Consider "
+            "increasing wavelet_low_cutoff or using longer window durations "
+            "during fitting."
+        )
     if filter_highpass > wavelet_low_cutoff:
         logger.warning(
-              f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
-              f"high-pass filter cutoff frequency in data info (info['highpass'] "
-              f"= {filter_highpass} Hz). Lower frequency bands will be keep "
-              f" even if no signal of interest is expected in these bands."
-            )  
+            f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
+            f"high-pass filter cutoff frequency in data info (info['highpass'] "
+            f"= {filter_highpass} Hz). Lower frequency bands will be keep "
+            f" even if no signal of interest is expected in these bands."
+        )
     return wavelet_low_cutoff
 
 
@@ -128,9 +130,10 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
 class MultibandGedai:
     """Multiband Generalized Eigenvalue De-Artifacting Instrument.
 
-    A multiband extension of the standard :class:`~gedai.gedai.Gedai` that applies 
+    A multiband extension of the standard :class:`~gedai.gedai.Gedai` that applies
     GEDAI algorithm separately to different frequency bands (via wavelet decomposition).
-    This approach allows for more targeted artifact removal while preserving neural signals.
+    This approach allows for more targeted artifact removal while preserving
+    neural signals.
     See :footcite:`Ros2025`.
 
     .. warning::
@@ -170,11 +173,11 @@ class MultibandGedai:
         assert self._wavelets_fits is not None
         for wavelet_fit in self._wavelets_fits:
             if not wavelet_fit["ignore"]:
-                wavelet_fit['model']._check_fit()
+                wavelet_fit["model"]._check_fit()
         assert self._reference_cov is not None
         assert self._levels is not None
         assert self._wavelet_low_cutoff is not None
-        
+
     def _check_unfitted(self):
         """Check if the Gedai is unfitted."""
         if self.fitted:
@@ -233,10 +236,9 @@ class MultibandGedai:
         cov = _pick_cov(cov, epochs.info["ch_names"])
 
         epoch_duration = epochs.tmax - epochs.tmin
-        wavelet_low_cutoff = _ensure_wavelet_low_cutoff(wavelet_low_cutoff,
-                                                        epochs.info["highpass"],
-                                                        epoch_duration)
-
+        wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
+            wavelet_low_cutoff, epochs.info["highpass"], epoch_duration
+        )
 
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
             data,
@@ -262,7 +264,7 @@ class MultibandGedai:
                     "fmax": fmax,
                     "model": None,
                     "ignore": True,
-                    "n_samples": n_samples
+                    "n_samples": n_samples,
                 }
             else:
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -287,7 +289,7 @@ class MultibandGedai:
                     "fmax": fmax,
                     "model": model,
                     "ignore": False,
-                    "n_samples": n_samples
+                    "n_samples": n_samples,
                 }
             wavelets_fits.append(wavelet_fit)
 
@@ -421,7 +423,7 @@ class MultibandGedai:
                 f"{self.__class__.__name__}.ch_names "
                 "for the list of channels used during fit."
             )
-        
+
         picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
         epochs_copy = epochs.copy()
         epochs_copy.load_data()
@@ -510,8 +512,10 @@ class MultibandGedai:
         _, n_times = raw_data.shape
 
         # all models are fitted with the same duration
-        n_samples = [fit['n_samples'] for fit in self._wavelets_fits if not fit["ignore"]]
-        window_size = max(n_samples) 
+        n_samples = [
+            fit["n_samples"] for fit in self._wavelets_fits if not fit["ignore"]
+        ]
+        window_size = max(n_samples)
         window = create_cosine_weights(window_size)
 
         raw_corrected = np.zeros_like(raw_data)
@@ -578,4 +582,3 @@ class MultibandGedai:
         """
         self._check_fit()
         return self._reference_cov.ch_names
-

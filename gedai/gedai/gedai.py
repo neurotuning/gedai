@@ -7,6 +7,7 @@ from mne.io import BaseRaw
 from mne.parallel import parallel_func
 from scipy.linalg import eigh
 
+from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..sensai.sensai import (
     _eigen_to_sensai,
     _sensai_gridsearch,
@@ -16,7 +17,6 @@ from ..sensai.sensai import (
 from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
-from ..covariance.covariance import _ensure_cov, _pick_cov
 
 
 def create_cosine_weights(n_samples):
@@ -141,7 +141,11 @@ class Gedai:
             epochs_eigenvalues[e] = eigenvalues
 
         fit_epochs = mne.EpochsArray(data, epochs.info, tmin=epochs.tmin, verbose=False)
-        min_sensai_threshold, max_sensai_threshold, step = -6, 12, 0.1 # MATLAB min_sensai_threshold 0 for f > 60Hz.
+        min_sensai_threshold, max_sensai_threshold, step = (
+            -6,
+            12,
+            0.1,
+        )  # MATLAB min_sensai_threshold 0 for f > 60Hz.
         n_pc = 3
 
         if sensai_method == "gridsearch":
@@ -301,19 +305,20 @@ class Gedai:
             raise ValueError(
                 f"Sampling frequency mismatch between fitted model and input instance."
                 f"nFitted model sfreq: {self._info['sfreq']} Hz, input instance sfreq:"
-                f" {epochs.info['sfreq']} Hz.")
-        
+                f" {epochs.info['sfreq']} Hz."
+            )
 
         if epochs.get_data(verbose=False).shape[-1] != self._n_samples:
-            input_duration = (epochs.get_data(verbose=False).shape[-1] - 1) / epochs.info["sfreq"]
+            input_duration = (
+                epochs.get_data(verbose=False).shape[-1] - 1
+            ) / epochs.info["sfreq"]
             raise ValueError(
                 f"Duration mismatch between fitted model and input instance. "
                 f"Fitted model epoch duration: {self._duration} s, input instance "
                 f"epoch duration: {input_duration} s."
-                "Please make sure the epoch duration of the input instance matches the"
-                " one of the data used during fit."
+                " Please make sure the epoch duration of the input instance "
+                "matches the one of the data used during fit."
             )
-
 
         picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
         epochs_copy = epochs.copy()
@@ -333,10 +338,9 @@ class Gedai:
                     epoch_data, reference_cov, threshold
                 )
         else:
-            parallel, p_fun, _ = parallel_func(_process_single_epoch, 
-                                              n_jobs,
-                                              total=len(data),
-                                              verbose=verbose)
+            parallel, p_fun, _ = parallel_func(
+                _process_single_epoch, n_jobs, total=len(data), verbose=verbose
+            )
             cleaned_epochs_list = parallel(
                 p_fun(epoch_data, reference_cov, threshold) for epoch_data in data
             )

@@ -89,7 +89,9 @@ def epochs_to_wavelet(data, sfreq, wavelet, level, n_jobs=None, verbose=None):
                 transformed_data[e] = _process_epoch_wavelet(epoch, wavelet, level)
         else:
             # Parallel processing using MNE's parallel_func
-            parallel, p_fun, n_jobs = parallel_func(_process_epoch_wavelet, n_jobs, total=n_epochs, verbose=verbose)
+            parallel, p_fun, n_jobs = parallel_func(
+                _process_epoch_wavelet, n_jobs, total=n_epochs, verbose=verbose
+            )
             transformed_epochs = parallel(
                 p_fun(epoch, wavelet, level) for epoch in data
             )

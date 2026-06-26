@@ -155,7 +155,13 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
 
 
 def _sensai_gridsearch(
-    epochs, reference_cov, n_pc, noise_multiplier, eigen_thresholds, n_jobs=1, verbose=None
+    epochs,
+    reference_cov,
+    n_pc,
+    noise_multiplier,
+    eigen_thresholds,
+    n_jobs=1,
+    verbose=None,
 ):
     if n_jobs == 1:
         runs = [

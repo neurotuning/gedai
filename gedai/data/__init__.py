@@ -20,7 +20,8 @@ def get_simulated_clean_eeg_set_path() -> Path:
 def get_contaminated_eeg_set_path() -> Path:
     """Return the path to the bundled contaminated EEG sample dataset (.set)."""
     return get_data_path(
-        "SNR=0.35481 contamination=25 clean_EEG_dataset_2.set + EOG_EMG_NOISE_dataset_1.set"
+        "SNR=0.35481 contamination=25 clean_EEG_dataset_2.set + "
+        "EOG_EMG_NOISE_dataset_1.set"
     )
 
 

@@ -1,5 +1,5 @@
 """
-Understanding the GEDAI model 
+Understanding the GEDAI model
 =============================
 
 In this first tutorial, we introduce the GEDAI
@@ -19,26 +19,28 @@ import matplotlib.pyplot as plt
 from mne.io import read_raw
 
 from gedai import Gedai
-from gedai.viz import plot_mne_style_overlay_interactive
 from gedai.data import get_contaminated_eeg_set_path
+from gedai.viz import plot_mne_style_overlay_interactive
 
 # %%
 # The GEDAI model can be fitted on :class:`~mne.io.Raw` or :class:`~mne.Epochs` objects.
 # %% Load sample EEG data
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
-#%%
+# %%
 # For simplicity, we will only use the first 30 seconds of the data in this tutorial.
-# In practice, it is recommended to use the full recording for fitting the GEDAI model, 
+# In practice, it is recommended to use the full recording for fitting the GEDAI model,
 # as this allows the model to better capture the noise characteristics of the data.
 
 raw.crop(0, 30)
 
-#%%
-# GEDAI will automatically apply an average reference before fitting or transforming the data.
-# If the data was referenced to a different reference during acquisition, it is recommended
-# to add the reference channel to the data before using GEDAI. This way the rank of the data will be preserved.
-# and you will be able to reference the data to another reference after denoising if needed.
+# %%
+# GEDAI will automatically apply an average reference before fitting or
+# transforming the data.
+# If the data was referenced to a different reference during acquisition, it is
+# recommended to add the reference channel to the data before using GEDAI. This
+# way the rank of the data will be preserved, and you will be able to reference
+# the data to another reference after denoising if needed.
 
 raw.set_eeg_reference("average", projection=False)
 
@@ -76,7 +78,7 @@ reject_by_annotation = False  # default
 
 # %%
 # The reference covariance defines what good data should look like.
-# The dfault ``leadfield`` option uses a covariance matrix 
+# The dfault ``leadfield`` option uses a covariance matrix
 # based on a generic head model and the standard 10-20 montage.
 # It is possible to use a custom reference covariance matrix instead,
 # for example, by using the :func:`~gedai.covariance.compute_covariance_from_forward`
@@ -156,9 +158,7 @@ plt.show()
 # from the data. The transform operation projects out the noise components
 # while preserving the brain signals.
 
-denoised_raw = gedai.transform_raw(
-    raw, overlap=overlap, verbose=False
-)
+denoised_raw = gedai.transform_raw(raw, overlap=overlap, verbose=False)
 
 # %%
 # We can visualize the difference between the original and denoised data using

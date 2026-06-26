@@ -3,11 +3,11 @@ import numpy as np
 from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 
+from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
-from ..covariance.covariance import _ensure_cov, _pick_cov
 from .gedai import Gedai, create_cosine_weights
 from .multiband import compute_closest_valid_duration
 
@@ -17,12 +17,10 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
     _check_type(cycles_per_wavelet, (float, int), "cycles_per_wavelet")
     if cycles_per_wavelet <= 0:
         raise ValueError(
-            "cycles_per_wavelet must be strictly positive, "
-            f"got {cycles_per_wavelet}"
+            f"cycles_per_wavelet must be strictly positive, got {cycles_per_wavelet}"
         )
     if level < 0:
         raise ValueError(f"wavelet_level must be >= 0, got {level}")
-
 
     # Index 0 is approximation, then details from coarse to fine.
     band_definitions = [(0.0, sfreq / (2 ** (level + 1)), level + 1)]
@@ -33,7 +31,7 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
         band_definitions.append((fmin, fmax, cycle_power))
 
     wavelet_parameters = []
-    for band_index, (fmin, fmax, cycle_power) in enumerate(band_definitions):
+    for band_index, (fmin, fmax, _cycle_power) in enumerate(band_definitions):
         if fmin == 0.0:
             target_duration = None
             ignore = True
@@ -54,7 +52,7 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
                 "fmax": fmax,
                 "duration": duration,
                 "n_samples": n_samples,
-                "ignore": ignore
+                "ignore": ignore,
             }
         )
     return wavelet_parameters
@@ -65,9 +63,9 @@ class AdaptiveMultibandGedai:
     """Adaptive Multiband Generalized Eigenvalue De-Artifacting Instrument.
 
     A extension of :class:`~gedai.gedai.MultibandGedai` that uses
-    adaptive window lengths for each wavelet band to ensure 
+    adaptive window lengths for each wavelet band to ensure
     wavelet decomposition has enough cycles for accurate decomposition.
-    
+
     See :footcite:`Ros2025`.
 
     .. note::
@@ -108,7 +106,7 @@ class AdaptiveMultibandGedai:
         self.cycles_per_wavelet = cycles_per_wavelet
 
         self.fitted = False
-    
+
         self._wavelets_fits = None
         self._reference_cov = None
         self._wavelet_low_cutoff = None
@@ -123,7 +121,7 @@ class AdaptiveMultibandGedai:
         assert self._wavelets_fits is not None
         for wavelet_fit in self._wavelets_fits:
             if not wavelet_fit["ignore"]:
-                wavelet_fit['model']._check_fit()
+                wavelet_fit["model"]._check_fit()
         assert self._reference_cov is not None
         assert self._wavelet_low_cutoff is not None
 
@@ -191,12 +189,12 @@ class AdaptiveMultibandGedai:
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
 
         wavelet_parameters = _compute_wavelet_parameters(
-                sfreq,
-                self.wavelet_level,
-                cycles_per_wavelet=self.cycles_per_wavelet,
-            )
-        
-        filter_cutoff =  raw_fit.info['highpass']
+            sfreq,
+            self.wavelet_level,
+            cycles_per_wavelet=self.cycles_per_wavelet,
+        )
+
+        filter_cutoff = raw_fit.info["highpass"]
         duration_cutoff = wavelet_parameters[0]["fmax"]
 
         if wavelet_low_cutoff is None:
@@ -206,22 +204,24 @@ class AdaptiveMultibandGedai:
             if filter_cutoff > duration_cutoff:
                 wavelet_low_cutoff = filter_cutoff
                 logger.info(
-                    f"Automatically setting ``wavelet_low_cutoff`` to {wavelet_low_cutoff:.2f} Hz "
-                    f"based on wavelet_level ``raw_fit.info['highpass']`` ({filter_cutoff:.2f} Hz)."
+                    "Automatically setting ``wavelet_low_cutoff`` to "
+                    f"{wavelet_low_cutoff:.2f} Hz based on raw.info['highpass'] "
+                    f"({filter_cutoff:.2f} Hz)."
                 )
             else:
                 wavelet_low_cutoff = duration_cutoff
                 logger.info(
-                    f"Automatically setting ``wavelet_low_cutoff`` to {wavelet_low_cutoff:.2f} Hz "
-                    f"based on wavelet_level ``{self.wavelet_level}``."
+                    "Automatically setting ``wavelet_low_cutoff`` to "
+                    f"{wavelet_low_cutoff:.2f} Hz based on wavelet_level "
+                    f"{self.wavelet_level}."
                 )
-    
+
         if wavelet_low_cutoff < duration_cutoff:
             logger.warning(
                 f"``wavelet_low_cutoff`` ({wavelet_low_cutoff:.2f} Hz) is below the "
                 f"frequency cutoff ( {duration_cutoff:.2f} Hz) that can be "
-                f"resolved with the chosen cycles_per_wavelet ({self.cycles_per_wavelet}) "
-                f"and duration ({duration:.3f}s)."
+                f"resolved with the chosen cycles_per_wavelet "
+                f"({self.cycles_per_wavelet})."
             )
 
         wavelets_fits = []
@@ -231,27 +231,29 @@ class AdaptiveMultibandGedai:
             fmax = wavelet_parameter["fmax"]
             duration = wavelet_parameter["duration"]
             n_samples = wavelet_parameter["n_samples"]
-            
+
             if fmax <= wavelet_low_cutoff:
-               ignore = True
+                ignore = True
             else:
                 ignore = False
 
             if ignore:
                 logger.info(
-                    f"Skipping wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) because its upper frequency "
-                    f"cutoff is below the low frequency cutoff ({wavelet_low_cutoff} Hz)."
+                    f"Skipping wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
+                    "because its upper frequency cutoff is below the low "
+                    f"frequency cutoff ({wavelet_low_cutoff} Hz)."
                 )
                 wavelets_fits.append(
-                {
-                    "band_index": w,
-                    "fmin": fmin,
-                    "fmax": fmax,
-                    "model": None,
-                    "duration": duration,
-                    "n_samples": n_samples,
-                    "ignore": ignore,
-                })
+                    {
+                        "band_index": w,
+                        "fmin": fmin,
+                        "fmax": fmax,
+                        "model": None,
+                        "duration": duration,
+                        "n_samples": n_samples,
+                        "ignore": ignore,
+                    }
+                )
             else:
                 logger.info(
                     f"Adaptive wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz): "
@@ -286,7 +288,8 @@ class AdaptiveMultibandGedai:
                 freq_fmin, freq_fmax = freq_bands[w]
                 if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
                     raise RuntimeError(
-                        "Wavelet frequency band mismatch while building adaptive epochs."
+                        "Wavelet frequency band mismatch while building "
+                        "adaptive epochs."
                     )
 
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -401,7 +404,6 @@ class AdaptiveMultibandGedai:
                     f"Zeroing wavelet index {band_idx} ({fmin:.2f}-{fmax:.2f} Hz)"
                 )
             else:
-
                 window = create_cosine_weights(window_size)
                 step = int(window_size * (1 - overlap))
                 starts = np.arange(0, n_times - window_size, step)
@@ -425,7 +427,8 @@ class AdaptiveMultibandGedai:
                 freq_fmin, freq_fmax = freq_bands[band_idx]
                 if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
                     raise RuntimeError(
-                        "Wavelet frequency band mismatch while building adaptive epochs."
+                        "Wavelet frequency band mismatch while building "
+                        "adaptive epochs."
                     )
 
                 segments_band = segments_wavelet[:, :, band_idx, :]
@@ -476,7 +479,8 @@ class AdaptiveMultibandGedai:
             if not wavelet_fit["ignore"]:
                 fig = wavelet_fit["model"].plot_fit()[0]
                 fig.suptitle(
-                    f"Band {w + 1}: {wavelet_fit['fmin']:.2f}-{wavelet_fit['fmax']:.2f} Hz"
+                    f"Band {w + 1}: {wavelet_fit['fmin']:.2f}-"
+                    f"{wavelet_fit['fmax']:.2f} Hz"
                 )
                 figs.append(fig)
         return figs

@@ -1,4 +1,4 @@
-from . import data, utils, covariance
+from . import covariance, data, utils
 from ._version import __version__
 from .gedai import Gedai
 from .gedai.adaptive import AdaptiveMultibandGedai

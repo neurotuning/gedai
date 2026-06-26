@@ -9,10 +9,11 @@ matrix using a :class:`mne.Forward` solution.
 # %%
 
 import mne
-from mne.io import read_raw
 from mne.datasets import fetch_fsaverage
-from gedai.data import get_contaminated_eeg_set_path
+from mne.io import read_raw
+
 from gedai.covariance import compute_covariance_from_forward
+from gedai.data import get_contaminated_eeg_set_path
 
 # %%
 # Download fsaverage files
