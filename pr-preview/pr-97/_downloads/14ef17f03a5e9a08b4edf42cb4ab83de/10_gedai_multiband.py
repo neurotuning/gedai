@@ -1,5 +1,5 @@
 """
-Understanding the multiband extension of GEDAI 
+Understanding the multiband extension of GEDAI
 ==============================================
 
 This tutorial demonstrates how to use multiband ``GEDAI``.
@@ -15,26 +15,28 @@ components are recombined to reconstruct the cleaned EEG signal.
 # %%
 # .. note::
 #
-#     This purpose of this tutorial is to explain the differrent parameters of the :class:`~gedai.gedai.MultibandGedai` 
-#     model to get a better understanding of the underlying algorithm. If you want to learn how to use ``Multiband GEDAI`` 
-#     in a practical, end-to-end offline denoising workflow, please refer to the
+#     This purpose of this tutorial is to explain the differrent parameters of
+#     the :class:`~gedai.gedai.MultibandGedai` model and help you better
+#     understand the underlying algorithm. If you want to learn how to use
+#     ``Multiband GEDAI`` in a practical, end-to-end offline denoising
+#     workflow, please refer to the
 #     :ref:`Practical Pipelines <sphx_glr_generated_tutorials_use>` section.
 #
 # %%
 import matplotlib.pyplot as plt
 from mne.io import read_raw
 
-from gedai.data import get_contaminated_eeg_set_path
 from gedai import MultibandGedai
+from gedai.data import get_contaminated_eeg_set_path
 from gedai.viz import plot_mne_style_overlay_interactive
 
 n_jobs = -1
 # %% Load sample EEG data
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
-#%%
+# %%
 # For simplicity, we will only use the first 30 seconds of the data in this tutorial.
-# In practice, it is recommended to use the full recording for fitting the GEDAI model, 
+# In practice, it is recommended to use the full recording for fitting the GEDAI model,
 # as this allows the model to better capture the noise characteristics of the data.
 
 raw.crop(0, 30)
@@ -60,11 +62,9 @@ multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=8)
 # estimates the optimal threshold to distinguish between signal and noise
 # components.
 
-multiband_gedai.fit_raw(raw,
-                        duration=2.0,
-                        sensai_method="gridsearch",
-                        n_jobs=n_jobs,
-                        verbose=True)
+multiband_gedai.fit_raw(
+    raw, duration=2.0, sensai_method="gridsearch", n_jobs=n_jobs, verbose=True
+)
 # %%
 # .. note::
 #
@@ -86,9 +86,7 @@ plt.show()
 # components while preserving the brain signals for each frequency band
 # separately before recombining them.
 
-denoised_raw = multiband_gedai.transform_raw(raw,
-                                             n_jobs=n_jobs,
-                                             verbose=False)
+denoised_raw = multiband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
 
 # %%
 # .. warning::

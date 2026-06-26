@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
-    <script src="../../../_static/documentation_options.js?v=ae9ac72a"></script>
+    <script src="../../../_static/documentation_options.js?v=2066022f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -480,10 +480,11 @@ to download the full example code.</p>
 <p>This tutorial demonstrates how to compute a custom covariance
 matrix using a <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a> solution.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">mne</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">mne.io</span><span class="w"> </span><span class="kn">import</span> <a href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function"><span class="n">read_raw</span></a>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mne.datasets</span><span class="w"> </span><span class="kn">import</span> <a href="https://mne.tools/stable/generated/mne.datasets.fetch_fsaverage.html#mne.datasets.fetch_fsaverage" title="mne.datasets.fetch_fsaverage" class="sphx-glr-backref-module-mne-datasets sphx-glr-backref-type-py-function"><span class="n">fetch_fsaverage</span></a>
-<span class="kn">from</span><span class="w"> </span><span class="nn">gedai.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mne.io</span><span class="w"> </span><span class="kn">import</span> <a href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function"><span class="n">read_raw</span></a>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">gedai.covariance</span><span class="w"> </span><span class="kn">import</span> <a href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward" class="sphx-glr-backref-module-gedai-covariance sphx-glr-backref-type-py-function"><span class="n">compute_covariance_from_forward</span></a>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gedai.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span>
 </pre></div>
 </div>
 <p>Download fsaverage files</p>
@@ -657,9 +658,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-09a9b1be-3ec4-4383-bfc5-22e7d925d856"
+<tr class="mne-repr-section-header general-901479b6-e60f-4a13-9310-b143f70da1a7"
      title="Hide section"
-    onclick="toggleVisibility('general-09a9b1be-3ec4-4383-bfc5-22e7d925d856')">
+    onclick="toggleVisibility('general-901479b6-e60f-4a13-9310-b143f70da1a7')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -671,7 +672,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-09a9b1be-3ec4-4383-bfc5-22e7d925d856 ">
+<tr class="repr-element general-901479b6-e60f-4a13-9310-b143f70da1a7 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -682,26 +683,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-09a9b1be-3ec4-4383-bfc5-22e7d925d856 ">
+<tr class="repr-element general-901479b6-e60f-4a13-9310-b143f70da1a7 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-09a9b1be-3ec4-4383-bfc5-22e7d925d856 ">
+<tr class="repr-element general-901479b6-e60f-4a13-9310-b143f70da1a7 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-09a9b1be-3ec4-4383-bfc5-22e7d925d856 ">
+<tr class="repr-element general-901479b6-e60f-4a13-9310-b143f70da1a7 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-09a9b1be-3ec4-4383-bfc5-22e7d925d856 ">
+<tr class="repr-element general-901479b6-e60f-4a13-9310-b143f70da1a7 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -716,9 +717,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-81ccd0fc-19f6-40eb-b249-8947650ab806"
+<tr class="mne-repr-section-header acquisition-ac420261-5247-4466-98c9-aeb453e6ddbc"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-81ccd0fc-19f6-40eb-b249-8947650ab806')">
+    onclick="toggleVisibility('acquisition-ac420261-5247-4466-98c9-aeb453e6ddbc')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -730,7 +731,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-81ccd0fc-19f6-40eb-b249-8947650ab806 ">
+<tr class="repr-element acquisition-ac420261-5247-4466-98c9-aeb453e6ddbc ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:01:00 (HH:MM:SS)</td>
@@ -743,14 +744,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-81ccd0fc-19f6-40eb-b249-8947650ab806 ">
+<tr class="repr-element acquisition-ac420261-5247-4466-98c9-aeb453e6ddbc ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-81ccd0fc-19f6-40eb-b249-8947650ab806 ">
+<tr class="repr-element acquisition-ac420261-5247-4466-98c9-aeb453e6ddbc ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>12,000</td>
@@ -765,9 +766,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-84073722-422e-4ce5-a109-5bae1c7830a7"
+<tr class="mne-repr-section-header channels-e2bccc19-87a3-46fd-aa91-1c6cb3d422bd"
      title="Hide section"
-    onclick="toggleVisibility('channels-84073722-422e-4ce5-a109-5bae1c7830a7')">
+    onclick="toggleVisibility('channels-e2bccc19-87a3-46fd-aa91-1c6cb3d422bd')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -780,7 +781,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-84073722-422e-4ce5-a109-5bae1c7830a7 ">
+<tr class="repr-element channels-e2bccc19-87a3-46fd-aa91-1c6cb3d422bd ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -793,7 +794,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-84073722-422e-4ce5-a109-5bae1c7830a7 ">
+<tr class="repr-element channels-e2bccc19-87a3-46fd-aa91-1c6cb3d422bd ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -808,9 +809,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-cd4fb147-10dd-457f-9338-aa2659a74250"
+<tr class="mne-repr-section-header filters-ee756fd2-061d-4018-8be0-eea9f7365afe"
      title="Hide section"
-    onclick="toggleVisibility('filters-cd4fb147-10dd-457f-9338-aa2659a74250')">
+    onclick="toggleVisibility('filters-ee756fd2-061d-4018-8be0-eea9f7365afe')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -822,14 +823,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-cd4fb147-10dd-457f-9338-aa2659a74250 ">
+<tr class="repr-element filters-ee756fd2-061d-4018-8be0-eea9f7365afe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-cd4fb147-10dd-457f-9338-aa2659a74250 ">
+<tr class="repr-element filters-ee756fd2-061d-4018-8be0-eea9f7365afe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -851,7 +852,7 @@ this file apply (plus whatever default styling the IDE applies).
 <span class="p">)</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7f0ec00b1a10&gt;
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7f0340294150&gt;
 </pre></div>
 </div>
 <p>generate the forward solution</p>
@@ -864,8 +865,8 @@ this file apply (plus whatever default styling the IDE applies).
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">reference_cov</span></a> <span class="o">=</span> <a href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward" class="sphx-glr-backref-module-gedai-covariance sphx-glr-backref-type-py-function"><span class="n">compute_covariance_from_forward</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a><span class="p">)</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 39.051 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  1112 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 37.811 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  1109 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-advanced-10-gedai-forward-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/eada028886c9f4d21fe577c6f812d603/10_gedai_forward.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_forward.ipynb</span></code></a></p>

@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=a95f357e85573c9b56d5" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=a95f357e85573c9b56d5" />
 
-    <script src="../../../_static/documentation_options.js?v=ae9ac72a"></script>
+    <script src="../../../_static/documentation_options.js?v=2066022f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -491,17 +491,19 @@ data into its frequency components using wavelet transform, then applies
 components are recombined to reconstruct the cleaned EEG signal.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This purpose of this tutorial is to explain the differrent parameters of the <a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a>
-model to get a better understanding of the underlying algorithm. If you want to learn how to use <code class="docutils literal notranslate"><span class="pre">Multiband</span> <span class="pre">GEDAI</span></code>
-in a practical, end-to-end offline denoising workflow, please refer to the
+<p>This purpose of this tutorial is to explain the differrent parameters of
+the <a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> model and help you better
+understand the underlying algorithm. If you want to learn how to use
+<code class="docutils literal notranslate"><span class="pre">Multiband</span> <span class="pre">GEDAI</span></code> in a practical, end-to-end offline denoising
+workflow, please refer to the
 <a class="reference internal" href="../use/index.html#sphx-glr-generated-tutorials-use"><span class="std std-ref">Practical Pipelines</span></a> section.</p>
 </div>
 <p>%%</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mne.io</span><span class="w"> </span><span class="kn">import</span> <a href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function"><span class="n">read_raw</span></a>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">gedai.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultibandGedai</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gedai.data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gedai.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_mne_style_overlay_interactive</span>
 
 <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
@@ -664,9 +666,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-f8234067-404b-4849-8505-427da9394cdf"
+<tr class="mne-repr-section-header general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5"
      title="Hide section"
-    onclick="toggleVisibility('general-f8234067-404b-4849-8505-427da9394cdf')">
+    onclick="toggleVisibility('general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -678,7 +680,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-f8234067-404b-4849-8505-427da9394cdf ">
+<tr class="repr-element general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -689,26 +691,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-f8234067-404b-4849-8505-427da9394cdf ">
+<tr class="repr-element general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-f8234067-404b-4849-8505-427da9394cdf ">
+<tr class="repr-element general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-f8234067-404b-4849-8505-427da9394cdf ">
+<tr class="repr-element general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-f8234067-404b-4849-8505-427da9394cdf ">
+<tr class="repr-element general-1034e65f-56e9-4235-91c8-7c4a65dd0eb5 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -723,9 +725,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-3a603cf8-f881-4fb9-b3a8-f94362f2be91"
+<tr class="mne-repr-section-header acquisition-f85caee6-7068-4731-8d19-17068a982dd2"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-3a603cf8-f881-4fb9-b3a8-f94362f2be91')">
+    onclick="toggleVisibility('acquisition-f85caee6-7068-4731-8d19-17068a982dd2')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -737,7 +739,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-3a603cf8-f881-4fb9-b3a8-f94362f2be91 ">
+<tr class="repr-element acquisition-f85caee6-7068-4731-8d19-17068a982dd2 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -750,14 +752,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-3a603cf8-f881-4fb9-b3a8-f94362f2be91 ">
+<tr class="repr-element acquisition-f85caee6-7068-4731-8d19-17068a982dd2 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-3a603cf8-f881-4fb9-b3a8-f94362f2be91 ">
+<tr class="repr-element acquisition-f85caee6-7068-4731-8d19-17068a982dd2 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -772,9 +774,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-5b4f9d72-96b8-4e2c-9fc0-a00ef87b4c93"
+<tr class="mne-repr-section-header channels-39399011-bb88-48d5-b248-dbbe6ce0debc"
      title="Hide section"
-    onclick="toggleVisibility('channels-5b4f9d72-96b8-4e2c-9fc0-a00ef87b4c93')">
+    onclick="toggleVisibility('channels-39399011-bb88-48d5-b248-dbbe6ce0debc')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -787,7 +789,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-5b4f9d72-96b8-4e2c-9fc0-a00ef87b4c93 ">
+<tr class="repr-element channels-39399011-bb88-48d5-b248-dbbe6ce0debc ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -800,7 +802,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-5b4f9d72-96b8-4e2c-9fc0-a00ef87b4c93 ">
+<tr class="repr-element channels-39399011-bb88-48d5-b248-dbbe6ce0debc ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -815,9 +817,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-01dfec45-c491-4b44-956d-433615322b22"
+<tr class="mne-repr-section-header filters-68412919-f87d-4211-94d8-9966a284e84c"
      title="Hide section"
-    onclick="toggleVisibility('filters-01dfec45-c491-4b44-956d-433615322b22')">
+    onclick="toggleVisibility('filters-68412919-f87d-4211-94d8-9966a284e84c')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -829,14 +831,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-01dfec45-c491-4b44-956d-433615322b22 ">
+<tr class="repr-element filters-68412919-f87d-4211-94d8-9966a284e84c ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-01dfec45-c491-4b44-956d-433615322b22 ">
+<tr class="repr-element filters-68412919-f87d-4211-94d8-9966a284e84c ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -865,11 +867,9 @@ to define the type of wavelet used for the decomposition by setting the
 <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code>. For each wavelet level (i.e., frequency band), the fitting process
 estimates the optimal threshold to distinguish between signal and noise
 components.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">fit_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span>
-                        <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>
-                        <span class="n">sensai_method</span><span class="o">=</span><span class="s2">&quot;gridsearch&quot;</span><span class="p">,</span>
-                        <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="p">,</span>
-                        <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">fit_raw</span><span class="p">(</span>
+    <span class="n">raw</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">sensai_method</span><span class="o">=</span><span class="s2">&quot;gridsearch&quot;</span><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>    343 x 343 full covariance (kind = 1) found.
@@ -887,96 +887,96 @@ Applying a custom (&#39;EEG&#39;,) reference.
 [multiband._ensure_wavelet_low_cutoff] INFO: Setting wavelet_low_cutoff to 0.7827788649706457 Hz based on epoch duration and sampling frequency.
 
   0%|          |  : 0/43 [00:00&lt;?,       ?it/s]
-  9%|▉         |  : 4/43 [00:04&lt;00:46,    1.19s/it]
- 19%|█▊        |  : 8/43 [00:06&lt;00:29,    1.17it/s]
- 28%|██▊       |  : 12/43 [00:08&lt;00:22,    1.36it/s]
- 37%|███▋      |  : 16/43 [00:11&lt;00:18,    1.48it/s]
- 47%|████▋     |  : 20/43 [00:13&lt;00:14,    1.56it/s]
- 56%|█████▌    |  : 24/43 [00:15&lt;00:11,    1.62it/s]
- 65%|██████▌   |  : 28/43 [00:17&lt;00:08,    1.67it/s]
- 74%|███████▍  |  : 32/43 [00:19&lt;00:06,    1.70it/s]
- 84%|████████▎ |  : 36/43 [00:21&lt;00:04,    1.73it/s]
- 93%|█████████▎|  : 40/43 [00:23&lt;00:01,    1.75it/s]
-100%|██████████|  : 43/43 [00:23&lt;00:00,    1.83it/s]
+  9%|▉         |  : 4/43 [00:04&lt;00:47,    1.23s/it]
+ 19%|█▊        |  : 8/43 [00:07&lt;00:30,    1.13it/s]
+ 28%|██▊       |  : 12/43 [00:09&lt;00:23,    1.32it/s]
+ 37%|███▋      |  : 16/43 [00:11&lt;00:18,    1.43it/s]
+ 47%|████▋     |  : 20/43 [00:13&lt;00:15,    1.51it/s]
+ 56%|█████▌    |  : 24/43 [00:15&lt;00:12,    1.57it/s]
+ 65%|██████▌   |  : 28/43 [00:17&lt;00:09,    1.62it/s]
+ 74%|███████▍  |  : 32/43 [00:19&lt;00:06,    1.65it/s]
+ 84%|████████▎ |  : 36/43 [00:22&lt;00:04,    1.68it/s]
+ 93%|█████████▎|  : 40/43 [00:24&lt;00:01,    1.70it/s]
+100%|██████████|  : 43/43 [00:24&lt;00:00,    1.78it/s]
 [multiband.fit_epochs] INFO: Wavelet index 0 (0.00-0.39 Hz) will be zeroed out during transformation because its upper frequency 0.39 Hz is below the low cutoff 0.78 Hz.
 [multiband.fit_epochs] INFO: Wavelet index 1 (0.39-0.78 Hz) will be zeroed out during transformation because its upper frequency 0.78 Hz is below the low cutoff 0.78 Hz.
 [gedai.fit_epochs] INFO: Setting average reference.
 
   0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   64.13it/s]
-  7%|▋         |  : 12/180 [00:00&lt;00:02,   69.98it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   81.50it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   89.25it/s]
- 51%|█████     |  : 92/180 [00:01&lt;00:00,   91.95it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   91.12it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   85.66it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,   99.13it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:02,   71.11it/s]
+  7%|▋         |  : 12/180 [00:00&lt;00:01,   85.16it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   94.28it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,  100.79it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,  102.35it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   99.31it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   92.72it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  107.60it/s]
 [gedai.fit_epochs] INFO: Setting average reference.
 
   0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   76.27it/s]
-  7%|▋         |  : 12/180 [00:00&lt;00:02,   82.59it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   87.82it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   92.65it/s]
- 51%|█████     |  : 92/180 [00:00&lt;00:00,   94.29it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   92.53it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   86.77it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,  100.64it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:02,   86.27it/s]
+  7%|▋         |  : 12/180 [00:00&lt;00:01,   85.92it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   94.03it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,  100.65it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,  102.30it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   99.46it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   92.54it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  107.44it/s]
 [gedai.fit_epochs] INFO: Setting average reference.
 
   0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   75.92it/s]
-  7%|▋         |  : 12/180 [00:00&lt;00:02,   83.72it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   89.18it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   94.19it/s]
- 51%|█████     |  : 92/180 [00:00&lt;00:00,   93.94it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   90.29it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   85.13it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,   98.87it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:02,   78.95it/s]
+  7%|▋         |  : 12/180 [00:00&lt;00:01,   86.56it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   92.47it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,   99.58it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,   99.97it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   95.99it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   90.11it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  104.65it/s]
 [gedai.fit_epochs] INFO: Setting average reference.
 
   0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   85.05it/s]
-  7%|▋         |  : 12/180 [00:00&lt;00:01,   88.07it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   92.37it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   95.38it/s]
- 51%|█████     |  : 92/180 [00:00&lt;00:00,   97.45it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   92.09it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   86.68it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,  100.75it/s]
-[gedai.fit_epochs] INFO: Setting average reference.
-
-  0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   80.25it/s]
-  7%|▋         |  : 12/180 [00:00&lt;00:01,   84.50it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   89.50it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   94.55it/s]
- 51%|█████     |  : 92/180 [00:00&lt;00:00,   94.30it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   91.17it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   86.89it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,  100.79it/s]
-[gedai.fit_epochs] INFO: Setting average reference.
-
-  0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   78.21it/s]
-  7%|▋         |  : 12/180 [00:00&lt;00:01,   84.05it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   91.31it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   96.86it/s]
- 51%|█████     |  : 92/180 [00:00&lt;00:00,   94.50it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   91.20it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   86.52it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,  100.45it/s]
-[gedai.fit_epochs] INFO: Setting average reference.
-
-  0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
-  2%|▏         |  : 4/180 [00:00&lt;00:02,   76.15it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:02,   80.60it/s]
   7%|▋         |  : 12/180 [00:00&lt;00:02,   81.76it/s]
- 16%|█▌        |  : 28/180 [00:00&lt;00:01,   89.38it/s]
- 33%|███▎      |  : 60/180 [00:00&lt;00:01,   93.38it/s]
- 51%|█████     |  : 92/180 [00:00&lt;00:00,   92.13it/s]
- 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   89.43it/s]
- 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   85.20it/s]
-100%|██████████|  : 180/180 [00:01&lt;00:00,   98.83it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   89.27it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,   94.61it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,   94.57it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   91.13it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   86.99it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  100.89it/s]
+[gedai.fit_epochs] INFO: Setting average reference.
+
+  0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:02,   85.61it/s]
+  7%|▋         |  : 12/180 [00:00&lt;00:01,   90.37it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   97.66it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,  102.28it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,  100.67it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   95.22it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   89.83it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  104.47it/s]
+[gedai.fit_epochs] INFO: Setting average reference.
+
+  0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:02,   86.01it/s]
+  7%|▋         |  : 12/180 [00:00&lt;00:01,   89.91it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   93.87it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,  100.93it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,   97.34it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   92.74it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   88.06it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  102.35it/s]
+[gedai.fit_epochs] INFO: Setting average reference.
+
+  0%|          |  : 0/180 [00:00&lt;?,       ?it/s]
+  2%|▏         |  : 4/180 [00:00&lt;00:01,   88.20it/s]
+  7%|▋         |  : 12/180 [00:00&lt;00:01,   91.23it/s]
+ 16%|█▌        |  : 28/180 [00:00&lt;00:01,   94.86it/s]
+ 33%|███▎      |  : 60/180 [00:00&lt;00:01,   97.55it/s]
+ 51%|█████     |  : 92/180 [00:00&lt;00:00,   94.79it/s]
+ 69%|██████▉   |  : 124/180 [00:01&lt;00:00,   90.55it/s]
+ 87%|████████▋ |  : 156/180 [00:01&lt;00:00,   86.13it/s]
+100%|██████████|  : 180/180 [00:01&lt;00:00,  100.11it/s]
 </pre></div>
 </div>
 <div class="admonition note">
@@ -1006,9 +1006,7 @@ decomposition.</p>
 and noise from the data. The transform operation projects out the noise
 components while preserving the brain signals for each frequency band
 separately before recombining them.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">denoised_raw</span></a> <span class="o">=</span> <span class="n">multiband_gedai</span><span class="o">.</span><span class="n">transform_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span>
-                                             <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="p">,</span>
-                                             <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray" class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">denoised_raw</span></a> <span class="o">=</span> <span class="n">multiband_gedai</span><span class="o">.</span><span class="n">transform_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">n_jobs</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="admonition warning">
@@ -1028,8 +1026,8 @@ estimated during the fitting process.</p>
 <img src="../../../_images/sphx_glr_10_gedai_multiband_008.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_008.png" alt="10 gedai multiband" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel=&#39;Time (s)&#39;, ylabel=&#39;Channels&#39;&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 13.618 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  421 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 13.255 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  442 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-basics-10-gedai-multiband-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/2511487d24aaa8273d2b5c7aae5b3336/10_gedai_multiband.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_multiband.ipynb</span></code></a></p>

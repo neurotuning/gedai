@@ -45,7 +45,9 @@ raw.filter(l_freq=0.5, h_freq=None, n_jobs=n_jobs)
 # ------------------
 broadband_gedai = Gedai()
 broadband_gedai.fit_raw(raw, noise_multiplier=6.0, n_jobs=n_jobs)
-broadband_denoised_raw = broadband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
+broadband_denoised_raw = broadband_gedai.transform_raw(
+    raw, n_jobs=n_jobs, verbose=False
+)
 
 # %%
 # Adaptive Multiband GEDAI
@@ -62,7 +64,7 @@ adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
 
 # %%
 # Since GEDAI algorithm automatically set the reference to ``average``, you can
-# reset the reference to the original channel after denoising to preserve the 
+# reset the reference to the original channel after denoising to preserve the
 # original reference scheme:
 # ``adaptive_multiband_denoised_raw.set_eeg_reference(ref_channels="Cz", copy=False)``
 
