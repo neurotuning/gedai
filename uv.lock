@@ -890,11 +890,11 @@ wheels = [
 
 [[package]]
 name = "intersphinx-registry"
-version = "0.2606.8"
+version = "0.2606.25"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/71/03/54f6c13b8eb783e9fc65795d41a720856dcf2e8608445134907e60e3ff3d/intersphinx_registry-0.2606.8.tar.gz", hash = "sha256:4245f4961251ff09160e4b34f2c5f59add81b309efff0c5e33cc8015568edba5", size = 19607, upload-time = "2026-06-08T12:20:16.94Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/a7/a314d13ac2def26c14a911fbf80938dbab1c3b1182ad12984a4575fc1177/intersphinx_registry-0.2606.25.tar.gz", hash = "sha256:d1094e756792f228b1dcbf7f6981926e92aa7829286655c887f79730d65d8ad5", size = 19754, upload-time = "2026-06-25T07:47:47.878Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/2f/e01bcbb640320d5147f59f98a5ee3e5eae3c4e909a83776cc726f6803968/intersphinx_registry-0.2606.8-py2.py3-none-any.whl", hash = "sha256:71e3ae9510832ecd58aeaea157dc5c352c71a6483413ba43bdda09c75f789ea2", size = 21870, upload-time = "2026-06-08T12:20:15.5Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/f3/10cb0bd403879a21e14470d1372b2c16ae704b833071c341dbdbcdb54edb/intersphinx_registry-0.2606.25-py2.py3-none-any.whl", hash = "sha256:bec345884230bfd4c70f3464e1c77cf7ae6a22d4032c73cf5f9f9519e37e6b85", size = 22034, upload-time = "2026-06-25T07:47:46.588Z" },
 ]
 
 [[package]]
