@@ -144,7 +144,7 @@ class AdaptiveMultibandGedai:
         overlap: float = 0.75,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "optimize",
+        sensai_method: str = "gridsearch",
         noise_multiplier: float = 3.0,
         wavelet_low_cutoff: str | float | None = "auto",
         n_jobs: int = None,

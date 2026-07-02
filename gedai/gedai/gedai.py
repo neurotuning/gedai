@@ -28,10 +28,8 @@ def create_cosine_weights(n_samples):
 
 def _check_sensai_method(method):
     _check_type(method, (str,), "method")
-    if method not in ["gridsearch", "optimize"]:
-        raise ValueError(
-            f"Method must be either 'gridsearch' or 'optimize', got '{method}' instead."
-        )
+    if method not in ["gridsearch"]:
+        raise ValueError(f"Method must be 'gridsearch', got '{method}' instead.")
 
 
 @fill_doc
@@ -90,7 +88,7 @@ class Gedai:
         epochs: BaseEpochs,
         picks: list | str = "eeg",
         reference_cov: str = "leadfield",
-        sensai_method: str = "optimize",
+        sensai_method: str = "gridsearch",
         noise_multiplier: float = 3.0,
         n_jobs: int = None,
         verbose: str | None = None,
@@ -145,7 +143,7 @@ class Gedai:
             -6,
             12,
             0.1,
-        )  # MATLAB min_sensai_threshold 0 for f > 60Hz.
+        )  # MATLAB min_sensai_threshold -6 for f < 60Hz.
         n_pc = 3
 
         if sensai_method == "gridsearch":
@@ -201,7 +199,7 @@ class Gedai:
         overlap: float = 0.75,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "optimize",
+        sensai_method: str = "gridsearch",
         noise_multiplier: float = 3.0,
         n_jobs: int = None,
         verbose: str | None = None,

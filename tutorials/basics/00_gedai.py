@@ -107,10 +107,9 @@ reference_cov = "leadfield"
 noise_multiplier = 3.0
 
 # %%
-# The optimal threshold can be determined either by grid search (``gridsearch``)
-# over possible threshold values or by optimizing a cost function (``optimize``).
-# The resulting threshold should be similar in both cases, but the computational
-# time may vary depending on your CPU capabilities.
+# The optimal threshold can be only be determined by grid search (``gridsearch``)
+# over possible threshold values for now. Optimization-based methods
+# will be added in future releases.
 
 sensai_method = "gridsearch"
 

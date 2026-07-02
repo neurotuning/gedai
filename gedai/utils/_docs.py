@@ -100,8 +100,8 @@ reject_by_annotation : bool
 # -- S ---------------------------------------------------------------------------------
 docdict["sensai_method"] = """
 sensai_method : str
-    The method to use for threshold optimization. Can be ``'gridsearch'`` or
-    ``'optimize'``. The default is ``'optimize'``."""
+    The method to use for threshold optimization.
+    Can be only be``'gridsearch'`` for now."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------
