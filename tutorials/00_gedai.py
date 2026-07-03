@@ -146,9 +146,11 @@ plt.show()
 # Once fitted, the ``GEDAI`` model can be used to remove artifacts and noise
 # from the data. The transform operation projects out the noise components
 # while preserving the brain signals.
+# High-passing the data when GEDAI denoising is recommended.
 
+raw_filt = raw.copy().filter(0.5, None)
 raw_corrected = gedai.transform_raw(
-    raw, duration=duration, overlap=overlap, verbose=False
+    raw_filt, duration=duration, overlap=overlap, verbose=False
 )
 
 # %%
