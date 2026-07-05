@@ -522,7 +522,7 @@ class Gedai:
         window_size = int(raw.info["sfreq"] * duration)
         window = create_cosine_weights(window_size)
 
-        raw_corrected = np.zeros_like(raw_data)
+        corrected_data = np.zeros_like(raw_data)
         weight_sum = np.zeros_like(raw_data)
 
         step = int(window_size * (1 - overlap))
@@ -548,14 +548,15 @@ class Gedai:
         # Apply windowing and reconstruct
         for s, start in enumerate(starts):
             corrected_segment = corrected_segments[s] * window
-            raw_corrected[:, start : start + window_size] += corrected_segment
+            corrected_data[:, start : start + window_size] += corrected_segment
             weight_sum[:, start : start + window_size] += window
 
         # Normalize the corrected signal by the weight sum
         weight_sum[weight_sum == 0] = 1  # Avoid division by zero
-        raw_corrected /= weight_sum
+        corrected_data /= weight_sum
 
-        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
+        raw_corrected = raw.copy()
+        raw_corrected._data = corrected_data
         return raw_corrected
 
     def plot_fit(self):
