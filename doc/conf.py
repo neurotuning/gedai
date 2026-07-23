@@ -12,7 +12,7 @@ from datetime import date
 from importlib import import_module
 
 from intersphinx_registry import get_intersphinx_mapping
-from sphinx_gallery.sorting import FileNameSortKey
+from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
 
 import gedai
 
@@ -25,6 +25,7 @@ copyright = f"{date.today().year}, {author}"  # noqa: A001
 release = gedai.__version__
 package = gedai.__name__
 gh_url = "https://github.com/neurotuning/gedai"
+gh_pages_url = "https://neurotuning.github.io/gedai/"
 
 # -- general configuration -------------------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -84,7 +85,14 @@ html_title = project
 
 # Documentation to change footer icons:
 # https://pradyunsg.me/furo/customisation/footer/#changing-footer-icons
+version_match = "dev" if "dev" in release else release
+
 html_theme_options = {
+    "switcher": {
+        "json_url": f"{gh_pages_url}dev/_static/switcher.json",
+        "version_match": version_match,
+    },
+    "navbar_end": ["theme-switcher", "version-switcher"],
     "footer_start": ["copyright"],
     "announcement": (
         "This project is in early development,"
@@ -267,6 +275,13 @@ sphinx_gallery_conf = {
     "reference_url": {f"{package}": None},
     "remove_config_comments": True,
     "show_memory": True,
+    "subsection_order": ExplicitOrder(
+        [
+            "../tutorials/basics",
+            "../tutorials/use",
+            "../tutorials/advanced",
+        ]
+    ),
     "within_subsection_order": FileNameSortKey,
 }
 

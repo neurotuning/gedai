@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
+from mne import pick_info
 
 from ._docs import fill_doc
 
@@ -78,7 +79,7 @@ _types = {
 }
 
 
-def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
+def _check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
     """Check that item is an instance of types.
 
     Parameters
@@ -135,7 +136,22 @@ def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
         )
 
 
-def check_value(
+def _check_picks_uniqueness(info, picks):
+    """Check that the provided picks yield a single channel type."""
+    info = pick_info(info, picks, copy=True)
+    if len(info.get_channel_types(unique=True)) != 1:
+        ch_types = info.get_channel_types(unique=False)
+        ch_types, counts = np.unique(ch_types, return_counts=True)
+        channels_msg = ", ".join(
+            "%s '%s' channel(s)" % t  # noqa: UP031
+            for t in zip(counts, ch_types, strict=False)
+        )
+        raise ValueError(
+            f"Only one datatype can be selected, but 'picks' results in {channels_msg}."
+        )
+
+
+def _check_value(
     item: Any,
     allowed_values: tuple | dict[Any, Any],
     item_name: str | None = None,
@@ -184,7 +200,7 @@ def check_value(
 
 
 @fill_doc
-def ensure_verbose(verbose: Any) -> int:
+def _ensure_verbose(verbose: Any) -> int:
     """Ensure that the value of verbose is valid.
 
     Parameters
@@ -204,13 +220,13 @@ def ensure_verbose(verbose: Any) -> int:
         CRITICAL=logging.CRITICAL,
     )
 
-    check_type(verbose, (bool, str, "int-like", None), item_name="verbose")
+    _check_type(verbose, (bool, str, "int-like", None), item_name="verbose")
 
     if verbose is None:
         verbose = logging.WARNING
     elif isinstance(verbose, str):
         verbose = verbose.upper()
-        check_value(verbose, logging_types, item_name="verbose")
+        _check_value(verbose, logging_types, item_name="verbose")
         verbose = logging_types[verbose]
     elif isinstance(verbose, bool):
         if verbose:
@@ -228,7 +244,7 @@ def ensure_verbose(verbose: Any) -> int:
     return verbose
 
 
-def ensure_path(item: Any, must_exist: bool) -> Path:
+def _ensure_path(item: Any, must_exist: bool) -> Path:
     """Ensure a variable is a Path.
 
     Parameters

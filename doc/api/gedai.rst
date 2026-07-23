@@ -13,4 +13,5 @@ Gedai
    :toctree: generated/
 
    Gedai
-
+   MultibandGedai
+   AdaptiveMultibandGedai

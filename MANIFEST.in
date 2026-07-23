@@ -1,1 +1,2 @@
 exclude gedai/conftest.py
+recursive-include gedai/data *.fif *.set *.mat

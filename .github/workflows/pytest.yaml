@@ -24,17 +24,20 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system .[test]
       - run: gedai sys-info --developer
+      - name: Download testing data
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests  # optional
@@ -51,10 +54,10 @@ jobs:
     name: pip pre-release - py${{ matrix.python-version }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - uses: astral-sh/setup-uv@v7
@@ -63,8 +66,11 @@ jobs:
           uv pip install --quiet --system .[test]
           uv pip install --quiet --system --upgrade --prerelease allow --only-binary :all: -i https://pypi.anaconda.org/scientific-python-nightly-wheels/simple numpy
       - run: gedai sys-info --developer
+      - name: Download testing data
+        run: |
+          python -c 'import mne; mne.datasets.testing.data_path(verbose=True)'
       - run: pytest gedai --cov=gedai --cov-report=xml --cov-config=pyproject.toml
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests  # optional

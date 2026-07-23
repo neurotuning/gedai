@@ -25,8 +25,6 @@ def modwt(data, wavelet_type, level):
         except TypeError:
             coeffs = pywt.swt(data[:, i], wavelet_type, level=level, axis=0)
 
-        # Reformat to MATLAB convention [W1, ..., WJ, VJ]
-
         # 1. Extract VJ (cAJ, Approximation at final level)
         VJ = coeffs[0][0]
 

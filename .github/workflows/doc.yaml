@@ -4,33 +4,79 @@ concurrency:
   cancel-in-progress: true
 on:  # yamllint disable-line rule:truthy
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
   push:
     branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.11
-      - run: sudo apt update && sudo apt install -y optipng
+      - run: |
+          sudo apt update
+          sudo apt install -y \
+            optipng \
+            xvfb \
+            libegl1 \
+            libgl1 \
+            libxkbcommon-x11-0 \
+            libx11-xcb1 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0
       - uses: astral-sh/setup-uv@v7
       - run: uv pip install --quiet --system .[doc]
       - run: gedai sys-info --developer
-      - run: make -C doc html
+      - name: Download data
+        run: |
+          python -c 'import mne; mne.datasets.fetch_fsaverage()'
+      - run: xvfb-run -a -s "-screen 0 1920x1080x24" env MPLBACKEND=Agg QT_API=pyqt5 MNE_3D_BACKEND=pyvistaqt make -C doc html
       - name: Prune sphinx environment
         run: rm -R ./doc/_build/html/.doctrees
       - uses: actions/upload-artifact@v7
         with:
-          name: doc-dev
+          name: doc
           path: ./doc/_build/html
 
-  deploy:
+  deploy-preview:
+    if: github.event_name == 'pull_request'
+    needs: build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: doc
+          path: ./doc
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./doc
+
+  deploy-push:
     if: github.event_name == 'push'
     needs: build
     timeout-minutes: 10
@@ -38,16 +84,49 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
-          name: doc-dev
-          path: ./doc-dev
+          name: doc
+          path: ./doc
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: ./doc-dev
-          target-folder: ./dev
+          folder: ./doc
+          target-folder: dev
+          clean-exclude: pr-preview/
           git-config-name: 'github-actions[bot]'
           git-config-email: 'github-actions[bot]@users.noreply.github.com'
-          single-commit: true
-          force: true
+          single-commit: false
+          force: false
+
+  deploy-release:
+    if: github.event_name == 'release'
+    needs: build
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: doc
+          path: ./doc
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ./doc
+          target-folder: ${{ github.event.release.tag_name }}
+          clean-exclude: pr-preview/
+          git-config-name: 'github-actions[bot]'
+          git-config-email: 'github-actions[bot]@users.noreply.github.com'
+          single-commit: false
+          force: false
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ./doc
+          target-folder: latest
+          clean-exclude: pr-preview/
+          git-config-name: 'github-actions[bot]'
+          git-config-email: 'github-actions[bot]@users.noreply.github.com'
+          single-commit: false
+          force: false

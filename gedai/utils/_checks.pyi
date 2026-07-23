@@ -31,7 +31,7 @@ class _Callable:
 
 _types: Incomplete
 
-def check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
+def _check_type(item: Any, types: tuple, item_name: str | None = None) -> None:
     """Check that item is an instance of types.
 
     Parameters
@@ -93,7 +93,7 @@ def check_verbose(verbose: Any) -> int:
         The verbosity level as an integer.
     """
 
-def ensure_path(item: Any, must_exist: bool) -> Path:
+def _ensure_path(item: Any, must_exist: bool) -> Path:
     """Ensure a variable is a Path.
 
     Parameters

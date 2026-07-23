@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 import psutil
 from packaging.requirements import Requirement
 
-from ._checks import check_type
+from ._checks import _check_type
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -27,7 +27,7 @@ def sys_info(fid: IO | None = None, developer: bool = False):
     developer : bool
         If True, display information about optional dependencies.
     """
-    check_type(developer, (bool,), "developer")
+    _check_type(developer, (bool,), "developer")
 
     ljust = 26
     out = partial(print, end="", file=fid)

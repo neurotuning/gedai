@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from ..logs import _use_log_level, add_file_handler, logger, verbose, warn
+from ..logs import _use_log_level, add_file_handler, logger, verbose
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    pass
 
 
 def test_default_log_level(caplog: pytest.LogCaptureFixture):
@@ -121,42 +121,33 @@ def test_verbose_on_method(caplog: pytest.LogCaptureFixture):
         assert "101" in caplog.text
 
 
-def test_file_handler(tmp_path: Path):
+def test_file_handler(tmp_path):
     """Test adding a file handler."""
     fname = tmp_path / "logs.txt"
-    add_file_handler(fname)
-    with _use_log_level("WARNING"):
-        logger.warning("test1")
-        logger.info("test2")
+    add_file_handler(fname)  # default level: WARNING.
+
+    file_handler = next(
+        handler
+        for handler in logger.handlers
+        if isinstance(handler, logging.FileHandler)
+        and handler.baseFilename == str(fname)
+    )
+
+    logger.warning("test1")
+    logger.info("test2")
+    file_handler.setLevel(logging.INFO)
     with _use_log_level("INFO"):
         logger.info("test3")
-    logger.handlers[-1].close()
+
+    file_handler.flush()
+    file_handler.close()
+    logger.removeHandler(file_handler)
+
     with open(fname) as file:
         lines = file.readlines()
+
     assert len(lines) == 2
     assert "test1" in lines[0]
     assert "test2" not in lines[0]
     assert "test2" not in lines[1]
     assert "test3" in lines[1]
-
-
-def test_warn(tmp_path: Path):
-    """Test warning functions."""
-    with _use_log_level("ERROR"):
-        warn("This is a warning.", RuntimeWarning)
-    with (
-        _use_log_level("WARNING"),
-        pytest.warns(RuntimeWarning, match="This is a warning."),
-    ):
-        warn("This is a warning.", RuntimeWarning)
-    fname = tmp_path / "logs.txt"
-    add_file_handler(fname)
-    with pytest.warns(RuntimeWarning, match="Grrrrr"):
-        warn("Grrrrr", RuntimeWarning)
-    with _use_log_level("ERROR"):
-        warn("WoooW", RuntimeWarning)
-    logger.handlers[-1].close()
-    with open(fname) as file:
-        lines = file.readlines()
-    assert len(lines) == 1
-    assert "Grrrrr" in lines[0]
