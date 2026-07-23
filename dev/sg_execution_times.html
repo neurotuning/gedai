@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=55c26ed414f5f8a31ebb" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="_static/scripts/fontawesome.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
-    <script src="_static/documentation_options.js?v=fbbbdeef"></script>
+    <script src="_static/documentation_options.js?v=d06af12c"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'sg_execution_times';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.17.1';
+        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -173,7 +173,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="generated/tutorials/index.html">
-    Tutorials
+    GEDAI Tutorials
   </a>
 </li>
 
@@ -212,11 +212,18 @@
       
         <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
       
         <div class="navbar-item">
 <div class="version-switcher__container dropdown pst-js-only">
@@ -305,7 +312,7 @@
 
 <li class="nav-item ">
   <a class="nav-link nav-internal" href="generated/tutorials/index.html">
-    Tutorials
+    GEDAI Tutorials
   </a>
 </li>
 
@@ -335,11 +342,18 @@
         
           <div class="navbar-item">
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button></div>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
         
           <div class="navbar-item">
 <div class="version-switcher__container dropdown pst-js-only">
@@ -419,7 +433,7 @@
                   
   <section id="computation-times">
 <span id="sphx-glr-sg-execution-times"></span><h1>Computation times<a class="headerlink" href="#computation-times" title="Link to this heading">🔗</a></h1>
-<p><strong>06:59.103</strong> total execution time for 4 files <strong>from all galleries</strong>:</p>
+<p><strong>12:00.176</strong> total execution time for 6 files <strong>from all galleries</strong>:</p>
 <div class="docutils container">
 <style scoped>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet" />
@@ -440,21 +454,29 @@ $(document).ready( function () {
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/tutorials/10_gedai_spectral.html#sphx-glr-generated-tutorials-10-gedai-spectral-py"><span class="std std-ref">GEDAI spectral</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/10_gedai_spectral.py</span></code>)</p></td>
-<td><p>02:59.640</p></td>
-<td><p>317.3</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/tutorials/basics/30_gedai_adaptive.html#sphx-glr-generated-tutorials-basics-30-gedai-adaptive-py"><span class="std std-ref">Understanding the adaptive extension of multiband GEDAI</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/basics/30_gedai_adaptive.py</span></code>)</p></td>
+<td><p>05:25.819</p></td>
+<td><p>350.9</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/tutorials/30_gedai_forward.html#sphx-glr-generated-tutorials-30-gedai-forward-py"><span class="std std-ref">GEDAI forward</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/30_gedai_forward.py</span></code>)</p></td>
-<td><p>02:33.890</p></td>
-<td><p>1116.5</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/tutorials/use/00_gedai_offline_pipeline.html#sphx-glr-generated-tutorials-use-00-gedai-offline-pipeline-py"><span class="std std-ref">Recommended Offline EEG Denoising Pipeline</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/use/00_gedai_offline_pipeline.py</span></code>)</p></td>
+<td><p>04:32.254</p></td>
+<td><p>372.8</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="generated/tutorials/00_gedai.html#sphx-glr-generated-tutorials-00-gedai-py"><span class="std std-ref">GEDAI basics</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/00_gedai.py</span></code>)</p></td>
-<td><p>01:16.305</p></td>
-<td><p>326.0</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/tutorials/basics/10_gedai_multiband.html#sphx-glr-generated-tutorials-basics-10-gedai-multiband-py"><span class="std std-ref">Understanding the multiband extension of GEDAI</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/basics/10_gedai_multiband.py</span></code>)</p></td>
+<td><p>01:14.537</p></td>
+<td><p>424.5</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/tutorials/20_gedai_online.html#sphx-glr-generated-tutorials-20-gedai-online-py"><span class="std std-ref">GEDAI online</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/20_gedai_online.py</span></code>)</p></td>
-<td><p>00:09.268</p></td>
-<td><p>262.4</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/tutorials/advanced/10_gedai_forward.html#sphx-glr-generated-tutorials-advanced-10-gedai-forward-py"><span class="std std-ref">GEDAI forward</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/advanced/10_gedai_forward.py</span></code>)</p></td>
+<td><p>00:37.024</p></td>
+<td><p>1113.1</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/tutorials/basics/00_gedai.html#sphx-glr-generated-tutorials-basics-00-gedai-py"><span class="std std-ref">Understanding the GEDAI model</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/basics/00_gedai.py</span></code>)</p></td>
+<td><p>00:07.369</p></td>
+<td><p>291.1</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/tutorials/advanced/00_gedai_online.html#sphx-glr-generated-tutorials-advanced-00-gedai-online-py"><span class="std std-ref">Using GEDAI for online (real-time) denoising</span></a> (<code class="docutils literal notranslate"><span class="pre">../tutorials/advanced/00_gedai_online.py</span></code>)</p></td>
+<td><p>00:03.174</p></td>
+<td><p>258.5</p></td>
 </tr>
 </tbody>
 </table>
@@ -490,8 +512,8 @@ $(document).ready( function () {
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="_static/scripts/bootstrap.js?digest=55c26ed414f5f8a31ebb"></script>
-<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=55c26ed414f5f8a31ebb"></script>
+  <script defer src="_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -517,7 +539,7 @@ $(document).ready( function () {
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.17.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
 </p></div>
       
     </div>
