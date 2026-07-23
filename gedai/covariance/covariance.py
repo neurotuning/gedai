@@ -1,9 +1,8 @@
-import os
-
 import mne
 import numpy as np
 import sklearn.metrics
 
+from ..data import get_leadfield_cov_path
 from ..utils._checks import _check_type
 
 
@@ -11,11 +10,7 @@ def _ensure_cov(reference_cov):
     _check_type(reference_cov, (str, mne.Covariance), "reference_cov")
     if isinstance(reference_cov, str):
         if reference_cov == "leadfield":
-            reference_cov = mne.read_cov(
-                os.path.join(
-                    os.path.dirname(__file__), "../data/fsavLEADFIELD_4_GEDAI-cov.fif"
-                )
-            )
+            reference_cov = mne.read_cov(str(get_leadfield_cov_path()))
         else:
             raise ValueError(
                 "Reference covariance must be 'leadfield'"

@@ -36,10 +36,19 @@ for key in _KEYS_MNE:
     docdict[key] = entry
 del key
 
+# Override n_jobs to avoid fragile intersphinx resolution of joblib in some builds.
 # -- A ---------------------------------------------------------------------------------
 # -- B ---------------------------------------------------------------------------------
 # -- C ---------------------------------------------------------------------------------
+docdict["cycles_per_wavelet"] = """
+cycles_per_wavelet : int
+    Minimum number of cycles targeted per wavelet band.
+    Lower-frequency bands use longer epochs to satisfy
+    this target. The default is ``12``."""
 # -- D ---------------------------------------------------------------------------------
+docdict["duration"] = """
+duration : float
+    Duration of each epoch in seconds. The default is ``1.0``."""
 # -- E ---------------------------------------------------------------------------------
 # -- F ---------------------------------------------------------------------------------
 # -- G ---------------------------------------------------------------------------------
@@ -50,11 +59,28 @@ del key
 # -- L ---------------------------------------------------------------------------------
 # -- M ---------------------------------------------------------------------------------
 # -- N ---------------------------------------------------------------------------------
+docdict["n_jobs"] = """
+n_jobs : int | None
+    The number of jobs to run in parallel. If ``-1``, use all available CPU cores.
+    If ``1`` or ``None``, computations are run serially."""
 docdict["noise_multiplier"] = """
 noise_multiplier : float
     The noise multiplier to use for artefact threshold rejection optimization."""
 # -- O ---------------------------------------------------------------------------------
+docdict["overlap"] = """
+overlap : float
+    The overlap ratio between consecutive epochs, between ``0`` and ``1``.
+    The default is ``0.5`` (50%% overlap). For example, ``0.5`` means 50%%
+    overlap and ``0.75`` means 75%% overlap."""
 # -- P ---------------------------------------------------------------------------------
+docdict["picks"] = """
+picks : str | list | slice
+    Channels to include. Note that all channels selected must have the same
+    type. Slices and lists of integers will be interpreted as channel indices.
+    In lists, channel name strings (e.g. ``['Fp1', 'Fp2']``) will pick the given
+    channels. Can also be the string values ``"all"`` to pick all channels, or
+    ``"data"`` to pick data channels. The default is ``"eeg"`` to pick all
+    EEG channels."""
 # -- Q ---------------------------------------------------------------------------------
 # -- R ---------------------------------------------------------------------------------
 docdict["reference_cov"] = """
@@ -63,13 +89,19 @@ reference_cov : str | mne.Covariance
     The precomputed covariance if computed from a leadfield made using 1005 EEG channels
     layout and fsaverage head model.
     If :class:`mne.Covariance`, use a pre-computed covariance.
-    See :func:`~gedai.gedai.compute_covariance_from_forward` for more details on how
-    compute a covariance from a forward solution."""
+    See :func:`~gedai.covariance.compute_covariance_from_forward` for more
+    details on how to compute a covariance from a forward solution."""
+docdict["reject_by_annotation"] = """
+reject_by_annotation : bool
+    Whether annotated bad segments should be rejected.
+    It is recommended to set this to ``False`` for fitting, since the
+    algorithm needs to learn from bad segments.
+    The default is ``False``."""
 # -- S ---------------------------------------------------------------------------------
 docdict["sensai_method"] = """
 sensai_method : str
-    The method to use for threshold optimization. Can be ``'gridsearch'`` or
-    ``'optimize'``. The default is ``'optimize'``."""
+    The method to use for threshold optimization.
+    Can be only be``'gridsearch'`` for now."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------
@@ -81,10 +113,27 @@ verbose : int | str | bool | None
     ``"WARNING"`` for False and to ``"INFO"`` for True."""
 
 # -- W ---------------------------------------------------------------------------------
+docdict["wavelet_level"] = """
+wavelet_level : int
+    Wavelet decomposition level. Must be greater than ``0``.
+    The default is ``4``."""
+docdict["wavelet_low_cutoff"] = """
+wavelet_low_cutoff : float | None
+    If a float is provided, zero out all wavelet levels whose upper frequency
+    bound is below this cutoff frequency in Hz. If ``None``, no frequency band
+    is zeroed out. If ``"auto"``, the cutoff is automatically determined based
+    on the info['highpass'] value of the fitted instance. While reading data
+    from a file, info['highpass'] might be missing (i.e., equal to 0.0). If
+    you know that your data has been high-pass filtered, make sure to set
+    ``wavelet_low_cutoff`` to the high-pass cutoff frequency.
+    The default is ``"auto"``."""
+docdict["wavelet_type"] = """
+wavelet_type : str
+    Wavelet to use for the decomposition. The default is ``'haar'``.
+    See :py:func:`pywt.wavedec` for the list of available wavelets."""
 # -- X ---------------------------------------------------------------------------------
 # -- Y ---------------------------------------------------------------------------------
 # -- Z ---------------------------------------------------------------------------------
-
 # -- Documentation functions -----------------------------------------------------------
 docdict_indented: dict[int, dict[str, str]] = dict()
 

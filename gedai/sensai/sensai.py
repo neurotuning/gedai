@@ -43,8 +43,8 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
 def _sensai_to_eigen(sensai_value, eigenvalues):
     all_diagonals = np.abs(eigenvalues.T.flatten())
     log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
-    T1 = (105 - sensai_value) / 100
-    threshold1 = T1 * np.percentile(log_eig_val_all, 95)
+    T1 = (105 - sensai_value) / 100  # TODO: Is altered by data units (Vol vs uV)
+    threshold1 = T1 * np.percentile(log_eig_val_all, 98)
     eigenvalue = np.exp(threshold1 - 100)
     return eigenvalue
 
@@ -53,7 +53,7 @@ def _eigen_to_sensai(eigenvalue, eigenvalues):
     all_diagonals = np.abs(eigenvalues.T.flatten())
     log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
     threshold1 = np.log(eigenvalue) + 100
-    T1 = threshold1 / np.percentile(log_eig_val_all, 95)
+    T1 = threshold1 / np.percentile(log_eig_val_all, 98)
     sensai_value = 105 - T1 * 100
     return sensai_value
 
@@ -155,7 +155,13 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
 
 
 def _sensai_gridsearch(
-    epochs, reference_cov, n_pc, noise_multiplier, eigen_thresholds, n_jobs=1
+    epochs,
+    reference_cov,
+    n_pc,
+    noise_multiplier,
+    eigen_thresholds,
+    n_jobs=1,
+    verbose=None,
 ):
     if n_jobs == 1:
         runs = [
@@ -164,7 +170,7 @@ def _sensai_gridsearch(
         ]
     else:
         parallel, p_fun, _ = parallel_func(
-            _sensai_score, n_jobs, total=len(eigen_thresholds)
+            _sensai_score, n_jobs, total=len(eigen_thresholds), verbose=verbose
         )
         runs = parallel(
             p_fun(epochs, threshold, reference_cov, n_pc, noise_multiplier)
@@ -204,7 +210,15 @@ def _sensai_optimize(
         )
         return -score
 
-    result = minimize_scalar(objective_function, bounds=bounds, method="bounded")
+    result = minimize_scalar(
+        objective_function,
+        bounds=bounds,
+        method="bounded",
+        options={
+            "xatol": 0.01,
+            "maxiter": 500,
+        },
+    )
 
     if not result.success:
         raise ValueError("Optimization failed: " + result.message)

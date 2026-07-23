@@ -1,37 +1,47 @@
 """
-GEDAI basics
-============
+Understanding the GEDAI model
+=============================
 
-This tutorial demonstrates how to use GEDAI (Generalized Eigenvalue De-Artifacting
-Instrument) to denoise EEG data. GEDAI is an unsupervised denoising method based
-on leadfield filtering that separates brain signals from noise and artifacts.
+In this first tutorial, we introduce the GEDAI
+(Generalized Eigenvalue De-Artifacting Instrument) model. GEDAI is an
+unsupervised method for denoising EEG data.
+
+.. note::
+
+    This tutorial focuses on model understanding. For practical workflows,
+    continue with tutorials from the ``use`` section (offline templates)
+    and the ``advanced`` section (online and forward-model workflows).
 
 """
 
 # %%
 import matplotlib.pyplot as plt
-from mne.datasets import eegbci
-from mne.io import concatenate_raws, read_raw_edf
+from mne.io import read_raw
 
 from gedai import Gedai
+from gedai.data import get_contaminated_eeg_set_path
 from gedai.viz import plot_mne_style_overlay_interactive
 
+# %%
+# The GEDAI model can be fitted on :class:`~mne.io.Raw` or :class:`~mne.Epochs` objects.
 # %% Load sample EEG data
-subjects = [1]  # may vary
-runs = [4, 8, 12]  # may vary
-raw_fnames = eegbci.load_data(subjects, runs, update_path=True)
-raws = [read_raw_edf(f, preload=True) for f in raw_fnames]
-# Concatenate runs from the same subject
-raw = concatenate_raws(raws)
-# Make channel names follow standard conventions
-eegbci.standardize(raw)
+raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
-# Crop to the first 15 seconds for demonstration purposes
-# (Remove or adjust this for full data analysis)
-raw.crop(0, 15)
-raw.pick("eeg").load_data().apply_proj()
+# %%
+# For simplicity, we will only use the first 30 seconds of the data in this tutorial.
+# In practice, it is recommended to use the full recording for fitting the GEDAI model,
+# as this allows the model to better capture the noise characteristics of the data.
 
-# Apply average reference (standard preprocessing for EEG)
+raw.crop(0, 30)
+
+# %%
+# GEDAI will automatically apply an average reference before fitting or
+# transforming the data.
+# If the data was referenced to a different reference during acquisition, it is
+# recommended to add the reference channel to the data before using GEDAI. This
+# way the rank of the data will be preserved, and you will be able to reference
+# the data to another reference after denoising if needed.
+
 raw.set_eeg_reference("average", projection=False)
 
 # %%
@@ -68,10 +78,11 @@ reject_by_annotation = False  # default
 
 # %%
 # The reference covariance defines what good data should look like.
-# For now, only ``leadfield`` is supported, which loads a precomputed
-# leadfield covariance matrix based on the standard 10-20 montage.
-# Future versions may allow user-defined reference covariances, including
-# custom montages and subject-specific leadfield matrices.
+# The dfault ``leadfield`` option uses a covariance matrix
+# based on a generic head model and the standard 10-20 montage.
+# It is possible to use a custom reference covariance matrix instead,
+# for example, by using the :func:`~gedai.covariance.compute_covariance_from_forward`
+# function. This topic is covered in the ``advanced`` section of the tutorials.
 
 reference_cov = "leadfield"
 
@@ -96,10 +107,9 @@ reference_cov = "leadfield"
 noise_multiplier = 3.0
 
 # %%
-# The optimal threshold can be determined either by grid search (``gridsearch``)
-# over possible threshold values or by optimizing a cost function (``optimize``).
-# The resulting threshold should be similar in both cases, but the computational
-# time may vary depending on your CPU capabilities.
+# The optimal threshold can be only be determined by grid search (``gridsearch``)
+# over possible threshold values for now. Optimization-based methods
+# will be added in future releases.
 
 sensai_method = "gridsearch"
 
@@ -147,13 +157,11 @@ plt.show()
 # from the data. The transform operation projects out the noise components
 # while preserving the brain signals.
 
-raw_corrected = gedai.transform_raw(
-    raw, duration=duration, overlap=overlap, verbose=False
-)
+denoised_raw = gedai.transform_raw(raw, overlap=overlap, verbose=False)
 
 # %%
 # We can visualize the difference between the original and denoised data using
 # an interactive plot. This allows you to inspect individual channels and see
 # how ``GEDAI`` has removed artifacts while preserving neural signals.
 
-plot_mne_style_overlay_interactive(raw, raw_corrected)
+plot_mne_style_overlay_interactive(raw, denoised_raw)

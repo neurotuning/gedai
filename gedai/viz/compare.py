@@ -12,7 +12,7 @@ def plot_mne_style_overlay_interactive(raw_noisy, raw_clean, title=None, duratio
     start_idx = 0
     end_idx = np.searchsorted(times, duration)
     plot_mode = "overlay"  # 'overlay', 'diff', 'denoised_only', or 'noisy_only'
-    mag_scale = 5.0
+    mag_scale = 1
     fig, ax = plt.subplots(figsize=(12, 0.5 * n_chans + 4))
     offsets = np.arange(n_chans) * spacing
     ylim = (-spacing, offsets[-1] + spacing)

@@ -126,12 +126,22 @@ def test_file_handler(tmp_path):
     fname = tmp_path / "logs.txt"
     add_file_handler(fname)  # default level: WARNING.
 
+    file_handler = next(
+        handler
+        for handler in logger.handlers
+        if isinstance(handler, logging.FileHandler)
+        and handler.baseFilename == str(fname)
+    )
+
     logger.warning("test1")
     logger.info("test2")
-    logger.handlers[-1].setLevel(logging.INFO)
-    logger.info("test3")
+    file_handler.setLevel(logging.INFO)
+    with _use_log_level("INFO"):
+        logger.info("test3")
 
-    logger.handlers[-1].close()
+    file_handler.flush()
+    file_handler.close()
+    logger.removeHandler(file_handler)
 
     with open(fname) as file:
         lines = file.readlines()

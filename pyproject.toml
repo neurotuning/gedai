@@ -163,8 +163,9 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 'gedai' = [
-  'gedai/data/fsavLEADFIELD_4_GEDAI.mat',
-  'gedai/data/OPENMEEG_BEM_leadfield_4_GEDAI_343_electrodes.mat',
+  'data/*.fif',
+  'data/*.mat',
+  'data/*.set',
 ]
 
 [tool.setuptools.packages.find]
