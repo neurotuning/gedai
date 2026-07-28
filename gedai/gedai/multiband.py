@@ -4,8 +4,18 @@ from mne import BaseEpochs
 from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 
+from gedai.gedai._utils import (
+    _prepare_epochs_transform,
+    _prepare_raw_fit,
+    _prepare_raw_transform,
+    _prepare_epochs_fit,
+    _check_fit_info,
+)
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
+from ..utils._checks import (
+    _check_n_jobs,
+    _check_type,
+)
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
@@ -223,26 +233,20 @@ class MultibandGedai:
         _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        picks = _picks_to_idx(epochs.info, picks, none="all", exclude=[])
-        _check_picks_uniqueness(epochs.info, picks)
-        epochs = epochs.copy()
-        epochs.load_data()
-        epochs = epochs.pick(picks)
-        logger.info("Setting average reference.")
-        epochs.set_eeg_reference("average", projection=False)
-        data = epochs.get_data()
+        epochs_fit = _prepare_epochs_fit(epochs, picks)
+        data = epochs_fit.get_data()
 
         cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, epochs.info["ch_names"])
+        cov = _pick_cov(cov, epochs_fit.info["ch_names"])
 
-        epoch_duration = epochs.tmax - epochs.tmin
+        epoch_duration = epochs_fit.tmax - epochs_fit.tmin
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
-            wavelet_low_cutoff, epochs.info["highpass"], epoch_duration
+            wavelet_low_cutoff, epochs_fit.info["highpass"], epoch_duration
         )
 
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
             data,
-            sfreq=epochs.info["sfreq"],
+            sfreq=epochs_fit.info["sfreq"],
             wavelet=self.wavelet_type,
             level=self.wavelet_level,
             n_jobs=n_jobs,
@@ -293,11 +297,14 @@ class MultibandGedai:
                 }
             wavelets_fits.append(wavelet_fit)
 
+        self.fitted = True
+        self._info = epochs_fit.info.copy()
+        self._reference_cov = cov  # No regularization applied
+
         self._levels = levels
         self._wavelets_fits = wavelets_fits
-        self._reference_cov = cov  # No regularization applied
         self._wavelet_low_cutoff = wavelet_low_cutoff
-        self.fitted = True
+
 
     @fill_doc
     @verbose
@@ -355,9 +362,11 @@ class MultibandGedai:
             )
         duration = valid_duration
 
+        raw_fit = _prepare_raw_fit(raw, picks)
+
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
-            raw,
+            raw_fit,
             duration=duration,
             overlap=overlap_seconds,
             reject_by_annotation=reject_by_annotation,
@@ -391,50 +400,21 @@ class MultibandGedai:
 
         Returns
         -------
-        epochs : mne.Epochs
+        epochs_transformed : mne.Epochs
             The transformed epochs.
         """
         self._check_fit()
         _check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
 
-        missing_ch = set(self.ch_names) - set(epochs.info["ch_names"])
-        if len(missing_ch) > 0:
-            raise ValueError(
-                "The following channels are missing in the input inst but were "
-                "present during fitting: "
-                f"{missing_ch}. \n"
-                "Please make sure to include the same channels during transform "
-                "as were used during fit. \n"
-                "See "
-                f"{self.__class__.__name__}.ch_names "
-                "for the list of channels used during fit."
-            )
-        extra_ch = set(epochs.info["ch_names"]) - set(self.ch_names)
-        if len(extra_ch) > 0:
-            raise ValueError(
-                "The following channels are present in the input inst but were "
-                "not present during fitting: "
-                f"{extra_ch}. \n"
-                "These channels will be ignored during transformation. \n"
-                "Please make sure to include the same channels during transform "
-                "as were used during fit. \n"
-                "See "
-                f"{self.__class__.__name__}.ch_names "
-                "for the list of channels used during fit."
-            )
+        _check_fit_info(self, epochs)
+        epochs_transform = _prepare_epochs_transform(epochs, self.ch_names)
 
-        picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
-        epochs_copy = epochs.copy()
-        epochs_copy.load_data()
-        epochs_copy = epochs_copy.pick(picks)
-        logger.info("Setting average reference.")
-        epochs_copy.set_eeg_reference("average", projection=False)
-        data = epochs_copy.get_data()
+        data = epochs_transform.get_data()
 
         epochs_wavelet, _, levels = epochs_to_wavelet(
             data,
-            sfreq=epochs_copy.info["sfreq"],
+            sfreq=epochs_transform.info["sfreq"],
             wavelet=self.wavelet_type,
             level=self.wavelet_level,
             n_jobs=n_jobs,
@@ -458,8 +438,8 @@ class MultibandGedai:
             wavelet_epochs_data = epochs_wavelet[:, :, band_idx, :]
             wavelet_epochs = mne.EpochsArray(
                 wavelet_epochs_data,
-                epochs_copy.info,
-                tmin=epochs_copy.tmin,
+                epochs_transform.info,
+                tmin=epochs_transform.tmin,
                 verbose=False,
             )
             cleaned_wavelet_epochs = wavelet_fit["model"].transform_epochs(
@@ -472,9 +452,8 @@ class MultibandGedai:
             )
 
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
-        cleaned_epochs = epochs.copy()
-        cleaned_epochs._data = cleaned_epochs_data
-        return cleaned_epochs
+        epochs_transform._data = cleaned_epochs_data
+        return epochs_transform
 
     @fill_doc
     @verbose
@@ -497,8 +476,8 @@ class MultibandGedai:
 
         Returns
         -------
-        raw_corrected : mne.io.BaseRaw
-            The corrected raw data.
+        raw_transformed : mne.io.BaseRaw
+            The transformed raw data.
         """
         self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
@@ -508,7 +487,10 @@ class MultibandGedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
-        raw_data = raw.get_data(verbose=False)
+        _check_fit_info(self, raw)
+        raw_transform = _prepare_raw_transform(raw, self.ch_names)
+
+        raw_data = raw_transform.get_data(verbose=False)
         _, n_times = raw_data.shape
 
         # all models are fitted with the same duration
@@ -518,7 +500,7 @@ class MultibandGedai:
         window_size = max(n_samples)
         window = create_cosine_weights(window_size)
 
-        raw_corrected = np.zeros_like(raw_data)
+        raw_transformed_data = np.zeros_like(raw_data)
         weight_sum = np.zeros_like(raw_data)
 
         step = int(window_size * (1 - overlap))
@@ -540,14 +522,14 @@ class MultibandGedai:
 
         for s, start in enumerate(starts):
             corrected_segment = corrected_segments[s] * window
-            raw_corrected[:, start : start + window_size] += corrected_segment
+            raw_transformed_data[:, start : start + window_size] += corrected_segment
             weight_sum[:, start : start + window_size] += window
 
         weight_sum[weight_sum == 0] = 1
-        raw_corrected /= weight_sum
+        raw_transformed_data /= weight_sum
 
-        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=verbose)
-        return raw_corrected
+        raw_transform._data = raw_transformed_data
+        return raw_transform
 
     def plot_fit(self):
         """Plot the fitting results.
