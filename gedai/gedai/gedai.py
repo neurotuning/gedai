@@ -2,17 +2,16 @@ import matplotlib.pyplot as plt
 import mne
 import numpy as np
 from mne import BaseEpochs
-from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
-from mne.parallel import _check_n_jobs, parallel_func
+from mne.parallel import parallel_func
 from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
-    _prepare_raw_fit,
-    _prepare_raw_transform,
+    _check_fit_info,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
-    _check_fit_info,
+    _prepare_raw_fit,
+    _prepare_raw_transform,
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
@@ -27,7 +26,7 @@ from ..utils._checks import (
     _check_type,
 )
 from ..utils._docs import fill_doc
-from ..utils.logs import logger, verbose
+from ..utils.logs import verbose
 
 
 def create_cosine_weights(n_samples):
@@ -143,7 +142,10 @@ class Gedai:
             eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
             epochs_eigenvalues[e] = eigenvalues
 
-        fit_epochs = mne.EpochsArray(data, epochs_fit.info, tmin=epochs.tmin, verbose=False)
+        fit_epochs = mne.EpochsArray(data,
+                                     epochs_fit.info,
+                                     tmin=epochs.tmin,
+                                     verbose=False)
         min_sensai_threshold, max_sensai_threshold, step = (
             -6,
             12,
@@ -239,7 +241,7 @@ class Gedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
-        
+
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
             raw_fit,
@@ -373,7 +375,9 @@ class Gedai:
             all_segments.append(segment)
 
         all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array, raw_transform.info, verbose=False)
+        segments_epochs = mne.EpochsArray(all_segments_array,
+                                          raw_transform.info,
+                                          verbose=False)
 
         corrected_segments_epochs = self.transform_epochs(
             segments_epochs, n_jobs=n_jobs, verbose=False

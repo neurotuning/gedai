@@ -1,12 +1,11 @@
 import mne
 import numpy as np
-from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
+    _check_fit_info,
     _prepare_raw_fit,
     _prepare_raw_transform,
-    _check_fit_info,
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov

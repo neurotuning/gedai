@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
-from mne import epochs, pick_info
+from mne import pick_info
 
 from ._docs import fill_doc
 

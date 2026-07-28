@@ -1,10 +1,11 @@
 
 import numpy as np
 from mne import BaseEpochs
-from mne.io import BaseRaw
 from mne._fiff.pick import _picks_to_idx
-from ..utils.logs import logger, verbose
+from mne.io import BaseRaw
+
 from ..utils._checks import _check_picks_uniqueness
+from ..utils.logs import logger
 
 
 def _check_fit_info(model, inst):
