@@ -366,8 +366,8 @@ class AdaptiveMultibandGedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
+        _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
-        _check_fit_info(self, raw_transform)
 
         sfreq = raw_transform.info["sfreq"]
         raw_data = raw_transform.get_data(verbose=False)

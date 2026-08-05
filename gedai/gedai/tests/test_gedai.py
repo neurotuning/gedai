@@ -15,36 +15,39 @@ epochs_eeg = make_fixed_length_epochs(raw_eeg, duration=1.0, overlap=0)
 
 def test_gedai_fit_transform_epochs():
     """Test Gedai transform on epochs data."""
-    gedai = Gedai()
-    gedai.fit_epochs(epochs_eeg)
-    transformed_epochs = gedai.transform_epochs(epochs_eeg)
+    model = Gedai()
+    model.fit_epochs(epochs_eeg)
+    transformed_epochs = model.transform_epochs(epochs_eeg)
+    assert transformed_epochs.info['ch_names'] == epochs_eeg.info['ch_names']
+    assert transformed_epochs.info['sfreq'] == epochs_eeg.info['sfreq']
     assert epochs_eeg.metadata == transformed_epochs.metadata
 
 
 def test_gedai_fit_transform_raw():
     """Test Gedai transform on raw data."""
-    gedai = Gedai()
-    gedai.fit_raw(raw_eeg)
-    transformed_raw = gedai.transform_raw(raw_eeg)
+    model = Gedai()
+    model.fit_raw(raw_eeg)
+    transformed_raw = model.transform_raw(raw_eeg)
     assert transformed_raw.info['ch_names'] == raw_eeg.info['ch_names']
+    assert transformed_raw.info['sfreq'] == raw_eeg.info['sfreq']
     assert raw_eeg.annotations == transformed_raw.annotations
 
 
 def test_gedai_epochs_picks():
     """Test Gedai fit on epochs data."""
-    gedai = Gedai()
-    gedai.fit_epochs(epochs_eeg, picks="all")
-    assert gedai.ch_names == epochs_eeg.ch_names
+    model = Gedai()
+    model.fit_epochs(epochs_eeg, picks="all")
+    assert model.ch_names == epochs_eeg.ch_names
 
-    gedai = Gedai()
-    gedai.fit_epochs(epochs_eeg, picks="data")
-    assert gedai.ch_names == epochs_eeg.ch_names
+    model = Gedai()
+    model.fit_epochs(epochs_eeg, picks="data")
+    assert model.ch_names == epochs_eeg.ch_names
 
-    gedai = Gedai()
-    gedai.fit_epochs(epochs_eeg, picks=epochs_eeg.ch_names[:10])
-    assert gedai.ch_names == epochs_eeg.ch_names[:10]
+    model = Gedai()
+    model.fit_epochs(epochs_eeg, picks=epochs_eeg.ch_names[:10])
+    assert model.ch_names == epochs_eeg.ch_names[:10]
 
-    epochs_transformed = gedai.transform_epochs(epochs_eeg)
+    epochs_transformed = model.transform_epochs(epochs_eeg)
     assert epochs_transformed.ch_names == epochs_eeg.ch_names[:10]
 
     epochs_test = epochs_eeg.copy()
@@ -54,24 +57,24 @@ def test_gedai_epochs_picks():
         ValueError,
         match="The following channels are missing in the input inst but were present",
     ):
-        gedai.transform_epochs(epochs_test)
+        model.transform_epochs(epochs_test)
 
 
 def test_gedai_raw_picks():
     """Test Gedai fit on raw data."""
-    gedai = Gedai()
-    gedai.fit_raw(raw_eeg, picks="all")
-    assert gedai.ch_names == raw_eeg.ch_names
+    model = Gedai()
+    model.fit_raw(raw_eeg, picks="all")
+    assert model.ch_names == raw_eeg.ch_names
 
-    gedai = Gedai()
-    gedai.fit_raw(raw_eeg, picks="data")
-    assert gedai.ch_names == raw_eeg.ch_names
+    model = Gedai()
+    model.fit_raw(raw_eeg, picks="data")
+    assert model.ch_names == raw_eeg.ch_names
 
-    gedai = Gedai()
-    gedai.fit_raw(raw_eeg, picks=raw_eeg.ch_names[:10])
-    assert gedai.ch_names == raw_eeg.ch_names[:10]
+    model = Gedai()
+    model.fit_raw(raw_eeg, picks=raw_eeg.ch_names[:10])
+    assert model.ch_names == raw_eeg.ch_names[:10]
 
-    raw_transformed = gedai.transform_raw(raw_eeg)
+    raw_transformed = model.transform_raw(raw_eeg)
     assert raw_transformed.ch_names == raw_eeg.ch_names[:10]
 
     raw_test = raw_eeg.copy()
@@ -81,4 +84,4 @@ def test_gedai_raw_picks():
         ValueError,
         match="The following channels are missing in the input inst but were present",
     ):
-        gedai.transform_raw(raw_test)
+        model.transform_raw(raw_test)
