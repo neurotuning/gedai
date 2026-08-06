@@ -1,8 +1,8 @@
 """Tests for multiband GEDAI."""
 
 import mne
-from mne import make_fixed_length_epochs
 import pytest
+from mne import make_fixed_length_epochs
 
 from gedai import MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path

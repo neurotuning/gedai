@@ -273,7 +273,10 @@ class MultibandGedai:
             else:
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
                 wavelet_epochs = mne.EpochsArray(
-                    wavelet_epochs_data, epochs_fit.info, tmin=epochs_fit.tmin, verbose=False
+                    wavelet_epochs_data,
+                    epochs_fit.info,
+                    tmin=epochs_fit.tmin,
+                    verbose=False
                 )
 
                 model = Gedai()
@@ -513,7 +516,10 @@ class MultibandGedai:
             all_segments.append(segment)
 
         all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array, raw_transform.info, verbose=verbose)
+        segments_epochs = mne.EpochsArray(
+            all_segments_array,
+            raw_transform.info,
+            verbose=verbose)
 
         corrected_segments_epochs = self.transform_epochs(
             segments_epochs, n_jobs=n_jobs, verbose=verbose
