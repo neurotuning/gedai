@@ -195,7 +195,7 @@ class Gedai:
         self.fitted = True
         self._info = epochs_fit.info.copy()
         self._reference_cov = cov # Regularization applied
-
+        self._duration = (epochs_fit.get_data().shape[-1] - 1) / epochs_fit.info["sfreq"]
         self._n_samples = data.shape[-1]
 
     @fill_doc
