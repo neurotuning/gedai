@@ -25,8 +25,8 @@ def _check_fit_info(model, inst):
         raise ValueError(
             f"Sampling frequency of input raw ({inst.info['sfreq']} Hz) does not match "
             f"the sampling frequency of the data used during fit "
-            f"({model.info['sfreq']} Hz). You can resample the raw to "
-            f"{model.info['sfreq']} Hz before calling transform_raw."
+            f"({model._info['sfreq']} Hz). You can resample the raw to "
+            f"{model._info['sfreq']} Hz before calling transform_raw."
         )
     return
 
@@ -91,7 +91,7 @@ def _prepare_epochs_transform(epochs, picks):
     epochs_transform.load_data()
     epochs_transform = epochs_transform.pick(picks)
 
-    extra_ch = set(epochs_transform.info["ch_names"]) - set(epochs.ch_names)
+    extra_ch = set(epochs.ch_names) - set(epochs_transform.info["ch_names"])
     if len(extra_ch) > 0:
         logger.warning(
             "The following channels are present in the input inst but were "
@@ -130,7 +130,7 @@ def _prepare_raw_transform(raw, picks):
     picks = _picks_to_idx(raw.info, picks, none="all", exclude=[])
     raw_transform = raw.copy().load_data().pick(picks)
 
-    extra_ch = set(raw_transform.info["ch_names"]) - set(raw.ch_names)
+    extra_ch = set(raw.ch_names) - set(raw_transform.info["ch_names"])
     if len(extra_ch) > 0:
         logger.warning(
             "The following channels are present in the input inst but were "

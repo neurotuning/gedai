@@ -68,6 +68,7 @@ class Gedai:
         self._reference_cov = None
         self._info = None
         self._n_samples = None
+        self._duration = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -197,6 +198,7 @@ class Gedai:
         self._reference_cov = cov # Regularization applied
 
         self._n_samples = data.shape[-1]
+        self._duration = epochs_fit.times[-1] - epochs_fit.times[0]
 
     @fill_doc
     @verbose
