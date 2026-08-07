@@ -2,10 +2,17 @@ import matplotlib.pyplot as plt
 import mne
 import numpy as np
 from mne import BaseEpochs
-from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 from mne.parallel import parallel_func
 from scipy.linalg import eigh
+
+from gedai.gedai._utils import (
+    _check_fit_info,
+    _prepare_epochs_fit,
+    _prepare_epochs_transform,
+    _prepare_raw_fit,
+    _prepare_raw_transform,
+)
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..sensai.sensai import (
@@ -14,9 +21,12 @@ from ..sensai.sensai import (
     _sensai_optimize,
     _sensai_to_eigen,
 )
-from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
+from ..utils._checks import (
+    _check_n_jobs,
+    _check_type,
+)
 from ..utils._docs import fill_doc
-from ..utils.logs import logger, verbose
+from ..utils.logs import verbose
 
 
 def create_cosine_weights(n_samples):
@@ -113,17 +123,11 @@ class Gedai:
         _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        picks = _picks_to_idx(epochs.info, picks, none="all", exclude=[])
-        _check_picks_uniqueness(epochs.info, picks)
-        epochs = epochs.copy()
-        epochs.load_data()
-        epochs = epochs.pick(picks, verbose=False)
-        logger.info("Setting average reference.")
-        epochs.set_eeg_reference("average", projection=False, verbose=False)
-        data = epochs.get_data(verbose=False)
+        epochs_fit = _prepare_epochs_fit(epochs, picks)
+        data = epochs_fit.get_data()
 
         cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, epochs.info["ch_names"])
+        cov = _pick_cov(cov, epochs_fit.info["ch_names"])
         reference_cov = cov.data
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
@@ -138,7 +142,10 @@ class Gedai:
             eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
             epochs_eigenvalues[e] = eigenvalues
 
-        fit_epochs = mne.EpochsArray(data, epochs.info, tmin=epochs.tmin, verbose=False)
+        fit_epochs = mne.EpochsArray(data,
+                                     epochs_fit.info,
+                                     tmin=epochs.tmin,
+                                     verbose=False)
         min_sensai_threshold, max_sensai_threshold, step = (
             -6,
             12,
@@ -184,9 +191,11 @@ class Gedai:
             "epochs_eigenvalues": epochs_eigenvalues,
             "sensai_runs": runs,
         }
-        self._reference_cov = cov
+
         self.fitted = True
-        self._info = epochs.info.copy()
+        self._info = epochs_fit.info.copy()
+        self._reference_cov = cov # Regularization applied
+
         self._n_samples = data.shape[-1]
 
     @fill_doc
@@ -231,9 +240,11 @@ class Gedai:
         _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        raw_fit = _prepare_raw_fit(raw, picks)
+
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
-            raw,
+            raw_fit,
             duration=duration,
             overlap=overlap_seconds,
             reject_by_annotation=reject_by_annotation,
@@ -266,45 +277,12 @@ class Gedai:
 
         Returns
         -------
-        epochs : mne.Epochs
+        epochs_transformed : mne.Epochs
             The transformed epochs.
         """
         self._check_fit()
         _check_type(epochs, (BaseEpochs,), "epochs")
         n_jobs = _check_n_jobs(n_jobs)
-
-        missing_ch = set(self.ch_names) - set(epochs.info["ch_names"])
-        if len(missing_ch) > 0:
-            raise ValueError(
-                "The following channels are missing in the input inst but were "
-                "present during fitting: "
-                f"{missing_ch}. \n"
-                "Please make sure to include the same channels during transform "
-                "as were used during fit. \n"
-                "See "
-                f"{self.__class__.__name__}.ch_names "
-                "for the list of channels used during fit."
-            )
-        extra_ch = set(epochs.info["ch_names"]) - set(self.ch_names)
-        if len(extra_ch) > 0:
-            raise ValueError(
-                "The following channels are present in the input inst but were "
-                "not present during fitting: "
-                f"{extra_ch}. \n"
-                "These channels will be ignored during transformation. \n"
-                "Please make sure to include the same channels during transform "
-                "as were used during fit. \n"
-                "See "
-                f"{self.__class__.__name__}.ch_names "
-                "for the list of channels used during fit."
-            )
-
-        if epochs.info["sfreq"] != self._info["sfreq"]:
-            raise ValueError(
-                f"Sampling frequency mismatch between fitted model and input instance."
-                f"nFitted model sfreq: {self._info['sfreq']} Hz, input instance sfreq:"
-                f" {epochs.info['sfreq']} Hz."
-            )
 
         if epochs.get_data(verbose=False).shape[-1] != self._n_samples:
             input_duration = (
@@ -318,13 +296,10 @@ class Gedai:
                 "matches the one of the data used during fit."
             )
 
-        picks = _picks_to_idx(epochs.info, self.ch_names, none="all", exclude=[])
-        epochs_copy = epochs.copy()
-        epochs_copy.load_data()
-        epochs_copy = epochs_copy.pick(picks)
-        logger.info("Setting average reference.")
-        epochs_copy.set_eeg_reference("average", projection=False)
-        data = epochs_copy.get_data(verbose=False)
+        _check_fit_info(self, epochs)
+        epochs_transform = _prepare_epochs_transform(epochs, self.ch_names)
+
+        data = epochs_transform.get_data()
 
         reference_cov = self._reference_cov.data
         threshold = self._fit["threshold"]
@@ -344,9 +319,8 @@ class Gedai:
             )
             cleaned_epochs_data = np.array(cleaned_epochs_list)
 
-        cleaned_epochs = epochs.copy()
-        cleaned_epochs._data = cleaned_epochs_data
-        return cleaned_epochs
+        epochs_transform._data = cleaned_epochs_data
+        return epochs_transform
 
     @fill_doc
     @verbose
@@ -369,8 +343,8 @@ class Gedai:
 
         Returns
         -------
-        raw_corrected : mne.io.BaseRaw
-            The corrected raw data.
+        raw_transformed : mne.io.BaseRaw
+            The transformed raw data.
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
@@ -379,13 +353,16 @@ class Gedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
-        raw_data = raw.get_data(verbose=False)
+        _check_fit_info(self, raw)
+        raw_transform = _prepare_raw_transform(raw, self.ch_names)
+
+        raw_data = raw_transform.get_data(verbose=False)
         n_channels, n_times = raw_data.shape
 
         window_size = self._n_samples
         window = create_cosine_weights(window_size)
 
-        raw_corrected = np.zeros_like(raw_data)
+        transformed_data = np.zeros_like(raw_data)
         weight_sum = np.zeros_like(raw_data)
 
         step = int(window_size * (1 - overlap))
@@ -398,7 +375,9 @@ class Gedai:
             all_segments.append(segment)
 
         all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array, raw.info, verbose=False)
+        segments_epochs = mne.EpochsArray(all_segments_array,
+                                          raw_transform.info,
+                                          verbose=False)
 
         corrected_segments_epochs = self.transform_epochs(
             segments_epochs, n_jobs=n_jobs, verbose=False
@@ -407,14 +386,15 @@ class Gedai:
 
         for s, start in enumerate(starts):
             corrected_segment = corrected_segments[s] * window
-            raw_corrected[:, start : start + window_size] += corrected_segment
+            transformed_data[:, start : start + window_size] += corrected_segment
             weight_sum[:, start : start + window_size] += window
 
-        weight_sum[weight_sum == 0] = 1
-        raw_corrected /= weight_sum
+        # Normalize the transformed signal by the weight sum
+        weight_sum[weight_sum == 0] = 1  # Avoid division by zero
+        transformed_data /= weight_sum
 
-        raw_corrected = mne.io.RawArray(raw_corrected, raw.info, verbose=False)
-        return raw_corrected
+        raw_transform._data = transformed_data
+        return raw_transform
 
     def plot_fit(self):
         """Plot the fitting results.

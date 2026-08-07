@@ -1,25 +1,54 @@
 """Tests for Adaptive multiband GEDAI."""
 
 import mne
-from mne import make_fixed_length_epochs
+import pytest
 
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.gedai.adaptive import AdaptiveMultibandGedai
 
 raw_fname = get_contaminated_eeg_set_path()
-raw = mne.io.read_raw(raw_fname, preload=True)
-epochs_eeg = make_fixed_length_epochs(raw, duration=1.0, overlap=0)
+raw_eeg = mne.io.read_raw(raw_fname, preload=True)
+raw_eeg.drop_channels([ch_name for ch_name in raw_eeg.ch_names if "BIP" in ch_name])
+
 wavelet_level = 8
 
 
-def test_adaptive_fit_raw_():
-    """Fit the adaptive model on the bundled raw sample."""
-    model = AdaptiveMultibandGedai(
-        wavelet_type="haar",
-        wavelet_level=wavelet_level,
-        cycles_per_wavelet=4,
-    )
-    model.fit_raw(raw, overlap=0.5, reference_cov="leadfield", n_jobs=1)
+def test_gedai_multiband_adaptive_fit_transform_raw():
+    """Test Gedai transform on raw data."""
+    model = AdaptiveMultibandGedai()
+    model.fit_raw(raw_eeg)
     band_samples = [fit["n_samples"] for fit in model._wavelets_fits]
     assert len(band_samples) == model.wavelet_level + 1
     assert len(set(band_samples)) > 1
+
+    transformed_raw = model.transform_raw(raw_eeg)
+    assert transformed_raw.info['ch_names'] == raw_eeg.info['ch_names']
+    assert transformed_raw.info['sfreq'] == raw_eeg.info['sfreq']
+    assert raw_eeg.annotations == transformed_raw.annotations
+
+
+def test_gedai_multiband_adaptive_raw_picks():
+    """Test Gedai fit on raw data."""
+    model = AdaptiveMultibandGedai()
+    model.fit_raw(raw_eeg, picks="all")
+    assert model.ch_names == raw_eeg.ch_names
+
+    model = AdaptiveMultibandGedai()
+    model.fit_raw(raw_eeg, picks="data")
+    assert model.ch_names == raw_eeg.ch_names
+
+    model = AdaptiveMultibandGedai()
+    model.fit_raw(raw_eeg, picks=raw_eeg.ch_names[:10])
+    assert model.ch_names == raw_eeg.ch_names[:10]
+
+    raw_transformed = model.transform_raw(raw_eeg)
+    assert raw_transformed.ch_names == raw_eeg.ch_names[:10]
+
+    raw_test = raw_eeg.copy()
+    raw_test.load_data()
+    raw_test.pick_channels(raw_eeg.ch_names[:5])
+    with pytest.raises(
+        ValueError,
+        match="The following channels are missing in the input inst but were present",
+    ):
+        model.transform_raw(raw_test)

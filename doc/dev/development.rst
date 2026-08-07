@@ -1,5 +1,5 @@
 .. include:: ../links.inc
-.. include:: ./changes/authors.inc
+.. include:: ./changes/names.inc
 
 Development
 ===========
