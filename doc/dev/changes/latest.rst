@@ -30,7 +30,7 @@ Bugs
 API and behavior changes
 ------------------------
 
-- Add the :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` classes. Refractor and improve the codebase (:pr:`97` by `Victor Férat`_).
+- Add the :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` classes. Refactor and improve the codebase (:pr:`97` by `Victor Férat`_).
 
 
 Authors
