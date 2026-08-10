@@ -1,10 +1,18 @@
 import mne
 import numpy as np
-from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 
+from gedai.gedai._utils import (
+    _check_fit_info,
+    _prepare_raw_fit,
+    _prepare_raw_transform,
+)
+
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..utils._checks import _check_n_jobs, _check_picks_uniqueness, _check_type
+from ..utils._checks import (
+    _check_n_jobs,
+    _check_type,
+)
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import epochs_to_wavelet
@@ -110,7 +118,6 @@ class AdaptiveMultibandGedai:
         self._wavelets_fits = None
         self._reference_cov = None
         self._wavelet_low_cutoff = None
-        self._sfreq = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -177,16 +184,10 @@ class AdaptiveMultibandGedai:
         _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
-        picks = _picks_to_idx(raw.info, picks, none="all", exclude=[])
-        _check_picks_uniqueness(raw.info, picks)
-
-        raw_fit = raw.copy().load_data().pick(picks)
-        sfreq = raw_fit.info["sfreq"]
-
-        logger.info("Setting average reference.")
-        raw_fit.set_eeg_reference("average", projection=False)
+        raw_fit = _prepare_raw_fit(raw, picks)
 
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
+        sfreq = raw_fit.info["sfreq"]
 
         wavelet_parameters = _compute_wavelet_parameters(
             sfreq,
@@ -325,11 +326,13 @@ class AdaptiveMultibandGedai:
                     }
                 )
 
-        self._wavelets_fits = wavelets_fits
-        self._reference_cov = cov
-        self._wavelet_low_cutoff = wavelet_low_cutoff
-        self._sfreq = sfreq
         self.fitted = True
+        self._info = raw_fit.info.copy()
+        self._reference_cov = cov # No regularization applied
+
+        self._wavelets_fits = wavelets_fits
+        self._wavelet_low_cutoff = wavelet_low_cutoff
+
 
     @fill_doc
     @verbose
@@ -352,8 +355,8 @@ class AdaptiveMultibandGedai:
 
         Returns
         -------
-        raw_corrected : mne.io.BaseRaw
-            The corrected raw data.
+        raw_transformed : mne.io.BaseRaw
+            The transformed raw data.
         """
         self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
@@ -363,36 +366,14 @@ class AdaptiveMultibandGedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
-        missing_ch = set(self.ch_names) - set(raw.info["ch_names"])
-        if len(missing_ch) > 0:
-            raise ValueError(
-                "The following channels are missing in the input inst but were "
-                "present during fitting: "
-                f"{missing_ch}. \n"
-                "Please make sure to include the same channels during transform "
-                "as were used during fit. \n"
-                "See "
-                f"{self.__class__.__name__}.ch_names "
-                "for the list of channels used during fit."
-            )
+        _check_fit_info(self, raw)
+        raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
-        sfreq = raw.info["sfreq"]
-        if self._sfreq != sfreq:
-            raise ValueError(
-                f"Sampling frequency of input raw ({sfreq} Hz) does not match "
-                f"the sampling frequency of the data used during fit "
-                f"({self._sfreq} Hz). You can resample the raw to "
-                f"{self._sfreq} Hz before calling transform_raw."
-            )
-        picks = _picks_to_idx(raw.info, self.ch_names, none="all", exclude=[])
-        raw_copy = raw.copy().pick(picks)
-        raw_copy.load_data()
-        raw_copy.set_eeg_reference("average", projection=False)
-
-        raw_data = raw_copy.get_data(verbose=False)
+        sfreq = raw_transform.info["sfreq"]
+        raw_data = raw_transform.get_data(verbose=False)
         _, n_times = raw_data.shape
 
-        raw_data_corrected = np.zeros_like(raw_data)
+        raw_transformed_data = np.zeros_like(raw_data)
         for wavelet_fit in self._wavelets_fits:
             band_idx = wavelet_fit["band_index"]
             window_size = wavelet_fit["n_samples"]
@@ -434,7 +415,7 @@ class AdaptiveMultibandGedai:
                 segments_band = segments_wavelet[:, :, band_idx, :]
                 segments_epochs = mne.EpochsArray(
                     segments_band,
-                    raw_copy.info,
+                    raw_transform.info,
                     tmin=0.0,
                     verbose=False,
                 )
@@ -459,10 +440,10 @@ class AdaptiveMultibandGedai:
 
                 weight_sum[weight_sum == 0] = 1
                 band_corrected /= weight_sum
-                raw_data_corrected += band_corrected
+                raw_transformed_data += band_corrected
 
-        raw_copy._data = raw_data_corrected
-        return raw_copy
+        raw_transform._data = raw_transformed_data
+        return raw_transform
 
     def plot_fit(self):
         """Plot the fitting results.

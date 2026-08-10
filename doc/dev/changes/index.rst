@@ -1,3 +1,5 @@
+.. _changelog:
+
 Changelog
 =========
 
@@ -5,3 +7,4 @@ Changelog
     :titlesonly:
 
     latest.rst
+    0.1.0

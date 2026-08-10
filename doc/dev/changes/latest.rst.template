@@ -10,7 +10,7 @@
 .. NOTE: You can use the :pr:`xx` and :issue:`xx` role to x-ref to a GitHub PR
    or issue from this project.
 
-.. include:: ./authors.inc
+.. include:: ./names.inc
 
 .. _latest:
 

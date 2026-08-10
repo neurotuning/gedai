@@ -10,17 +10,17 @@
 .. NOTE: You can use the :pr:`xx` and :issue:`xx` role to x-ref to a GitHub PR
    or issue from this project.
 
-.. include:: ./authors.inc
+.. include:: ./names.inc
 
 .. _latest:
 
-Version 0.1
-===========
+Version 0.2.0
+=============
 
 Enhancements
 ------------
 
-- xxx
+- Keep all metadata in transformed raw (:pr:`123` by `Dominik Welke`_ and `Victor Férat`_)
 
 Bugs
 ----
@@ -30,10 +30,12 @@ Bugs
 API and behavior changes
 ------------------------
 
-- xxx
+- Add the :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` classes. Refractor and improve the codebase (:pr:`97` by `Victor Férat`_).
+
 
 Authors
 -------
 
 * `Victor Férat`_
-* `Tomas Ros`_
+* `Dominik Welke`_
+
