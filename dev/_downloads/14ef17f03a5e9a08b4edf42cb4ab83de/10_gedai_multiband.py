@@ -100,4 +100,4 @@ denoised_raw = multiband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
 #       issue by excluding lower frequency bands that may not be well
 #       estimated during the fitting process.
 
-plot_mne_style_overlay_interactive(raw, denoised_raw)
+plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)

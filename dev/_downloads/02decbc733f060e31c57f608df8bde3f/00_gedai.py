@@ -164,4 +164,4 @@ denoised_raw = gedai.transform_raw(raw, overlap=overlap, verbose=False)
 # an interactive plot. This allows you to inspect individual channels and see
 # how ``GEDAI`` has removed artifacts while preserving neural signals.
 
-plot_mne_style_overlay_interactive(raw, denoised_raw)
+plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
