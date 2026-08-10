@@ -197,6 +197,7 @@ class Gedai:
         self._reference_cov = cov # Regularization applied
 
         self._n_samples = data.shape[-1]
+        self._duration = (self._n_samples - 1) / self._info["sfreq"]
 
     @fill_doc
     @verbose
