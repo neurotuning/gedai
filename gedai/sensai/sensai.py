@@ -539,7 +539,15 @@ def compute_composite_sensai(
     sensai_score : float
         Composite SENSAI score in percent.
     """
-    _, ref_evecs = eigh(reference_cov)
+    # Symmetrize and regularize reference covariance (matches MATLAB SENSAI_basic.m)
+    ref_cov = np.real(np.asarray(reference_cov, dtype=np.float64))
+    ref_cov = (ref_cov + ref_cov.T) * 0.5
+    lam = 0.05
+    trace = np.trace(ref_cov) / ref_cov.shape[0] if ref_cov.shape[0] > 0 else 1.0
+    ref_cov_reg = (1 - lam) * ref_cov + lam * trace * np.eye(ref_cov.shape[0])
+    ref_cov_reg = (ref_cov_reg + ref_cov_reg.T) * 0.5
+
+    _, ref_evecs = eigh(ref_cov_reg)
     ref_evecs = ref_evecs[:, ::-1][:, :n_pc]
 
     epoch_samples = max(1, round(sfreq * epoch_size))

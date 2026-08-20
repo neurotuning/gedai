@@ -31,7 +31,7 @@ from .multiband import compute_closest_valid_duration
 
 
 def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
-    """Compute wavelet band metadata matching ``epochs_to_wavelet`` ordering."""
+    """Compute wavelet band metadata matching MODWT band ordering (0 = highest detail)."""
     _check_type(cycles_per_wavelet, (float, int), "cycles_per_wavelet")
     if cycles_per_wavelet <= 0:
         raise ValueError(
@@ -40,37 +40,28 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
     if level < 0:
         raise ValueError(f"wavelet_level must be >= 0, got {level}")
 
-    # Index 0 is approximation, then details from coarse to fine.
-    band_definitions = [(0.0, sfreq / (2 ** (level + 1)), level + 1)]
-    for i in range(level, 0, -1):
-        fmin = sfreq / (2 ** (i + 1))
-        fmax = sfreq / (2**i)
-        cycle_power = i
-        band_definitions.append((fmin, fmax, cycle_power))
-
+    # In MODWT: Band 0 is finest detail D1 [sfreq/4, sfreq/2], ..., Band level is approx [0, sfreq/2^(level+1)]
     wavelet_parameters = []
-    for band_index, (fmin, fmax, _cycle_power) in enumerate(band_definitions):
-        if fmin == 0.0:
-            target_duration = None
-            ignore = True
-            n_samples = None
-            duration = None
+    for band_index in range(level + 1):
+        if band_index == level:
+            fmin = 0.0
+            fmax = sfreq / (2 ** (level + 1))
+            lower_freq = sfreq / (2 ** (level + 2))
         else:
-            target_duration = 1 / fmin * cycles_per_wavelet
-            ignore = False
-            duration, n_samples = compute_closest_valid_duration(
-                target_duration,
-                level,
-                sfreq,
-            )
+            fmin = sfreq / (2 ** (band_index + 2))
+            fmax = sfreq / (2 ** (band_index + 1))
+            lower_freq = fmin
+
+        target_duration = 1.0 / max(lower_freq, 0.01) * cycles_per_wavelet
+        n_samples = max(2, int(round(target_duration * sfreq)))
         wavelet_parameters.append(
             {
                 "band_index": band_index,
                 "fmin": fmin,
                 "fmax": fmax,
-                "duration": duration,
+                "duration": target_duration,
                 "n_samples": n_samples,
-                "ignore": ignore,
+                "ignore": False,
             }
         )
     return wavelet_parameters
@@ -115,9 +106,9 @@ class AdaptiveMultibandGedai:
     def __init__(
         self,
         wavelet_type="haar",
-        wavelet_level=8,
-        cycles_per_wavelet=12,
-        broadband_pass=False,
+        wavelet_level="auto",
+        cycles_per_wavelet=10,
+        broadband_pass=True,
     ):
         if wavelet_level != "auto":
             _check_type(wavelet_level, (int,), "wavelet_level")
@@ -228,34 +219,15 @@ class AdaptiveMultibandGedai:
         )
 
         filter_cutoff = raw_fit.info["highpass"]
-        duration_cutoff = wavelet_parameters[0]["fmax"]
-
-        if wavelet_low_cutoff is None:
-            wavelet_low_cutoff = 0
-
         if wavelet_low_cutoff == "auto":
-            if filter_cutoff > duration_cutoff:
-                wavelet_low_cutoff = filter_cutoff
-                logger.info(
-                    "Automatically setting ``wavelet_low_cutoff`` to "
-                    f"{wavelet_low_cutoff:.2f} Hz based on raw.info['highpass'] "
-                    f"({filter_cutoff:.2f} Hz)."
-                )
+            if filter_cutoff is not None and filter_cutoff > 0:
+                wavelet_low_cutoff = float(filter_cutoff)
             else:
-                wavelet_low_cutoff = duration_cutoff
-                logger.info(
-                    "Automatically setting ``wavelet_low_cutoff`` to "
-                    f"{wavelet_low_cutoff:.2f} Hz based on wavelet_level "
-                    f"{actual_wavelet_level}."
-                )
-
-        if wavelet_low_cutoff < duration_cutoff:
-            logger.warning(
-                f"``wavelet_low_cutoff`` ({wavelet_low_cutoff:.2f} Hz) is below the "
-                f"frequency cutoff ( {duration_cutoff:.2f} Hz) that can be "
-                f"resolved with the chosen cycles_per_wavelet "
-                f"({self.cycles_per_wavelet})."
-            )
+                wavelet_low_cutoff = 0.5
+        elif wavelet_low_cutoff is None:
+            wavelet_low_cutoff = 0.0
+        else:
+            wavelet_low_cutoff = float(wavelet_low_cutoff)
 
         # Broadband pre-cleaning pass if requested
         if self.broadband_pass:
@@ -286,18 +258,9 @@ class AdaptiveMultibandGedai:
             w = wavelet_parameter["band_index"]
             fmin = wavelet_parameter["fmin"]
             fmax = wavelet_parameter["fmax"]
-            duration = wavelet_parameter["duration"]
-            n_samples = wavelet_parameter["n_samples"]
+            target_duration = wavelet_parameter["duration"]
 
             if fmax <= wavelet_low_cutoff:
-                ignore = True
-            elif n_samples is not None and n_samples > raw_for_multiband.n_times:
-                logger.warning(
-                    f"Adaptive duration for wavelet index {w} "
-                    f"({duration:.3f}s / {n_samples} samples) is longer than "
-                    f"the available raw recording ({raw_for_multiband.n_times} samples). "
-                    "Marking band as ignored."
-                )
                 ignore = True
             else:
                 ignore = False
@@ -314,17 +277,23 @@ class AdaptiveMultibandGedai:
                         "fmin": fmin,
                         "fmax": fmax,
                         "model": None,
-                        "duration": duration,
-                        "n_samples": n_samples,
-                        "ignore": ignore,
+                        "duration": target_duration,
+                        "n_samples": 0,
+                        "ignore": True,
                         "sensai_bounds": (0.0, 12.0),
                         "enova": 0.0,
                     }
                 )
             else:
+                max_duration = raw_for_multiband.n_times / sfreq / 3.0
+                duration = min(target_duration, max(max_duration, 0.5))
+                epoch_samples = max(2, int(round(duration * sfreq)))
+                if epoch_samples % 2 != 0:
+                    epoch_samples += 1
+
                 logger.info(
                     f"Adaptive wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz): "
-                    f"duration={duration:.3f}s ({n_samples} samples)."
+                    f"duration={duration:.3f}s ({epoch_samples} samples)."
                 )
 
                 band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
@@ -368,7 +337,7 @@ class AdaptiveMultibandGedai:
                         "fmax": fmax,
                         "model": model,
                         "duration": duration,
-                        "n_samples": n_samples,
+                        "n_samples": epoch_samples,
                         "ignore": False,
                         "sensai_bounds": band_bounds,
                         "enova": model.metrics_["mean_enova"] if model.metrics_ else 0.0,
@@ -454,9 +423,10 @@ class AdaptiveMultibandGedai:
             )
             raw_transformed_data += clean_band
 
+        original_data = raw_transform.get_data(verbose=False).copy()
         raw_transform._data = raw_transformed_data
 
-        noise_data = raw_data - raw_transformed_data
+        noise_data = original_data - raw_transformed_data
         ep_samples = max(1, round(raw_transform.info["sfreq"] * 1.0))
         enova_ep = compute_enova_per_epoch(raw_transformed_data, noise_data, ep_samples)
         enova_ch = compute_enova_per_channel(raw_transformed_data, noise_data, ep_samples)

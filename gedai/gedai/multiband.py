@@ -32,44 +32,16 @@ from ..wavelet.transform import (
 from .gedai import Gedai, _clean_continuous_dual_stream, create_cosine_weights
 
 
-def _ensure_wavelet_low_cutoff(wavelet_low_cutoff, filter_highpass, epoch_duration):
-    duration_highpass = 2 / epoch_duration  # 2 cycles
+def _ensure_wavelet_low_cutoff(wavelet_low_cutoff, filter_highpass, epoch_duration=None):
     if wavelet_low_cutoff == "auto":
-        if filter_highpass > duration_highpass:
-            logger.info(
-                f"Setting wavelet_low_cutoff to {filter_highpass} Hz based on "
-                f"high-pass filter cutoff frequency in data info"
-                f" (info['highpass'] = {filter_highpass} Hz)."
-            )
-            wavelet_low_cutoff = filter_highpass
-
+        if filter_highpass is not None and filter_highpass > 0:
+            wavelet_low_cutoff = float(filter_highpass)
         else:
-            logger.info(
-                f"Setting wavelet_low_cutoff to {duration_highpass} Hz based on "
-                f"epoch duration and sampling frequency."
-            )
-            wavelet_low_cutoff = duration_highpass
+            wavelet_low_cutoff = 0.5
     elif wavelet_low_cutoff is None:
-        wavelet_low_cutoff = 0
+        wavelet_low_cutoff = 0.0
     else:
-        wavelet_low_cutoff = wavelet_low_cutoff
-
-    if duration_highpass > wavelet_low_cutoff:
-        logger.warning(
-            f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
-            f"frequency cutoff ( {duration_highpass:.2f} Hz) that can be "
-            f"resolved with an epoch duration of {1 / duration_highpass:.2f} Hz."
-            "Lower frequency bands may not be well estimated. Consider "
-            "increasing wavelet_low_cutoff or using longer window durations "
-            "during fitting."
-        )
-    if filter_highpass > wavelet_low_cutoff:
-        logger.warning(
-            f"wavelet_low_cutoff ({wavelet_low_cutoff:.2f} Hz) is below the "
-            f"high-pass filter cutoff frequency in data info (info['highpass'] "
-            f"= {filter_highpass} Hz). Lower frequency bands will be keep "
-            f" even if no signal of interest is expected in these bands."
-        )
+        wavelet_low_cutoff = float(wavelet_low_cutoff)
     return wavelet_low_cutoff
 
 
@@ -175,7 +147,7 @@ class MultibandGedai:
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type="haar", wavelet_level=8, broadband_pass=False):
+    def __init__(self, wavelet_type="haar", wavelet_level="auto", broadband_pass=True):
         if wavelet_level != "auto":
             _check_type(wavelet_level, (int,), "wavelet_level")
         _check_type(wavelet_type, (str,), "wavelet_type")
@@ -716,9 +688,10 @@ class MultibandGedai:
             )
             raw_transformed_data += clean_band
 
+        original_data = raw_transform.get_data(verbose=False).copy()
         raw_transform._data = raw_transformed_data
 
-        noise_data = raw_data - raw_transformed_data
+        noise_data = original_data - raw_transformed_data
         ep_samples = max(1, round(raw_transform.info["sfreq"] * 1.0))
         enova_ep = compute_enova_per_epoch(raw_transformed_data, noise_data, ep_samples)
         enova_ch = compute_enova_per_channel(raw_transformed_data, noise_data, ep_samples)
