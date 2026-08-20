@@ -119,7 +119,7 @@ class AdaptiveMultibandGedai:
         _check_type(broadband_pass, (bool,), "broadband_pass")
 
         self.wavelet_type = wavelet_type
-        self.wavelet_level = wavelet_level
+        self._wavelet_level = wavelet_level
         self.cycles_per_wavelet = cycles_per_wavelet
         self.broadband_pass = broadband_pass
 
@@ -131,6 +131,19 @@ class AdaptiveMultibandGedai:
         self._actual_wavelet_level = None
         self._broadband_model = None
         self.metrics_ = None
+
+    @property
+    def wavelet_level(self):
+        """Wavelet level (integer level if fitted, or configured setting)."""
+        if self.fitted and self._actual_wavelet_level is not None:
+            return self._actual_wavelet_level
+        return self._wavelet_level
+
+    @wavelet_level.setter
+    def wavelet_level(self, value):
+        if value != "auto":
+            _check_type(value, (int,), "wavelet_level")
+        self._wavelet_level = value
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
