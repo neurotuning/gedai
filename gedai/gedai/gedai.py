@@ -8,6 +8,7 @@ from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
     _check_fit_info,
+    _format_summary_table,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
     _prepare_raw_fit,
@@ -442,6 +443,12 @@ class Gedai:
             "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
             "sensai_score": sensai_val,
         }
+
+        if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
+            isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
+        ):
+            print(_format_summary_table(self))
+
         return raw_transform
 
     def plot_fit(self):
@@ -502,6 +509,29 @@ class Gedai:
         """Get the channel names used during fitting."""
         self._check_fit()
         return self._reference_cov.ch_names
+
+    def summary(self) -> str:
+        """Print and return a formatted summary table of the model fitting and denoising metrics.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
+        self._check_fit()
+        table_str = _format_summary_table(self)
+        print(table_str)
+        return table_str
+
+    def __repr__(self) -> str:
+        status = "fitted" if self.fitted else "unfitted"
+        metrics_info = ""
+        if getattr(self, "metrics_", None) is not None:
+            sensai = self.metrics_.get("sensai_score", 0.0)
+            enova = self.metrics_.get("mean_enova", 0.0) * 100
+            metrics_info = f", SENSAI={sensai:.2f}%, Mean ENOVA={enova:.2f}%"
+        return f"<{self.__class__.__name__} ({status}{metrics_info})>"
+
 
 
 def _process_single_epoch(epoch_data, reference_cov, threshold):
