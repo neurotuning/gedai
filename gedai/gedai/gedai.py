@@ -17,6 +17,7 @@ from gedai.gedai._utils import (
 from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..sensai.sensai import (
     _eigen_to_sensai,
+    _precompute_gevd,
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_to_eigen,
@@ -41,8 +42,10 @@ def create_cosine_weights(n_samples):
 
 def _check_sensai_method(method):
     _check_type(method, (str,), "method")
-    if method not in ["gridsearch"]:
-        raise ValueError(f"Method must be 'gridsearch', got '{method}' instead.")
+    if method not in ["gridsearch", "optimize"]:
+        raise ValueError(
+            f"Method must be 'gridsearch' or 'optimize', got '{method}' instead."
+        )
 
 
 @fill_doc
@@ -60,6 +63,9 @@ class Gedai:
         Gedai will not modify the input data in-place, but will create
         copies when necessary to ensure the original data remains unchanged.
 
+    Parameters
+    ----------
+
     References
     ----------
     .. footbibliography::
@@ -68,9 +74,10 @@ class Gedai:
     def __init__(self):
         self.fitted = False
         self._fit = None
-        self._reference_cov = None
         self._info = None
+        self._reference_cov = None
         self._n_samples = None
+        self._duration = None
         self.metrics_ = None
 
     def _check_fit(self):
@@ -80,9 +87,10 @@ class Gedai:
                 f"Gedai must be fitted before using {self.__class__.__name__}"
             )
         assert self._fit is not None
-        assert self._reference_cov is not None
         assert self._info is not None
+        assert self._reference_cov is not None
         assert self._n_samples is not None
+        assert self._duration is not None
 
     def _check_unfitted(self):
         """Check if the Gedai is unfitted."""
@@ -91,9 +99,10 @@ class Gedai:
                 f"Gedai must be unfitted before using {self.__class__.__name__}."
             )
         assert self._fit is None
-        assert self._reference_cov is None
         assert self._info is None
+        assert self._reference_cov is None
         assert self._n_samples is None
+        assert self._duration is None
 
     @fill_doc
     @verbose
@@ -144,11 +153,8 @@ class Gedai:
         reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
         cov.update(data=reference_cov)
 
-        epochs_eigenvalues = np.zeros((len(data), data.shape[1]))
-        for e, epoch_data in enumerate(data):
-            covariance = np.cov(epoch_data)
-            eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
-            epochs_eigenvalues[e] = eigenvalues
+        all_eval, all_evec = _precompute_gevd(data, reference_cov)
+        epochs_eigenvalues = all_eval
 
         fit_epochs = mne.EpochsArray(data,
                                      epochs_fit.info,
@@ -174,6 +180,8 @@ class Gedai:
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
                 verbose=verbose,
+                all_eval=all_eval,
+                all_evec=all_evec,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -184,6 +192,8 @@ class Gedai:
                 noise_multiplier=noise_multiplier,
                 epochs_eigenvalues=epochs_eigenvalues,
                 bounds=sensai_threshold_bounds,
+                all_eval=all_eval,
+                all_evec=all_evec,
             )
         else:
             raise ValueError(
