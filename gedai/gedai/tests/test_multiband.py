@@ -124,3 +124,32 @@ def test_wavelet_duration_helpers():
     assert duration_val >= 1.03
     assert samples % (2**4) == 0
     assert samples >= 2 ** (4 + 1)
+
+
+def test_multiband_auto_wavelet_level_and_metrics():
+    """Test auto wavelet level resolution and metrics calculation."""
+    model = MultibandGedai(wavelet_type="haar", wavelet_level="auto")
+    model.fit_epochs(epochs_eeg, n_jobs=1)
+    assert model._actual_wavelet_level is not None
+    assert model._actual_wavelet_level >= 6
+
+    epochs_transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
+    assert model.metrics_ is not None
+    assert "enova_per_epoch" in model.metrics_
+    assert "enova_per_channel" in model.metrics_
+    assert "sensai_score" in model.metrics_
+    assert isinstance(model.metrics_["mean_enova"], float)
+
+
+def test_multiband_broadband_pass():
+    """Test multiband GEDAI with broadband pre-cleaning pass."""
+    # Use smaller picks subset for fast execution in test
+    picks = epochs_eeg.ch_names[:6]
+    model = MultibandGedai(wavelet_type="haar", wavelet_level=4, broadband_pass=True)
+    model.fit_epochs(epochs_eeg, picks=picks, n_jobs=1)
+    assert model._broadband_model is not None
+
+    transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
+    assert transformed.get_data().shape[1] == len(picks)
+    assert model.metrics_ is not None
+

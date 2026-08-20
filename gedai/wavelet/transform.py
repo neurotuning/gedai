@@ -100,3 +100,46 @@ def epochs_to_wavelet(data, sfreq, wavelet, level, n_jobs=None, verbose=None):
         levels = level
 
     return transformed_data, freq_bands, levels
+
+
+def compute_wavelet_level(
+    sfreq: float,
+    lowcut_hz: float = 0.5,
+    n_times: int | None = None,
+    wavelet_low_cutoff: float | None = None,
+    cycles_per_wavelet: int | None = None,
+) -> int:
+    """Compute number of wavelet decomposition levels matching MATLAB GEDAI.
+
+    Parameters
+    ----------
+    sfreq : float
+        Sampling frequency in Hz.
+    lowcut_hz : float
+        Low cutoff frequency in Hz (default 0.5 Hz).
+    n_times : int | None
+        Number of time samples in data (optional, used to bound max levels).
+    wavelet_low_cutoff : float | None
+        Alias for lowcut_hz.
+    cycles_per_wavelet : int | None
+        Number of cycles per wavelet band (for adaptive windowing).
+
+    Returns
+    -------
+    level : int
+        Recommended wavelet decomposition level.
+    """
+    if wavelet_low_cutoff is not None:
+        lowcut_hz = wavelet_low_cutoff
+    lowcut_hz = max(float(lowcut_hz), 0.01)
+    ideal = int(np.ceil(np.log2(sfreq / lowcut_hz)))
+    if n_times is not None:
+        if cycles_per_wavelet is not None and cycles_per_wavelet > 0:
+            max_possible = max(1, int(np.floor(np.log2(max(1.0, n_times / cycles_per_wavelet)))) - 1)
+        else:
+            max_possible = int(np.floor(np.log2(n_times)))
+        return max(4, min(ideal, max_possible))
+    return max(6, ideal)
+
+
+

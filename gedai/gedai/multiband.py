@@ -12,13 +12,18 @@ from gedai.gedai._utils import (
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
+from ..sensai.sensai import (
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
+)
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
-from ..wavelet.transform import epochs_to_wavelet
+from ..wavelet.transform import compute_wavelet_level, epochs_to_wavelet
 from .gedai import Gedai, create_cosine_weights
 
 
@@ -155,24 +160,33 @@ class MultibandGedai:
     Parameters
     ----------
     %(wavelet_type)s
-    %(wavelet_level)s
+    wavelet_level : int or 'auto'
+        The wavelet decomposition level. If 'auto', automatically computed from sfreq.
+    broadband_pass : bool
+        Whether to run an initial broadband GED pass before multiband wavelet decomposition.
 
     References
     ----------
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type="haar", wavelet_level=8):
-        _check_type(wavelet_level, (int,), "wavelet_level")
+    def __init__(self, wavelet_type="haar", wavelet_level=8, broadband_pass=False):
+        if wavelet_level != "auto":
+            _check_type(wavelet_level, (int,), "wavelet_level")
         _check_type(wavelet_type, (str,), "wavelet_type")
+        _check_type(broadband_pass, (bool,), "broadband_pass")
         self.wavelet_type = wavelet_type
         self.wavelet_level = wavelet_level
+        self.broadband_pass = broadband_pass
 
         self.fitted = False
         self._wavelet_low_cutoff = None
         self._wavelets_fits = None
         self._reference_cov = None
         self._levels = None
+        self._actual_wavelet_level = None
+        self._broadband_model = None
+        self.metrics_ = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -244,11 +258,39 @@ class MultibandGedai:
             wavelet_low_cutoff, epochs_fit.info["highpass"], epoch_duration
         )
 
+        # Automatic wavelet level resolution if requested
+        if self.wavelet_level == "auto":
+            actual_wavelet_level = compute_wavelet_level(
+                epochs_fit.info["sfreq"], wavelet_low_cutoff=wavelet_low_cutoff
+            )
+        else:
+            actual_wavelet_level = self.wavelet_level
+        self._actual_wavelet_level = actual_wavelet_level
+
+        # Broadband pre-cleaning pass if requested
+        if self.broadband_pass:
+            logger.info("Running broadband GEDAI pre-cleaning pass on epochs...")
+            broadband_model = Gedai()
+            broadband_model.fit_epochs(
+                epochs_fit,
+                picks="all",
+                reference_cov=cov.copy(),
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+                verbose=verbose,
+            )
+            epochs_precleaned = broadband_model.transform_epochs(
+                epochs_fit, n_jobs=n_jobs, verbose=False
+            )
+            data = epochs_precleaned.get_data()
+            self._broadband_model = broadband_model
+
         epochs_wavelet, freq_bands, levels = epochs_to_wavelet(
             data,
             sfreq=epochs_fit.info["sfreq"],
             wavelet=self.wavelet_type,
-            level=self.wavelet_level,
+            level=actual_wavelet_level,
             n_jobs=n_jobs,
         )
         n_samples = epochs_wavelet.shape[-1]
@@ -269,8 +311,13 @@ class MultibandGedai:
                     "model": None,
                     "ignore": True,
                     "n_samples": n_samples,
+                    "sensai_bounds": (0.0, 12.0),
+                    "enova": 0.0,
                 }
             else:
+                center_freq = (fmin + fmax) / 2.0
+                band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
                 wavelet_epochs = mne.EpochsArray(
                     wavelet_epochs_data,
@@ -286,6 +333,7 @@ class MultibandGedai:
                     reference_cov=cov.copy(),
                     sensai_method=sensai_method,
                     noise_multiplier=noise_multiplier,
+                    sensai_bounds=band_bounds,
                     n_jobs=n_jobs,
                     verbose=verbose,
                 )
@@ -297,6 +345,8 @@ class MultibandGedai:
                     "model": model,
                     "ignore": False,
                     "n_samples": n_samples,
+                    "sensai_bounds": band_bounds,
+                    "enova": model.metrics_["mean_enova"] if model.metrics_ else 0.0,
                 }
             wavelets_fits.append(wavelet_fit)
 
@@ -307,7 +357,6 @@ class MultibandGedai:
         self._levels = levels
         self._wavelets_fits = wavelets_fits
         self._wavelet_low_cutoff = wavelet_low_cutoff
-
 
     @fill_doc
     @verbose
@@ -354,18 +403,25 @@ class MultibandGedai:
         _check_type(noise_multiplier, (float,), "noise_multiplier")
         n_jobs = _check_n_jobs(n_jobs)
 
+        raw_fit = _prepare_raw_fit(raw, picks)
+
+        if self.wavelet_level == "auto":
+            resolved_level = compute_wavelet_level(
+                raw_fit.info["sfreq"], lowcut_hz=0.5, n_times=raw_fit.n_times
+            )
+        else:
+            resolved_level = self.wavelet_level
+
         valid_duration, valid_samples = compute_closest_valid_duration(
-            duration, self.wavelet_level, raw.info["sfreq"]
+            duration, resolved_level, raw_fit.info["sfreq"]
         )
         if valid_duration != duration:
             logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
                 f"({valid_samples} samples) to satisfy wavelet level "
-                f"{self.wavelet_level} requirements."
+                f"{resolved_level} requirements."
             )
         duration = valid_duration
-
-        raw_fit = _prepare_raw_fit(raw, picks)
 
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
@@ -413,13 +469,21 @@ class MultibandGedai:
         _check_fit_info(self, epochs)
         epochs_transform = _prepare_epochs_transform(epochs, self.ch_names)
 
-        data = epochs_transform.get_data()
+        if self.broadband_pass and self._broadband_model is not None:
+            epochs_input = self._broadband_model.transform_epochs(
+                epochs_transform, n_jobs=n_jobs, verbose=False
+            )
+        else:
+            epochs_input = epochs_transform
 
+        data = epochs_input.get_data()
+
+        actual_level = self._actual_wavelet_level or self.wavelet_level
         epochs_wavelet, _, levels = epochs_to_wavelet(
             data,
             sfreq=epochs_transform.info["sfreq"],
             wavelet=self.wavelet_type,
-            level=self.wavelet_level,
+            level=actual_level,
             n_jobs=n_jobs,
         )
 
@@ -456,6 +520,24 @@ class MultibandGedai:
 
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
         epochs_transform._data = cleaned_epochs_data
+
+        orig_data = epochs_transform.get_data()
+        orig_2d = orig_data.transpose(1, 0, 2).reshape(orig_data.shape[1], -1)
+        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(cleaned_epochs_data.shape[1], -1)
+        noise_2d = orig_2d - clean_2d
+        ep_samples = orig_data.shape[-1]
+        enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
+        enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
+        sensai_val = compute_composite_sensai(
+            clean_2d, noise_2d, epochs_transform.info["sfreq"], self._reference_cov.data
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
+
         return epochs_transform
 
     @fill_doc
@@ -535,6 +617,21 @@ class MultibandGedai:
         raw_transformed_data /= weight_sum
 
         raw_transform._data = raw_transformed_data
+
+        noise_data = raw_data - raw_transformed_data
+        ep_samples = max(1, round(raw_transform.info["sfreq"] * 1.0))
+        enova_ep = compute_enova_per_epoch(raw_transformed_data, noise_data, ep_samples)
+        enova_ch = compute_enova_per_channel(raw_transformed_data, noise_data, ep_samples)
+        sensai_val = compute_composite_sensai(
+            raw_transformed_data, noise_data, raw_transform.info["sfreq"], self._reference_cov.data
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
+
         return raw_transform
 
     def plot_fit(self):
@@ -570,3 +667,4 @@ class MultibandGedai:
         """
         self._check_fit()
         return self._reference_cov.ch_names
+

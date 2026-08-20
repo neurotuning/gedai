@@ -20,6 +20,9 @@ from ..sensai.sensai import (
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_to_eigen,
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
 )
 from ..utils._checks import (
     _check_n_jobs,
@@ -68,6 +71,7 @@ class Gedai:
         self._reference_cov = None
         self._info = None
         self._n_samples = None
+        self.metrics_ = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -100,6 +104,7 @@ class Gedai:
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
         noise_multiplier: float = 3.0,
+        sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -113,6 +118,8 @@ class Gedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        sensai_bounds : tuple of float
+            The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(n_jobs)s
         %(verbose)s
         """
@@ -121,6 +128,7 @@ class Gedai:
         _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
         _check_type(noise_multiplier, (float,), "noise_multiplier")
+        _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
@@ -146,11 +154,8 @@ class Gedai:
                                      epochs_fit.info,
                                      tmin=epochs.tmin,
                                      verbose=False)
-        min_sensai_threshold, max_sensai_threshold, step = (
-            -6,
-            12,
-            0.1,
-        )  # MATLAB min_sensai_threshold -6 for f < 60Hz.
+        min_sensai_threshold, max_sensai_threshold = float(sensai_bounds[0]), float(sensai_bounds[1])
+        step = 0.1
         n_pc = 3
 
         if sensai_method == "gridsearch":
@@ -190,6 +195,7 @@ class Gedai:
             "threshold": threshold,
             "epochs_eigenvalues": epochs_eigenvalues,
             "sensai_runs": runs,
+            "sensai_bounds": (min_sensai_threshold, max_sensai_threshold),
         }
 
         self.fitted = True
@@ -211,6 +217,7 @@ class Gedai:
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
         noise_multiplier: float = 3.0,
+        sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -227,6 +234,8 @@ class Gedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        sensai_bounds : tuple of float
+            The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(n_jobs)s
         %(verbose)s
         """
@@ -239,6 +248,7 @@ class Gedai:
         reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
         _check_type(noise_multiplier, (float,), "noise_multiplier")
+        _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -258,6 +268,7 @@ class Gedai:
             noise_multiplier=noise_multiplier,
             reference_cov=reference_cov,
             sensai_method=sensai_method,
+            sensai_bounds=sensai_bounds,
             n_jobs=n_jobs,
             verbose=verbose,
         )
@@ -321,6 +332,22 @@ class Gedai:
             cleaned_epochs_data = np.array(cleaned_epochs_list)
 
         epochs_transform._data = cleaned_epochs_data
+
+        orig_2d = data.transpose(1, 0, 2).reshape(data.shape[1], -1)
+        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(cleaned_epochs_data.shape[1], -1)
+        noise_2d = orig_2d - clean_2d
+        ep_samples = data.shape[-1]
+        enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
+        enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
+        sensai_val = compute_composite_sensai(
+            clean_2d, noise_2d, epochs_transform.info["sfreq"], reference_cov
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
         return epochs_transform
 
     @fill_doc
@@ -395,6 +422,20 @@ class Gedai:
         transformed_data /= weight_sum
 
         raw_transform._data = transformed_data
+
+        noise_data = raw_data - transformed_data
+        ep_samples = max(1, round(raw_transform.info["sfreq"] * 1.0))
+        enova_ep = compute_enova_per_epoch(transformed_data, noise_data, ep_samples)
+        enova_ch = compute_enova_per_channel(transformed_data, noise_data, ep_samples)
+        sensai_val = compute_composite_sensai(
+            transformed_data, noise_data, raw_transform.info["sfreq"], self._reference_cov.data
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
         return raw_transform
 
     def plot_fit(self):
