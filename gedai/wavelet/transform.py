@@ -220,4 +220,47 @@ def _modwt_haar_single_band(data_T: np.ndarray, level: int, band_idx: int) -> np
     return current_recon.T
 
 
+def _apply_wavelet_highpass_prefilter(
+    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.1
+) -> np.ndarray:
+    """Remove sub-lowcut_hz slow drift using continuous Haar MODWT decomposition.
+
+    Parameters
+    ----------
+    data : np.ndarray, shape (n_channels, n_times)
+        Continuous multichannel data.
+    sfreq : float
+        Sampling frequency in Hz.
+    lowcut_hz : float
+        Highpass cutoff frequency (default 0.1 Hz).
+
+    Returns
+    -------
+    filtered_data : np.ndarray, shape (n_channels, n_times)
+        Data with sub-lowcut_hz drift subtracted.
+    """
+    if lowcut_hz is None or lowcut_hz <= 0:
+        return data
+
+    n_times = data.shape[1]
+    hp_wavelet_levels = int(np.ceil(np.log2(sfreq / 0.1) - 1))
+    hp_wavelet_levels = max(hp_wavelet_levels, 3)
+    hp_wavelet_levels = min(hp_wavelet_levels, int(np.floor(np.log2(n_times))))
+    n_bands_hp = hp_wavelet_levels + 1
+
+    bands_to_hp_zero = [
+        j for j in range(n_bands_hp) if (sfreq / (2 ** (j + 1))) <= lowcut_hz
+    ]
+    if not bands_to_hp_zero:
+        return data
+
+    low_freq_noise = np.zeros_like(data, dtype=np.float64)
+    data_T = data.T.astype(np.float64)
+    for b in bands_to_hp_zero:
+        low_freq_noise += _modwt_haar_single_band(data_T, hp_wavelet_levels, b)
+
+    return data - low_freq_noise
+
+
+
 

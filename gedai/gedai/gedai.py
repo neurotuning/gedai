@@ -31,6 +31,7 @@ from ..utils._checks import (
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import verbose
+from ..wavelet.transform import _apply_wavelet_highpass_prefilter
 
 
 def create_cosine_weights(n_samples):
@@ -216,6 +217,7 @@ class Gedai:
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
 
     @fill_doc
+    @fill_doc
     @verbose
     def fit_raw(
         self,
@@ -228,6 +230,7 @@ class Gedai:
         sensai_method: str = "gridsearch",
         noise_multiplier: float = 3.0,
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        highpass_prefilter: float | None = 0.1,
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -246,6 +249,8 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        highpass_prefilter : float | None
+            Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).
         %(n_jobs)s
         %(verbose)s
         """
@@ -262,6 +267,13 @@ class Gedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
+
+        if highpass_prefilter is not None and highpass_prefilter > 0:
+            if raw_fit.info["highpass"] is None or raw_fit.info["highpass"] < highpass_prefilter:
+                raw_fit._data = _apply_wavelet_highpass_prefilter(
+                    raw_fit._data, raw_fit.info["sfreq"], lowcut_hz=highpass_prefilter
+                )
+        self._highpass_prefilter = highpass_prefilter
 
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
@@ -394,51 +406,34 @@ class Gedai:
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
+        if getattr(self, "_highpass_prefilter", None) is not None and self._highpass_prefilter > 0:
+            if raw_transform.info["highpass"] is None or raw_transform.info["highpass"] < self._highpass_prefilter:
+                raw_transform._data = _apply_wavelet_highpass_prefilter(
+                    raw_transform._data, raw_transform.info["sfreq"], lowcut_hz=self._highpass_prefilter
+                )
+
         raw_data = raw_transform.get_data(verbose=False)
-        n_channels, n_times = raw_data.shape
+        sfreq = raw_transform.info["sfreq"]
+        threshold = self._fit["threshold"]
 
-        window_size = self._n_samples
-        window = create_cosine_weights(window_size)
-
-        transformed_data = np.zeros_like(raw_data)
-        weight_sum = np.zeros_like(raw_data)
-
-        step = int(window_size * (1 - overlap))
-        starts = np.arange(0, n_times - window_size, step)
-        starts = np.append(starts, n_times - window_size)
-
-        all_segments = []
-        for start in starts:
-            segment = raw_data[:, start : start + window_size]
-            all_segments.append(segment)
-
-        all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array,
-                                          raw_transform.info,
-                                          verbose=False)
-
-        corrected_segments_epochs = self.transform_epochs(
-            segments_epochs, n_jobs=n_jobs, verbose=False
+        # Fast dual-stream continuous broadband cleaning
+        clean_data, _ = _clean_continuous_dual_stream(
+            raw_data,
+            sfreq=sfreq,
+            reference_cov=self._reference_cov.data,
+            epoch_duration=self._duration if hasattr(self, "_duration") and self._duration > 0 else 1.0,
+            threshold=threshold,
         )
-        corrected_segments = corrected_segments_epochs.get_data(verbose=False)
 
-        for s, start in enumerate(starts):
-            corrected_segment = corrected_segments[s] * window
-            transformed_data[:, start : start + window_size] += corrected_segment
-            weight_sum[:, start : start + window_size] += window
+        original_data = raw_transform.get_data(verbose=False).copy()
+        raw_transform._data = clean_data
 
-        # Normalize the transformed signal by the weight sum
-        weight_sum[weight_sum == 0] = 1  # Avoid division by zero
-        transformed_data /= weight_sum
-
-        raw_transform._data = transformed_data
-
-        noise_data = raw_data - transformed_data
-        ep_samples = max(1, round(raw_transform.info["sfreq"] * 1.0))
-        enova_ep = compute_enova_per_epoch(transformed_data, noise_data, ep_samples)
-        enova_ch = compute_enova_per_channel(transformed_data, noise_data, ep_samples)
+        noise_data = original_data - clean_data
+        ep_samples = max(1, round(sfreq * 1.0))
+        enova_ep = compute_enova_per_epoch(clean_data, noise_data, ep_samples)
+        enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
         sensai_val = compute_composite_sensai(
-            transformed_data, noise_data, raw_transform.info["sfreq"], self._reference_cov.data
+            clean_data, noise_data, sfreq, self._reference_cov.data
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,
