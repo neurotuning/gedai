@@ -28,6 +28,7 @@ from ..sensai.sensai import (
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
+    _parse_noise_multiplier,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import verbose
@@ -113,7 +114,7 @@ class Gedai:
         picks: list | str = "eeg",
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         n_jobs: int = None,
         verbose: str | None = None,
@@ -137,7 +138,7 @@ class Gedai:
         _check_type(epochs, (BaseEpochs,), "epochs")
         _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _parse_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
@@ -228,7 +229,7 @@ class Gedai:
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         highpass_prefilter: float | None = 0.1,
         n_jobs: int = None,
@@ -262,7 +263,7 @@ class Gedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _parse_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 

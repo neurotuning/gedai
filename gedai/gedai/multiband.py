@@ -20,6 +20,7 @@ from ..sensai.sensai import (
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
+    _parse_noise_multiplier,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
@@ -198,7 +199,7 @@ class MultibandGedai:
         picks: list | str = "eeg",
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        noise_multiplier: float | str = "auto",
         wavelet_low_cutoff="auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -221,7 +222,7 @@ class MultibandGedai:
         _check_type(epochs, (BaseEpochs,), "epochs")
         _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _parse_noise_multiplier(noise_multiplier)
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
@@ -346,7 +347,7 @@ class MultibandGedai:
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        noise_multiplier: float | str = "auto",
         wavelet_low_cutoff="auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -377,7 +378,7 @@ class MultibandGedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         reference_cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _parse_noise_multiplier(noise_multiplier)
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)

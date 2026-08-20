@@ -308,3 +308,49 @@ def _check_n_jobs(n_jobs):
                 f"not be less than the number of CPUs present ({n_cores})."
             )
     return n_jobs
+
+
+def _parse_noise_multiplier(value: float | int | str = "auto") -> float:
+    """Parse noise multiplier or string preset ('auto', 'auto+', 'auto-') matching MATLAB.
+
+    Parameters
+    ----------
+    value : float | int | str
+        - 'auto' / 'default' / 'standard' : Standard balance (noise_multiplier = 3.0)
+        - 'auto+' / 'aggressive' / 'more' : More aggressive denoising (noise_multiplier = 1.5)
+        - 'auto-' / 'conservative' / 'less' : More conservative denoising (noise_multiplier = 6.0)
+        - float / int : Custom noise multiplier value > 0
+
+    Returns
+    -------
+    multiplier : float
+        Numerical noise multiplier.
+    """
+    if isinstance(value, str):
+        val = value.strip().lower()
+        if val in ("auto", "default", "standard"):
+            return 3.0
+        elif val in ("auto+", "aggressive", "more"):
+            return 1.5
+        elif val in ("auto-", "conservative", "less"):
+            return 6.0
+        else:
+            try:
+                val_float = float(val)
+                if val_float <= 0:
+                    raise ValueError(f"noise_multiplier must be > 0, got {value}")
+                return val_float
+            except ValueError:
+                raise ValueError(
+                    f"Unknown noise_multiplier preset: '{value}'. "
+                    "Expected 'auto', 'auto+', 'auto-', or a numeric float > 0."
+                )
+    elif isinstance(value, (int, float)):
+        if value <= 0:
+            raise ValueError(f"noise_multiplier must be > 0, got {value}")
+        return float(value)
+    else:
+        raise TypeError(
+            f"noise_multiplier must be float or str, got {type(value).__name__}"
+        )
+
