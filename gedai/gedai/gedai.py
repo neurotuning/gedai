@@ -496,6 +496,12 @@ class Gedai:
         return [fig]
 
     @property
+    def threshold(self):
+        """Get the eigenvalue threshold used for cleaning."""
+        self._check_fit()
+        return self._fit["threshold"]
+
+    @property
     def ch_names(self):
         """Get the channel names used during fitting."""
         self._check_fit()
@@ -534,6 +540,105 @@ def _process_single_epoch(epoch_data, reference_cov, threshold):
     cleaned_epoch = epoch_data - artefact_data
 
     return cleaned_epoch
+
+
+def _clean_continuous_dual_stream(
+    data: np.ndarray,
+    sfreq: float,
+    reference_cov: np.ndarray,
+    epoch_duration: float,
+    threshold: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
+
+    Parameters
+    ----------
+    data : np.ndarray, shape (n_channels, n_times)
+        Continuous multi-channel data.
+    sfreq : float
+        Sampling rate in Hz.
+    reference_cov : np.ndarray, shape (n_channels, n_channels)
+        Reference covariance matrix.
+    epoch_duration : float
+        Epoch length in seconds.
+    threshold : float
+        Eigenvalue threshold.
+
+    Returns
+    -------
+    clean : np.ndarray, shape (n_channels, n_times)
+    noise : np.ndarray, shape (n_channels, n_times)
+    """
+    n_ch, orig_len = data.shape
+    epoch_samples = max(2, int(round(epoch_duration * sfreq)))
+    if epoch_samples % 2 != 0:
+        epoch_samples += 1
+    half = epoch_samples // 2
+
+    # Pad data to multiple of epoch_samples
+    rem = orig_len % epoch_samples
+    pad_len = (epoch_samples - rem) % epoch_samples
+    if pad_len > 0:
+        data_padded = np.pad(data, ((0, 0), (0, pad_len)), mode="reflect")
+    else:
+        data_padded = data
+    total_len = data_padded.shape[1]
+
+    # Stream 1: non-overlapping epochs
+    n_ep1 = total_len // epoch_samples
+    stream1 = data_padded[:, :n_ep1 * epoch_samples].reshape(n_ch, n_ep1, epoch_samples).transpose(1, 0, 2)
+
+    # Stream 2: shifted by half-epoch
+    shifted_data = data_padded[:, half : total_len - half]
+    n_ep2 = shifted_data.shape[1] // epoch_samples
+    if n_ep2 > 0:
+        stream2 = shifted_data[:, :n_ep2 * epoch_samples].reshape(n_ch, n_ep2, epoch_samples).transpose(1, 0, 2)
+    else:
+        stream2 = None
+
+    cw = create_cosine_weights(epoch_samples)
+
+    def _process_stream(stream):
+        n_ep = len(stream)
+        clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
+        noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
+        for i in range(n_ep):
+            ep = stream[i].astype(np.float64)
+            c = _process_single_epoch(ep, reference_cov, threshold)
+            n = ep - c
+            if i == 0:
+                c[:, half:] *= cw[half:]
+                n[:, half:] *= cw[half:]
+            elif i == n_ep - 1:
+                c[:, :half] *= cw[:half]
+                n[:, :half] *= cw[:half]
+            else:
+                c *= cw
+                n *= cw
+            s = i * epoch_samples
+            clean_out[:, s : s + epoch_samples] = c
+            noise_out[:, s : s + epoch_samples] = n
+        return clean_out, noise_out
+
+    clean1, noise1 = _process_stream(stream1)
+    clean_total = clean1[:, :total_len].copy()
+    noise_total = noise1[:, :total_len].copy()
+
+    if stream2 is not None and len(stream2) > 0:
+        clean2, noise2 = _process_stream(stream2)
+        len2 = clean2.shape[1]
+        end2 = len2 - half
+        clean2[:, :half] *= cw[:half]
+        clean2[:, end2:] *= cw[half:]
+        noise2[:, :half] *= cw[:half]
+        noise2[:, end2:] *= cw[half:]
+
+        clean_total[:, half : half + len2] += clean2
+        noise_total[:, half : half + len2] += noise2
+
+    clean_final = clean_total[:, :orig_len]
+    noise_final = noise_total[:, :orig_len]
+    return clean_final, noise_final
 
 
 # Backward-compatible import path: gedai.gedai.gedai.MultibandGedai

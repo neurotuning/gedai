@@ -20,8 +20,13 @@ from ..utils._checks import (
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
-from ..wavelet.transform import compute_wavelet_level, epochs_to_wavelet
-from .gedai import Gedai, create_cosine_weights
+from ..wavelet.transform import (
+    _modwt_haar_single_band,
+    compute_wavelet_level,
+    epochs_to_wavelet,
+    get_modwt_band_limits,
+)
+from .gedai import Gedai, _clean_continuous_dual_stream, create_cosine_weights
 from .multiband import compute_closest_valid_duration
 
 
@@ -276,6 +281,7 @@ class AdaptiveMultibandGedai:
             raw_for_multiband = raw_fit
 
         wavelets_fits = []
+        raw_data_fit = raw_for_multiband.get_data(verbose=False)
         for wavelet_parameter in wavelet_parameters:
             w = wavelet_parameter["band_index"]
             fmin = wavelet_parameter["fmin"]
@@ -321,47 +327,24 @@ class AdaptiveMultibandGedai:
                     f"duration={duration:.3f}s ({n_samples} samples)."
                 )
 
-                if n_samples > raw_for_multiband.n_times:
-                    raise ValueError(
-                        f"Adaptive duration for wavelet index {w} "
-                        f"({duration:.3f}s / {n_samples} samples) is longer than "
-                        f"the available raw recording ({raw_for_multiband.n_times} samples)."
-                    )
+                band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+                epoch_samples = max(2, int(round(duration * sfreq)))
+                if epoch_samples % 2 != 0:
+                    epoch_samples += 1
+                n_ep = band_data.shape[1] // epoch_samples
+                if n_ep > 0:
+                    band_epochs_data = band_data[:, :n_ep * epoch_samples].reshape(
+                        raw_fit.info["nchan"], n_ep, epoch_samples
+                    ).transpose(1, 0, 2)
+                else:
+                    band_epochs_data = band_data[np.newaxis, :, :]
 
-                overlap_seconds = duration * overlap
-                epochs = mne.make_fixed_length_epochs(
-                    raw_for_multiband,
-                    duration=duration,
-                    overlap=overlap_seconds,
-                    reject_by_annotation=reject_by_annotation,
-                    preload=True,
-                    verbose=False,
-                )
-
-                epochs_wavelet, freq_bands, _ = epochs_to_wavelet(
-                    epochs.get_data(verbose=False),
-                    sfreq=sfreq,
-                    wavelet=self.wavelet_type,
-                    level=actual_wavelet_level,
-                    n_jobs=n_jobs,
-                )
-
-                freq_fmin, freq_fmax = freq_bands[w]
-                if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
-                    raise RuntimeError(
-                        "Wavelet frequency band mismatch while building "
-                        "adaptive epochs."
-                    )
-
-                wavelet_epochs_data = epochs_wavelet[:, :, w, :]
-                del epochs_wavelet
                 wavelet_epochs = mne.EpochsArray(
-                    wavelet_epochs_data,
-                    epochs.info,
-                    tmin=epochs.tmin,
+                    band_epochs_data,
+                    raw_fit.info,
+                    tmin=0.0,
                     verbose=False,
                 )
-                del wavelet_epochs_data
 
                 center_freq = (fmin + fmax) / 2.0
                 band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
@@ -385,8 +368,8 @@ class AdaptiveMultibandGedai:
                         "fmax": fmax,
                         "model": model,
                         "duration": duration,
-                        "n_samples": epochs.times.size,
-                        "ignore": ignore,
+                        "n_samples": n_samples,
+                        "ignore": False,
                         "sensai_bounds": band_bounds,
                         "enova": model.metrics_["mean_enova"] if model.metrics_ else 0.0,
                     }
@@ -394,7 +377,7 @@ class AdaptiveMultibandGedai:
 
         self.fitted = True
         self._info = raw_fit.info.copy()
-        self._reference_cov = cov # No regularization applied
+        self._reference_cov = cov  # No regularization applied
 
         self._wavelets_fits = wavelets_fits
         self._wavelet_low_cutoff = wavelet_low_cutoff
@@ -428,9 +411,6 @@ class AdaptiveMultibandGedai:
         _check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
 
-        if not (0 <= overlap < 1):
-            raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
-
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
@@ -447,73 +427,32 @@ class AdaptiveMultibandGedai:
 
         actual_level = self._actual_wavelet_level or self.wavelet_level
         raw_transformed_data = np.zeros_like(raw_data)
+
+        # Process each wavelet band using fast continuous MODWT + dual-stream adaptive cleaning
         for wavelet_fit in self._wavelets_fits:
             band_idx = wavelet_fit["band_index"]
-            window_size = wavelet_fit["n_samples"]
             fmin = wavelet_fit["fmin"]
             fmax = wavelet_fit["fmax"]
             ignore = wavelet_fit["ignore"]
+
             if ignore:
                 logger.info(
                     f"Zeroing wavelet index {band_idx} ({fmin:.2f}-{fmax:.2f} Hz)"
                 )
-            else:
-                window = create_cosine_weights(window_size)
-                step = int(window_size * (1 - overlap))
-                starts = np.arange(0, n_times - window_size, step)
-                starts = np.append(starts, n_times - window_size)
+                continue
 
-                all_segments = []
-                for start in starts:
-                    segment = raw_data[:, start : start + window_size]
-                    all_segments.append(segment)
+            band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+            threshold = wavelet_fit["model"].threshold
+            epoch_duration = wavelet_fit["duration"]
 
-                all_segments_array = np.array(all_segments)
-                segments_wavelet, freq_bands, _ = epochs_to_wavelet(
-                    all_segments_array,
-                    sfreq=sfreq,
-                    wavelet=self.wavelet_type,
-                    level=actual_level,
-                    n_jobs=n_jobs,
-                )
-                del all_segments_array
-
-                freq_fmin, freq_fmax = freq_bands[band_idx]
-                if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
-                    raise RuntimeError(
-                        "Wavelet frequency band mismatch while building "
-                        "adaptive epochs."
-                    )
-
-                segments_band = segments_wavelet[:, :, band_idx, :]
-                segments_epochs = mne.EpochsArray(
-                    segments_band,
-                    raw_transform.info,
-                    tmin=0.0,
-                    verbose=False,
-                )
-                del segments_wavelet
-
-                corrected_segments_epochs = wavelet_fit["model"].transform_epochs(
-                    segments_epochs,
-                    n_jobs=n_jobs,
-                    verbose=verbose,
-                )
-                corrected_segments = corrected_segments_epochs.get_data(verbose=False)
-                del corrected_segments_epochs
-
-                # Reconstruct the corrected wavelet band
-                weight_sum = np.zeros_like(raw_data)
-                band_corrected = np.zeros_like(raw_data)
-                for s, start in enumerate(starts):
-                    start = int(start)
-                    corrected_segment = corrected_segments[s] * window
-                    band_corrected[:, start : start + window_size] += corrected_segment
-                    weight_sum[:, start : start + window_size] += window
-
-                weight_sum[weight_sum == 0] = 1
-                band_corrected /= weight_sum
-                raw_transformed_data += band_corrected
+            clean_band, _ = _clean_continuous_dual_stream(
+                band_data,
+                sfreq=sfreq,
+                reference_cov=self._reference_cov.data,
+                epoch_duration=epoch_duration,
+                threshold=threshold,
+            )
+            raw_transformed_data += clean_band
 
         raw_transform._data = raw_transformed_data
 

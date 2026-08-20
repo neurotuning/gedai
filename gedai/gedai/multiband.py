@@ -23,8 +23,13 @@ from ..utils._checks import (
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
-from ..wavelet.transform import compute_wavelet_level, epochs_to_wavelet
-from .gedai import Gedai, create_cosine_weights
+from ..wavelet.transform import (
+    _modwt_haar_single_band,
+    compute_wavelet_level,
+    epochs_to_wavelet,
+    get_modwt_band_limits,
+)
+from .gedai import Gedai, _clean_continuous_dual_stream, create_cosine_weights
 
 
 def _ensure_wavelet_low_cutoff(wavelet_low_cutoff, filter_highpass, epoch_duration):
@@ -404,44 +409,137 @@ class MultibandGedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
+        cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
+        sfreq = raw_fit.info["sfreq"]
 
         if self.wavelet_level == "auto":
-            resolved_level = compute_wavelet_level(
-                raw_fit.info["sfreq"], lowcut_hz=0.5, n_times=raw_fit.n_times
+            actual_wavelet_level = compute_wavelet_level(
+                sfreq, lowcut_hz=0.5, n_times=raw_fit.n_times
             )
         else:
-            resolved_level = self.wavelet_level
+            actual_wavelet_level = self.wavelet_level
+        self._actual_wavelet_level = actual_wavelet_level
 
         valid_duration, valid_samples = compute_closest_valid_duration(
-            duration, resolved_level, raw_fit.info["sfreq"]
+            duration, actual_wavelet_level, sfreq
         )
         if valid_duration != duration:
             logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
                 f"({valid_samples} samples) to satisfy wavelet level "
-                f"{resolved_level} requirements."
+                f"{actual_wavelet_level} requirements."
             )
         duration = valid_duration
 
-        overlap_seconds = duration * overlap
-        epochs = mne.make_fixed_length_epochs(
-            raw_fit,
-            duration=duration,
-            overlap=overlap_seconds,
-            reject_by_annotation=reject_by_annotation,
-            preload=True,
-            verbose=verbose,
+        filter_cutoff = raw_fit.info["highpass"]
+        wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
+            wavelet_low_cutoff, filter_cutoff, duration
         )
-        self.fit_epochs(
-            epochs,
-            picks=picks,
-            noise_multiplier=noise_multiplier,
-            reference_cov=reference_cov,
-            sensai_method=sensai_method,
-            wavelet_low_cutoff=wavelet_low_cutoff,
-            n_jobs=n_jobs,
-            verbose=verbose,
-        )
+
+        # Broadband pre-cleaning pass if requested
+        if self.broadband_pass:
+            logger.info("Running broadband GEDAI pre-cleaning pass on raw data...")
+            broadband_model = Gedai()
+            broadband_model.fit_raw(
+                raw_fit,
+                picks="all",
+                duration=duration,
+                overlap=overlap,
+                reject_by_annotation=reject_by_annotation,
+                reference_cov=cov.copy(),
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                n_jobs=n_jobs,
+                verbose=verbose,
+            )
+            raw_for_multiband = broadband_model.transform_raw(
+                raw_fit, overlap=overlap, n_jobs=n_jobs, verbose=False
+            )
+            self._broadband_model = broadband_model
+        else:
+            raw_for_multiband = raw_fit
+
+        # Continuous single-band MODWT decomposition & band fitting
+        band_limits = get_modwt_band_limits(sfreq, actual_wavelet_level + 1)
+        raw_data_fit = raw_for_multiband.get_data(verbose=False)
+        epoch_samples = max(2, int(round(duration * sfreq)))
+        if epoch_samples % 2 != 0:
+            epoch_samples += 1
+        n_ep = raw_data_fit.shape[1] // epoch_samples
+
+        wavelets_fits = []
+        for w, (fmin, fmax) in enumerate(band_limits):
+            if fmax <= wavelet_low_cutoff:
+                logger.info(
+                    f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
+                    f"will be zeroed out during transformation because its upper "
+                    f"frequency {fmax:.2f} Hz is below the low cutoff "
+                    f"{wavelet_low_cutoff:.2f} Hz."
+                )
+                wavelets_fits.append(
+                    {
+                        "band_index": w,
+                        "fmin": fmin,
+                        "fmax": fmax,
+                        "model": None,
+                        "ignore": True,
+                        "duration": duration,
+                        "n_samples": epoch_samples,
+                        "sensai_bounds": (0.0, 12.0),
+                        "enova": 0.0,
+                    }
+                )
+            else:
+                band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+                if n_ep > 0:
+                    band_epochs_data = band_data[:, :n_ep * epoch_samples].reshape(
+                        raw_fit.info["nchan"], n_ep, epoch_samples
+                    ).transpose(1, 0, 2)
+                else:
+                    band_epochs_data = band_data[np.newaxis, :, :]
+
+                wavelet_epochs = mne.EpochsArray(
+                    band_epochs_data,
+                    raw_fit.info,
+                    tmin=0.0,
+                    verbose=False,
+                )
+
+                center_freq = (fmin + fmax) / 2.0
+                band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+
+                model = Gedai()
+                model.fit_epochs(
+                    wavelet_epochs,
+                    picks="all",
+                    reference_cov=cov.copy(),
+                    sensai_method=sensai_method,
+                    noise_multiplier=noise_multiplier,
+                    sensai_bounds=band_bounds,
+                    n_jobs=n_jobs,
+                    verbose=verbose,
+                )
+
+                wavelets_fits.append(
+                    {
+                        "band_index": w,
+                        "fmin": fmin,
+                        "fmax": fmax,
+                        "model": model,
+                        "duration": duration,
+                        "n_samples": epoch_samples,
+                        "ignore": False,
+                        "sensai_bounds": band_bounds,
+                        "enova": model.metrics_["mean_enova"] if model.metrics_ else 0.0,
+                    }
+                )
+
+        self.fitted = True
+        self._info = raw_fit.info.copy()
+        self._reference_cov = cov
+        self._levels = actual_wavelet_level
+        self._wavelets_fits = wavelets_fits
+        self._wavelet_low_cutoff = wavelet_low_cutoff
 
     @fill_doc
     @verbose
@@ -575,46 +673,48 @@ class MultibandGedai:
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
-        raw_data = raw_transform.get_data(verbose=False)
+        # Broadband pre-cleaning if model was fitted with broadband_pass
+        if self.broadband_pass and self._broadband_model is not None:
+            raw_input = self._broadband_model.transform_raw(
+                raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
+            )
+        else:
+            raw_input = raw_transform
+
+        sfreq = raw_transform.info["sfreq"]
+        raw_data = raw_input.get_data(verbose=False)
         _, n_times = raw_data.shape
 
-        # all models are fitted with the same duration
-        n_samples = [
-            fit["n_samples"] for fit in self._wavelets_fits if not fit["ignore"]
-        ]
-        window_size = max(n_samples)
-        window = create_cosine_weights(window_size)
-
+        actual_level = self._actual_wavelet_level or self.wavelet_level
         raw_transformed_data = np.zeros_like(raw_data)
-        weight_sum = np.zeros_like(raw_data)
 
-        step = int(window_size * (1 - overlap))
-        starts = np.arange(0, n_times - window_size, step)
-        starts = np.append(starts, n_times - window_size)
+        # Process each wavelet band using fast continuous MODWT + dual-stream cleaning
+        for wavelet_fit in self._wavelets_fits:
+            band_idx = wavelet_fit["band_index"]
+            fmin = wavelet_fit["fmin"]
+            fmax = wavelet_fit["fmax"]
+            ignore = wavelet_fit["ignore"]
 
-        all_segments = []
-        for start in starts:
-            segment = raw_data[:, start : start + window_size]
-            all_segments.append(segment)
+            if ignore:
+                logger.info(
+                    f"Zeroing wavelet index {band_idx} ({fmin:.2f}-{fmax:.2f} Hz)"
+                )
+                continue
 
-        all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(
-            all_segments_array,
-            raw_transform.info,
-            verbose=verbose)
+            band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+            threshold = wavelet_fit["model"].threshold
+            epoch_duration = wavelet_fit.get("duration", 1.0)
+            if epoch_duration is None:
+                epoch_duration = 1.0
 
-        corrected_segments_epochs = self.transform_epochs(
-            segments_epochs, n_jobs=n_jobs, verbose=verbose
-        )
-        corrected_segments = corrected_segments_epochs.get_data(verbose=verbose)
-
-        for s, start in enumerate(starts):
-            corrected_segment = corrected_segments[s] * window
-            raw_transformed_data[:, start : start + window_size] += corrected_segment
-            weight_sum[:, start : start + window_size] += window
-
-        weight_sum[weight_sum == 0] = 1
-        raw_transformed_data /= weight_sum
+            clean_band, _ = _clean_continuous_dual_stream(
+                band_data,
+                sfreq=sfreq,
+                reference_cov=self._reference_cov.data,
+                epoch_duration=epoch_duration,
+                threshold=threshold,
+            )
+            raw_transformed_data += clean_band
 
         raw_transform._data = raw_transformed_data
 
