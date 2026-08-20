@@ -517,7 +517,7 @@ class AdaptiveMultibandGedai:
 
         raw_transform._data = raw_transformed_data
 
-        noise_data = raw_transform.get_data(verbose=False) - raw_transformed_data
+        noise_data = raw_data - raw_transformed_data
         ep_samples = max(1, round(raw_transform.info["sfreq"] * 1.0))
         enova_ep = compute_enova_per_epoch(raw_transformed_data, noise_data, ep_samples)
         enova_ch = compute_enova_per_channel(raw_transformed_data, noise_data, ep_samples)
