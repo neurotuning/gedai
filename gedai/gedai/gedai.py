@@ -503,7 +503,7 @@ class Gedai:
 
 
 def _process_single_epoch(epoch_data, reference_cov, threshold):
-    """Process a single epoch for cleaning.
+    """Process a single epoch for cleaning using direct reference covariance projection.
 
     Parameters
     ----------
@@ -522,19 +522,15 @@ def _process_single_epoch(epoch_data, reference_cov, threshold):
     covariance = np.cov(epoch_data)
     eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
-    # Compute spatial maps
-    maps = np.linalg.pinv(eigenvectors).T
-    eigenvectors_filtered = eigenvectors.copy()
+    eigvecs_filtered = eigenvectors.copy()
+    signal_mask = np.abs(eigenvalues) < threshold
+    eigvecs_filtered[:, signal_mask] = 0
 
-    # Zero out components with small eigenvalues
-    for v, val in enumerate(eigenvalues):
-        if abs(val) < threshold:
-            maps[:, v] = 0
-            eigenvectors_filtered[:, v] = 0
-
-    # Reconstruct artifact signal
-    spatial_filter = np.dot(maps, eigenvectors_filtered.T)
-    artefact_data = spatial_filter @ epoch_data
+    # Direct Regularized Reference Covariance Projection:
+    # Since V^T * C_ref * V = I, the inverse transpose (spatial maps) is C_ref * V.
+    # Therefore, artifact projection is: C_ref * V_art * (V_art^T * X)
+    artifact_tc = eigvecs_filtered.T @ epoch_data
+    artefact_data = reference_cov @ (eigvecs_filtered @ artifact_tc)
     cleaned_epoch = epoch_data - artefact_data
 
     return cleaned_epoch
