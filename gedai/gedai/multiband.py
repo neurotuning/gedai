@@ -766,6 +766,58 @@ class MultibandGedai:
         print(table_str)
         return table_str
 
+    def plot_sensai(
+        self,
+        raw_before: BaseRaw,
+        raw_after: BaseRaw | None = None,
+        epoch_duration_sec: float = 1.0,
+        n_pc: int = 3,
+        show: bool = True,
+    ):
+        """Plot 2D SENSAI Subspace Similarity vs Epoch Power Scatter & Manifold Classification.
+
+        Replicates MATLAB's SENSAI_visualization.m with side-by-side Before/After
+        subspace projections, LDA decision boundary shading, and marginal KDE distributions.
+
+        Parameters
+        ----------
+        raw_before : mne.io.BaseRaw
+            Original EEG recording before denoising.
+        raw_after : mne.io.BaseRaw | None
+            Cleaned EEG recording after denoising. If None, automatically computed.
+        epoch_duration_sec : float
+            Epoch duration in seconds (default 1.0s).
+        n_pc : int
+            Number of principal components for SSI calculation (default 3 for EEG).
+        show : bool
+            Whether to call plt.show() or return the figure.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+        metrics : dict
+        """
+        from ..viz.sensai import plot_sensai_visualization
+
+        self._check_fit()
+        if raw_after is None:
+            raw_after = self.transform_raw(raw_before, verbose=False)
+
+        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+
+        return plot_sensai_visualization(
+            raw_before=raw_before,
+            raw_after=raw_after,
+            reference_cov=self._reference_cov.data,
+            epoch_duration_sec=epoch_duration_sec,
+            n_pc=n_pc,
+            sensai_score=score,
+            mean_enova=mean_enova,
+            title_suffix=f"{self.__class__.__name__}",
+            show=show,
+        )
+
     def __repr__(self) -> str:
         status = "fitted" if self.fitted else "unfitted"
         metrics_info = ""
@@ -774,5 +826,6 @@ class MultibandGedai:
             enova = self.metrics_.get("mean_enova", 0.0) * 100
             metrics_info = f", SENSAI={sensai:.2f}%, Mean ENOVA={enova:.2f}%"
         return f"<{self.__class__.__name__} ({status}{metrics_info})>"
+
 
 
