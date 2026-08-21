@@ -33,36 +33,37 @@ def _check_fit_info(model, inst):
 def _check_average_reference(inst):
     if isinstance(inst, BaseRaw):
         data = inst.get_data()
+        mean_across_channels = np.mean(data, axis=0)
     elif isinstance(inst, BaseEpochs):
         data = inst.get_data()
-        data = np.vstack(data)
+        mean_across_channels = np.mean(data, axis=1)
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
 
-    mean_across_channels = np.mean(data, axis=0)
-    is_average_ref = False
-    if np.allclose(mean_across_channels, 0):
-        is_average_ref = True
-    return is_average_ref
+    return np.allclose(mean_across_channels, 0, atol=1e-6)
 
 
 def _check_reference_channel(inst):
     if isinstance(inst, BaseRaw):
         data = inst.get_data()
+        flat_mask = [np.allclose(ch, 0, atol=1e-8) for ch in data]
     elif isinstance(inst, BaseEpochs):
         data = inst.get_data()
-        data = np.vstack(data)
+        flat_mask = [
+            np.allclose(data[:, c, :], 0, atol=1e-8)
+            for c in range(data.shape[1])
+        ]
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
-    for data_channel in data:
-        is_reference_channel = np.allclose(data_channel, 0)
-        if is_reference_channel:
-            return
+
+    if any(flat_mask):
+        return
+
     logger.warning(
         "Input data does not contain a flat reference channel. "
-        "GEDAI will apply average referencing."
+        "GEDAI will apply average referencing. "
         "Consider adding the reference channel(s) using "
-        ":func:`mne.mne.add_reference_channels` before using GEDAI."
+        ":func:`mne.add_reference_channels` before using GEDAI."
     )
     return
 
