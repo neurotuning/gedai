@@ -226,7 +226,7 @@ class Gedai:
         raw: BaseRaw,
         picks: list | str = "eeg",
         duration: float = 1.0,
-        overlap: float = 0.75,
+        overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
         sensai_method: str = "gridsearch",
@@ -379,7 +379,7 @@ class Gedai:
     def transform_raw(
         self,
         raw: BaseRaw,
-        overlap: float = 0.75,
+        overlap: float = 0.5,
         n_jobs: int = None,
         verbose: str | None = None,
     ):
