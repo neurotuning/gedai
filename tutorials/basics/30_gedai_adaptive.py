@@ -50,6 +50,7 @@ raw.crop(0, 30)
 # separately to each band.
 #
 # The wavelet decomposition is controlled by:
+#
 # - ``wavelet_type``: The wavelet family (default: ``"haar"``).
 # - ``wavelet_level``: Number of decomposition levels (default: ``"auto"``).
 # - ``broadband_pass``: Whether to run an initial broadband GEDAI pass

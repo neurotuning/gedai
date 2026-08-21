@@ -14,7 +14,7 @@ from gedai.gedai._utils import (
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..sensai.sensai import (
+from ..metrics.enova import (
     compute_composite_sensai,
     compute_enova_per_channel,
     compute_enova_per_epoch,

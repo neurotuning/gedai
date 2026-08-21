@@ -16,15 +16,17 @@ from gedai.gedai._utils import (
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
+from ..metrics.enova import (
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
+)
 from ..sensai.sensai import (
     _eigen_to_sensai,
     _precompute_gevd,
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_to_eigen,
-    compute_composite_sensai,
-    compute_enova_per_channel,
-    compute_enova_per_epoch,
 )
 from ..utils._checks import (
     _check_n_jobs,
@@ -558,8 +560,9 @@ class Gedai:
         Returns
         -------
         fig : matplotlib.figure.Figure
-        T
+            The SENSAI visualization figure.
         metrics : dict
+            A dictionary containing the computed SENSAI and ENOVA metrics.
         """
         from ..viz.sensai import plot_sensai_visualization
 

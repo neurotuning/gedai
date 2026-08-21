@@ -400,6 +400,3 @@ def _sensai_optimize(
     eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
-
-
-# Re-export ENOVA metrics from gedai.metrics.enova for backwards compatibility

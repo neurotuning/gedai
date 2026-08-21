@@ -11,9 +11,7 @@ from gedai.gedai._utils import (
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..sensai.sensai import (
-    compute_enova_per_epoch,
-)
+from ..metrics.enova import compute_enova_per_epoch
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,

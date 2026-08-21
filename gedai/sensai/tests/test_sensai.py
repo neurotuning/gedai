@@ -8,9 +8,6 @@ from gedai.sensai.sensai import (
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_score,
-    compute_enova_per_channel,
-    compute_enova_per_epoch,
-    enova_summary,
     subspace_angles,
     subspace_similarity,
 )
@@ -101,22 +98,3 @@ def test_sensai_gridsearch_and_optimize():
     )
     assert isinstance(opt_thresh, float)
     assert len(opt_runs) > 0
-
-
-def test_enova_metrics():
-    """Check ENOVA is zero when the noise term is absent."""
-    n_ch, n_times = 4, 200
-    clean = np.ones((n_ch, n_times), dtype=np.float32)
-    noise = np.zeros((n_ch, n_times), dtype=np.float32)
-    ep_samples = 50
-
-    enova_ep = compute_enova_per_epoch(clean, noise, ep_samples)
-    assert len(enova_ep) == 4
-    assert np.allclose(enova_ep, 0.0)
-
-    enova_ch = compute_enova_per_channel(clean, noise, ep_samples)
-    assert len(enova_ch) == n_ch
-    assert np.allclose(enova_ch, 0.0)
-
-    summary = enova_summary(enova_ep)
-    assert summary["mean"] == 0.0
