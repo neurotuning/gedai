@@ -870,7 +870,9 @@ class MultibandGedai:
         Returns
         -------
         fig : matplotlib.figure.Figure
+            The SENSAI visualization figure.
         metrics : dict
+            A dictionary containing the computed SENSAI and ENOVA metrics.
         """
         from ..viz.sensai import plot_sensai_visualization
 

@@ -50,7 +50,7 @@ raw.crop(0, 30)
 # and the high-pass cutoff.
 #
 # Broadband Pass (Two-Pass Filtering):
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # The ``broadband_pass=True`` parameter enables a two-stage hierarchical cleaning workflow:
 #
 # 1. **Pass 1 (Broadband Pass)**: A full-spectrum spatial GEDAI filter is applied first

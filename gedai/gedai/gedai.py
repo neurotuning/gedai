@@ -58,9 +58,6 @@ class Gedai:
 
     See :footcite:`deCheveigne2018`.
 
-    Parameters
-    ----------
-
     References
     ----------
     .. footbibliography::
@@ -543,6 +540,7 @@ class Gedai:
         Returns
         -------
         fig : matplotlib.figure.Figure
+T
         metrics : dict
         """
         from ..viz.sensai import plot_sensai_visualization

@@ -1,20 +1,3 @@
-
-## BEAR Benchmark results for GEDAI in Python (AdaptiveMultiband)
-
-![alt text](image-1.png)
-
-## Summary Comparison to GEDAI v1.7 in Matlab
-
-<img width="650" height="375" alt="image" src="https://github.com/user-attachments/assets/cb69c718-ff40-4c48-8956-41b720dc60f8" />
-
-## SENSAI epoch visualization
-
-![alt text](image.png)
-
-## 
-
-
-
 [![doc](https://github.com/neurotuning/gedai/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/gedai/actions/workflows/doc.yaml)
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/DOI-10.1101/2025.10.04.680449-green.svg)](https://doi.org/10.1101/2025.10.04.680449)
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/LIENSE-PolyFormNoncommercial_License_1.0.0-green.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)
@@ -70,4 +53,3 @@ We are gratefully supported by the Center for Biomedical Imaging (CIBM), the Swi
 [![snf](https://github.com/user-attachments/assets/9db9e0b5-05dd-488e-9730-9abea2f7e8af)](https://www.snf.ch/en)
 [![unitec](https://github.com/user-attachments/assets/5417b534-6d3c-495a-8c24-70f65442221b)](https://www.unige.ch/unitec/)
 [<img src="https://mbskblppw.preview.infomaniak.website/wp-content/uploads/2024/08/icon_website-1.png" width="140"/> ](https://meeg-nmod.fcbg.ch/)
-
