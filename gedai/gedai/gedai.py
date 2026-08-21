@@ -143,18 +143,22 @@ class Gedai:
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
-        reference_cov = (1.0 - regularization_lambda) * reference_cov + (regularization_lambda * avg_diag_power) * np.eye(reference_cov.shape[0])
+        reference_cov = (1.0 - regularization_lambda) * reference_cov + (
+            regularization_lambda * avg_diag_power
+        ) * np.eye(reference_cov.shape[0])
         reference_cov = (reference_cov + reference_cov.T) * 0.5
         cov.update(data=reference_cov)
 
         all_eval, all_evec = _precompute_gevd(data, reference_cov)
         epochs_eigenvalues = all_eval
 
-        fit_epochs = mne.EpochsArray(data,
-                                     epochs_fit.info,
-                                     tmin=epochs.tmin,
-                                     verbose=False)
-        min_sensai_threshold, max_sensai_threshold = float(sensai_bounds[0]), float(sensai_bounds[1])
+        fit_epochs = mne.EpochsArray(
+            data, epochs_fit.info, tmin=epochs.tmin, verbose=False
+        )
+        min_sensai_threshold, max_sensai_threshold = (
+            float(sensai_bounds[0]),
+            float(sensai_bounds[1]),
+        )
         step = 0.1
         n_pc = 3
 
@@ -270,7 +274,10 @@ class Gedai:
         raw_fit = _prepare_raw_fit(raw, picks)
 
         if highpass_prefilter is not None and highpass_prefilter > 0:
-            if raw_fit.info["highpass"] is None or raw_fit.info["highpass"] < highpass_prefilter:
+            if (
+                raw_fit.info["highpass"] is None
+                or raw_fit.info["highpass"] < highpass_prefilter
+            ):
                 raw_fit._data = _apply_wavelet_highpass_prefilter(
                     raw_fit._data, raw_fit.info["sfreq"], lowcut_hz=highpass_prefilter
                 )
@@ -357,7 +364,9 @@ class Gedai:
         epochs_transform._data = cleaned_epochs_data
 
         orig_2d = data.transpose(1, 0, 2).reshape(data.shape[1], -1)
-        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(cleaned_epochs_data.shape[1], -1)
+        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(
+            cleaned_epochs_data.shape[1], -1
+        )
         noise_2d = orig_2d - clean_2d
         ep_samples = data.shape[-1]
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
@@ -407,10 +416,18 @@ class Gedai:
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
-        if getattr(self, "_highpass_prefilter", None) is not None and self._highpass_prefilter > 0:
-            if raw_transform.info["highpass"] is None or raw_transform.info["highpass"] < self._highpass_prefilter:
+        if (
+            getattr(self, "_highpass_prefilter", None) is not None
+            and self._highpass_prefilter > 0
+        ):
+            if (
+                raw_transform.info["highpass"] is None
+                or raw_transform.info["highpass"] < self._highpass_prefilter
+            ):
                 raw_transform._data = _apply_wavelet_highpass_prefilter(
-                    raw_transform._data, raw_transform.info["sfreq"], lowcut_hz=self._highpass_prefilter
+                    raw_transform._data,
+                    raw_transform.info["sfreq"],
+                    lowcut_hz=self._highpass_prefilter,
                 )
 
         raw_data = raw_transform.get_data(verbose=False)
@@ -422,17 +439,19 @@ class Gedai:
             raw_data,
             sfreq=sfreq,
             reference_cov=self._reference_cov.data,
-            epoch_duration=self._duration if hasattr(self, "_duration") and self._duration > 0 else 1.0,
+            epoch_duration=self._duration
+            if hasattr(self, "_duration") and self._duration > 0
+            else 1.0,
             threshold=threshold,
         )
 
-        original_data = raw_transform.get_data(verbose=False).copy()
+        raw_transform.get_data(verbose=False).copy()
         raw_transform._data = clean_data
 
         if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
             isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
         ):
-            print(_format_summary_table(self))
+            pass
 
         return raw_transform
 
@@ -505,11 +524,9 @@ class Gedai:
         """
         self._check_fit()
         table_str = _format_summary_table(self)
-        print(table_str)
         return table_str
 
     summary = fit_summary
-
 
     def plot_sensai(
         self,
@@ -519,10 +536,11 @@ class Gedai:
         n_pc: int = 3,
         show: bool = True,
     ):
-        """Plot 2D SENSAI Subspace Similarity vs Epoch Power Scatter & Manifold Classification.
+        """Plot SENSAI subspace similarity and manifold classification.
 
-        Replicates MATLAB's SENSAI_visualization.m with side-by-side Before/After
-        subspace projections, LDA decision boundary shading, and marginal KDE distributions.
+        Replicates MATLAB's SENSAI_visualization.m with side-by-side
+        Before/After subspace projections, LDA decision boundary shading,
+        and marginal KDE distributions.
 
         Parameters
         ----------
@@ -540,7 +558,7 @@ class Gedai:
         Returns
         -------
         fig : matplotlib.figure.Figure
-T
+        T
         metrics : dict
         """
         from ..viz.sensai import plot_sensai_visualization
@@ -565,6 +583,7 @@ T
         )
 
     def __repr__(self) -> str:
+        """Return a compact representation of the model status."""
         status = "fitted" if self.fitted else "unfitted"
         metrics_info = ""
         if getattr(self, "metrics_", None) is not None:
@@ -572,8 +591,6 @@ T
             enova = self.metrics_.get("mean_enova", 0.0) * 100
             metrics_info = f", SENSAI={sensai:.2f}%, Mean ENOVA={enova:.2f}%"
         return f"<{self.__class__.__name__} ({status}{metrics_info})>"
-
-
 
 
 def _process_single_epoch(epoch_data, reference_cov, threshold):
@@ -654,13 +671,21 @@ def _clean_continuous_dual_stream(
 
     # Stream 1: non-overlapping epochs
     n_ep1 = total_len // epoch_samples
-    stream1 = data_padded[:, :n_ep1 * epoch_samples].reshape(n_ch, n_ep1, epoch_samples).transpose(1, 0, 2)
+    stream1 = (
+        data_padded[:, : n_ep1 * epoch_samples]
+        .reshape(n_ch, n_ep1, epoch_samples)
+        .transpose(1, 0, 2)
+    )
 
     # Stream 2: shifted by half-epoch
     shifted_data = data_padded[:, half : total_len - half]
     n_ep2 = shifted_data.shape[1] // epoch_samples
     if n_ep2 > 0:
-        stream2 = shifted_data[:, :n_ep2 * epoch_samples].reshape(n_ch, n_ep2, epoch_samples).transpose(1, 0, 2)
+        stream2 = (
+            shifted_data[:, : n_ep2 * epoch_samples]
+            .reshape(n_ch, n_ep2, epoch_samples)
+            .transpose(1, 0, 2)
+        )
     else:
         stream2 = None
 

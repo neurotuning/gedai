@@ -1,17 +1,13 @@
 """Tests for SENSAI optimization module."""
 
 import numpy as np
-import pytest
 
 from gedai.sensai.sensai import (
-    _eigen_to_sensai,
     _find_changepoint,
     _precompute_gevd,
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_score,
-    _sensai_to_eigen,
-    compute_composite_sensai,
     compute_enova_per_channel,
     compute_enova_per_epoch,
     enova_summary,
@@ -21,6 +17,7 @@ from gedai.sensai.sensai import (
 
 
 def test_subspace_similarity_and_angles():
+    """Check subspace similarity and angle calculations behave as expected."""
     rng = np.random.default_rng(42)
     n_ch = 10
     n_pc = 3
@@ -41,6 +38,7 @@ def test_subspace_similarity_and_angles():
 
 
 def test_changepoint_detection():
+    """Ensure a sharp signal transition is detected as a changepoint."""
     # Signal with a sharp gradient shift
     y = np.concatenate([np.linspace(10.0, 0.0, 15), np.zeros(15)])
     cp = _find_changepoint(y, smooth_window=2)
@@ -49,6 +47,7 @@ def test_changepoint_detection():
 
 
 def test_gevd_and_sensai_scoring():
+    """Check GEVD and SENSAI scoring produce valid outputs."""
     rng = np.random.default_rng(42)
     n_ep, n_ch, n_times = 10, 8, 100
     epochs_data = rng.standard_normal((n_ep, n_ch, n_times))
@@ -69,6 +68,7 @@ def test_gevd_and_sensai_scoring():
 
 
 def test_sensai_gridsearch_and_optimize():
+    """Verify the grid-search and optimize routines agree on output shape."""
     rng = np.random.default_rng(42)
     n_ep, n_ch, n_times = 15, 6, 80
     epochs_data = rng.standard_normal((n_ep, n_ch, n_times))
@@ -104,6 +104,7 @@ def test_sensai_gridsearch_and_optimize():
 
 
 def test_enova_metrics():
+    """Check ENOVA is zero when the noise term is absent."""
     n_ch, n_times = 4, 200
     clean = np.ones((n_ch, n_times), dtype=np.float32)
     noise = np.zeros((n_ch, n_times), dtype=np.float32)

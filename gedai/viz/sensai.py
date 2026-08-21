@@ -1,6 +1,6 @@
+import matplotlib.pyplot as plt
 import mne
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.linalg import eigh, svd
 from scipy.stats import gaussian_kde
@@ -19,10 +19,11 @@ def plot_sensai_visualization(
     title_suffix: str = "",
     show: bool = True,
 ):
-    """Plot 2D SENSAI Subspace Similarity vs Epoch Power Scatter & Manifold Classification.
+    """Plot SENSAI subspace similarity and manifold classification.
 
-    Exact replica of MATLAB's SENSAI_visualization.m with side-by-side Before/After
-    subspace projections, soft pastel LDA decision shading, and marginal KDE distributions.
+    Exact replica of MATLAB's SENSAI_visualization.m with side-by-side
+    Before/After subspace projections, soft pastel LDA decision shading,
+    and marginal KDE distributions.
 
     Parameters
     ----------
@@ -66,7 +67,11 @@ def plot_sensai_visualization(
     n_epochs = n_times // epoch_samples
 
     if n_epochs == 0:
-        raise ValueError(f"Recording duration ({n_times/sfreq:.2f}s) is too short for epoch duration {epoch_duration_sec}s.")
+        raise ValueError(
+            "Recording duration "
+            f"({n_times / sfreq:.2f}s) is too short for epoch duration "
+            f"{epoch_duration_sec}s."
+        )
 
     # 1. Prepare Reference Subspace
     if isinstance(reference_cov, str):
@@ -92,11 +97,11 @@ def plot_sensai_visualization(
             ep = data_2d[:, s:e]
             ep_centered = ep - np.mean(ep, axis=1, keepdims=True)
             c = (ep_centered @ ep_centered.T) / (epoch_samples - 1)
-            
+
             # Power in dB (microvolts squared sum): 10 * log10(sum(diag(C)))
             pwr = np.sum(np.diag(c))
             power_list[i] = 10.0 * np.log10(max(pwr, 1e-12))
-            
+
             # Subspace Similarity Index (SSI)
             try:
                 _, Vc = eigh(c)
@@ -115,19 +120,21 @@ def plot_sensai_visualization(
     ideal_power_target = float(np.median(lpow_after))
 
     # 3. LDA Classification on (SSI, Power)
-    X_lda = np.vstack([
-        np.column_stack([lpow_after, ssi_after]),
-        np.column_stack([lpow_noise, ssi_noise]),
-    ])
+    X_lda = np.vstack(
+        [
+            np.column_stack([lpow_after, ssi_after]),
+            np.column_stack([lpow_noise, ssi_noise]),
+        ]
+    )
     y_lda = np.array([1] * n_epochs + [0] * n_epochs)
 
     lda = LinearDiscriminantAnalysis()
     try:
         lda.fit(X_lda, y_lda)
-        lda_accuracy = float(lda.score(X_lda, y_lda) * 100.0)
+        float(lda.score(X_lda, y_lda) * 100.0)
     except Exception:
         lda = None
-        lda_accuracy = float("nan")
+        float("nan")
 
     try:
         sil_signal = float(silhouette_score(X_lda[:, [1]], y_lda))
@@ -136,13 +143,19 @@ def plot_sensai_visualization(
 
     # 4. Determine matched plot limits
     chi2_95 = -2.0 * np.log(1.0 - 0.95)
+
     def _get_extents(x):
-        return [np.mean(x) - np.sqrt(np.var(x) * chi2_95), np.mean(x) + np.sqrt(np.var(x) * chi2_95)]
+        return [
+            np.mean(x) - np.sqrt(np.var(x) * chi2_95),
+            np.mean(x) + np.sqrt(np.var(x) * chi2_95),
+        ]
 
     ext_b = _get_extents(lpow_before)
     ext_a = _get_extents(lpow_after)
     ext_n = _get_extents(lpow_noise)
-    all_vals = np.concatenate([lpow_before, lpow_after, lpow_noise, ext_b, ext_a, ext_n])
+    all_vals = np.concatenate(
+        [lpow_before, lpow_after, lpow_noise, ext_b, ext_a, ext_n]
+    )
     all_vals_finite = all_vals[np.isfinite(all_vals)]
     if len(all_vals_finite) == 0:
         x_lims = (-10.0, 10.0)
@@ -164,9 +177,9 @@ def plot_sensai_visualization(
     ax2_right = fig.add_axes([0.855, 0.10, 0.035, 0.70])
 
     # Exact MATLAB Color Palette
-    col_sig = np.array([0.08, 0.72, 0.22])      # Green
-    col_noise = np.array([0.85, 0.13, 0.13])    # Red
-    col_star = np.array([1.00, 0.88, 0.00])     # Gold
+    col_sig = np.array([0.08, 0.72, 0.22])  # Green
+    col_noise = np.array([0.85, 0.13, 0.13])  # Red
+    col_star = np.array([1.00, 0.88, 0.00])  # Gold
     col_star_dark = np.array([0.50, 0.44, 0.00])
 
     # Custom Parula Colormap (or turbo fallback)
@@ -179,19 +192,32 @@ def plot_sensai_visualization(
     lda_cmap = LinearSegmentedColormap.from_list(
         "matlab_lda_bg",
         [(0.99, 0.92, 0.92), (1.0, 1.0, 1.0), (0.93, 0.98, 0.93)],
-        N=128
+        N=128,
     )
 
     # ── PANEL 1: BEFORE DENOISING ─────────────────────────────────────────
     si = np.argsort(ssi_before)
     sc1 = ax1.scatter(
-        lpow_before[si], ssi_before[si], c=ssi_before[si], cmap=cmap_parula,
-        vmin=0.0, vmax=1.0, s=38, edgecolors="none", alpha=0.75, zorder=3
+        lpow_before[si],
+        ssi_before[si],
+        c=ssi_before[si],
+        cmap=cmap_parula,
+        vmin=0.0,
+        vmax=1.0,
+        s=38,
+        edgecolors="none",
+        alpha=0.75,
+        zorder=3,
     )
     ax1.axhline(1.0, color=col_star, linestyle="--", lw=1.5, alpha=0.6, zorder=2)
     ax1.text(
-        float(np.mean(x_lims)), 1.10, "Leadfield Subspace",
-        color=col_star_dark, fontsize=10, fontweight="bold", ha="center"
+        float(np.mean(x_lims)),
+        1.10,
+        "Leadfield Subspace",
+        color=col_star_dark,
+        fontsize=10,
+        fontweight="bold",
+        ha="center",
     )
     ax1.set_xlim(x_lims)
     ax1.set_ylim(-0.05, 1.15)
@@ -200,7 +226,9 @@ def plot_sensai_visualization(
     ax1.tick_params(direction="inout", top=False, right=False)
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
-    ax1.set_title(f"Before Denoising  |  Mean SSI: {np.mean(ssi_before):.2f}", fontsize=10, pad=20)
+    ax1.set_title(
+        f"Before Denoising  |  Mean SSI: {np.mean(ssi_before):.2f}", fontsize=10, pad=20
+    )
 
     # Colorbar
     cb = fig.colorbar(sc1, cax=cbar_ax)
@@ -211,35 +239,64 @@ def plot_sensai_visualization(
     # Soft Pastel LDA Shading
     if lda is not None:
         grid_x, grid_y = np.meshgrid(
-            np.linspace(x_lims[0], x_lims[1], 200),
-            np.linspace(-0.05, 1.15, 200)
+            np.linspace(x_lims[0], x_lims[1], 200), np.linspace(-0.05, 1.15, 200)
         )
         grid_pts = np.column_stack([grid_x.ravel(), grid_y.ravel()])
         try:
             probs = lda.predict_proba(grid_pts)[:, 1].reshape(grid_x.shape)
             ax2.imshow(
-                probs, extent=[x_lims[0], x_lims[1], -0.05, 1.15],
-                origin="lower", aspect="auto", cmap=lda_cmap, vmin=0.0, vmax=1.0, zorder=1
+                probs,
+                extent=[x_lims[0], x_lims[1], -0.05, 1.15],
+                origin="lower",
+                aspect="auto",
+                cmap=lda_cmap,
+                vmin=0.0,
+                vmax=1.0,
+                zorder=1,
             )
         except Exception:
             pass
 
     h_noise = ax2.scatter(
-        lpow_noise, ssi_noise, color=col_noise, s=38, alpha=0.40,
-        edgecolors="none", zorder=3, label=f"Noise (mean SSI={np.mean(ssi_noise):.2f})"
+        lpow_noise,
+        ssi_noise,
+        color=col_noise,
+        s=38,
+        alpha=0.40,
+        edgecolors="none",
+        zorder=3,
+        label=f"Noise (mean SSI={np.mean(ssi_noise):.2f})",
     )
     h_sig = ax2.scatter(
-        lpow_after, ssi_after, color=col_sig, s=38, alpha=0.40,
-        edgecolors="none", zorder=4, label=f"Signal (mean SSI={np.mean(ssi_after):.2f})"
+        lpow_after,
+        ssi_after,
+        color=col_sig,
+        s=38,
+        alpha=0.40,
+        edgecolors="none",
+        zorder=4,
+        label=f"Signal (mean SSI={np.mean(ssi_after):.2f})",
     )
     ax2.axhline(1.0, color=col_star, linestyle="--", lw=1.5, alpha=0.6, zorder=2)
     h_star = ax2.scatter(
-        [ideal_power_target], [1.0], color=col_star, marker="*", s=250,
-        edgecolors="black", linewidths=1.0, zorder=5, label="Leadfield Subspace"
+        [ideal_power_target],
+        [1.0],
+        color=col_star,
+        marker="*",
+        s=250,
+        edgecolors="black",
+        linewidths=1.0,
+        zorder=5,
+        label="Leadfield Subspace",
     )
     ax2.text(
-        ideal_power_target, 1.10, "Leadfield Subspace",
-        color=col_star_dark, fontsize=10, fontweight="bold", ha="center"
+        ideal_power_target,
+        1.10,
+        "Leadfield Subspace",
+        color=col_star_dark,
+        fontsize=10,
+        fontweight="bold",
+        ha="center",
     )
 
     ax2.set_xlim(x_lims)
@@ -251,11 +308,19 @@ def plot_sensai_visualization(
     ax2.spines["right"].set_visible(False)
 
     # Boxed Legend matching MATLAB
-    leg = ax2.legend(
+    ax2.legend(
         handles=[h_star, h_sig, h_noise],
-        labels=["Leadfield Subspace", f"Signal (mean SSI={np.mean(ssi_after):.2f})", f"Noise (mean SSI={np.mean(ssi_noise):.2f})"],
-        loc="upper right", bbox_to_anchor=(1.40, 1.02),
-        frameon=True, edgecolor="black", facecolor="white", fontsize=9
+        labels=[
+            "Leadfield Subspace",
+            f"Signal (mean SSI={np.mean(ssi_after):.2f})",
+            f"Noise (mean SSI={np.mean(ssi_noise):.2f})",
+        ],
+        loc="upper right",
+        bbox_to_anchor=(1.40, 1.02),
+        frameon=True,
+        edgecolor="black",
+        facecolor="white",
+        fontsize=9,
     )
 
     # ── PANEL 2 MARGINALS (KDE Distributions) ─────────────────────────────
@@ -264,9 +329,23 @@ def plot_sensai_visualization(
         kde_pwr_sig = gaussian_kde(lpow_after)
         kde_pwr_noi = gaussian_kde(lpow_noise)
         x_grid = np.linspace(x_lims[0], x_lims[1], 300)
-        
-        ax2_top.fill_between(x_grid, kde_pwr_sig(x_grid), color=col_sig, alpha=0.25, edgecolor=col_sig, lw=1.2)
-        ax2_top.fill_between(x_grid, kde_pwr_noi(x_grid), color=col_noise, alpha=0.25, edgecolor=col_noise, lw=1.2)
+
+        ax2_top.fill_between(
+            x_grid,
+            kde_pwr_sig(x_grid),
+            color=col_sig,
+            alpha=0.25,
+            edgecolor=col_sig,
+            lw=1.2,
+        )
+        ax2_top.fill_between(
+            x_grid,
+            kde_pwr_noi(x_grid),
+            color=col_noise,
+            alpha=0.25,
+            edgecolor=col_noise,
+            lw=1.2,
+        )
     except Exception:
         pass
     ax2_top.set_xlim(x_lims)
@@ -278,10 +357,15 @@ def plot_sensai_visualization(
     ax2_top.spines["bottom"].set_color("#888888")
     ax2_top.set_facecolor("none")
 
-    sil_str = f"\nSSI Silhouette Score: {sil_signal:.2f}" if not np.isnan(sil_signal) else ""
+    sil_str = (
+        f"\nSSI Silhouette Score: {sil_signal:.2f}" if not np.isnan(sil_signal) else ""
+    )
     ax2_top.set_title(
-        f"After Denoising  |  Mean SSSI: {np.mean(ssi_after):.2f}  |  Mean NSSI: {np.mean(ssi_noise):.2f}{sil_str}",
-        fontsize=9, pad=10
+        "After Denoising  |  "
+        f"Mean SSSI: {np.mean(ssi_after):.2f}  |  "
+        f"Mean NSSI: {np.mean(ssi_noise):.2f}{sil_str}",
+        fontsize=9,
+        pad=10,
     )
 
     # Right Marginal (SSI distribution)
@@ -290,8 +374,22 @@ def plot_sensai_visualization(
         kde_ssi_noi = gaussian_kde(ssi_noise)
         y_grid = np.linspace(-0.05, 1.15, 300)
 
-        ax2_right.fill_betweenx(y_grid, kde_ssi_sig(y_grid), color=col_sig, alpha=0.25, edgecolor=col_sig, lw=1.2)
-        ax2_right.fill_betweenx(y_grid, kde_ssi_noi(y_grid), color=col_noise, alpha=0.25, edgecolor=col_noise, lw=1.2)
+        ax2_right.fill_betweenx(
+            y_grid,
+            kde_ssi_sig(y_grid),
+            color=col_sig,
+            alpha=0.25,
+            edgecolor=col_sig,
+            lw=1.2,
+        )
+        ax2_right.fill_betweenx(
+            y_grid,
+            kde_ssi_noi(y_grid),
+            color=col_noise,
+            alpha=0.25,
+            edgecolor=col_noise,
+            lw=1.2,
+        )
     except Exception:
         pass
     ax2_right.set_ylim(-0.05, 1.15)
@@ -312,7 +410,11 @@ def plot_sensai_visualization(
         title_parts.append(f"ENOVA = {enova_val:.0f}%")
     if title_suffix:
         title_parts.append(f"[{title_suffix}]")
-    full_title = ", ".join(title_parts) if title_parts else "SENSAI Visualization: Subspace Similarity vs Epoch Power"
+    full_title = (
+        ", ".join(title_parts)
+        if title_parts
+        else "SENSAI Visualization: Subspace Similarity vs Epoch Power"
+    )
 
     fig.suptitle(full_title, fontsize=12, fontweight="bold", y=0.985)
 

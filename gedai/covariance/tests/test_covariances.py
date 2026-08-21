@@ -18,7 +18,19 @@ fname_fwd = data_path / "MEG" / "sample" / "sample_audvis_trunc-meg-eeg-oct-6-fw
 
 @pytest.fixture(scope="module")
 def sample_info():
-    ch_names = ["Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4", "O1", "O2"]
+    """Create a small EEG montage fixture for covariance tests."""
+    ch_names = [
+        "Fp1",
+        "Fp2",
+        "F3",
+        "F4",
+        "C3",
+        "C4",
+        "P3",
+        "P4",
+        "O1",
+        "O2",
+    ]
     info = mne.create_info(ch_names, sfreq=250.0, ch_types="eeg")
     montage = mne.channels.make_standard_montage("standard_1020")
     info.set_montage(montage)
@@ -79,4 +91,3 @@ def test_compute_covariance_from_forward():
     forward = mne.read_forward_solution(fname_fwd)
     cov = compute_covariance_from_forward(forward)
     assert isinstance(cov, mne.Covariance)
-

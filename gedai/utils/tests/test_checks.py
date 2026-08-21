@@ -141,4 +141,3 @@ def test__ensure_noise_multiplier():
 
     with pytest.raises(TypeError, match="noise_multiplier must be float or str"):
         _ensure_noise_multiplier([3.0])
-

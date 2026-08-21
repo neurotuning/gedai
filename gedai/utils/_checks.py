@@ -311,14 +311,17 @@ def _check_n_jobs(n_jobs):
 
 
 def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
-    """Ensure valid noise multiplier or string preset ('auto', 'auto+', 'auto-') matching MATLAB.
+    """Ensure a valid noise multiplier or preset string.
 
     Parameters
     ----------
     value : float | int | str
-        - 'auto' / 'default' / 'standard' : Standard balance (noise_multiplier = 3.0)
-        - 'auto+' / 'aggressive' / 'more' : More aggressive denoising (noise_multiplier = 1.5)
-        - 'auto-' / 'conservative' / 'less' : More conservative denoising (noise_multiplier = 6.0)
+        - 'auto' / 'default' / 'standard' : Standard balance
+          (noise_multiplier = 3.0)
+        - 'auto+' / 'aggressive' / 'more' : More aggressive denoising
+          (noise_multiplier = 1.5)
+        - 'auto-' / 'conservative' / 'less' : More conservative denoising
+          (noise_multiplier = 6.0)
         - float / int : Custom noise multiplier value > 0
 
     Returns
@@ -356,5 +359,3 @@ def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
 
 
 _parse_noise_multiplier = _ensure_noise_multiplier
-
-

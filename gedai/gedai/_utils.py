@@ -50,8 +50,7 @@ def _check_reference_channel(inst):
     elif isinstance(inst, BaseEpochs):
         data = inst.get_data()
         flat_mask = [
-            np.allclose(data[:, c, :], 0, atol=1e-8)
-            for c in range(data.shape[1])
+            np.allclose(data[:, c, :], 0, atol=1e-8) for c in range(data.shape[1])
         ]
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
@@ -159,7 +158,18 @@ def _format_summary_table(model) -> str:
 
     headers = ("Frequency Band", "Epoch (s)", "Threshold", "SENSAI (%)", "ENOVA (%)")
     row_fmt = "  {:<26} | {:>10} | {:>10} | {:>11} | {:>10}"
-    div_line = "  " + "-" * 26 + "-+-" + "-" * 10 + "-+-" + "-" * 10 + "-+-" + "-" * 11 + "-+-" + "-" * 10
+    div_line = (
+        "  "
+        + "-" * 26
+        + "-+-"
+        + "-" * 10
+        + "-+-"
+        + "-" * 10
+        + "-+-"
+        + "-" * 11
+        + "-+-"
+        + "-" * 10
+    )
 
     lines.append(row_fmt.format(*headers))
     lines.append(div_line)
@@ -168,9 +178,15 @@ def _format_summary_table(model) -> str:
         bm = model._broadband_model
         if getattr(bm, "fitted", False) and hasattr(bm, "_fit") and bm._fit is not None:
             t = bm._fit.get("threshold", 0.0)
-            bm_sensai = bm.fit_metrics_.get("sensai_score") if getattr(bm, "fit_metrics_", None) else None
+            bm_sensai = (
+                bm.fit_metrics_.get("sensai_score")
+                if getattr(bm, "fit_metrics_", None)
+                else None
+            )
             s_str = f"{bm_sensai:.2f} %" if bm_sensai is not None else "--"
-            lines.append(row_fmt.format("Pass 1: Broadband", "1.00 s", f"{t:.4g}", s_str, "--"))
+            lines.append(
+                row_fmt.format("Pass 1: Broadband", "1.00 s", f"{t:.4g}", s_str, "--")
+            )
 
     if hasattr(model, "_wavelets_fits") and model._wavelets_fits is not None:
         for wf in model._wavelets_fits:
@@ -188,14 +204,34 @@ def _format_summary_table(model) -> str:
                 sensai_val = wf.get("sensai")
                 sensai_str = f"{sensai_val:.2f} %" if sensai_val is not None else "--"
                 enova_val = wf.get("enova")
-                enova_str = f"{enova_val * 100:.2f} %" if enova_val is not None and enova_val > 0 else "--"
-                lines.append(row_fmt.format(band_label, dur_str, f"{t:.4g}", sensai_str, enova_str))
+                enova_str = (
+                    f"{enova_val * 100:.2f} %"
+                    if enova_val is not None and enova_val > 0
+                    else "--"
+                )
+                lines.append(
+                    row_fmt.format(
+                        band_label, dur_str, f"{t:.4g}", sensai_str, enova_str
+                    )
+                )
     elif hasattr(model, "_fit") and model._fit is not None:
         t = model.threshold
-        sensai_val = model.fit_metrics_.get("sensai_score") if getattr(model, "fit_metrics_", None) else None
+        sensai_val = (
+            model.fit_metrics_.get("sensai_score")
+            if getattr(model, "fit_metrics_", None)
+            else None
+        )
         sensai_str = f"{sensai_val:.2f} %" if sensai_val is not None else "--"
-        dur_str = f"{model._duration:.2f} s" if hasattr(model, "_duration") and model._duration is not None else "--"
-        lines.append(row_fmt.format("Broadband (all freqs)", dur_str, f"{t:.4g}", sensai_str, "--"))
+        dur_str = (
+            f"{model._duration:.2f} s"
+            if hasattr(model, "_duration") and model._duration is not None
+            else "--"
+        )
+        lines.append(
+            row_fmt.format(
+                "Broadband (all freqs)", dur_str, f"{t:.4g}", sensai_str, "--"
+            )
+        )
 
     lines.append("=" * 82)
 
@@ -206,4 +242,3 @@ def _format_summary_table(model) -> str:
             lines.append("=" * 82)
 
     return "\n".join(lines)
-

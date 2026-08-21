@@ -51,12 +51,14 @@ raw.crop(0, 30)
 #
 # Broadband Pass (Two-Pass Filtering):
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-# The ``broadband_pass=True`` parameter enables a two-stage hierarchical cleaning workflow:
+# The ``broadband_pass=True`` parameter enables
+# a two-stage hierarchical cleaning workflow:
 #
-# 1. **Pass 1 (Broadband Pass)**: A full-spectrum spatial GEDAI filter is applied first
-#    to clean large, widespread artifacts (e.g. eye blinks, muscular bursts, head motion)
-#    across all channels simultaneously. This prevents massive artifacts from leaking
-#    across adjacent wavelet frequency subbands.
+# 1. **Pass 1 (Broadband Pass)**: A full-spectrum spatial GEDAI filter is
+#    applied first to clean large, widespread artifacts (e.g. eye blinks,
+#    muscular bursts, head motion) across all channels simultaneously. This
+#    prevents massive artifacts from leaking across adjacent wavelet frequency
+#    subbands.
 # 2. **Pass 2 (Multiband Wavelet Pass)**: The pre-cleaned signal is decomposed into
 #    MODWT wavelet frequency bands, where each subband receives dedicated, fine-grained
 #    eigenvalue thresholding tailored to its specific frequency dynamics.
@@ -105,12 +107,13 @@ denoised_raw = multiband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
 # %%
 # .. warning::
 #
-#       Since the ``Multiband GEDAI`` operates on epoched data internally during fitting,
-#       some frequency content more particularly in lower frequency bands may
-#       be not be captured properly if the epoch duration is too short. On the
-#       other hand, using very long epochs may prevent capturing short
-#       transient artifacts. Setting the ``wavelet_low_cutoff`` parameter to ``"auto"``
-#       or to the acquisition high-pass cutoff excludes low frequency bands
-#       below the signal bandwidth.
+#       Since the ``Multiband GEDAI`` operates on epoched data internally
+#       during fitting, some frequency content more particularly in lower
+#       frequency bands may be not be captured properly if the
+#       epoch duration is too short.
+#       On the other hand, using very long epochs may prevent capturing short
+#       transient artifacts. Setting the ``wavelet_low_cutoff`` parameter to
+#       ``"auto"`` or to the acquisition high-pass cutoff excludes
+#       low frequency bands below the signal bandwidth.
 
 plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)

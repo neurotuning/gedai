@@ -1,7 +1,6 @@
 """Tests for ENOVA and cleaning metrics module."""
 
 import numpy as np
-import pytest
 
 from gedai.metrics import (
     compute_composite_sensai,
@@ -12,6 +11,7 @@ from gedai.metrics import (
 
 
 def test_enova_metrics():
+    """Exercise the ENOVA and composite SENSAI metric utilities."""
     rng = np.random.default_rng(42)
     n_ch, n_times = 8, 1000
     epoch_samples = 200
