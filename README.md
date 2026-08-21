@@ -1,5 +1,5 @@
 
-## BEAR Benchmark results
+## BEAR Benchmark results for GEDAI in Python (AdaptiveMultiband)
 
 ![alt text](image-1.png)
 
@@ -7,7 +7,7 @@
 
 <img width="650" height="375" alt="image" src="https://github.com/user-attachments/assets/cb69c718-ff40-4c48-8956-41b720dc60f8" />
 
-## includes SENSAI epoch visualization
+## SENSAI epoch visualization
 
 ![alt text](image.png)
 
