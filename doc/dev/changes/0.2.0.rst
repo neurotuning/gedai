@@ -12,7 +12,7 @@
 
 .. include:: ./names.inc
 
-.. _latest:
+.. _changes_0_2_0:
 
 Version 0.2.0
 =============
