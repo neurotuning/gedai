@@ -14,13 +14,13 @@
 
 .. _latest:
 
-Version 0.3.0
+Version 0.2.0
 =============
 
 Enhancements
 ------------
 
-- xxx
+- Keep all metadata in transformed raw (:pr:`123` by `Dominik Welke`_ and `Victor Férat`_)
 
 Bugs
 ----
@@ -30,10 +30,12 @@ Bugs
 API and behavior changes
 ------------------------
 
-- Refactor codebase to improve computational efficiency and compatibility with MATLAB code. Several API changes not listed as a stable version is not yet reached. (:pr:`144` by `Tomas Ros`_ and `Victor Férat`_).
+- Add the :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` classes. Refactor and improve the codebase (:pr:`97` by `Victor Férat`_).
+
 
 Authors
 -------
 
-* `Tomas Ros`_
 * `Victor Férat`_
+* `Dominik Welke`_
+
