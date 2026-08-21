@@ -116,3 +116,29 @@ def test_ensure_path():
 
     with pytest.raises(TypeError, match="path is invalid"):
         _ensure_path(Foo(), must_exist=False)
+
+
+def test__ensure_noise_multiplier():
+    """Test _ensure_noise_multiplier function and presets."""
+    from .._checks import _ensure_noise_multiplier, _parse_noise_multiplier
+
+    assert _ensure_noise_multiplier("auto") == 3.0
+    assert _ensure_noise_multiplier("default") == 3.0
+    assert _ensure_noise_multiplier("standard") == 3.0
+    assert _ensure_noise_multiplier("auto+") == 1.5
+    assert _ensure_noise_multiplier("aggressive") == 1.5
+    assert _ensure_noise_multiplier("auto-") == 6.0
+    assert _ensure_noise_multiplier("conservative") == 6.0
+    assert _ensure_noise_multiplier(2.5) == 2.5
+    assert _ensure_noise_multiplier(4) == 4.0
+    assert _parse_noise_multiplier("auto") == 3.0
+
+    with pytest.raises(ValueError, match="noise_multiplier must be > 0"):
+        _ensure_noise_multiplier(-1.0)
+
+    with pytest.raises(ValueError, match="Unknown noise_multiplier preset"):
+        _ensure_noise_multiplier("invalid_preset")
+
+    with pytest.raises(TypeError, match="noise_multiplier must be float or str"):
+        _ensure_noise_multiplier([3.0])
+

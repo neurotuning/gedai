@@ -47,10 +47,28 @@ raw.crop(0, 30)
 # To use ``spectral GEDAI``, we initialize the
 # :class:`~gedai.gedai.MultibandGedai` object. By default, ``wavelet_level="auto"``
 # automatically determines the number of wavelet levels based on sampling frequency
-# and the high-pass cutoff. It is also possible to define a specific level or
-# wavelet family using the ``wavelet_type`` parameter.
+# and the high-pass cutoff.
+#
+# Broadband Pass (Two-Pass Filtering):
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# The ``broadband_pass=True`` parameter enables a two-stage hierarchical cleaning workflow:
+#
+# 1. **Pass 1 (Broadband Pass)**: A full-spectrum spatial GEDAI filter is applied first
+#    to clean large, widespread artifacts (e.g. eye blinks, muscular bursts, head motion)
+#    across all channels simultaneously. This prevents massive artifacts from leaking
+#    across adjacent wavelet frequency subbands.
+# 2. **Pass 2 (Multiband Wavelet Pass)**: The pre-cleaned signal is decomposed into
+#    MODWT wavelet frequency bands, where each subband receives dedicated, fine-grained
+#    eigenvalue thresholding tailored to its specific frequency dynamics.
+#
+# Enabling ``broadband_pass=True`` is recommended for recordings with prominent blinks
+# or muscle contamination.
 
-multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level="auto")
+multiband_gedai = MultibandGedai(
+    wavelet_type="haar",
+    wavelet_level="auto",
+    broadband_pass=True,
+)
 
 # %%
 # Model Fitting
@@ -60,6 +78,7 @@ multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level="auto")
 # signal and noise components using SENSAI optimization (``sensai_method="optimize"``).
 
 multiband_gedai.fit_raw(raw, duration=2.0, n_jobs=n_jobs, verbose=True)
+
 
 # %%
 # .. note::

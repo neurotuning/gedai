@@ -136,6 +136,7 @@ print(adaptive_multiband_gedai._wavelets_fits)
 adaptive_multiband_gedai.plot_fit()
 
 # %%
+# %%
 # Transform the Data (Denoising)
 # ------------------------------
 # Denoising is performed seamlessly using continuous dual-stream cosine overlap-add
@@ -145,5 +146,48 @@ adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
 )
 
 # %%
-# Finally, we can visualize the results:
+# Model Summary Table
+# -------------------
+# We can inspect the model fitting parameters and subband thresholds:
+adaptive_multiband_gedai.fit_summary()
+
+# %%
+# Quality Evaluation: Explained Noise Variance (ENOVA)
+# ----------------------------------------------------
+# ENOVA (Explained Noise Variance) quantifies the proportion of signal variance
+# removed as artifact:
+#
+#   ENOVA = var(noise) / var(original)
+#
+# - **Clean EEG segments**: ENOVA is near 0% (typically < 5-10%), indicating minimal
+#   alteration of genuine brain activity.
+# - **Artifact-contaminated segments**: ENOVA spikes to 50-95%, showing selective
+#   rejection of high-power ocular, muscular, or movement artifacts.
+#
+# We can compute ENOVA across epochs and channels using the ``gedai.metrics`` module:
+
+from gedai.metrics import (
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
+    enova_summary,
+)
+
+original_data = raw.get_data()
+clean_data = adaptive_multiband_denoised_raw.get_data()
+noise_data = original_data - clean_data
+
+sfreq = raw.info["sfreq"]
+epoch_samples = max(1, round(sfreq * 1.0))
+
+enova_epochs = compute_enova_per_epoch(clean_data, noise_data, epoch_samples)
+enova_stats = enova_summary(enova_epochs)
+
+print(f"Mean ENOVA across epochs: {enova_stats['mean'] * 100:.2f} %")
+print(f"Median ENOVA:             {enova_stats['median'] * 100:.2f} %")
+print(f"Max ENOVA (peak artifact): {enova_stats['max'] * 100:.2f} %")
+
+# %%
+# Finally, we can visualize the before-and-after denoising overlay:
 plot_mne_style_overlay_interactive(raw, adaptive_multiband_denoised_raw, duration=15.0)
+

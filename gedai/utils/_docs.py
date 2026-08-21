@@ -61,8 +61,8 @@ duration : float
 # -- N ---------------------------------------------------------------------------------
 docdict["n_jobs"] = """
 n_jobs : int | None
-    The number of jobs to run in parallel. If ``-1`` or ``None`` (default), use all available CPU cores.
-    If ``1``, computations are run serially."""
+    The number of jobs to run in parallel. If ``1`` or ``None`` (default), computations
+    are run serially. If ``-1``, all available CPU cores are used."""
 docdict["noise_multiplier"] = """
 noise_multiplier : float | str
     The noise multiplier or string preset for artefact threshold rejection optimization.

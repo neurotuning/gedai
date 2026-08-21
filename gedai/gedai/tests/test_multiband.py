@@ -132,13 +132,12 @@ def test_multiband_auto_wavelet_level_and_metrics():
     model.fit_epochs(epochs_eeg, n_jobs=1)
     assert model._actual_wavelet_level is not None
     assert model._actual_wavelet_level >= 4
+    assert model.fit_metrics_ is not None
+    assert "sensai_score" in model.fit_metrics_
+    assert isinstance(model.fit_summary(), str)
 
     epochs_transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
-    assert model.metrics_ is not None
-    assert "enova_per_epoch" in model.metrics_
-    assert "enova_per_channel" in model.metrics_
-    assert "sensai_score" in model.metrics_
-    assert isinstance(model.metrics_["mean_enova"], float)
+    assert epochs_transformed.get_data().shape == epochs_eeg.get_data().shape
 
 
 def test_multiband_broadband_pass():
@@ -148,8 +147,9 @@ def test_multiband_broadband_pass():
     model = MultibandGedai(wavelet_type="haar", wavelet_level=4, broadband_pass=True)
     model.fit_epochs(epochs_eeg, picks=picks, n_jobs=1)
     assert model._broadband_model is not None
+    assert model.fit_metrics_ is not None
 
     transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
     assert transformed.get_data().shape[1] == len(picks)
-    assert model.metrics_ is not None
+
 

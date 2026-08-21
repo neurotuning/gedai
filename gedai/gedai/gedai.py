@@ -29,7 +29,7 @@ from ..sensai.sensai import (
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
-    _parse_noise_multiplier,
+    _ensure_noise_multiplier,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import verbose
@@ -43,28 +43,20 @@ def create_cosine_weights(n_samples):
     return cos_win
 
 
-def _check_sensai_method(method):
-    _check_type(method, (str,), "method")
-    if method not in ["gridsearch", "optimize"]:
+def _check_sensai_method(sensai_method):
+    _check_type(sensai_method, (str,), "sensai_method")
+    if sensai_method not in ["gridsearch", "optimize"]:
         raise ValueError(
-            f"Method must be 'gridsearch' or 'optimize', got '{method}' instead."
+            "sensai_method must be either 'gridsearch' or 'optimize', "
+            f"got {sensai_method}"
         )
 
 
 @fill_doc
 class Gedai:
-    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Generalized Eigenvalue De-Artifacting Instrument.
 
-    This class implements the single band GEDAI workflow.
-    For wavelet-based decomposition, band-wise denoising use :class:`MultibandGedai`.
-
-    See :footcite:`Ros2025`.
-
-    .. warning::
-        For EEG channels, Gedai will set average reference internally
-        to match the leadfield covariance reference.
-        Gedai will not modify the input data in-place, but will create
-        copies when necessary to ensure the original data remains unchanged.
+    See :footcite:`deCheveigne2018`.
 
     Parameters
     ----------
@@ -74,14 +66,17 @@ class Gedai:
     .. footbibliography::
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+    ):
         self.fitted = False
         self._fit = None
         self._info = None
         self._reference_cov = None
         self._n_samples = None
         self._duration = None
-        self.metrics_ = None
+        self._highpass_prefilter = None
+        self.fit_metrics_ = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -120,12 +115,12 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
     ):
-        """Fit the GEDAI model to the epochs data.
+        """Fit the GEDAI model to the epochs.
 
         Parameters
         ----------
-        epochs : mne.Epochs
-            The epochs data to fit the model to.
+        epochs : mne.BaseEpochs
+            The epochs to fit the model to.
         %(picks)s
         %(reference_cov)s
         %(sensai_method)s
@@ -137,18 +132,17 @@ class Gedai:
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
-        _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        noise_multiplier = _parse_noise_multiplier(noise_multiplier)
+        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
         data = epochs_fit.get_data()
 
-        cov = _ensure_cov(reference_cov)
+        cov = _ensure_cov(reference_cov).copy()
         cov = _pick_cov(cov, epochs_fit.info["ch_names"])
-        reference_cov = cov.data
+        reference_cov = cov.data.copy()
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
@@ -204,6 +198,14 @@ class Gedai:
                 f"got '{sensai_method}' instead."
             )
 
+        best_run = max(runs, key=lambda x: x[1]) if runs else None
+        self.fit_metrics_ = {
+            "sensai_score": best_run[1] if best_run else 0.0,
+            "signal_similarity": best_run[2] if best_run else 0.0,
+            "noise_similarity": best_run[3] if best_run else 0.0,
+            "threshold": threshold,
+        }
+
         self._fit = {
             "threshold": threshold,
             "epochs_eigenvalues": epochs_eigenvalues,
@@ -213,7 +215,7 @@ class Gedai:
 
         self.fitted = True
         self._info = epochs_fit.info.copy()
-        self._reference_cov = cov # Regularization applied
+        self._reference_cov = cov
 
         self._n_samples = data.shape[-1]
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
@@ -264,7 +266,7 @@ class Gedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        noise_multiplier = _parse_noise_multiplier(noise_multiplier)
+        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
@@ -430,20 +432,6 @@ class Gedai:
         original_data = raw_transform.get_data(verbose=False).copy()
         raw_transform._data = clean_data
 
-        noise_data = original_data - clean_data
-        ep_samples = max(1, round(sfreq * 1.0))
-        enova_ep = compute_enova_per_epoch(clean_data, noise_data, ep_samples)
-        enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
-        sensai_val = compute_composite_sensai(
-            clean_data, noise_data, sfreq, self._reference_cov.data
-        )
-        self.metrics_ = {
-            "enova_per_epoch": enova_ep,
-            "enova_per_channel": enova_ch,
-            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
-            "sensai_score": sensai_val,
-        }
-
         if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
             isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
         ):
@@ -510,8 +498,8 @@ class Gedai:
         self._check_fit()
         return self._reference_cov.ch_names
 
-    def summary(self) -> str:
-        """Print and return a formatted summary table of the model fitting and denoising metrics.
+    def fit_summary(self) -> str:
+        """Print and return a formatted summary table of the model fitting metrics.
 
         Returns
         -------
@@ -522,6 +510,9 @@ class Gedai:
         table_str = _format_summary_table(self)
         print(table_str)
         return table_str
+
+    summary = fit_summary
+
 
     def plot_sensai(
         self,

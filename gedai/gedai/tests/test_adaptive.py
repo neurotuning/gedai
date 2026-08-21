@@ -60,12 +60,12 @@ def test_gedai_multiband_adaptive_auto_level_and_metrics():
     model.fit_raw(raw_eeg, picks=raw_eeg.ch_names[:6], n_jobs=1)
     assert model._actual_wavelet_level is not None
     assert model._actual_wavelet_level >= 6
+    assert model.fit_metrics_ is not None
+    assert "sensai_score" in model.fit_metrics_
+    assert isinstance(model.fit_summary(), str)
 
     transformed_raw = model.transform_raw(raw_eeg, n_jobs=1)
-    assert model.metrics_ is not None
-    assert "enova_per_epoch" in model.metrics_
-    assert "enova_per_channel" in model.metrics_
-    assert "sensai_score" in model.metrics_
+    assert transformed_raw.get_data().shape[0] == 6
 
 
 def test_gedai_multiband_adaptive_broadband_pass():
@@ -73,8 +73,9 @@ def test_gedai_multiband_adaptive_broadband_pass():
     model = AdaptiveMultibandGedai(wavelet_type="haar", wavelet_level=4, broadband_pass=True)
     model.fit_raw(raw_eeg, picks=raw_eeg.ch_names[:6], n_jobs=1)
     assert model._broadband_model is not None
+    assert model.fit_metrics_ is not None
 
     transformed_raw = model.transform_raw(raw_eeg, n_jobs=1)
     assert transformed_raw.get_data().shape[0] == 6
-    assert model.metrics_ is not None
+
 

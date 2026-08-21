@@ -310,8 +310,8 @@ def _check_n_jobs(n_jobs):
     return n_jobs
 
 
-def _parse_noise_multiplier(value: float | int | str = "auto") -> float:
-    """Parse noise multiplier or string preset ('auto', 'auto+', 'auto-') matching MATLAB.
+def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
+    """Ensure valid noise multiplier or string preset ('auto', 'auto+', 'auto-') matching MATLAB.
 
     Parameters
     ----------
@@ -353,4 +353,8 @@ def _parse_noise_multiplier(value: float | int | str = "auto") -> float:
         raise TypeError(
             f"noise_multiplier must be float or str, got {type(value).__name__}"
         )
+
+
+_parse_noise_multiplier = _ensure_noise_multiplier
+
 
