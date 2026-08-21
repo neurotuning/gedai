@@ -18,8 +18,8 @@ def test_gedai_fit_transform_epochs():
     model = Gedai()
     model.fit_epochs(epochs_eeg)
     transformed_epochs = model.transform_epochs(epochs_eeg)
-    assert transformed_epochs.info['ch_names'] == epochs_eeg.info['ch_names']
-    assert transformed_epochs.info['sfreq'] == epochs_eeg.info['sfreq']
+    assert transformed_epochs.info["ch_names"] == epochs_eeg.info["ch_names"]
+    assert transformed_epochs.info["sfreq"] == epochs_eeg.info["sfreq"]
     assert epochs_eeg.metadata == transformed_epochs.metadata
 
 
@@ -28,8 +28,8 @@ def test_gedai_fit_transform_raw():
     model = Gedai()
     model.fit_raw(raw_eeg)
     transformed_raw = model.transform_raw(raw_eeg)
-    assert transformed_raw.info['ch_names'] == raw_eeg.info['ch_names']
-    assert transformed_raw.info['sfreq'] == raw_eeg.info['sfreq']
+    assert transformed_raw.info["ch_names"] == raw_eeg.info["ch_names"]
+    assert transformed_raw.info["sfreq"] == raw_eeg.info["sfreq"]
     assert raw_eeg.annotations == transformed_raw.annotations
 
 
@@ -88,9 +88,14 @@ def test_gedai_raw_picks():
 
 
 def test_gedai_average_reference_not_reapplied():
-    """Test that data with average reference already applied is not modified or re-referenced."""
+    """Ensure data already average-referenced is not modified again."""
     import numpy as np
-    from gedai.gedai._utils import _check_average_reference, _prepare_raw_fit, _prepare_epochs_fit
+
+    from gedai.gedai._utils import (
+        _check_average_reference,
+        _prepare_epochs_fit,
+        _prepare_raw_fit,
+    )
 
     raw = raw_eeg.copy()
     raw.set_eeg_reference("average", projection=False)

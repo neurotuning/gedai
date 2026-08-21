@@ -1,5 +1,4 @@
 import numpy as np
-from mne.parallel import parallel_func
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
 
@@ -178,7 +177,9 @@ def _sensai_score_from_gevd(
             Q1_n, _ = np.linalg.qr(Y1_n)
             Y2_n = cov_noise @ Q1_n
             basis_n, _ = np.linalg.qr(Y2_n)
-            noi_sims[e] = subspace_similarity(basis_n, reference_eigenvectors, n_pc=n_pc)
+            noi_sims[e] = subspace_similarity(
+                basis_n, reference_eigenvectors, n_pc=n_pc
+            )
         except (np.linalg.LinAlgError, ValueError):
             noi_sims[e] = 0.0
 
@@ -196,7 +197,9 @@ def _sensai_score_from_gevd(
             Q1_s, _ = np.linalg.qr(Y1_s)
             Y2_s = cov_signal @ Q1_s
             basis_s, _ = np.linalg.qr(Y2_s)
-            sig_sims[e] = subspace_similarity(basis_s, reference_eigenvectors, n_pc=n_pc)
+            sig_sims[e] = subspace_similarity(
+                basis_s, reference_eigenvectors, n_pc=n_pc
+            )
         except (np.linalg.LinAlgError, ValueError):
             sig_sims[e] = 0.0
 
@@ -302,7 +305,7 @@ def _sensai_gridsearch(
     # Check for degenerate monotonic / boundary curve safeguards
     if len(runs) >= 4:
         peak_is_at_boundary = best_idx >= len(runs) - 2
-        baseline_score = float(np.median(scores[:max(1, len(runs) // 4)]))
+        baseline_score = float(np.median(scores[: max(1, len(runs) // 4)]))
         peak_score = float(scores[best_idx])
         dramatic_rise = (
             abs(peak_score) > 5 * max(abs(baseline_score), 1.0)
@@ -359,14 +362,16 @@ def _sensai_optimize(
 
     def objective_function(sensai_threshold):
         eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
-        score, signal_subspace_similarity, noise_subspace_similarity = _sensai_score_from_gevd(
-            all_eval,
-            all_evec,
-            reference_cov,
-            reference_eigenvectors,
-            eigen_threshold,
-            n_pc=n_pc,
-            noise_multiplier=noise_multiplier,
+        score, signal_subspace_similarity, noise_subspace_similarity = (
+            _sensai_score_from_gevd(
+                all_eval,
+                all_evec,
+                reference_cov,
+                reference_eigenvectors,
+                eigen_threshold,
+                n_pc=n_pc,
+                noise_multiplier=noise_multiplier,
+            )
         )
         runs.append(
             [
@@ -395,14 +400,3 @@ def _sensai_optimize(
     eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
-
-
-# Re-export ENOVA metrics from gedai.metrics.enova for backwards compatibility
-from ..metrics.enova import (
-    compute_composite_sensai,
-    compute_enova_per_channel,
-    compute_enova_per_epoch,
-    enova_summary,
-)
-
-

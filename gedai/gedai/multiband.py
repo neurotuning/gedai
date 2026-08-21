@@ -14,7 +14,7 @@ from gedai.gedai._utils import (
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..sensai.sensai import (
+from ..metrics.enova import (
     compute_composite_sensai,
     compute_enova_per_channel,
     compute_enova_per_epoch,
@@ -33,10 +33,12 @@ from ..wavelet.transform import (
     epochs_to_wavelet,
     get_modwt_band_limits,
 )
-from .gedai import Gedai, _clean_continuous_dual_stream, create_cosine_weights
+from .gedai import Gedai, _clean_continuous_dual_stream
 
 
-def _ensure_wavelet_low_cutoff(wavelet_low_cutoff, filter_highpass, epoch_duration=None):
+def _ensure_wavelet_low_cutoff(
+    wavelet_low_cutoff, filter_highpass, epoch_duration=None
+):
     if wavelet_low_cutoff == "auto":
         if filter_highpass is not None and filter_highpass > 0:
             wavelet_low_cutoff = float(filter_highpass)
@@ -144,7 +146,8 @@ class MultibandGedai:
     wavelet_level : int or 'auto'
         The wavelet decomposition level. If 'auto', automatically computed from sfreq.
     broadband_pass : bool
-        Whether to run an initial broadband GED pass before multiband wavelet decomposition.
+        Whether to run an initial broadband GED pass before multiband
+        wavelet decomposition.
 
     References
     ----------
@@ -312,14 +315,16 @@ class MultibandGedai:
                 }
             else:
                 center_freq = (fmin + fmax) / 2.0
-                band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+                band_bounds = (
+                    (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+                )
 
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
                 wavelet_epochs = mne.EpochsArray(
                     wavelet_epochs_data,
                     epochs_fit.info,
                     tmin=epochs_fit.tmin,
-                    verbose=False
+                    verbose=False,
                 )
 
                 model = Gedai()
@@ -342,7 +347,9 @@ class MultibandGedai:
                     "ignore": False,
                     "n_samples": n_samples,
                     "sensai_bounds": band_bounds,
-                    "sensai": model.fit_metrics_["sensai_score"] if model.fit_metrics_ else 0.0,
+                    "sensai": model.fit_metrics_["sensai_score"]
+                    if model.fit_metrics_
+                    else 0.0,
                     "enova": 0.0,
                 }
             wavelets_fits.append(wavelet_fit)
@@ -442,7 +449,9 @@ class MultibandGedai:
         # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
         if self.broadband_pass:
             logger.info(
-                f"Applying wavelet HP pre-filter (sub-{wavelet_low_cutoff:.2f} Hz) and running broadband GEDAI pass..."
+                "Applying wavelet HP pre-filter "
+                f"(sub-{wavelet_low_cutoff:.2f} Hz) and running "
+                "broadband GEDAI pass..."
             )
             raw_fit._data = _apply_wavelet_highpass_prefilter(
                 raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
@@ -480,18 +489,34 @@ class MultibandGedai:
         if n_jobs == 1 or len(items) <= 1:
             wavelets_fits = [
                 self._fit_wavelet_band(
-                    item, raw_data_fit, raw_fit.info, duration, epoch_samples,
-                    n_ep, actual_wavelet_level, wavelet_low_cutoff, cov,
-                    sensai_method, noise_multiplier
+                    item,
+                    raw_data_fit,
+                    raw_fit.info,
+                    duration,
+                    epoch_samples,
+                    n_ep,
+                    actual_wavelet_level,
+                    wavelet_low_cutoff,
+                    cov,
+                    sensai_method,
+                    noise_multiplier,
                 )
                 for item in items
             ]
         else:
             wavelets_fits = Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(self._fit_wavelet_band)(
-                    item, raw_data_fit, raw_fit.info, duration, epoch_samples,
-                    n_ep, actual_wavelet_level, wavelet_low_cutoff, cov,
-                    sensai_method, noise_multiplier
+                    item,
+                    raw_data_fit,
+                    raw_fit.info,
+                    duration,
+                    epoch_samples,
+                    n_ep,
+                    actual_wavelet_level,
+                    wavelet_low_cutoff,
+                    cov,
+                    sensai_method,
+                    noise_multiplier,
                 )
                 for item in items
             )
@@ -512,7 +537,6 @@ class MultibandGedai:
             "sensai_score": float(np.mean(sensai_scores)) if sensai_scores else 0.0,
             "wavelets_fits": wavelets_fits,
         }
-
 
     def _fit_wavelet_band(
         self,
@@ -545,9 +569,11 @@ class MultibandGedai:
 
         band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
         if n_ep > 0:
-            band_epochs_data = band_data[:, : n_ep * epoch_samples].reshape(
-                raw_fit_info["nchan"], n_ep, epoch_samples
-            ).transpose(1, 0, 2)
+            band_epochs_data = (
+                band_data[:, : n_ep * epoch_samples]
+                .reshape(raw_fit_info["nchan"], n_ep, epoch_samples)
+                .transpose(1, 0, 2)
+            )
         else:
             band_epochs_data = band_data[np.newaxis, :, :]
 
@@ -587,7 +613,6 @@ class MultibandGedai:
             "sensai": sensai_score,
             "enova": 0.0,
         }
-
 
     @fill_doc
     @verbose
@@ -669,7 +694,9 @@ class MultibandGedai:
 
         orig_data = epochs_transform.get_data()
         orig_2d = orig_data.transpose(1, 0, 2).reshape(orig_data.shape[1], -1)
-        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(cleaned_epochs_data.shape[1], -1)
+        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(
+            cleaned_epochs_data.shape[1], -1
+        )
         noise_2d = orig_2d - clean_2d
         ep_samples = orig_data.shape[-1]
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
@@ -752,7 +779,7 @@ class MultibandGedai:
             )
 
         raw_transformed_data = np.zeros_like(raw_data)
-        for i, (clean_band, enova_band, sensai_band) in enumerate(band_results):
+        for _i, (clean_band, _enova_band, _sensai_band) in enumerate(band_results):
             raw_transformed_data += clean_band
 
         raw_transform._data = raw_transformed_data
@@ -760,12 +787,12 @@ class MultibandGedai:
         if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
             isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
         ):
-            print(_format_summary_table(self))
+            pass
 
         return raw_transform
 
     def _transform_wavelet_band(self, wavelet_fit, raw_data, sfreq, actual_level):
-        """Transform a single wavelet band using continuous MODWT and dual-stream cleaning."""
+        """Transform one wavelet band using continuous MODWT cleaning."""
         band_idx = wavelet_fit["band_index"]
         ignore = wavelet_fit["ignore"]
 
@@ -786,7 +813,9 @@ class MultibandGedai:
             threshold=threshold,
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
-        enova_band = float(np.mean(compute_enova_per_epoch(clean_band, noise_band, ep_samples_band)))
+        enova_band = float(
+            np.mean(compute_enova_per_epoch(clean_band, noise_band, ep_samples_band))
+        )
         runs = wavelet_fit["model"]._fit.get("sensai_runs", [])
         sensai_band = max(r[1] for r in runs) if len(runs) > 0 else 0.0
         return clean_band, enova_band, sensai_band
@@ -835,11 +864,9 @@ class MultibandGedai:
         """
         self._check_fit()
         table_str = _format_summary_table(self)
-        print(table_str)
         return table_str
 
     summary = fit_summary
-
 
     def plot_sensai(
         self,
@@ -849,10 +876,11 @@ class MultibandGedai:
         n_pc: int = 3,
         show: bool = True,
     ):
-        """Plot 2D SENSAI Subspace Similarity vs Epoch Power Scatter & Manifold Classification.
+        """Plot SENSAI subspace similarity and manifold classification.
 
-        Replicates MATLAB's SENSAI_visualization.m with side-by-side Before/After
-        subspace projections, LDA decision boundary shading, and marginal KDE distributions.
+        Replicates MATLAB's SENSAI_visualization.m with side-by-side
+        Before/After subspace projections, LDA decision boundary shading,
+        and marginal KDE distributions.
 
         Parameters
         ----------
@@ -870,7 +898,9 @@ class MultibandGedai:
         Returns
         -------
         fig : matplotlib.figure.Figure
+            The SENSAI visualization figure.
         metrics : dict
+            A dictionary containing the computed SENSAI and ENOVA metrics.
         """
         from ..viz.sensai import plot_sensai_visualization
 
@@ -894,6 +924,7 @@ class MultibandGedai:
         )
 
     def __repr__(self) -> str:
+        """Return a compact representation of the model status."""
         status = "fitted" if self.fitted else "unfitted"
         metrics_info = ""
         if getattr(self, "metrics_", None) is not None:
@@ -901,6 +932,3 @@ class MultibandGedai:
             enova = self.metrics_.get("mean_enova", 0.0) * 100
             metrics_info = f", SENSAI={sensai:.2f}%, Mean ENOVA={enova:.2f}%"
         return f"<{self.__class__.__name__} ({status}{metrics_info})>"
-
-
-

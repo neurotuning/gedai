@@ -23,8 +23,9 @@ across different frequency ranges.
 # %%
 from mne.io import read_raw
 
-from gedai import AdaptiveMultibandGedai, Gedai
+from gedai import AdaptiveMultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
+from gedai.metrics import compute_enova_per_epoch, enova_summary
 from gedai.viz import plot_mne_style_overlay_interactive
 
 n_jobs = 1
@@ -49,9 +50,11 @@ raw.crop(0, 30)
 # separately to each band.
 #
 # The wavelet decomposition is controlled by:
+#
 # - ``wavelet_type``: The wavelet family (default: ``"haar"``).
 # - ``wavelet_level``: Number of decomposition levels (default: ``"auto"``).
-# - ``broadband_pass``: Whether to run an initial broadband GEDAI pass (default: ``True``).
+# - ``broadband_pass``: Whether to run an initial broadband GEDAI pass
+#   (default: ``True``).
 
 wavelet_type = "haar"
 
@@ -104,7 +107,8 @@ adaptive_multiband_gedai = AdaptiveMultibandGedai(
 # Model Fitting
 # -------------
 # The fitting process of ``AdaptiveMultibandGedai`` is performed separately for
-# each wavelet level using continuous SENSAI optimization (``sensai_method="optimize"``).
+# each wavelet level using continuous SENSAI optimization
+# (``sensai_method="optimize"``).
 #
 # The ``wavelet_low_cutoff`` parameter controls which low-frequency bands are
 # ignored (e.g. below high-pass filtering). Setting ``wavelet_low_cutoff="auto"``
@@ -166,13 +170,6 @@ adaptive_multiband_gedai.fit_summary()
 #
 # We can compute ENOVA across epochs and channels using the ``gedai.metrics`` module:
 
-from gedai.metrics import (
-    compute_composite_sensai,
-    compute_enova_per_channel,
-    compute_enova_per_epoch,
-    enova_summary,
-)
-
 original_data = raw.get_data()
 clean_data = adaptive_multiband_denoised_raw.get_data()
 noise_data = original_data - clean_data
@@ -190,4 +187,3 @@ print(f"Max ENOVA (peak artifact): {enova_stats['max'] * 100:.2f} %")
 # %%
 # Finally, we can visualize the before-and-after denoising overlay:
 plot_mne_style_overlay_interactive(raw, adaptive_multiband_denoised_raw, duration=15.0)
-

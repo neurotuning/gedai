@@ -22,8 +22,8 @@ def test_gedai_multiband_adaptive_fit_transform_raw():
     assert len(set(band_samples)) > 1
 
     transformed_raw = model.transform_raw(raw_eeg)
-    assert transformed_raw.info['ch_names'] == raw_eeg.info['ch_names']
-    assert transformed_raw.info['sfreq'] == raw_eeg.info['sfreq']
+    assert transformed_raw.info["ch_names"] == raw_eeg.info["ch_names"]
+    assert transformed_raw.info["sfreq"] == raw_eeg.info["sfreq"]
     assert raw_eeg.annotations == transformed_raw.annotations
 
 
@@ -70,12 +70,12 @@ def test_gedai_multiband_adaptive_auto_level_and_metrics():
 
 def test_gedai_multiband_adaptive_broadband_pass():
     """Test adaptive multiband with broadband pass."""
-    model = AdaptiveMultibandGedai(wavelet_type="haar", wavelet_level=4, broadband_pass=True)
+    model = AdaptiveMultibandGedai(
+        wavelet_type="haar", wavelet_level=4, broadband_pass=True
+    )
     model.fit_raw(raw_eeg, picks=raw_eeg.ch_names[:6], n_jobs=1)
     assert model._broadband_model is not None
     assert model.fit_metrics_ is not None
 
     transformed_raw = model.transform_raw(raw_eeg, n_jobs=1)
     assert transformed_raw.get_data().shape[0] == 6
-
-

@@ -135,7 +135,9 @@ def compute_wavelet_level(
     ideal = int(np.ceil(np.log2(sfreq / lowcut_hz)))
     if n_times is not None:
         if cycles_per_wavelet is not None and cycles_per_wavelet > 0:
-            max_possible = max(1, int(np.floor(np.log2(max(1.0, n_times / cycles_per_wavelet)))) - 1)
+            max_possible = max(
+                1, int(np.floor(np.log2(max(1.0, n_times / cycles_per_wavelet)))) - 1
+            )
         else:
             max_possible = max(1, int(np.floor(np.log2(n_times))))
         return max(2, min(ideal, max_possible))
@@ -153,11 +155,13 @@ def get_modwt_band_limits(sfreq: float, n_bands: int) -> list[tuple[float, float
         lo = sfreq / (2 ** (f + 2))
         hi = sfreq / (2 ** (f + 1))
         limits.append((lo, hi))
-    limits.append((0.0, sfreq / (2 ** n_bands)))
+    limits.append((0.0, sfreq / (2**n_bands)))
     return limits
 
 
-def _modwt_haar_single_band(data_T: np.ndarray, level: int, band_idx: int) -> np.ndarray:
+def _modwt_haar_single_band(
+    data_T: np.ndarray, level: int, band_idx: int
+) -> np.ndarray:
     """Haar MODWT single-band reconstruction — exact port of MATLAB modwt_single_band.m.
 
     Uses circular shifts (np.roll) matching MATLAB circshift, with the same
@@ -248,7 +252,9 @@ def _apply_wavelet_highpass_prefilter(
         return data
 
     n_times = data.shape[1]
-    hp_wavelet_levels = int(np.ceil(np.log2(sfreq / max(0.01, min(0.1, lowcut_hz))) - 1))
+    hp_wavelet_levels = int(
+        np.ceil(np.log2(sfreq / max(0.01, min(0.1, lowcut_hz))) - 1)
+    )
     hp_wavelet_levels = max(hp_wavelet_levels, 3)
     hp_wavelet_levels = min(hp_wavelet_levels, int(np.floor(np.log2(n_times))))
     n_bands_hp = hp_wavelet_levels + 1
@@ -265,7 +271,3 @@ def _apply_wavelet_highpass_prefilter(
         low_freq_noise += _modwt_haar_single_band(data_T, hp_wavelet_levels, b)
 
     return (data.astype(np.float64) - low_freq_noise).astype(data.dtype)
-
-
-
-

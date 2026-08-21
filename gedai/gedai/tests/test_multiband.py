@@ -151,5 +151,3 @@ def test_multiband_broadband_pass():
 
     transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
     assert transformed.get_data().shape[1] == len(picks)
-
-
