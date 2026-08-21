@@ -1,8 +1,13 @@
+
+## BEAR Benchmark 
+
+![alt text](image-1.png)
+
 ## Summary Comparison to original GEDAI version in Matlab 
 
 <img width="650" height="375" alt="image" src="https://github.com/user-attachments/assets/cb69c718-ff40-4c48-8956-41b720dc60f8" />
 
-## including epoch SENSAI visualization
+## includes SENSAI epoch visualization
 
 ![alt text](image.png)
 
