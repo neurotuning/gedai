@@ -1,4 +1,3 @@
-
 import numpy as np
 from mne import BaseEpochs
 from mne._fiff.pick import _picks_to_idx
@@ -34,36 +33,37 @@ def _check_fit_info(model, inst):
 def _check_average_reference(inst):
     if isinstance(inst, BaseRaw):
         data = inst.get_data()
+        mean_across_channels = np.mean(data, axis=0)
     elif isinstance(inst, BaseEpochs):
         data = inst.get_data()
-        data = np.vstack(data)
+        mean_across_channels = np.mean(data, axis=1)
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
 
-    mean_across_channels = np.mean(data, axis=0)
-    is_average_ref = False
-    if np.allclose(mean_across_channels, 0):
-        is_average_ref = True
-    return is_average_ref
+    return np.allclose(mean_across_channels, 0, atol=1e-6)
 
 
 def _check_reference_channel(inst):
     if isinstance(inst, BaseRaw):
         data = inst.get_data()
+        flat_mask = [np.allclose(ch, 0, atol=1e-8) for ch in data]
     elif isinstance(inst, BaseEpochs):
         data = inst.get_data()
-        data = np.vstack(data)
+        flat_mask = [
+            np.allclose(data[:, c, :], 0, atol=1e-8)
+            for c in range(data.shape[1])
+        ]
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
-    for data_channel in data:
-        is_reference_channel = np.allclose(data_channel, 0)
-        if is_reference_channel:
-            return
+
+    if any(flat_mask):
+        return
+
     logger.warning(
         "Input data does not contain a flat reference channel. "
-        "GEDAI will apply average referencing."
+        "GEDAI will apply average referencing. "
         "Consider adding the reference channel(s) using "
-        ":func:`mne.mne.add_reference_channels` before using GEDAI."
+        ":func:`mne.add_reference_channels` before using GEDAI."
     )
     return
 
@@ -117,7 +117,7 @@ def _prepare_raw_fit(raw, picks):
     _check_picks_uniqueness(raw.info, picks)
     raw_fit = raw.copy().load_data().pick(picks)
 
-    ch_type = raw.info.get_channel_types()[0]
+    ch_type = raw_fit.info.get_channel_types()[0]
     if ch_type == "eeg":
         is_average_ref = _check_average_reference(raw_fit)
         if not is_average_ref:
@@ -148,3 +148,62 @@ def _prepare_raw_transform(raw, picks):
             logger.info("Setting average reference.")
             raw_transform.set_eeg_reference("average", projection=False)
     return raw_transform
+
+
+def _format_summary_table(model) -> str:
+    """Format a MATLAB-style summarized table for a fitted/transformed GEDAI model."""
+    lines = []
+    lines.append("=" * 82)
+    lines.append(f"  {model.__class__.__name__} Summary Table")
+    lines.append("=" * 82)
+
+    headers = ("Frequency Band", "Epoch (s)", "Threshold", "SENSAI (%)", "ENOVA (%)")
+    row_fmt = "  {:<26} | {:>10} | {:>10} | {:>11} | {:>10}"
+    div_line = "  " + "-" * 26 + "-+-" + "-" * 10 + "-+-" + "-" * 10 + "-+-" + "-" * 11 + "-+-" + "-" * 10
+
+    lines.append(row_fmt.format(*headers))
+    lines.append(div_line)
+
+    if hasattr(model, "_broadband_model") and model._broadband_model is not None:
+        bm = model._broadband_model
+        if getattr(bm, "fitted", False) and hasattr(bm, "_fit") and bm._fit is not None:
+            t = bm._fit.get("threshold", 0.0)
+            bm_sensai = bm.fit_metrics_.get("sensai_score") if getattr(bm, "fit_metrics_", None) else None
+            s_str = f"{bm_sensai:.2f} %" if bm_sensai is not None else "--"
+            lines.append(row_fmt.format("Pass 1: Broadband", "1.00 s", f"{t:.4g}", s_str, "--"))
+
+    if hasattr(model, "_wavelets_fits") and model._wavelets_fits is not None:
+        for wf in model._wavelets_fits:
+            w_idx = wf.get("band_index", 0)
+            fmin = wf.get("fmin", 0.0)
+            fmax = wf.get("fmax", 0.0)
+            dur = wf.get("duration", 1.0)
+            dur_str = f"{dur:.2f} s" if dur is not None else "--"
+            band_label = f"Band {w_idx} ({fmin:.2f}-{fmax:.2f} Hz)"
+            if wf.get("ignore", False):
+                lines.append(row_fmt.format(band_label, dur_str, "IGNORED", "--", "--"))
+            else:
+                m = wf.get("model")
+                t = m.threshold if m is not None else 0.0
+                sensai_val = wf.get("sensai")
+                sensai_str = f"{sensai_val:.2f} %" if sensai_val is not None else "--"
+                enova_val = wf.get("enova")
+                enova_str = f"{enova_val * 100:.2f} %" if enova_val is not None and enova_val > 0 else "--"
+                lines.append(row_fmt.format(band_label, dur_str, f"{t:.4g}", sensai_str, enova_str))
+    elif hasattr(model, "_fit") and model._fit is not None:
+        t = model.threshold
+        sensai_val = model.fit_metrics_.get("sensai_score") if getattr(model, "fit_metrics_", None) else None
+        sensai_str = f"{sensai_val:.2f} %" if sensai_val is not None else "--"
+        dur_str = f"{model._duration:.2f} s" if hasattr(model, "_duration") and model._duration is not None else "--"
+        lines.append(row_fmt.format("Broadband (all freqs)", dur_str, f"{t:.4g}", sensai_str, "--"))
+
+    lines.append("=" * 82)
+
+    if hasattr(model, "fit_metrics_") and model.fit_metrics_ is not None:
+        score = model.fit_metrics_.get("sensai_score")
+        if score is not None:
+            lines.append(f"  Fitted SENSAI Optimization Score: {score:.2f} %")
+            lines.append("=" * 82)
+
+    return "\n".join(lines)
+

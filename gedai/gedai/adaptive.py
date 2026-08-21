@@ -1,27 +1,41 @@
 import mne
 import numpy as np
+from joblib import Parallel, delayed
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
     _check_fit_info,
+    _format_summary_table,
     _prepare_raw_fit,
     _prepare_raw_transform,
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
+from ..sensai.sensai import (
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
+)
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
+    _ensure_noise_multiplier,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
-from ..wavelet.transform import epochs_to_wavelet
-from .gedai import Gedai, create_cosine_weights
+from ..wavelet.transform import (
+    _apply_wavelet_highpass_prefilter,
+    _modwt_haar_single_band,
+    compute_wavelet_level,
+    epochs_to_wavelet,
+    get_modwt_band_limits,
+)
+from .gedai import Gedai, _clean_continuous_dual_stream, create_cosine_weights
 from .multiband import compute_closest_valid_duration
 
 
 def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
-    """Compute wavelet band metadata matching ``epochs_to_wavelet`` ordering."""
+    """Compute wavelet band metadata matching MODWT band ordering (0 = highest detail)."""
     _check_type(cycles_per_wavelet, (float, int), "cycles_per_wavelet")
     if cycles_per_wavelet <= 0:
         raise ValueError(
@@ -30,37 +44,28 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
     if level < 0:
         raise ValueError(f"wavelet_level must be >= 0, got {level}")
 
-    # Index 0 is approximation, then details from coarse to fine.
-    band_definitions = [(0.0, sfreq / (2 ** (level + 1)), level + 1)]
-    for i in range(level, 0, -1):
-        fmin = sfreq / (2 ** (i + 1))
-        fmax = sfreq / (2**i)
-        cycle_power = i
-        band_definitions.append((fmin, fmax, cycle_power))
-
+    # In MODWT: Band 0 is finest detail D1 [sfreq/4, sfreq/2], ..., Band level is approx [0, sfreq/2^(level+1)]
     wavelet_parameters = []
-    for band_index, (fmin, fmax, _cycle_power) in enumerate(band_definitions):
-        if fmin == 0.0:
-            target_duration = None
-            ignore = True
-            n_samples = None
-            duration = None
+    for band_index in range(level + 1):
+        if band_index == level:
+            fmin = 0.0
+            fmax = sfreq / (2 ** (level + 1))
+            lower_freq = sfreq / (2 ** (level + 2))
         else:
-            target_duration = 1 / fmin * cycles_per_wavelet
-            ignore = False
-            duration, n_samples = compute_closest_valid_duration(
-                target_duration,
-                level,
-                sfreq,
-            )
+            fmin = sfreq / (2 ** (band_index + 2))
+            fmax = sfreq / (2 ** (band_index + 1))
+            lower_freq = fmin
+
+        target_duration = 1.0 / max(lower_freq, 0.01) * cycles_per_wavelet
+        n_samples = max(2, int(round(target_duration * sfreq)))
         wavelet_parameters.append(
             {
                 "band_index": band_index,
                 "fmin": fmin,
                 "fmax": fmax,
-                "duration": duration,
+                "duration": target_duration,
                 "n_samples": n_samples,
-                "ignore": ignore,
+                "ignore": False,
             }
         )
     return wavelet_parameters
@@ -91,8 +96,11 @@ class AdaptiveMultibandGedai:
     Parameters
     ----------
     %(wavelet_type)s
-    %(wavelet_level)s
+    wavelet_level : int or 'auto'
+        The wavelet decomposition level. If 'auto', automatically computed from sfreq.
     %(cycles_per_wavelet)s
+    broadband_pass : bool
+        Whether to run an initial broadband GED pass before multiband wavelet decomposition.
 
     References
     ----------
@@ -102,22 +110,42 @@ class AdaptiveMultibandGedai:
     def __init__(
         self,
         wavelet_type="haar",
-        wavelet_level=8,
-        cycles_per_wavelet=12,
+        wavelet_level="auto",
+        cycles_per_wavelet=10,
+        broadband_pass=True,
     ):
-        _check_type(wavelet_level, (int,), "wavelet_level")
+        if wavelet_level != "auto":
+            _check_type(wavelet_level, (int,), "wavelet_level")
         _check_type(wavelet_type, (str,), "wavelet_type")
         _check_type(cycles_per_wavelet, (int,), "cycles_per_wavelet")
+        _check_type(broadband_pass, (bool,), "broadband_pass")
 
         self.wavelet_type = wavelet_type
-        self.wavelet_level = wavelet_level
+        self._wavelet_level = wavelet_level
         self.cycles_per_wavelet = cycles_per_wavelet
+        self.broadband_pass = broadband_pass
 
         self.fitted = False
 
         self._wavelets_fits = None
         self._reference_cov = None
         self._wavelet_low_cutoff = None
+        self._actual_wavelet_level = None
+        self._broadband_model = None
+        self.metrics_ = None
+
+    @property
+    def wavelet_level(self):
+        """Wavelet level (integer level if fitted, or configured setting)."""
+        if self.fitted and self._actual_wavelet_level is not None:
+            return self._actual_wavelet_level
+        return self._wavelet_level
+
+    @wavelet_level.setter
+    def wavelet_level(self, value):
+        if value != "auto":
+            _check_type(value, (int,), "wavelet_level")
+        self._wavelet_level = value
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -148,11 +176,11 @@ class AdaptiveMultibandGedai:
         self,
         raw: BaseRaw,
         picks: list | str = "eeg",
-        overlap: float = 0.75,
+        overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        sensai_method: str = "optimize",
+        noise_multiplier: float | str = "auto",
         wavelet_low_cutoff: str | float | None = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -181,7 +209,7 @@ class AdaptiveMultibandGedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         reference_cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -189,166 +217,201 @@ class AdaptiveMultibandGedai:
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
         sfreq = raw_fit.info["sfreq"]
 
+        filter_cutoff = raw_fit.info["highpass"]
+        if wavelet_low_cutoff == "auto":
+            if filter_cutoff is not None and filter_cutoff > 0:
+                wavelet_low_cutoff = float(filter_cutoff)
+            else:
+                wavelet_low_cutoff = 0.5
+        elif wavelet_low_cutoff is None:
+            wavelet_low_cutoff = 0.0
+        else:
+            wavelet_low_cutoff = float(wavelet_low_cutoff)
+
+        # Automatic wavelet level calculation adaptively matching low cutoff
+        if self.wavelet_level == "auto":
+            actual_wavelet_level = compute_wavelet_level(
+                sfreq,
+                lowcut_hz=wavelet_low_cutoff if wavelet_low_cutoff > 0 else 0.5,
+                n_times=raw_fit.n_times,
+                cycles_per_wavelet=self.cycles_per_wavelet,
+            )
+        else:
+            actual_wavelet_level = self.wavelet_level
+        self._actual_wavelet_level = actual_wavelet_level
+
         wavelet_parameters = _compute_wavelet_parameters(
             sfreq,
-            self.wavelet_level,
+            actual_wavelet_level,
             cycles_per_wavelet=self.cycles_per_wavelet,
         )
 
-        filter_cutoff = raw_fit.info["highpass"]
-        duration_cutoff = wavelet_parameters[0]["fmax"]
-
-        if wavelet_low_cutoff is None:
-            wavelet_low_cutoff = 0
-
-        if wavelet_low_cutoff == "auto":
-            if filter_cutoff > duration_cutoff:
-                wavelet_low_cutoff = filter_cutoff
-                logger.info(
-                    "Automatically setting ``wavelet_low_cutoff`` to "
-                    f"{wavelet_low_cutoff:.2f} Hz based on raw.info['highpass'] "
-                    f"({filter_cutoff:.2f} Hz)."
-                )
-            else:
-                wavelet_low_cutoff = duration_cutoff
-                logger.info(
-                    "Automatically setting ``wavelet_low_cutoff`` to "
-                    f"{wavelet_low_cutoff:.2f} Hz based on wavelet_level "
-                    f"{self.wavelet_level}."
-                )
-
-        if wavelet_low_cutoff < duration_cutoff:
-            logger.warning(
-                f"``wavelet_low_cutoff`` ({wavelet_low_cutoff:.2f} Hz) is below the "
-                f"frequency cutoff ( {duration_cutoff:.2f} Hz) that can be "
-                f"resolved with the chosen cycles_per_wavelet "
-                f"({self.cycles_per_wavelet})."
+        # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
+        if self.broadband_pass:
+            logger.info(
+                f"Applying wavelet HP pre-filter (sub-{wavelet_low_cutoff:.2f} Hz) and running broadband GEDAI pass..."
             )
+            raw_fit._data = _apply_wavelet_highpass_prefilter(
+                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
+            )
+            broadband_model = Gedai()
+            broadband_model.fit_raw(
+                raw_fit,
+                picks="all",
+                duration=1.0,
+                overlap=overlap,
+                reject_by_annotation=reject_by_annotation,
+                reference_cov=cov.copy(),
+                sensai_method=sensai_method,
+                noise_multiplier=noise_multiplier,
+                sensai_bounds=(-4.0, 12.0),
+                n_jobs=n_jobs,
+                verbose=verbose,
+            )
+            raw_for_multiband = broadband_model.transform_raw(
+                raw_fit, overlap=overlap, n_jobs=n_jobs, verbose=False
+            )
+            self._broadband_model = broadband_model
+        else:
+            raw_for_multiband = raw_fit
 
-        wavelets_fits = []
-        for wavelet_parameter in wavelet_parameters:
-            w = wavelet_parameter["band_index"]
-            fmin = wavelet_parameter["fmin"]
-            fmax = wavelet_parameter["fmax"]
-            duration = wavelet_parameter["duration"]
-            n_samples = wavelet_parameter["n_samples"]
+        raw_data_fit = raw_for_multiband.get_data(verbose=False)
 
-            if fmax <= wavelet_low_cutoff:
-                ignore = True
-            else:
-                ignore = False
-
-            if ignore:
-                logger.info(
-                    f"Skipping wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
-                    "because its upper frequency cutoff is below the low "
-                    f"frequency cutoff ({wavelet_low_cutoff} Hz)."
+        if n_jobs == 1 or len(wavelet_parameters) <= 1:
+            wavelets_fits = [
+                self._fit_wavelet_band(
+                    p, raw_data_fit, raw_fit.info, raw_for_multiband.n_times,
+                    sfreq, actual_wavelet_level, wavelet_low_cutoff, cov,
+                    sensai_method, noise_multiplier
                 )
-                wavelets_fits.append(
-                    {
-                        "band_index": w,
-                        "fmin": fmin,
-                        "fmax": fmax,
-                        "model": None,
-                        "duration": duration,
-                        "n_samples": n_samples,
-                        "ignore": ignore,
-                    }
+                for p in wavelet_parameters
+            ]
+        else:
+            wavelets_fits = Parallel(n_jobs=n_jobs, prefer="threads")(
+                delayed(self._fit_wavelet_band)(
+                    p, raw_data_fit, raw_fit.info, raw_for_multiband.n_times,
+                    sfreq, actual_wavelet_level, wavelet_low_cutoff, cov,
+                    sensai_method, noise_multiplier
                 )
-            else:
-                logger.info(
-                    f"Adaptive wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz): "
-                    f"duration={duration:.3f}s ({n_samples} samples)."
-                )
-
-                if n_samples > raw_fit.n_times:
-                    raise ValueError(
-                        f"Adaptive duration for wavelet index {w} "
-                        f"({duration:.3f}s / {n_samples} samples) is longer than "
-                        f"the available raw recording ({raw_fit.n_times} samples)."
-                    )
-
-                overlap_seconds = duration * overlap
-                epochs = mne.make_fixed_length_epochs(
-                    raw_fit,
-                    duration=duration,
-                    overlap=overlap_seconds,
-                    reject_by_annotation=reject_by_annotation,
-                    preload=True,
-                    verbose=False,
-                )
-
-                epochs_wavelet, freq_bands, _ = epochs_to_wavelet(
-                    epochs.get_data(verbose=False),
-                    sfreq=sfreq,
-                    wavelet=self.wavelet_type,
-                    level=self.wavelet_level,
-                    n_jobs=n_jobs,
-                )
-
-                freq_fmin, freq_fmax = freq_bands[w]
-                if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
-                    raise RuntimeError(
-                        "Wavelet frequency band mismatch while building "
-                        "adaptive epochs."
-                    )
-
-                wavelet_epochs_data = epochs_wavelet[:, :, w, :]
-                del epochs_wavelet
-                wavelet_epochs = mne.EpochsArray(
-                    wavelet_epochs_data,
-                    epochs.info,
-                    tmin=epochs.tmin,
-                    verbose=False,
-                )
-                del wavelet_epochs_data
-
-                model = Gedai()
-                model.fit_epochs(
-                    wavelet_epochs,
-                    picks="all",
-                    reference_cov=cov.copy(),
-                    sensai_method=sensai_method,
-                    noise_multiplier=noise_multiplier,
-                    n_jobs=n_jobs,
-                    verbose=verbose,
-                )
-
-                wavelets_fits.append(
-                    {
-                        "band_index": w,
-                        "fmin": fmin,
-                        "fmax": fmax,
-                        "model": model,
-                        "duration": duration,
-                        "n_samples": epochs.times.size,
-                        "ignore": ignore,
-                    }
-                )
+                for p in wavelet_parameters
+            )
 
         self.fitted = True
         self._info = raw_fit.info.copy()
-        self._reference_cov = cov # No regularization applied
-
+        self._reference_cov = cov
         self._wavelets_fits = wavelets_fits
         self._wavelet_low_cutoff = wavelet_low_cutoff
 
+        sensai_scores = [
+            wf["model"].fit_metrics_["sensai_score"]
+            for wf in wavelets_fits
+            if not wf.get("ignore", False) and wf.get("model") is not None
+        ]
+        self.fit_metrics_ = {
+            "sensai_score": float(np.mean(sensai_scores)) if sensai_scores else 0.0,
+            "wavelets_fits": wavelets_fits,
+        }
+
+
+    def _fit_wavelet_band(
+        self,
+        wavelet_parameter,
+        raw_data_fit,
+        raw_fit_info,
+        n_times,
+        sfreq,
+        actual_wavelet_level,
+        wavelet_low_cutoff,
+        cov,
+        sensai_method,
+        noise_multiplier,
+    ):
+        """Fit a single adaptive wavelet band model."""
+        w = wavelet_parameter["band_index"]
+        fmin = wavelet_parameter["fmin"]
+        fmax = wavelet_parameter["fmax"]
+        target_duration = wavelet_parameter["duration"]
+
+        if fmax <= wavelet_low_cutoff:
+            return {
+                "band_index": w,
+                "fmin": fmin,
+                "fmax": fmax,
+                "model": None,
+                "duration": target_duration,
+                "n_samples": 0,
+                "ignore": True,
+                "sensai_bounds": (0.0, 12.0),
+                "enova": 0.0,
+            }
+
+        max_duration = n_times / sfreq / 3.0
+        duration = min(target_duration, max(max_duration, 0.5))
+        epoch_samples = max(2, int(round(duration * sfreq)))
+        if epoch_samples % 2 != 0:
+            epoch_samples += 1
+
+        band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+        n_ep = band_data.shape[1] // epoch_samples
+        if n_ep > 0:
+            band_epochs_data = band_data[:, : n_ep * epoch_samples].reshape(
+                raw_fit_info["nchan"], n_ep, epoch_samples
+            ).transpose(1, 0, 2)
+        else:
+            band_epochs_data = band_data[np.newaxis, :, :]
+
+        wavelet_epochs = mne.EpochsArray(
+            band_epochs_data,
+            raw_fit_info,
+            tmin=0.0,
+            verbose=False,
+        )
+
+        center_freq = (fmin + fmax) / 2.0
+        band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+
+        model = Gedai()
+        model.fit_epochs(
+            wavelet_epochs,
+            picks="all",
+            reference_cov=cov.copy(),
+            sensai_method=sensai_method,
+            noise_multiplier=noise_multiplier,
+            sensai_bounds=band_bounds,
+            n_jobs=1,
+            verbose=False,
+        )
+
+        sensai_score = model.fit_metrics_["sensai_score"] if model.fit_metrics_ else 0.0
+
+        return {
+            "band_index": w,
+            "fmin": fmin,
+            "fmax": fmax,
+            "model": model,
+            "duration": duration,
+            "n_samples": epoch_samples,
+            "ignore": False,
+            "sensai_bounds": band_bounds,
+            "sensai": sensai_score,
+            "enova": 0.0,
+        }
 
     @fill_doc
     @verbose
     def transform_raw(
         self,
         raw: BaseRaw,
-        overlap: float = 0.75,
+        overlap: float = 0.5,
         n_jobs: int = None,
         verbose: str | None = None,
-    ):
-        """Transform raw data using the fitted model.
+    ) -> BaseRaw:
+        """Apply the Adaptive Multiband GEDAI transform to raw data.
 
         Parameters
         ----------
         raw : mne.io.BaseRaw
-            The raw data to fit the model to.
+            The raw data to transform.
         %(overlap)s
         %(n_jobs)s
         %(verbose)s
@@ -361,89 +424,79 @@ class AdaptiveMultibandGedai:
         self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
-        n_jobs = _check_n_jobs(n_jobs)
-
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
+        n_jobs = _check_n_jobs(n_jobs)
 
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
+        if self.broadband_pass and self._broadband_model is not None:
+            raw_transform._data = _apply_wavelet_highpass_prefilter(
+                raw_transform._data,
+                raw_transform.info["sfreq"],
+                lowcut_hz=self._wavelet_low_cutoff,
+            )
+            raw_input = self._broadband_model.transform_raw(
+                raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
+            )
+        else:
+            raw_input = raw_transform
+
         sfreq = raw_transform.info["sfreq"]
-        raw_data = raw_transform.get_data(verbose=False)
+        raw_data = raw_input.get_data(verbose=False)
         _, n_times = raw_data.shape
 
+        actual_level = self._actual_wavelet_level or self.wavelet_level
+
+        if n_jobs == 1 or len(self._wavelets_fits) <= 1:
+            band_results = [
+                self._transform_wavelet_band(wf, raw_data, sfreq, actual_level)
+                for wf in self._wavelets_fits
+            ]
+        else:
+            band_results = Parallel(n_jobs=n_jobs, prefer="threads")(
+                delayed(self._transform_wavelet_band)(wf, raw_data, sfreq, actual_level)
+                for wf in self._wavelets_fits
+            )
+
         raw_transformed_data = np.zeros_like(raw_data)
-        for wavelet_fit in self._wavelets_fits:
-            band_idx = wavelet_fit["band_index"]
-            window_size = wavelet_fit["n_samples"]
-            fmin = wavelet_fit["fmin"]
-            fmax = wavelet_fit["fmax"]
-            ignore = wavelet_fit["ignore"]
-            if ignore:
-                logger.info(
-                    f"Zeroing wavelet index {band_idx} ({fmin:.2f}-{fmax:.2f} Hz)"
-                )
-            else:
-                window = create_cosine_weights(window_size)
-                step = int(window_size * (1 - overlap))
-                starts = np.arange(0, n_times - window_size, step)
-                starts = np.append(starts, n_times - window_size)
-
-                all_segments = []
-                for start in starts:
-                    segment = raw_data[:, start : start + window_size]
-                    all_segments.append(segment)
-
-                all_segments_array = np.array(all_segments)
-                segments_wavelet, freq_bands, _ = epochs_to_wavelet(
-                    all_segments_array,
-                    sfreq=sfreq,
-                    wavelet=self.wavelet_type,
-                    level=self.wavelet_level,
-                    n_jobs=n_jobs,
-                )
-                del all_segments_array
-
-                freq_fmin, freq_fmax = freq_bands[band_idx]
-                if abs(freq_fmin - fmin) > 1e-12 or abs(freq_fmax - fmax) > 1e-12:
-                    raise RuntimeError(
-                        "Wavelet frequency band mismatch while building "
-                        "adaptive epochs."
-                    )
-
-                segments_band = segments_wavelet[:, :, band_idx, :]
-                segments_epochs = mne.EpochsArray(
-                    segments_band,
-                    raw_transform.info,
-                    tmin=0.0,
-                    verbose=False,
-                )
-                del segments_wavelet
-
-                corrected_segments_epochs = wavelet_fit["model"].transform_epochs(
-                    segments_epochs,
-                    n_jobs=n_jobs,
-                    verbose=verbose,
-                )
-                corrected_segments = corrected_segments_epochs.get_data(verbose=False)
-                del corrected_segments_epochs
-
-                # Reconstruct the corrected wavelet band
-                weight_sum = np.zeros_like(raw_data)
-                band_corrected = np.zeros_like(raw_data)
-                for s, start in enumerate(starts):
-                    start = int(start)
-                    corrected_segment = corrected_segments[s] * window
-                    band_corrected[:, start : start + window_size] += corrected_segment
-                    weight_sum[:, start : start + window_size] += window
-
-                weight_sum[weight_sum == 0] = 1
-                band_corrected /= weight_sum
-                raw_transformed_data += band_corrected
+        for i, (clean_band, enova_band, sensai_band) in enumerate(band_results):
+            raw_transformed_data += clean_band
 
         raw_transform._data = raw_transformed_data
+
+        if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
+            isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
+        ):
+            print(_format_summary_table(self))
+
         return raw_transform
+
+    def _transform_wavelet_band(self, wavelet_fit, raw_data, sfreq, actual_level):
+        """Transform a single adaptive wavelet band."""
+        band_idx = wavelet_fit["band_index"]
+        ignore = wavelet_fit["ignore"]
+
+        if ignore:
+            return np.zeros_like(raw_data), 0.0, 0.0
+
+        band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+        threshold = wavelet_fit["model"].threshold
+        epoch_duration = wavelet_fit["duration"]
+
+        clean_band, noise_band = _clean_continuous_dual_stream(
+            band_data,
+            sfreq=sfreq,
+            reference_cov=self._reference_cov.data,
+            epoch_duration=epoch_duration,
+            threshold=threshold,
+        )
+        ep_samples_band = max(1, round(sfreq * 1.0))
+        enova_band = float(np.mean(compute_enova_per_epoch(clean_band, noise_band, ep_samples_band)))
+        runs = wavelet_fit["model"]._fit.get("sensai_runs", [])
+        sensai_band = max(r[1] for r in runs) if len(runs) > 0 else 0.0
+        return clean_band, enova_band, sensai_band
 
     def plot_fit(self):
         """Plot the fitting results.
@@ -477,3 +530,81 @@ class AdaptiveMultibandGedai:
         """
         self._check_fit()
         return self._reference_cov.ch_names
+
+    def fit_summary(self) -> str:
+        """Print and return a formatted summary table of the model fitting metrics.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
+        self._check_fit()
+        table_str = _format_summary_table(self)
+        print(table_str)
+        return table_str
+
+    summary = fit_summary
+
+    def plot_sensai(
+        self,
+        raw_before: BaseRaw,
+        raw_after: BaseRaw | None = None,
+        epoch_duration_sec: float = 1.0,
+        n_pc: int = 3,
+        show: bool = True,
+    ):
+        """Plot 2D SENSAI Subspace Similarity vs Epoch Power Scatter & Manifold Classification.
+
+        Replicates MATLAB's SENSAI_visualization.m with side-by-side Before/After
+        subspace projections, LDA decision boundary shading, and marginal KDE distributions.
+
+        Parameters
+        ----------
+        raw_before : mne.io.BaseRaw
+            Original EEG recording before denoising.
+        raw_after : mne.io.BaseRaw | None
+            Cleaned EEG recording after denoising. If None, automatically computed.
+        epoch_duration_sec : float
+            Epoch duration in seconds (default 1.0s).
+        n_pc : int
+            Number of principal components for SSI calculation (default 3 for EEG).
+        show : bool
+            Whether to call plt.show() or return the figure.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+        metrics : dict
+        """
+        from ..viz.sensai import plot_sensai_visualization
+
+        self._check_fit()
+        if raw_after is None:
+            raw_after = self.transform_raw(raw_before, verbose=False)
+
+        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+
+        return plot_sensai_visualization(
+            raw_before=raw_before,
+            raw_after=raw_after,
+            reference_cov=self._reference_cov.data,
+            epoch_duration_sec=epoch_duration_sec,
+            n_pc=n_pc,
+            sensai_score=score,
+            mean_enova=mean_enova,
+            title_suffix=f"{self.__class__.__name__}",
+            show=show,
+        )
+
+    def __repr__(self) -> str:
+        status = "fitted" if self.fitted else "unfitted"
+        metrics_info = ""
+        if getattr(self, "metrics_", None) is not None:
+            sensai = self.metrics_.get("sensai_score", 0.0)
+            enova = self.metrics_.get("mean_enova", 0.0) * 100
+            metrics_info = f", SENSAI={sensai:.2f}%, Mean ENOVA={enova:.2f}%"
+        return f"<{self.__class__.__name__} ({status}{metrics_info})>"
+
+

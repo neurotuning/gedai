@@ -1,3 +1,20 @@
+
+## BEAR Benchmark results for GEDAI in Python (AdaptiveMultiband)
+
+![alt text](image-1.png)
+
+## Summary Comparison to GEDAI v1.7 in Matlab
+
+<img width="650" height="375" alt="image" src="https://github.com/user-attachments/assets/cb69c718-ff40-4c48-8956-41b720dc60f8" />
+
+## SENSAI epoch visualization
+
+![alt text](image.png)
+
+## 
+
+
+
 [![doc](https://github.com/neurotuning/gedai/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/gedai/actions/workflows/doc.yaml)
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/DOI-10.1101/2025.10.04.680449-green.svg)](https://doi.org/10.1101/2025.10.04.680449)
 [![DOI:10.1101/2025.10.04.680449v1](http://img.shields.io/badge/LIENSE-PolyFormNoncommercial_License_1.0.0-green.svg)](https://polyformproject.org/licenses/noncommercial/1.0.0)

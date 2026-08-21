@@ -1,1 +1,2 @@
 from .compare import plot_mne_style_overlay_interactive
+from .sensai import plot_sensai_visualization

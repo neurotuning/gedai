@@ -15,16 +15,20 @@ data_path = testing.data_path(download=False)
 fname_raw = data_path / "MEG" / "sample" / "sample_audvis_trunc_raw.fif"
 fname_fwd = data_path / "MEG" / "sample" / "sample_audvis_trunc-meg-eeg-oct-6-fwd.fif"
 
-raw = mne.io.read_raw_fif(fname_raw, preload=True)
-raw.pick_types(meg=False, eeg=True)
-info = raw.info
+
+@pytest.fixture(scope="module")
+def sample_info():
+    ch_names = ["Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4", "O1", "O2"]
+    info = mne.create_info(ch_names, sfreq=250.0, ch_types="eeg")
+    montage = mne.channels.make_standard_montage("standard_1020")
+    info.set_montage(montage)
+    return info
 
 
-@testing.requires_testing_data
-def test_ensure_cov():
+def test_ensure_cov(sample_info):
     """Test _ensure_cov."""
     # test with a covariance object
-    cov = mne.make_ad_hoc_cov(info)
+    cov = mne.make_ad_hoc_cov(sample_info)
     assert _ensure_cov(cov) == cov
 
     # test with the string "leadfield"
@@ -36,15 +40,14 @@ def test_ensure_cov():
         _ensure_cov("invalid_string")
 
 
-@testing.requires_testing_data
-def test_pick_cov():
+def test_pick_cov(sample_info):
     """Test _pick_cov."""
-    cov = mne.make_ad_hoc_cov(info)
-    ch_names = info["ch_names"][:5]  # pick a subset of channels
+    cov = mne.make_ad_hoc_cov(sample_info)
+    ch_names = sample_info["ch_names"][:5]  # pick a subset of channels
     picked_cov = _pick_cov(cov, ch_names)
     assert set(picked_cov.ch_names) == set(ch_names)
 
-    ch_names = [ch_name.lower() for ch_name in info["ch_names"]]
+    ch_names = [ch_name.lower() for ch_name in sample_info["ch_names"]]
     picked_cov = _pick_cov(cov, ch_names)
     assert set(picked_cov.ch_names) == set(ch_names)
 
@@ -54,7 +57,7 @@ def test_pick_cov():
     ):
         _pick_cov(cov, ch_names)
 
-    ch_names = ["EEG 001"] + ["nonexistent_channel"]
+    ch_names = ["Fp1", "nonexistent_channel"]
     with pytest.raises(
         ValueError,
         match="Only a subset of channels in the instance are present in the covariance",
@@ -62,16 +65,18 @@ def test_pick_cov():
         _pick_cov(cov, ch_names)
 
 
-@testing.requires_testing_data
-def test_compute_covariance_from_channel_positions():
+def test_compute_covariance_from_channel_positions(sample_info):
     """Test compute_covariance_from_channel_positions."""
-    cov = compute_covariance_from_channel_positions(info)
+    cov = compute_covariance_from_channel_positions(sample_info)
     assert isinstance(cov, mne.Covariance)
 
 
 @testing.requires_testing_data
 def test_compute_covariance_from_forward():
     """Test compute_covariance_from_forward."""
+    if not fname_fwd.exists():
+        pytest.skip("Requires MNE testing dataset")
     forward = mne.read_forward_solution(fname_fwd)
     cov = compute_covariance_from_forward(forward)
     assert isinstance(cov, mne.Covariance)
+

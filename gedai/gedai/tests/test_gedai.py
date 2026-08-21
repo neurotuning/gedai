@@ -85,3 +85,22 @@ def test_gedai_raw_picks():
         match="The following channels are missing in the input inst but were present",
     ):
         model.transform_raw(raw_test)
+
+
+def test_gedai_average_reference_not_reapplied():
+    """Test that data with average reference already applied is not modified or re-referenced."""
+    import numpy as np
+    from gedai.gedai._utils import _check_average_reference, _prepare_raw_fit, _prepare_epochs_fit
+
+    raw = raw_eeg.copy()
+    raw.set_eeg_reference("average", projection=False)
+    assert _check_average_reference(raw) is True
+
+    raw_fit = _prepare_raw_fit(raw, picks="eeg")
+    assert np.allclose(raw.get_data(), raw_fit.get_data(), atol=1e-12)
+
+    epochs = make_fixed_length_epochs(raw, duration=1.0, preload=True)
+    assert _check_average_reference(epochs) is True
+
+    epochs_fit = _prepare_epochs_fit(epochs, picks="eeg")
+    assert np.allclose(epochs.get_data(), epochs_fit.get_data(), atol=1e-12)

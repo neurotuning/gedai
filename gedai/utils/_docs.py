@@ -61,11 +61,16 @@ duration : float
 # -- N ---------------------------------------------------------------------------------
 docdict["n_jobs"] = """
 n_jobs : int | None
-    The number of jobs to run in parallel. If ``-1``, use all available CPU cores.
-    If ``1`` or ``None``, computations are run serially."""
+    The number of jobs to run in parallel. If ``1`` or ``None`` (default), computations
+    are run serially. If ``-1``, all available CPU cores are used."""
 docdict["noise_multiplier"] = """
-noise_multiplier : float
-    The noise multiplier to use for artefact threshold rejection optimization."""
+noise_multiplier : float | str
+    The noise multiplier or string preset for artefact threshold rejection optimization.
+    Supported string presets:
+    - ``"auto"`` : Standard balance (noise_multiplier = 3.0, default).
+    - ``"auto+"`` : More aggressive denoising (noise_multiplier = 1.5).
+    - ``"auto-"`` : More conservative denoising (noise_multiplier = 6.0).
+    Alternatively, a custom numerical float can be passed."""
 # -- O ---------------------------------------------------------------------------------
 docdict["overlap"] = """
 overlap : float
@@ -101,7 +106,7 @@ reject_by_annotation : bool
 docdict["sensai_method"] = """
 sensai_method : str
     The method to use for threshold optimization.
-    Can be only be``'gridsearch'`` for now."""
+    Can be ``'optimize'`` (default, continuous scalar minimization) or ``'gridsearch'``."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------

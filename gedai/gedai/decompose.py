@@ -11,19 +11,15 @@ def _clean_epochs(epochs_data, reference_cov, threshold):
         covariance = np.cov(epoch_data)
         eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
-        # Compute spatial maps
-        maps = np.linalg.pinv(eigenvectors).T
-        eigenvectors_filtered = eigenvectors.copy()
+        eigvecs_filtered = eigenvectors.copy()
+        signal_mask = np.abs(eigenvalues) < threshold
+        eigvecs_filtered[:, signal_mask] = 0
 
-        # Zero out components with small eigenvalues
-        for v, val in enumerate(eigenvalues):
-            if abs(val) < threshold:
-                maps[:, v] = 0
-                eigenvectors_filtered[:, v] = 0
-
-        # Reconstruct artifact signal
-        spatial_filter = np.dot(maps, eigenvectors_filtered.T)
-        artefact_data = spatial_filter @ epoch_data
+        # Direct Regularized Reference Covariance Projection:
+        # Since V^T * C_ref * V = I, the spatial maps are C_ref * V.
+        # Artifact projection: C_ref * V_art * (V_art^T * X)
+        artifact_tc = eigvecs_filtered.T @ epoch_data
+        artefact_data = reference_cov @ (eigvecs_filtered @ artifact_tc)
 
         artefact_epochs[e] = artefact_data
         cleaned_epochs[e] = epoch_data - artefact_data

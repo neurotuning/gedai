@@ -8,6 +8,7 @@ from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
     _check_fit_info,
+    _format_summary_table,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
     _prepare_raw_fit,
@@ -17,16 +18,22 @@ from gedai.gedai._utils import (
 from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..sensai.sensai import (
     _eigen_to_sensai,
+    _precompute_gevd,
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_to_eigen,
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
 )
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
+    _ensure_noise_multiplier,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import verbose
+from ..wavelet.transform import _apply_wavelet_highpass_prefilter
 
 
 def create_cosine_weights(n_samples):
@@ -36,38 +43,40 @@ def create_cosine_weights(n_samples):
     return cos_win
 
 
-def _check_sensai_method(method):
-    _check_type(method, (str,), "method")
-    if method not in ["gridsearch"]:
-        raise ValueError(f"Method must be 'gridsearch', got '{method}' instead.")
+def _check_sensai_method(sensai_method):
+    _check_type(sensai_method, (str,), "sensai_method")
+    if sensai_method not in ["gridsearch", "optimize"]:
+        raise ValueError(
+            "sensai_method must be either 'gridsearch' or 'optimize', "
+            f"got {sensai_method}"
+        )
 
 
 @fill_doc
 class Gedai:
-    """Generalized Eigenvalue De-Artifacting Instrument (GEDAI).
+    """Generalized Eigenvalue De-Artifacting Instrument.
 
-    This class implements the single band GEDAI workflow.
-    For wavelet-based decomposition, band-wise denoising use :class:`MultibandGedai`.
+    See :footcite:`deCheveigne2018`.
 
-    See :footcite:`Ros2025`.
-
-    .. warning::
-        For EEG channels, Gedai will set average reference internally
-        to match the leadfield covariance reference.
-        Gedai will not modify the input data in-place, but will create
-        copies when necessary to ensure the original data remains unchanged.
+    Parameters
+    ----------
 
     References
     ----------
     .. footbibliography::
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+    ):
         self.fitted = False
         self._fit = None
-        self._reference_cov = None
         self._info = None
+        self._reference_cov = None
         self._n_samples = None
+        self._duration = None
+        self._highpass_prefilter = None
+        self.fit_metrics_ = None
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -76,9 +85,10 @@ class Gedai:
                 f"Gedai must be fitted before using {self.__class__.__name__}"
             )
         assert self._fit is not None
-        assert self._reference_cov is not None
         assert self._info is not None
+        assert self._reference_cov is not None
         assert self._n_samples is not None
+        assert self._duration is not None
 
     def _check_unfitted(self):
         """Check if the Gedai is unfitted."""
@@ -87,9 +97,10 @@ class Gedai:
                 f"Gedai must be unfitted before using {self.__class__.__name__}."
             )
         assert self._fit is None
-        assert self._reference_cov is None
         assert self._info is None
+        assert self._reference_cov is None
         assert self._n_samples is None
+        assert self._duration is None
 
     @fill_doc
     @verbose
@@ -98,59 +109,56 @@ class Gedai:
         epochs: BaseEpochs,
         picks: list | str = "eeg",
         reference_cov: str = "leadfield",
-        sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        sensai_method: str = "optimize",
+        noise_multiplier: float | str = "auto",
+        sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         n_jobs: int = None,
         verbose: str | None = None,
     ):
-        """Fit the GEDAI model to the epochs data.
+        """Fit the GEDAI model to the epochs.
 
         Parameters
         ----------
-        epochs : mne.Epochs
-            The epochs data to fit the model to.
+        epochs : mne.BaseEpochs
+            The epochs to fit the model to.
         %(picks)s
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        sensai_bounds : tuple of float
+            The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(n_jobs)s
         %(verbose)s
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
-        _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
         data = epochs_fit.get_data()
 
-        cov = _ensure_cov(reference_cov)
+        cov = _ensure_cov(reference_cov).copy()
         cov = _pick_cov(cov, epochs_fit.info["ch_names"])
-        reference_cov = cov.data
+        reference_cov = cov.data.copy()
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
-        epsilon = regularization_lambda * avg_diag_power
-        reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
+        reference_cov = (1.0 - regularization_lambda) * reference_cov + (regularization_lambda * avg_diag_power) * np.eye(reference_cov.shape[0])
+        reference_cov = (reference_cov + reference_cov.T) * 0.5
         cov.update(data=reference_cov)
 
-        epochs_eigenvalues = np.zeros((len(data), data.shape[1]))
-        for e, epoch_data in enumerate(data):
-            covariance = np.cov(epoch_data)
-            eigenvalues, _ = eigh(covariance, reference_cov, check_finite=True)
-            epochs_eigenvalues[e] = eigenvalues
+        all_eval, all_evec = _precompute_gevd(data, reference_cov)
+        epochs_eigenvalues = all_eval
 
         fit_epochs = mne.EpochsArray(data,
                                      epochs_fit.info,
                                      tmin=epochs.tmin,
                                      verbose=False)
-        min_sensai_threshold, max_sensai_threshold, step = (
-            -6,
-            12,
-            0.1,
-        )  # MATLAB min_sensai_threshold -6 for f < 60Hz.
+        min_sensai_threshold, max_sensai_threshold = float(sensai_bounds[0]), float(sensai_bounds[1])
+        step = 0.1
         n_pc = 3
 
         if sensai_method == "gridsearch":
@@ -169,6 +177,8 @@ class Gedai:
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
                 verbose=verbose,
+                all_eval=all_eval,
+                all_evec=all_evec,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -179,6 +189,8 @@ class Gedai:
                 noise_multiplier=noise_multiplier,
                 epochs_eigenvalues=epochs_eigenvalues,
                 bounds=sensai_threshold_bounds,
+                all_eval=all_eval,
+                all_evec=all_evec,
             )
         else:
             raise ValueError(
@@ -186,19 +198,29 @@ class Gedai:
                 f"got '{sensai_method}' instead."
             )
 
+        best_run = max(runs, key=lambda x: x[1]) if runs else None
+        self.fit_metrics_ = {
+            "sensai_score": best_run[1] if best_run else 0.0,
+            "signal_similarity": best_run[2] if best_run else 0.0,
+            "noise_similarity": best_run[3] if best_run else 0.0,
+            "threshold": threshold,
+        }
+
         self._fit = {
             "threshold": threshold,
             "epochs_eigenvalues": epochs_eigenvalues,
             "sensai_runs": runs,
+            "sensai_bounds": (min_sensai_threshold, max_sensai_threshold),
         }
 
         self.fitted = True
         self._info = epochs_fit.info.copy()
-        self._reference_cov = cov # Regularization applied
+        self._reference_cov = cov
 
         self._n_samples = data.shape[-1]
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
 
+    @fill_doc
     @fill_doc
     @verbose
     def fit_raw(
@@ -206,11 +228,13 @@ class Gedai:
         raw: BaseRaw,
         picks: list | str = "eeg",
         duration: float = 1.0,
-        overlap: float = 0.75,
+        overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "gridsearch",
-        noise_multiplier: float = 3.0,
+        sensai_method: str = "optimize",
+        noise_multiplier: float | str = "auto",
+        sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        highpass_prefilter: float | None = 0.1,
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -227,6 +251,10 @@ class Gedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        sensai_bounds : tuple of float
+            The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        highpass_prefilter : float | None
+            Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).
         %(n_jobs)s
         %(verbose)s
         """
@@ -238,10 +266,18 @@ class Gedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         reference_cov = _ensure_cov(reference_cov)
         _check_sensai_method(sensai_method)
-        _check_type(noise_multiplier, (float,), "noise_multiplier")
+        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
+
+        if highpass_prefilter is not None and highpass_prefilter > 0:
+            if raw_fit.info["highpass"] is None or raw_fit.info["highpass"] < highpass_prefilter:
+                raw_fit._data = _apply_wavelet_highpass_prefilter(
+                    raw_fit._data, raw_fit.info["sfreq"], lowcut_hz=highpass_prefilter
+                )
+        self._highpass_prefilter = highpass_prefilter
 
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
@@ -258,6 +294,7 @@ class Gedai:
             noise_multiplier=noise_multiplier,
             reference_cov=reference_cov,
             sensai_method=sensai_method,
+            sensai_bounds=sensai_bounds,
             n_jobs=n_jobs,
             verbose=verbose,
         )
@@ -321,6 +358,22 @@ class Gedai:
             cleaned_epochs_data = np.array(cleaned_epochs_list)
 
         epochs_transform._data = cleaned_epochs_data
+
+        orig_2d = data.transpose(1, 0, 2).reshape(data.shape[1], -1)
+        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(cleaned_epochs_data.shape[1], -1)
+        noise_2d = orig_2d - clean_2d
+        ep_samples = data.shape[-1]
+        enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
+        enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
+        sensai_val = compute_composite_sensai(
+            clean_2d, noise_2d, epochs_transform.info["sfreq"], reference_cov
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
         return epochs_transform
 
     @fill_doc
@@ -328,7 +381,7 @@ class Gedai:
     def transform_raw(
         self,
         raw: BaseRaw,
-        overlap: float = 0.75,
+        overlap: float = 0.5,
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -357,44 +410,33 @@ class Gedai:
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
+        if getattr(self, "_highpass_prefilter", None) is not None and self._highpass_prefilter > 0:
+            if raw_transform.info["highpass"] is None or raw_transform.info["highpass"] < self._highpass_prefilter:
+                raw_transform._data = _apply_wavelet_highpass_prefilter(
+                    raw_transform._data, raw_transform.info["sfreq"], lowcut_hz=self._highpass_prefilter
+                )
+
         raw_data = raw_transform.get_data(verbose=False)
-        n_channels, n_times = raw_data.shape
+        sfreq = raw_transform.info["sfreq"]
+        threshold = self._fit["threshold"]
 
-        window_size = self._n_samples
-        window = create_cosine_weights(window_size)
-
-        transformed_data = np.zeros_like(raw_data)
-        weight_sum = np.zeros_like(raw_data)
-
-        step = int(window_size * (1 - overlap))
-        starts = np.arange(0, n_times - window_size, step)
-        starts = np.append(starts, n_times - window_size)
-
-        all_segments = []
-        for start in starts:
-            segment = raw_data[:, start : start + window_size]
-            all_segments.append(segment)
-
-        all_segments_array = np.array(all_segments)
-        segments_epochs = mne.EpochsArray(all_segments_array,
-                                          raw_transform.info,
-                                          verbose=False)
-
-        corrected_segments_epochs = self.transform_epochs(
-            segments_epochs, n_jobs=n_jobs, verbose=False
+        # Fast dual-stream continuous broadband cleaning
+        clean_data, _ = _clean_continuous_dual_stream(
+            raw_data,
+            sfreq=sfreq,
+            reference_cov=self._reference_cov.data,
+            epoch_duration=self._duration if hasattr(self, "_duration") and self._duration > 0 else 1.0,
+            threshold=threshold,
         )
-        corrected_segments = corrected_segments_epochs.get_data(verbose=False)
 
-        for s, start in enumerate(starts):
-            corrected_segment = corrected_segments[s] * window
-            transformed_data[:, start : start + window_size] += corrected_segment
-            weight_sum[:, start : start + window_size] += window
+        original_data = raw_transform.get_data(verbose=False).copy()
+        raw_transform._data = clean_data
 
-        # Normalize the transformed signal by the weight sum
-        weight_sum[weight_sum == 0] = 1  # Avoid division by zero
-        transformed_data /= weight_sum
+        if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
+            isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
+        ):
+            print(_format_summary_table(self))
 
-        raw_transform._data = transformed_data
         return raw_transform
 
     def plot_fit(self):
@@ -445,14 +487,99 @@ class Gedai:
         return [fig]
 
     @property
+    def threshold(self):
+        """Get the eigenvalue threshold used for cleaning."""
+        self._check_fit()
+        return self._fit["threshold"]
+
+    @property
     def ch_names(self):
         """Get the channel names used during fitting."""
         self._check_fit()
         return self._reference_cov.ch_names
 
+    def fit_summary(self) -> str:
+        """Print and return a formatted summary table of the model fitting metrics.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
+        self._check_fit()
+        table_str = _format_summary_table(self)
+        print(table_str)
+        return table_str
+
+    summary = fit_summary
+
+
+    def plot_sensai(
+        self,
+        raw_before: BaseRaw,
+        raw_after: BaseRaw | None = None,
+        epoch_duration_sec: float = 1.0,
+        n_pc: int = 3,
+        show: bool = True,
+    ):
+        """Plot 2D SENSAI Subspace Similarity vs Epoch Power Scatter & Manifold Classification.
+
+        Replicates MATLAB's SENSAI_visualization.m with side-by-side Before/After
+        subspace projections, LDA decision boundary shading, and marginal KDE distributions.
+
+        Parameters
+        ----------
+        raw_before : mne.io.BaseRaw
+            Original EEG recording before denoising.
+        raw_after : mne.io.BaseRaw | None
+            Cleaned EEG recording after denoising. If None, automatically computed.
+        epoch_duration_sec : float
+            Epoch duration in seconds (default 1.0s).
+        n_pc : int
+            Number of principal components for SSI calculation (default 3 for EEG).
+        show : bool
+            Whether to call plt.show() or return the figure.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+        metrics : dict
+        """
+        from ..viz.sensai import plot_sensai_visualization
+
+        self._check_fit()
+        if raw_after is None:
+            raw_after = self.transform_raw(raw_before, verbose=False)
+
+        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+
+        return plot_sensai_visualization(
+            raw_before=raw_before,
+            raw_after=raw_after,
+            reference_cov=self._reference_cov.data,
+            epoch_duration_sec=epoch_duration_sec,
+            n_pc=n_pc,
+            sensai_score=score,
+            mean_enova=mean_enova,
+            title_suffix=f"{self.__class__.__name__}",
+            show=show,
+        )
+
+    def __repr__(self) -> str:
+        status = "fitted" if self.fitted else "unfitted"
+        metrics_info = ""
+        if getattr(self, "metrics_", None) is not None:
+            sensai = self.metrics_.get("sensai_score", 0.0)
+            enova = self.metrics_.get("mean_enova", 0.0) * 100
+            metrics_info = f", SENSAI={sensai:.2f}%, Mean ENOVA={enova:.2f}%"
+        return f"<{self.__class__.__name__} ({status}{metrics_info})>"
+
+
+
 
 def _process_single_epoch(epoch_data, reference_cov, threshold):
-    """Process a single epoch for cleaning.
+    """Process a single epoch for cleaning using direct reference covariance projection.
 
     Parameters
     ----------
@@ -471,22 +598,117 @@ def _process_single_epoch(epoch_data, reference_cov, threshold):
     covariance = np.cov(epoch_data)
     eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
-    # Compute spatial maps
-    maps = np.linalg.pinv(eigenvectors).T
-    eigenvectors_filtered = eigenvectors.copy()
+    eigvecs_filtered = eigenvectors.copy()
+    signal_mask = np.abs(eigenvalues) < threshold
+    eigvecs_filtered[:, signal_mask] = 0
 
-    # Zero out components with small eigenvalues
-    for v, val in enumerate(eigenvalues):
-        if abs(val) < threshold:
-            maps[:, v] = 0
-            eigenvectors_filtered[:, v] = 0
-
-    # Reconstruct artifact signal
-    spatial_filter = np.dot(maps, eigenvectors_filtered.T)
-    artefact_data = spatial_filter @ epoch_data
+    # Direct Regularized Reference Covariance Projection:
+    # Since V^T * C_ref * V = I, the inverse transpose (spatial maps) is C_ref * V.
+    # Therefore, artifact projection is: C_ref * V_art * (V_art^T * X)
+    artifact_tc = eigvecs_filtered.T @ epoch_data
+    artefact_data = reference_cov @ (eigvecs_filtered @ artifact_tc)
     cleaned_epoch = epoch_data - artefact_data
 
     return cleaned_epoch
+
+
+def _clean_continuous_dual_stream(
+    data: np.ndarray,
+    sfreq: float,
+    reference_cov: np.ndarray,
+    epoch_duration: float,
+    threshold: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
+
+    Parameters
+    ----------
+    data : np.ndarray, shape (n_channels, n_times)
+        Continuous multi-channel data.
+    sfreq : float
+        Sampling rate in Hz.
+    reference_cov : np.ndarray, shape (n_channels, n_channels)
+        Reference covariance matrix.
+    epoch_duration : float
+        Epoch length in seconds.
+    threshold : float
+        Eigenvalue threshold.
+
+    Returns
+    -------
+    clean : np.ndarray, shape (n_channels, n_times)
+    noise : np.ndarray, shape (n_channels, n_times)
+    """
+    n_ch, orig_len = data.shape
+    epoch_samples = max(2, int(round(epoch_duration * sfreq)))
+    if epoch_samples % 2 != 0:
+        epoch_samples += 1
+    half = epoch_samples // 2
+
+    # Pad data to multiple of epoch_samples
+    rem = orig_len % epoch_samples
+    pad_len = (epoch_samples - rem) % epoch_samples
+    if pad_len > 0:
+        data_padded = np.pad(data, ((0, 0), (0, pad_len)), mode="reflect")
+    else:
+        data_padded = data
+    total_len = data_padded.shape[1]
+
+    # Stream 1: non-overlapping epochs
+    n_ep1 = total_len // epoch_samples
+    stream1 = data_padded[:, :n_ep1 * epoch_samples].reshape(n_ch, n_ep1, epoch_samples).transpose(1, 0, 2)
+
+    # Stream 2: shifted by half-epoch
+    shifted_data = data_padded[:, half : total_len - half]
+    n_ep2 = shifted_data.shape[1] // epoch_samples
+    if n_ep2 > 0:
+        stream2 = shifted_data[:, :n_ep2 * epoch_samples].reshape(n_ch, n_ep2, epoch_samples).transpose(1, 0, 2)
+    else:
+        stream2 = None
+
+    cw = create_cosine_weights(epoch_samples)
+
+    def _process_stream(stream):
+        n_ep = len(stream)
+        clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
+        noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
+        for i in range(n_ep):
+            ep = stream[i].astype(np.float64)
+            c = _process_single_epoch(ep, reference_cov, threshold)
+            n = ep - c
+            if i == 0:
+                c[:, half:] *= cw[half:]
+                n[:, half:] *= cw[half:]
+            elif i == n_ep - 1:
+                c[:, :half] *= cw[:half]
+                n[:, :half] *= cw[:half]
+            else:
+                c *= cw
+                n *= cw
+            s = i * epoch_samples
+            clean_out[:, s : s + epoch_samples] = c
+            noise_out[:, s : s + epoch_samples] = n
+        return clean_out, noise_out
+
+    clean1, noise1 = _process_stream(stream1)
+    clean_total = clean1[:, :total_len].copy()
+    noise_total = noise1[:, :total_len].copy()
+
+    if stream2 is not None and len(stream2) > 0:
+        clean2, noise2 = _process_stream(stream2)
+        len2 = clean2.shape[1]
+        end2 = len2 - half
+        clean2[:, :half] *= cw[:half]
+        clean2[:, end2:] *= cw[half:]
+        noise2[:, :half] *= cw[:half]
+        noise2[:, end2:] *= cw[half:]
+
+        clean_total[:, half : half + len2] += clean2
+        noise_total[:, half : half + len2] += noise2
+
+    clean_final = clean_total[:, :orig_len]
+    noise_final = noise_total[:, :orig_len]
+    return clean_final, noise_final
 
 
 # Backward-compatible import path: gedai.gedai.gedai.MultibandGedai
