@@ -78,7 +78,7 @@ reject_by_annotation = False  # default
 
 # %%
 # The reference covariance defines what good data should look like.
-# The dfault ``leadfield`` option uses a covariance matrix
+# The default ``leadfield`` option uses a covariance matrix
 # based on a generic head model and the standard 10-20 montage.
 # It is possible to use a custom reference covariance matrix instead,
 # for example, by using the :func:`~gedai.covariance.compute_covariance_from_forward`
@@ -107,11 +107,11 @@ reference_cov = "leadfield"
 noise_multiplier = 3.0
 
 # %%
-# The optimal threshold can be only be determined by grid search (``gridsearch``)
-# over possible threshold values for now. Optimization-based methods
-# will be added in future releases.
+# The optimal threshold can be determined either using continuous bounded scalar
+# optimization (``"optimize"``, default) or by evaluating a discrete grid of candidate
+# thresholds (``"gridsearch"``).
 
-sensai_method = "gridsearch"
+sensai_method = "optimize"
 
 # %%
 # Fit the GEDAI model
