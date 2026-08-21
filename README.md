@@ -1,9 +1,9 @@
 
-## BEAR Benchmark 
+## BEAR Benchmark results
 
 ![alt text](image-1.png)
 
-## Summary Comparison to original GEDAI version in Matlab 
+## Summary Comparison to GEDAI v1.7 in Matlab
 
 <img width="650" height="375" alt="image" src="https://github.com/user-attachments/assets/cb69c718-ff40-4c48-8956-41b720dc60f8" />
 
