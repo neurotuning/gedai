@@ -14,8 +14,8 @@
 
 .. _latest:
 
-Version x.x
-===========
+Version 0.3.0
+=============
 
 Enhancements
 ------------
@@ -30,9 +30,10 @@ Bugs
 API and behavior changes
 ------------------------
 
-- xxx
+- Refactor codebase to improve computational efficiency and compatibility with MATLAB code. Several API changes not listed as a stable version is not yet reached. (:pr:`144` by `Tomas Ros`_ and `Victor Férat`_).
 
 Authors
 -------
 
+* `Tomas Ros`_
 * `Victor Férat`_
