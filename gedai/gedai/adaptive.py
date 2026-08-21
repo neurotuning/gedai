@@ -179,7 +179,7 @@ class AdaptiveMultibandGedai:
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "gridsearch",
+        sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         wavelet_low_cutoff: str | float | None = "auto",
         n_jobs: int = None,

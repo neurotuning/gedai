@@ -214,7 +214,7 @@ class MultibandGedai:
         epochs: BaseEpochs,
         picks: list | str = "eeg",
         reference_cov: str = "leadfield",
-        sensai_method: str = "gridsearch",
+        sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         wavelet_low_cutoff="auto",
         n_jobs: int = None,
@@ -255,7 +255,9 @@ class MultibandGedai:
         # Automatic wavelet level resolution if requested
         if self.wavelet_level == "auto":
             actual_wavelet_level = compute_wavelet_level(
-                epochs_fit.info["sfreq"], wavelet_low_cutoff=wavelet_low_cutoff
+                epochs_fit.info["sfreq"],
+                wavelet_low_cutoff=wavelet_low_cutoff,
+                n_times=data.shape[-1],
             )
         else:
             actual_wavelet_level = self.wavelet_level
@@ -362,7 +364,7 @@ class MultibandGedai:
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
         reference_cov: str = "leadfield",
-        sensai_method: str = "gridsearch",
+        sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         wavelet_low_cutoff="auto",
         n_jobs: int = None,
@@ -392,12 +394,14 @@ class MultibandGedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
-        reference_cov = _ensure_cov(reference_cov)
+        cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _parse_noise_multiplier(noise_multiplier)
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
+        cov = _pick_cov(cov, raw_fit.info["ch_names"])
+        sfreq = raw_fit.info["sfreq"]
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, filter_cutoff, duration

@@ -131,7 +131,7 @@ def test_multiband_auto_wavelet_level_and_metrics():
     model = MultibandGedai(wavelet_type="haar", wavelet_level="auto")
     model.fit_epochs(epochs_eeg, n_jobs=1)
     assert model._actual_wavelet_level is not None
-    assert model._actual_wavelet_level >= 6
+    assert model._actual_wavelet_level >= 4
 
     epochs_transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
     assert model.metrics_ is not None
