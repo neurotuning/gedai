@@ -23,6 +23,7 @@ from ..utils._checks import (
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import (
+    _apply_wavelet_highpass_prefilter,
     _modwt_haar_single_band,
     compute_wavelet_level,
     epochs_to_wavelet,
@@ -215,11 +216,22 @@ class AdaptiveMultibandGedai:
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
         sfreq = raw_fit.info["sfreq"]
 
-        # Automatic wavelet level calculation
+        filter_cutoff = raw_fit.info["highpass"]
+        if wavelet_low_cutoff == "auto":
+            if filter_cutoff is not None and filter_cutoff > 0:
+                wavelet_low_cutoff = float(filter_cutoff)
+            else:
+                wavelet_low_cutoff = 0.5
+        elif wavelet_low_cutoff is None:
+            wavelet_low_cutoff = 0.0
+        else:
+            wavelet_low_cutoff = float(wavelet_low_cutoff)
+
+        # Automatic wavelet level calculation adaptively matching low cutoff
         if self.wavelet_level == "auto":
             actual_wavelet_level = compute_wavelet_level(
                 sfreq,
-                lowcut_hz=0.5,
+                lowcut_hz=wavelet_low_cutoff if wavelet_low_cutoff > 0 else 0.5,
                 n_times=raw_fit.n_times,
                 cycles_per_wavelet=self.cycles_per_wavelet,
             )
@@ -233,20 +245,14 @@ class AdaptiveMultibandGedai:
             cycles_per_wavelet=self.cycles_per_wavelet,
         )
 
-        filter_cutoff = raw_fit.info["highpass"]
-        if wavelet_low_cutoff == "auto":
-            if filter_cutoff is not None and filter_cutoff > 0:
-                wavelet_low_cutoff = float(filter_cutoff)
-            else:
-                wavelet_low_cutoff = 0.5
-        elif wavelet_low_cutoff is None:
-            wavelet_low_cutoff = 0.0
-        else:
-            wavelet_low_cutoff = float(wavelet_low_cutoff)
-
-        # Broadband pre-cleaning pass if requested
+        # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
         if self.broadband_pass:
-            logger.info("Running broadband GEDAI pre-cleaning pass on raw data...")
+            logger.info(
+                f"Applying wavelet HP pre-filter (sub-{wavelet_low_cutoff:.2f} Hz) and running broadband GEDAI pass..."
+            )
+            raw_fit._data = _apply_wavelet_highpass_prefilter(
+                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
+            )
             broadband_model = Gedai()
             broadband_model.fit_raw(
                 raw_fit,
@@ -257,6 +263,7 @@ class AdaptiveMultibandGedai:
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
+                sensai_bounds=(-4.0, 12.0),
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -399,6 +406,11 @@ class AdaptiveMultibandGedai:
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
 
         if self.broadband_pass and self._broadband_model is not None:
+            raw_transform._data = _apply_wavelet_highpass_prefilter(
+                raw_transform._data,
+                raw_transform.info["sfreq"],
+                lowcut_hz=self._wavelet_low_cutoff,
+            )
             raw_input = self._broadband_model.transform_raw(
                 raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
             )

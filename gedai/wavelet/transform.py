@@ -221,9 +221,14 @@ def _modwt_haar_single_band(data_T: np.ndarray, level: int, band_idx: int) -> np
 
 
 def _apply_wavelet_highpass_prefilter(
-    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.1
+    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.5
 ) -> np.ndarray:
     """Remove sub-lowcut_hz slow drift using continuous Haar MODWT decomposition.
+
+    Decomposes the continuous multichannel signal into Haar wavelet bands and
+    subtracts all sub-lowcut_hz bands before broadband GED covariance estimation,
+    preventing slow drift and DC offsets from biasing broadband covariance.
+    Matches MATLAB GEDAI.m lines 520-603.
 
     Parameters
     ----------
@@ -232,7 +237,7 @@ def _apply_wavelet_highpass_prefilter(
     sfreq : float
         Sampling frequency in Hz.
     lowcut_hz : float
-        Highpass cutoff frequency (default 0.1 Hz).
+        Highpass cutoff frequency (default 0.5 Hz).
 
     Returns
     -------
@@ -243,7 +248,7 @@ def _apply_wavelet_highpass_prefilter(
         return data
 
     n_times = data.shape[1]
-    hp_wavelet_levels = int(np.ceil(np.log2(sfreq / 0.1) - 1))
+    hp_wavelet_levels = int(np.ceil(np.log2(sfreq / max(0.01, min(0.1, lowcut_hz))) - 1))
     hp_wavelet_levels = max(hp_wavelet_levels, 3)
     hp_wavelet_levels = min(hp_wavelet_levels, int(np.floor(np.log2(n_times))))
     n_bands_hp = hp_wavelet_levels + 1
@@ -259,7 +264,7 @@ def _apply_wavelet_highpass_prefilter(
     for b in bands_to_hp_zero:
         low_freq_noise += _modwt_haar_single_band(data_T, hp_wavelet_levels, b)
 
-    return data - low_freq_noise
+    return (data.astype(np.float64) - low_freq_noise).astype(data.dtype)
 
 
 

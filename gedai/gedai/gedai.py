@@ -152,8 +152,8 @@ class Gedai:
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
-        epsilon = regularization_lambda * avg_diag_power
-        reference_cov = reference_cov + epsilon * np.eye(reference_cov.shape[0])
+        reference_cov = (1.0 - regularization_lambda) * reference_cov + (regularization_lambda * avg_diag_power) * np.eye(reference_cov.shape[0])
+        reference_cov = (reference_cov + reference_cov.T) * 0.5
         cov.update(data=reference_cov)
 
         all_eval, all_evec = _precompute_gevd(data, reference_cov)

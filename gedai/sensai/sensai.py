@@ -162,6 +162,7 @@ def _sensai_score_from_gevd(
         good_mask = ~bad_mask
 
         # --- Artifact noise subspace ---
+        cov_noise = np.zeros((n_ch, n_ch), dtype=np.float64)
         if np.any(bad_mask):
             V_bad = evecs[:, bad_mask]
             V_bad_rows = V_bad.T @ reference_cov
@@ -169,19 +170,20 @@ def _sensai_score_from_gevd(
             cov_noise = V_bad_rows.T @ (V_bad_rows * d_bad)
             cov_noise = (cov_noise + cov_noise.T) * 0.5
 
-            try:
-                if np.max(np.abs(cov_noise)) < 1e-12:
-                    Y1_n = np.eye(n_ch, n_pc)
-                else:
-                    Y1_n = cov_noise @ template
-                Q1_n, _ = np.linalg.qr(Y1_n)
-                Y2_n = cov_noise @ Q1_n
-                basis_n, _ = np.linalg.qr(Y2_n)
-                noi_sims[e] = subspace_similarity(basis_n, reference_eigenvectors, n_pc=n_pc)
-            except (np.linalg.LinAlgError, ValueError):
-                noi_sims[e] = 0.0
+        try:
+            if np.max(np.abs(cov_noise)) < 1e-12:
+                Y1_n = np.eye(n_ch, n_pc)
+            else:
+                Y1_n = cov_noise @ template
+            Q1_n, _ = np.linalg.qr(Y1_n)
+            Y2_n = cov_noise @ Q1_n
+            basis_n, _ = np.linalg.qr(Y2_n)
+            noi_sims[e] = subspace_similarity(basis_n, reference_eigenvectors, n_pc=n_pc)
+        except (np.linalg.LinAlgError, ValueError):
+            noi_sims[e] = 0.0
 
         # --- Clean signal subspace ---
+        cov_signal = np.zeros((n_ch, n_ch), dtype=np.float64)
         if np.any(good_mask):
             V_good = evecs[:, good_mask]
             V_good_rows = V_good.T @ reference_cov
@@ -189,14 +191,14 @@ def _sensai_score_from_gevd(
             cov_signal = V_good_rows.T @ (V_good_rows * d_good)
             cov_signal = (cov_signal + cov_signal.T) * 0.5
 
-            try:
-                Y1_s = cov_signal @ template
-                Q1_s, _ = np.linalg.qr(Y1_s)
-                Y2_s = cov_signal @ Q1_s
-                basis_s, _ = np.linalg.qr(Y2_s)
-                sig_sims[e] = subspace_similarity(basis_s, reference_eigenvectors, n_pc=n_pc)
-            except (np.linalg.LinAlgError, ValueError):
-                sig_sims[e] = 0.0
+        try:
+            Y1_s = cov_signal @ template
+            Q1_s, _ = np.linalg.qr(Y1_s)
+            Y2_s = cov_signal @ Q1_s
+            basis_s, _ = np.linalg.qr(Y2_s)
+            sig_sims[e] = subspace_similarity(basis_s, reference_eigenvectors, n_pc=n_pc)
+        except (np.linalg.LinAlgError, ValueError):
+            sig_sims[e] = 0.0
 
     signal_subspace_similarity = 100.0 * float(np.mean(sig_sims))
     noise_subspace_similarity = 100.0 * float(np.mean(noi_sims))
