@@ -134,15 +134,10 @@ def compute_wavelet_level(
     lowcut_hz = max(float(lowcut_hz), 0.01)
     ideal = int(np.ceil(np.log2(sfreq / lowcut_hz)))
     if n_times is not None:
-        import pywt
-        try:
-            max_swt = pywt.swt_max_level(n_times)
-        except Exception:
-            max_swt = int(np.floor(np.log2(n_times)))
         if cycles_per_wavelet is not None and cycles_per_wavelet > 0:
             max_possible = max(1, int(np.floor(np.log2(max(1.0, n_times / cycles_per_wavelet)))) - 1)
         else:
-            max_possible = max(1, max_swt)
+            max_possible = max(1, int(np.floor(np.log2(n_times))))
         return max(2, min(ideal, max_possible))
     return max(6, ideal)
 

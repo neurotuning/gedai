@@ -30,7 +30,7 @@ from gedai import MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.viz import plot_mne_style_overlay_interactive
 
-n_jobs = -1
+n_jobs = 1
 # %% Load sample EEG data
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
@@ -45,26 +45,22 @@ raw.crop(0, 30)
 # GEDAI
 # -----
 # To use ``spectral GEDAI``, we initialize the
-# :class:`~gedai.gedai.MultibandGedai` object by specifying the
-# ``wavelet_level`` parameter, which defines the number of frequency bands to
-# decompose the EEG data into. Each level corresponds to a specific frequency
-# band, allowing for targeted denoising within those bands. It is also possible
-# to define the type of wavelet used for the decomposition by setting the
-# ``wavelet_type`` parameter.
+# :class:`~gedai.gedai.MultibandGedai` object. By default, ``wavelet_level="auto"``
+# automatically determines the number of wavelet levels based on sampling frequency
+# and the high-pass cutoff. It is also possible to define a specific level or
+# wavelet family using the ``wavelet_type`` parameter.
 
-multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level=8)
+multiband_gedai = MultibandGedai(wavelet_type="haar", wavelet_level="auto")
 
 # %%
 # Model Fitting
 # -------------
-# The fitting process of ``spectral GEDAI`` is similar to that of the standard
-# ``GEDAI``. For each wavelet level (i.e., frequency band), the fitting process
-# estimates the optimal threshold to distinguish between signal and noise
-# components.
+# The fitting process of ``spectral GEDAI`` is performed for each wavelet level
+# (i.e., frequency band) to estimate the optimal threshold to distinguish between
+# signal and noise components using SENSAI optimization (``sensai_method="optimize"``).
 
-multiband_gedai.fit_raw(
-    raw, duration=2.0, sensai_method="gridsearch", n_jobs=n_jobs, verbose=True
-)
+multiband_gedai.fit_raw(raw, duration=2.0, n_jobs=n_jobs, verbose=True)
+
 # %%
 # .. note::
 #
@@ -81,23 +77,21 @@ plt.show()
 # %%
 # Transform the Data (Denoising)
 # ------------------------------
-# Once fitted, the ``Multiband GEDAI`` model can be used to remove artifacts
-# and noise from the data. The transform operation projects out the noise
-# components while preserving the brain signals for each frequency band
-# separately before recombining them.
+# Once fitted, the ``Multiband GEDAI`` model cleans each frequency band using
+# dual-stream cosine overlap-add blending (with 50% shifted streams) to eliminate
+# any epoch boundary jump artifacts before recombining them.
 
 denoised_raw = multiband_gedai.transform_raw(raw, n_jobs=n_jobs, verbose=False)
 
 # %%
 # .. warning::
 #
-#       Since the ``Multiband GEDAI`` operates on epoched data internally,
+#       Since the ``Multiband GEDAI`` operates on epoched data internally during fitting,
 #       some frequency content more particularly in lower frequency bands may
 #       be not be captured properly if the epoch duration is too short. On the
-#       other hand, using very long epochs may prevent to capture short
-#       transient artifacts. Setting the ``wavelet_low_cutoff`` parameter to a
-#       value of the order of ``1 / epoch_duration`` can help mitigate this
-#       issue by excluding lower frequency bands that may not be well
-#       estimated during the fitting process.
+#       other hand, using very long epochs may prevent capturing short
+#       transient artifacts. Setting the ``wavelet_low_cutoff`` parameter to ``"auto"``
+#       or to the acquisition high-pass cutoff excludes low frequency bands
+#       below the signal bandwidth.
 
 plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)

@@ -3,12 +3,13 @@ Recommended Offline EEG Denoising Pipeline
 ==========================================
 
 This tutorial provides a practical, end-to-end offline denoising workflow
-using GEDAI on EEG data.
+using Adaptive Multiband GEDAI on EEG data.
 
-The pipeline is intentionally simple:
+The pipeline applies ``AdaptiveMultibandGedai`` with integrated broadband pre-cleaning:
 
-1. Apply a broadband ``Gedai`` model to remove large artifacts.
-2. Apply ``AdaptiveMultibandGedai`` for frequency-specific refinement.
+1. Initial broadband GEDAI pass to remove gross artifacts.
+2. Wavelet decomposition into adaptive frequency bands.
+3. Band-specific SENSAI optimization and seamless cosine-overlap reconstruction.
 
 Use this tutorial as a template and adapt only the data-loading block and
 parameter values for your own dataset.
@@ -17,11 +18,9 @@ parameter values for your own dataset.
 # %%
 from mne.io import read_raw
 
-from gedai import AdaptiveMultibandGedai, Gedai
+from gedai import AdaptiveMultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.viz import plot_mne_style_overlay_interactive
-
-n_jobs = -1
 
 # %% Load sample EEG data
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
@@ -38,36 +37,33 @@ raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 # %%
 # High-pass filtering before GEDAI usually improves covariance estimation by
 # reducing slow drifts and non-stationarities.
-raw.filter(l_freq=0.5, h_freq=None, n_jobs=n_jobs)
+raw.filter(l_freq=0.5, h_freq=None)
 
 # %%
-# Broadband GEDAI
-# ------------------
-broadband_gedai = Gedai()
-broadband_gedai.fit_raw(raw, noise_multiplier=6.0, n_jobs=n_jobs)
-broadband_denoised_raw = broadband_gedai.transform_raw(
-    raw, n_jobs=n_jobs, verbose=False
+# Adaptive Multiband GEDAI Pipeline
+# ---------------------------------
+# We initialize ``AdaptiveMultibandGedai``. By default, ``broadband_pass=True``
+# runs an initial broadband GEDAI pre-pass to remove gross artifacts before
+# decomposing the signal into adaptive wavelet bands.
+ad = AdaptiveMultibandGedai(
+    wavelet_type="haar",
+    wavelet_level="auto",
+    cycles_per_wavelet=10,
+    broadband_pass=True,
 )
 
-# %%
-# Adaptive Multiband GEDAI
-# ---------------------------
-adaptive_multiband_gedai = AdaptiveMultibandGedai(
-    wavelet_type="haar", wavelet_level=5, cycles_per_wavelet=10
-)
-adaptive_multiband_gedai.fit_raw(
-    broadband_denoised_raw, noise_multiplier=3.0, n_jobs=n_jobs
-)
-adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
-    broadband_denoised_raw, n_jobs=n_jobs, verbose=False
-)
+# Fit the model (using continuous scalar optimization by default)
+ad.fit_raw(raw, noise_multiplier=3.0)
+
+# Denoise the data
+denoised_raw = ad.transform_raw(raw, verbose=False)
 
 # %%
 # Since GEDAI algorithm automatically set the reference to ``average``, you can
 # reset the reference to the original channel after denoising to preserve the
 # original reference scheme:
-# ``adaptive_multiband_denoised_raw.set_eeg_reference(ref_channels="Cz", copy=False)``
+# ``denoised_raw.set_eeg_reference(ref_channels="Cz", copy=False)``
 
 # %%
 # Visualize the results
-plot_mne_style_overlay_interactive(raw, adaptive_multiband_denoised_raw, duration=15.0)
+plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
