@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
-    <script src="../../_static/documentation_options.js?v=1be0d999"></script>
+    <script src="../../_static/documentation_options.js?v=0926e583"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -56,7 +56,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.2.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.3.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -480,22 +480,16 @@
 <dl class="py class">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gedai.gedai.</span></span><span class="sig-name descname"><span class="pre">Gedai</span></span><a class="headerlink" href="#gedai.gedai.Gedai" title="Link to this definition">🔗</a></dt>
-<dd><p>Generalized Eigenvalue De-Artifacting Instrument (GEDAI).</p>
-<p>This class implements the single band GEDAI workflow.
-For wavelet-based decomposition, band-wise denoising use <a class="reference internal" href="gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a>.</p>
-<p>See <a class="footnote-reference brackets" href="#footcite-ros2025" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>For EEG channels, Gedai will set average reference internally
-to match the leadfield covariance reference.
-Gedai will not modify the input data in-place, but will create
-copies when necessary to ensure the original data remains unchanged.</p>
-</div>
+<dd><p>Generalized Eigenvalue De-Artifacting Instrument.</p>
+<p>See <a class="footnote-reference brackets" href="#footcite-decheveigne2018" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a>.</p>
 <p class="rubric">Attributes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.ch_names" title="gedai.gedai.Gedai.ch_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ch_names</span></code></a></p></td>
 <td><p>Get the channel names used during fitting.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.threshold" title="gedai.gedai.Gedai.threshold"><code class="xref py py-obj docutils literal notranslate"><span class="pre">threshold</span></code></a></p></td>
+<td><p>Get the eigenvalue threshold used for cleaning.</p></td>
 </tr>
 </tbody>
 </table>
@@ -504,18 +498,27 @@ copies when necessary to ensure the original data remains unchanged.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.fit_epochs" title="gedai.gedai.Gedai.fit_epochs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_epochs</span></code></a>(epochs[, picks, reference_cov, ...])</p></td>
-<td><p>Fit the GEDAI model to the epochs data.</p></td>
+<td><p>Fit the GEDAI model to the epochs.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.fit_raw" title="gedai.gedai.Gedai.fit_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_raw</span></code></a>(raw[, picks, duration, overlap, ...])</p></td>
 <td><p>Fit the GEDAI model to the raw data.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.plot_fit" title="gedai.gedai.Gedai.plot_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_fit</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.fit_summary" title="gedai.gedai.Gedai.fit_summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_summary</span></code></a>()</p></td>
+<td><p>Print and return a formatted summary table of the model fitting metrics.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.plot_fit" title="gedai.gedai.Gedai.plot_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_fit</span></code></a>()</p></td>
 <td><p>Plot the fitting results.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.transform_epochs" title="gedai.gedai.Gedai.transform_epochs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_epochs</span></code></a>(epochs[, n_jobs, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.plot_sensai" title="gedai.gedai.Gedai.plot_sensai"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_sensai</span></code></a>(raw_before[, raw_after, ...])</p></td>
+<td><p>Plot SENSAI subspace similarity and manifold classification.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.summary" title="gedai.gedai.Gedai.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>()</p></td>
+<td><p>Print and return a formatted summary table of the model fitting metrics.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.transform_epochs" title="gedai.gedai.Gedai.transform_epochs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_epochs</span></code></a>(epochs[, n_jobs, verbose])</p></td>
 <td><p>Transform epochs data using the fitted model.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.transform_raw" title="gedai.gedai.Gedai.transform_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_raw</span></code></a>(raw[, overlap, n_jobs, verbose])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.Gedai.transform_raw" title="gedai.gedai.Gedai.transform_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_raw</span></code></a>(raw[, overlap, n_jobs, verbose])</p></td>
 <td><p>Transform raw data using the fitted model.</p></td>
 </tr>
 </tbody>
@@ -524,20 +527,20 @@ copies when necessary to ensure the original data remains unchanged.</p>
 <p class="rubric">References</p>
 <div class="docutils container" id="id2">
 <aside class="footnote-list brackets">
-<aside class="footnote brackets" id="footcite-ros2025" role="doc-footnote">
+<aside class="footnote brackets" id="footcite-decheveigne2018" role="doc-footnote">
 <span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
-<p>Tomas Ros, Victor Férat, Yingqi Huang, Cristina Colangelo, Seyed Mostafa Kia, Thomas Wolfers, Serge Vulliemoz, and Abele Michela. Return of the gedai: unsupervised eeg denoising based on leadfield filtering. <em>bioRxiv</em>, 2025. <a class="reference external" href="https://doi.org/10.1101/2025.10.04.680449">doi:10.1101/2025.10.04.680449</a>.</p>
+<p>Alain de Cheveigné and Jonathan Z. Simon. Denoising based on a reference signal. <em>Journal of Neuroscience Methods</em>, 298:1–8, 2018. <a class="reference external" href="https://doi.org/10.1016/j.jneumeth.2018.02.005">doi:10.1016/j.jneumeth.2018.02.005</a>.</p>
 </aside>
 </aside>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.fit_epochs">
-<span class="sig-name descname"><span class="pre">fit_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gridsearch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_epochs" title="Link to this definition">🔗</a></dt>
-<dd><p>Fit the GEDAI model to the epochs data.</p>
+<span class="sig-name descname"><span class="pre">fit_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-6.0,</span> <span class="pre">12.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_epochs" title="Link to this definition">🔗</a></dt>
+<dd><p>Fit the GEDAI model to the epochs.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
-<dt><strong>epochs</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v1.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a></span></dt><dd><p>The epochs data to fit the model to.</p>
+<dt><strong>epochs</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.BaseEpochs.html#mne.BaseEpochs" title="(in MNE v1.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.BaseEpochs</span></code></a></span></dt><dd><p>The epochs to fit the model to.</p>
 </dd>
 <dt><strong>picks</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">list</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#slice" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">slice</span></code></a></span></dt><dd><p>Channels to include. Note that all channels selected must have the same
 type. Slices and lists of integers will be interpreted as channel indices.
@@ -554,12 +557,20 @@ See <a class="reference internal" href="gedai.covariance.compute_covariance_from
 details on how to compute a covariance from a forward solution.</p>
 </dd>
 <dt><strong>sensai_method</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The method to use for threshold optimization.
-Can be only be``’gridsearch’`` for now.</p>
+Can be <code class="docutils literal notranslate"><span class="pre">'optimize'</span></code> (default, continuous scalar minimization) or
+<code class="docutils literal notranslate"><span class="pre">'gridsearch'</span></code>.</p>
 </dd>
-<dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The noise multiplier to use for artefact threshold rejection optimization.</p>
+<dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The noise multiplier or string preset for artefact threshold rejection optimization.
+Supported string presets:
+- <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> : Standard balance (noise_multiplier = 3.0, default).
+- <code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (noise_multiplier = 1.5).
+- <code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (noise_multiplier = 6.0).
+Alternatively, a custom numerical float can be passed.</p>
 </dd>
-<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, use all available CPU cores.
-If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, computations are run serially.</p>
+<dt><strong>sensai_bounds</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a> of <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).</p>
+</dd>
+<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), computations
+are run serially. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, all available CPU cores are used.</p>
 </dd>
 <dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Sets the verbosity level. The verbosity increases gradually between <code class="docutils literal notranslate"><span class="pre">&quot;CRITICAL&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;ERROR&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;</span></code>. If None is provided, the
@@ -573,7 +584,7 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.fit_raw">
-<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gridsearch'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-6.0,</span> <span class="pre">12.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass_prefilter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Fit the GEDAI model to the raw data.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -590,8 +601,8 @@ EEG channels.</p>
 <dt><strong>duration</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Duration of each epoch in seconds. The default is <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p>
 </dd>
 <dt><strong>overlap</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The overlap ratio between consecutive epochs, between <code class="docutils literal notranslate"><span class="pre">0</span></code> and <code class="docutils literal notranslate"><span class="pre">1</span></code>.
-The default is <code class="docutils literal notranslate"><span class="pre">0.5</span></code> (50%% overlap). For example, <code class="docutils literal notranslate"><span class="pre">0.5</span></code> means 50%%
-overlap and <code class="docutils literal notranslate"><span class="pre">0.75</span></code> means 75%% overlap.</p>
+The default is <code class="docutils literal notranslate"><span class="pre">0.5</span></code> (50% overlap). For example, <code class="docutils literal notranslate"><span class="pre">0.5</span></code> means 50%
+overlap and <code class="docutils literal notranslate"><span class="pre">0.75</span></code> means 75% overlap.</p>
 </dd>
 <dt><strong>reject_by_annotation</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a></span></dt><dd><p>Whether annotated bad segments should be rejected.
 It is recommended to set this to <code class="docutils literal notranslate"><span class="pre">False</span></code> for fitting, since the
@@ -606,17 +617,41 @@ See <a class="reference internal" href="gedai.covariance.compute_covariance_from
 details on how to compute a covariance from a forward solution.</p>
 </dd>
 <dt><strong>sensai_method</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The method to use for threshold optimization.
-Can be only be``’gridsearch’`` for now.</p>
+Can be <code class="docutils literal notranslate"><span class="pre">'optimize'</span></code> (default, continuous scalar minimization) or
+<code class="docutils literal notranslate"><span class="pre">'gridsearch'</span></code>.</p>
 </dd>
-<dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The noise multiplier to use for artefact threshold rejection optimization.</p>
+<dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The noise multiplier or string preset for artefact threshold rejection optimization.
+Supported string presets:
+- <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> : Standard balance (noise_multiplier = 3.0, default).
+- <code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (noise_multiplier = 1.5).
+- <code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (noise_multiplier = 6.0).
+Alternatively, a custom numerical float can be passed.</p>
 </dd>
-<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, use all available CPU cores.
-If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, computations are run serially.</p>
+<dt><strong>sensai_bounds</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a> of <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).</p>
+</dd>
+<dt><strong>highpass_prefilter</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).</p>
+</dd>
+<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), computations
+are run serially. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, all available CPU cores are used.</p>
 </dd>
 <dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Sets the verbosity level. The verbosity increases gradually between <code class="docutils literal notranslate"><span class="pre">&quot;CRITICAL&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;ERROR&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;</span></code>. If None is provided, the
 verbosity is set to <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>. If a bool is provided, the verbosity is set to
 <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code> for False and to <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> for True.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gedai.gedai.Gedai.fit_summary">
+<span class="sig-name descname"><span class="pre">fit_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_summary" title="Link to this definition">🔗</a></dt>
+<dd><p>Print and return a formatted summary table of the model fitting metrics.</p>
+<dl class="field-list">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>summary_str</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>Formatted ASCII summary table.</p>
 </dd>
 </dl>
 </dd>
@@ -638,6 +673,53 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="gedai.gedai.Gedai.plot_sensai">
+<span class="sig-name descname"><span class="pre">plot_sensai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_before</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_duration_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.plot_sensai" title="Link to this definition">🔗</a></dt>
+<dd><p>Plot SENSAI subspace similarity and manifold classification.</p>
+<p>Replicates MATLAB’s SENSAI_visualization.m with side-by-side
+Before/After subspace projections, LDA decision boundary shading,
+and marginal KDE distributions.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>raw_before</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a></span></dt><dd><p>Original EEG recording before denoising.</p>
+</dd>
+<dt><strong>raw_after</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.io.BaseRaw.html#mne.io.BaseRaw" title="(in MNE v1.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.io.BaseRaw</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Cleaned EEG recording after denoising. If None, automatically computed.</p>
+</dd>
+<dt><strong>epoch_duration_sec</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Epoch duration in seconds (default 1.0s).</p>
+</dd>
+<dt><strong>n_pc</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a></span></dt><dd><p>Number of principal components for SSI calculation (default 3 for EEG).</p>
+</dd>
+<dt><strong>show</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a></span></dt><dd><p>Whether to call plt.show() or return the figure.</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><dl>
+<dt><strong>fig</strong><span class="classifier"><a class="reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="(in Matplotlib v3.11.1)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">matplotlib.figure.Figure</span></code></a></span></dt><dd><p>The SENSAI visualization figure.</p>
+</dd>
+<dt><strong>metrics</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">dict</span></code></a></span></dt><dd><p>A dictionary containing the computed SENSAI and ENOVA metrics.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="gedai.gedai.Gedai.summary">
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.summary" title="Link to this definition">🔗</a></dt>
+<dd><p>Print and return a formatted summary table of the model fitting metrics.</p>
+<dl class="field-list">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>summary_str</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>Formatted ASCII summary table.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.transform_epochs">
 <span class="sig-name descname"><span class="pre">transform_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_epochs" title="Link to this definition">🔗</a></dt>
 <dd><p>Transform epochs data using the fitted model.</p>
@@ -646,8 +728,8 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 <dd class="field-odd"><dl>
 <dt><strong>epochs</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="(in MNE v1.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Epochs</span></code></a></span></dt><dd><p>The epochs to transform.</p>
 </dd>
-<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, use all available CPU cores.
-If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, computations are run serially.</p>
+<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), computations
+are run serially. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, all available CPU cores are used.</p>
 </dd>
 <dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Sets the verbosity level. The verbosity increases gradually between <code class="docutils literal notranslate"><span class="pre">&quot;CRITICAL&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;ERROR&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;</span></code>. If None is provided, the
@@ -667,7 +749,7 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.transform_raw">
-<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.75</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Transform raw data using the fitted model.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -678,8 +760,8 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 The default is <code class="docutils literal notranslate"><span class="pre">0.5</span></code> (50%% overlap). For example, <code class="docutils literal notranslate"><span class="pre">0.5</span></code> means 50%%
 overlap and <code class="docutils literal notranslate"><span class="pre">0.75</span></code> means 75%% overlap.</p>
 </dd>
-<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, use all available CPU cores.
-If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, computations are run serially.</p>
+<dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), computations
+are run serially. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, all available CPU cores are used.</p>
 </dd>
 <dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Sets the verbosity level. The verbosity increases gradually between <code class="docutils literal notranslate"><span class="pre">&quot;CRITICAL&quot;</span></code>,
 <code class="docutils literal notranslate"><span class="pre">&quot;ERROR&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;</span></code>. If None is provided, the
@@ -701,6 +783,12 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.ch_names">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ch_names</span></span><a class="headerlink" href="#gedai.gedai.Gedai.ch_names" title="Link to this definition">🔗</a></dt>
 <dd><p>Get the channel names used during fitting.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="gedai.gedai.Gedai.threshold">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">threshold</span></span><a class="headerlink" href="#gedai.gedai.Gedai.threshold" title="Link to this definition">🔗</a></dt>
+<dd><p>Get the eigenvalue threshold used for cleaning.</p>
 </dd></dl>
 
 </dd></dl>
@@ -757,10 +845,14 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai"><code class="docutils literal notranslate"><span class="pre">Gedai</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.fit_epochs"><code class="docutils literal notranslate"><span class="pre">Gedai.fit_epochs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.fit_raw"><code class="docutils literal notranslate"><span class="pre">Gedai.fit_raw()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.fit_summary"><code class="docutils literal notranslate"><span class="pre">Gedai.fit_summary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.plot_fit"><code class="docutils literal notranslate"><span class="pre">Gedai.plot_fit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.plot_sensai"><code class="docutils literal notranslate"><span class="pre">Gedai.plot_sensai()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.summary"><code class="docutils literal notranslate"><span class="pre">Gedai.summary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.transform_epochs"><code class="docutils literal notranslate"><span class="pre">Gedai.transform_epochs()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.transform_raw"><code class="docutils literal notranslate"><span class="pre">Gedai.transform_raw()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.ch_names"><code class="docutils literal notranslate"><span class="pre">Gedai.ch_names</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.Gedai.threshold"><code class="docutils literal notranslate"><span class="pre">Gedai.threshold</span></code></a></li>
 </ul>
 </li>
 </ul>
