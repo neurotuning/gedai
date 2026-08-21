@@ -296,7 +296,7 @@ def _check_n_jobs(n_jobs):
     not supported.
     """
     if n_jobs is None:
-        n_jobs = 1
+        n_jobs = -1
     n_jobs = _ensure_int(n_jobs, "n_jobs", must_be="an int or None")
     if n_jobs <= 0:
         n_cores = mp.cpu_count()
