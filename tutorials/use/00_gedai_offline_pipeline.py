@@ -67,3 +67,13 @@ denoised_raw = ad.transform_raw(raw, verbose=False)
 # %%
 # Visualize the results
 plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
+
+# %%
+# SENSAI Subspace Similarity & Manifold Visualization
+# ---------------------------------------------------
+# We can evaluate and visualize the quality of the denoising using the SENSAI
+# subspace projection. This displays the side-by-side Before/After subspace similarity
+# projections, LDA decision boundary shading between signal and noise manifolds,
+# and marginal distributions:
+
+fig, metrics = ad.plot_sensai(raw_before=raw, raw_after=denoised_raw)
