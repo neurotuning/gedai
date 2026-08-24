@@ -349,7 +349,7 @@ def _sensai_gridsearch(
         epochs_data = np.asarray(epochs)
 
     # Subsample if too many epochs
-    MAX_EPOCHS = 2500
+    MAX_EPOCHS = 200
     if len(epochs_data) > MAX_EPOCHS:
         idx = np.linspace(0, len(epochs_data) - 1, MAX_EPOCHS, dtype=int)
         epochs_data = epochs_data[idx]
@@ -432,7 +432,7 @@ def _sensai_optimize(
         epochs_data = np.asarray(epochs)
 
     # Subsample if too many epochs
-    MAX_EPOCHS = 2500
+    MAX_EPOCHS = 200
     if len(epochs_data) > MAX_EPOCHS:
         idx = np.linspace(0, len(epochs_data) - 1, MAX_EPOCHS, dtype=int)
         epochs_data = epochs_data[idx]
