@@ -39,7 +39,10 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return np.sort(angles_rad)
 
 
-def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int | None = None) -> float:
+from numba import njit
+
+@njit(nogil=True, cache=True)
+def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int = 0) -> float:
     """Product of cosines of principal angles between column spaces.
 
     Equivalent to prod(diag(S)) where [~,S,~] = svd(A'*B).
@@ -48,18 +51,27 @@ def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int | None = None) -
     Parameters
     ----------
     A, B : (n, k) matrices whose columns span the subspaces.
-    n_pc : int | None
+    n_pc : int
         Number of principal components to include in product.
 
     Returns
     -------
     similarity : float in [0, 1]
     """
-    S = np.linalg.svd(A.T @ B, compute_uv=False)
-    S = np.clip(S, -1.0, 1.0)
-    if n_pc is not None:
+    M = np.ascontiguousarray(A.T) @ np.ascontiguousarray(B)
+    _, S, _ = np.linalg.svd(M)
+    
+    for i in range(len(S)):
+        if S[i] > 1.0: S[i] = 1.0
+        elif S[i] < -1.0: S[i] = -1.0
+        
+    if n_pc > 0 and n_pc < len(S):
         S = S[:n_pc]
-    return float(np.prod(S))
+        
+    prod = 1.0
+    for i in range(len(S)):
+        prod *= S[i]
+    return float(prod)
 
 
 def _sensai_to_eigen(sensai_value, eigenvalues):
@@ -93,15 +105,154 @@ def _precompute_gevd(epochs_data: np.ndarray, reference_cov: np.ndarray):
     all_eval : np.ndarray, shape (n_epochs, n_channels)
     all_evec : np.ndarray, shape (n_epochs, n_channels, n_channels)
     """
-    n_ep, n_ch, _ = epochs_data.shape
+    n_ep, n_ch, n_times = epochs_data.shape
     all_eval = np.zeros((n_ep, n_ch), dtype=np.float64)
     all_evec = np.zeros((n_ep, n_ch, n_ch), dtype=np.float64)
+
+    # Vectorized covariance: batch all epochs at once via einsum
+    centered = epochs_data - epochs_data.mean(axis=-1, keepdims=True)
+    all_covs = np.einsum("eij,ekj->eik", centered, centered)
+    all_covs *= 1.0 / (n_times - 1)
+
     for i in range(n_ep):
-        cov = np.cov(epochs_data[i])
-        evals, evecs = eigh(cov, reference_cov, check_finite=False)
+        evals, evecs = eigh(all_covs[i], reference_cov, check_finite=False)
         all_eval[i] = evals
         all_evec[i] = evecs
+
     return all_eval, all_evec
+
+
+@njit(nogil=True, cache=True)
+def _numba_sensai_score_loop(
+    abs_evals: np.ndarray,
+    all_VR: np.ndarray,
+    template: np.ndarray,
+    threshold: float,
+    n_pc: int
+):
+    """Inner Numba compiled loop for fast SENSAI optimization scoring."""
+    n_ep, n_ch = abs_evals.shape
+    sig_sims = np.zeros(n_ep, dtype=np.float64)
+    noi_sims = np.zeros(n_ep, dtype=np.float64)
+    eye_n_pc = np.eye(n_ch)
+    eye_n_pc = eye_n_pc[:, :n_pc].copy()
+
+    for e in range(n_ep):
+        evals_e = abs_evals[e]
+        VR_e = all_VR[e]
+        
+        n_bad = 0
+        for i in range(n_ch):
+            if evals_e[i] >= threshold:
+                n_bad += 1
+        n_good = n_ch - n_bad
+        
+        VR_bad = np.zeros((n_ch, n_bad), dtype=np.float64)
+        d_bad = np.zeros(n_bad, dtype=np.float64)
+        VR_good = np.zeros((n_ch, n_good), dtype=np.float64)
+        d_good = np.zeros(n_good, dtype=np.float64)
+        
+        b_idx = 0
+        g_idx = 0
+        for i in range(n_ch):
+            if evals_e[i] >= threshold:
+                VR_bad[:, b_idx] = VR_e[:, i]
+                d_bad[b_idx] = evals_e[i]
+                b_idx += 1
+            else:
+                VR_good[:, g_idx] = VR_e[:, i]
+                d_good[g_idx] = evals_e[i]
+                g_idx += 1
+                
+        # --- Artifact noise subspace ---
+        if n_bad > 0:
+            cov_noise = np.zeros((n_ch, n_ch), dtype=np.float64)
+            for i in range(n_bad):
+                col = VR_bad[:, i] * d_bad[i]
+                for j in range(n_ch):
+                    for k in range(n_ch):
+                        cov_noise[j, k] += col[j] * VR_bad[k, i]
+            
+            cov_noise = (cov_noise + cov_noise.T) * 0.5
+            
+            max_val = 0.0
+            for i in range(n_ch):
+                for j in range(n_ch):
+                    val = cov_noise[i, j]
+                    if val < 0: val = -val
+                    if val > max_val: max_val = val
+                        
+            if max_val < 1e-12:
+                Y1_n = eye_n_pc.copy()
+            else:
+                Y1_n = np.ascontiguousarray(cov_noise) @ np.ascontiguousarray(template)
+            
+            # Use ascontiguousarray to prevent numba warnings and qr failure on non-contiguous memory
+            Y1_n_contig = np.ascontiguousarray(Y1_n)
+            Q1_n, _ = np.linalg.qr(Y1_n_contig)
+            
+            Q1_n_contig = np.ascontiguousarray(Q1_n)
+            cov_n_contig = np.ascontiguousarray(cov_noise)
+            basis_n, _ = np.linalg.qr(cov_n_contig @ Q1_n_contig)
+            
+            basis_n_contig = np.ascontiguousarray(basis_n)
+            noi_sims[e] = subspace_similarity(basis_n_contig, np.ascontiguousarray(template), n_pc)
+            
+        # --- Clean signal subspace ---
+        if n_good > 0:
+            cov_signal = np.zeros((n_ch, n_ch), dtype=np.float64)
+            for i in range(n_good):
+                col = VR_good[:, i] * d_good[i]
+                for j in range(n_ch):
+                    for k in range(n_ch):
+                        cov_signal[j, k] += col[j] * VR_good[k, i]
+            
+            cov_signal = (cov_signal + cov_signal.T) * 0.5
+            
+            cov_s_contig = np.ascontiguousarray(cov_signal)
+            Y1_s = cov_s_contig @ np.ascontiguousarray(template)
+            
+            Y1_s_contig = np.ascontiguousarray(Y1_s)
+            Q1_s, _ = np.linalg.qr(Y1_s_contig)
+            
+            Q1_s_contig = np.ascontiguousarray(Q1_s)
+            basis_s, _ = np.linalg.qr(cov_s_contig @ Q1_s_contig)
+            
+            basis_s_contig = np.ascontiguousarray(basis_s)
+            sig_sims[e] = subspace_similarity(basis_s_contig, np.ascontiguousarray(template), n_pc)
+            
+    return sig_sims, noi_sims
+
+
+def _sensai_score_from_gevd(
+    all_eigenvalues: np.ndarray,
+    all_eigenvectors: np.ndarray,
+    reference_cov: np.ndarray,
+    reference_eigenvectors: np.ndarray,
+    threshold: float,
+    n_pc: int,
+    noise_multiplier: float,
+) -> tuple[float, float, float]:
+    """Fast SENSAI score using cached GEVD and 2-step QR subspace iteration."""
+    template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
+
+    # Precompute reference_cov @ eigenvectors for all epochs at once
+    all_VR = np.einsum("ij,ejk->eik", reference_cov, all_eigenvectors)
+    abs_evals = np.abs(all_eigenvalues)
+
+    sig_sims, noi_sims = _numba_sensai_score_loop(
+        np.ascontiguousarray(abs_evals),
+        np.ascontiguousarray(all_VR),
+        template,
+        threshold,
+        n_pc
+    )
+
+    sig_sim = np.mean(sig_sims) * 100.0
+    noi_sim = np.mean(noi_sims) * 100.0
+    score = sig_sim - (noise_multiplier * noi_sim)
+
+    return float(score), float(sig_sim), float(noi_sim)
 
 
 def _find_changepoint(y: np.ndarray, smooth_window: int = 6) -> int | None:
@@ -136,77 +287,6 @@ def _find_changepoint(y: np.ndarray, smooth_window: int = 6) -> int | None:
     if best_idx is None or best_score < 1e-6:
         return None
     return best_idx + 1
-
-
-def _sensai_score_from_gevd(
-    all_eigenvalues: np.ndarray,
-    all_eigenvectors: np.ndarray,
-    reference_cov: np.ndarray,
-    reference_eigenvectors: np.ndarray,
-    threshold: float,
-    n_pc: int,
-    noise_multiplier: float,
-) -> tuple[float, float, float]:
-    """Fast SENSAI score using cached GEVD and 2-step QR subspace iteration."""
-    n_ep, n_ch = all_eigenvalues.shape
-    sig_sims = np.zeros(n_ep, dtype=np.float64)
-    noi_sims = np.zeros(n_ep, dtype=np.float64)
-    template = reference_eigenvectors[:, :n_pc]
-
-    for e in range(n_ep):
-        evecs = all_eigenvectors[e]
-        evals = np.abs(all_eigenvalues[e])
-
-        bad_mask = evals >= threshold
-        good_mask = ~bad_mask
-
-        # --- Artifact noise subspace ---
-        cov_noise = np.zeros((n_ch, n_ch), dtype=np.float64)
-        if np.any(bad_mask):
-            V_bad = evecs[:, bad_mask]
-            V_bad_rows = V_bad.T @ reference_cov
-            d_bad = evals[bad_mask][:, None]
-            cov_noise = V_bad_rows.T @ (V_bad_rows * d_bad)
-            cov_noise = (cov_noise + cov_noise.T) * 0.5
-
-        try:
-            if np.max(np.abs(cov_noise)) < 1e-12:
-                Y1_n = np.eye(n_ch, n_pc)
-            else:
-                Y1_n = cov_noise @ template
-            Q1_n, _ = np.linalg.qr(Y1_n)
-            Y2_n = cov_noise @ Q1_n
-            basis_n, _ = np.linalg.qr(Y2_n)
-            noi_sims[e] = subspace_similarity(
-                basis_n, reference_eigenvectors, n_pc=n_pc
-            )
-        except (np.linalg.LinAlgError, ValueError):
-            noi_sims[e] = 0.0
-
-        # --- Clean signal subspace ---
-        cov_signal = np.zeros((n_ch, n_ch), dtype=np.float64)
-        if np.any(good_mask):
-            V_good = evecs[:, good_mask]
-            V_good_rows = V_good.T @ reference_cov
-            d_good = evals[good_mask][:, None]
-            cov_signal = V_good_rows.T @ (V_good_rows * d_good)
-            cov_signal = (cov_signal + cov_signal.T) * 0.5
-
-        try:
-            Y1_s = cov_signal @ template
-            Q1_s, _ = np.linalg.qr(Y1_s)
-            Y2_s = cov_signal @ Q1_s
-            basis_s, _ = np.linalg.qr(Y2_s)
-            sig_sims[e] = subspace_similarity(
-                basis_s, reference_eigenvectors, n_pc=n_pc
-            )
-        except (np.linalg.LinAlgError, ValueError):
-            sig_sims[e] = 0.0
-
-    signal_subspace_similarity = 100.0 * float(np.mean(sig_sims))
-    noise_subspace_similarity = 100.0 * float(np.mean(noi_sims))
-    score = signal_subspace_similarity - noise_multiplier * noise_subspace_similarity
-    return score, signal_subspace_similarity, noise_subspace_similarity
 
 
 def _sensai_score(epochs, threshold, reference_cov, n_pc, noise_multiplier):
@@ -269,10 +349,9 @@ def _sensai_gridsearch(
         epochs_data = np.asarray(epochs)
 
     # Subsample if too many epochs
-    MAX_EPOCHS = 500
+    MAX_EPOCHS = 2500
     if len(epochs_data) > MAX_EPOCHS:
-        rng = np.random.default_rng(2)
-        idx = rng.choice(len(epochs_data), MAX_EPOCHS, replace=False)
+        idx = np.linspace(0, len(epochs_data) - 1, MAX_EPOCHS, dtype=int)
         epochs_data = epochs_data[idx]
         if all_eval is not None:
             all_eval = all_eval[idx]
@@ -351,6 +430,16 @@ def _sensai_optimize(
         epochs_data = epochs.get_data(verbose=False)
     else:
         epochs_data = np.asarray(epochs)
+
+    # Subsample if too many epochs
+    MAX_EPOCHS = 2500
+    if len(epochs_data) > MAX_EPOCHS:
+        idx = np.linspace(0, len(epochs_data) - 1, MAX_EPOCHS, dtype=int)
+        epochs_data = epochs_data[idx]
+        if all_eval is not None:
+            all_eval = all_eval[idx]
+        if all_evec is not None:
+            all_evec = all_evec[idx]
 
     _, reference_eigenvectors = eigh(reference_cov)
     reference_eigenvectors = reference_eigenvectors[:, ::-1][:, :n_pc]

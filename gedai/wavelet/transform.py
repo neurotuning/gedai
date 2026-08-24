@@ -23,6 +23,13 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
     transformed_epoch : np.ndarray
         Transformed epoch with shape (n_channels, level+1, n_times).
     """
+    if wavelet == "haar":
+        # Fast path using Numba JIT all-bands forward pass
+        # returns (n_bands, n_ch, n_times)
+        out = _modwt_haar_all_bands(np.ascontiguousarray(epoch_data.T), level)
+        # transpose to (n_channels, n_bands, n_times)
+        return np.transpose(out, (1, 0, 2))
+
     n_channels, n_times = epoch_data.shape
     transformed_epoch = np.zeros((n_channels, level + 1, n_times))
 
@@ -159,14 +166,88 @@ def get_modwt_band_limits(sfreq: float, n_bands: int) -> list[tuple[float, float
     return limits
 
 
+from numba import njit
+
+@njit(cache=True, nogil=True)
+def _modwt_haar_all_bands(
+    data_T: np.ndarray, level: int
+) -> np.ndarray:
+    """Haar MODWT all-band reconstruction with shared forward pass.
+
+    Performs a single forward Haar cascade through all levels, caching the
+    intermediate approximation coefficients, then reconstructs each band.
+
+    Parameters
+    ----------
+    data_T : (n_times, n_ch) float64
+        Samples x channels.
+    level : int
+        Decomposition level.
+
+    Returns
+    -------
+    bands_out : (n_bands, n_ch, n_times) float64
+        Reconstructed band signals.
+    """
+    inv_sqrt2 = 1.0 / np.sqrt(2.0)
+    n_bands = level + 1
+    n_times, n_ch = data_T.shape
+    
+    detail_coeffs = np.zeros((n_bands, n_times, n_ch), dtype=np.float64)
+    current_approx = data_T.copy()
+    
+    for j in range(1, level + 1):
+        step = 2 ** (j - 1)
+        shifted = np.zeros_like(current_approx)
+        shifted[step:, :] = current_approx[:-step, :]
+        shifted[:step, :] = current_approx[-step:, :]
+        
+        detail_coeffs[j - 1] = (shifted - current_approx) * inv_sqrt2
+        current_approx = (current_approx + shifted) * inv_sqrt2
+        
+    detail_coeffs[level] = current_approx
+    
+    bands_out = np.zeros((n_bands, n_ch, n_times), dtype=np.float64)
+    
+    for band_idx in range(n_bands):
+        target_band = band_idx + 1
+        current_recon = detail_coeffs[band_idx].copy()
+        
+        if target_band == n_bands:
+            for j in range(level, 0, -1):
+                step = 2 ** (j - 1)
+                shifted = np.zeros_like(current_recon)
+                shifted[:-step, :] = current_recon[step:, :]
+                shifted[-step:, :] = current_recon[:step, :]
+                current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
+        else:
+            j = target_band
+            step = 2 ** (j - 1)
+            shifted = np.zeros_like(current_recon)
+            shifted[:-step, :] = current_recon[step:, :]
+            shifted[-step:, :] = current_recon[:step, :]
+            current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
+            
+            for j in range(target_band - 1, 0, -1):
+                step = 2 ** (j - 1)
+                shifted = np.zeros_like(current_recon)
+                shifted[:-step, :] = current_recon[step:, :]
+                shifted[-step:, :] = current_recon[:step, :]
+                current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
+                
+        for c in range(n_ch):
+            for t in range(n_times):
+                bands_out[band_idx, c, t] = current_recon[t, c]
+                
+    return bands_out
+
+@njit(cache=True, nogil=True)
 def _modwt_haar_single_band(
     data_T: np.ndarray, level: int, band_idx: int
 ) -> np.ndarray:
     """Haar MODWT single-band reconstruction — exact port of MATLAB modwt_single_band.m.
 
-    Uses circular shifts (np.roll) matching MATLAB circshift, with the same
-    forward/inverse Haar filter bank. Returns the time-domain reconstructed
-    signal for one wavelet band only (MRA reconstruction).
+    Returns the time-domain reconstructed signal for one wavelet band only.
 
     Parameters
     ----------
@@ -185,43 +266,55 @@ def _modwt_haar_single_band(
     inv_sqrt2 = 1.0 / np.sqrt(2.0)
     target_band = band_idx + 1
     n_bands = level + 1
-    data_T = data_T.astype(np.float64)
+    n_times, n_ch = data_T.shape
 
-    # Forward decomposition
-    current_approx = data_T
+    current_approx = data_T.copy()
     max_level_needed = min(target_band, level)
-    target_coefs = None
+    target_coefs = np.zeros_like(data_T)
 
     for j in range(1, max_level_needed + 1):
         step = 2 ** (j - 1)
-        shifted_approx = np.roll(current_approx, step, axis=0)
+        shifted = np.zeros_like(current_approx)
+        shifted[step:, :] = current_approx[:-step, :]
+        shifted[:step, :] = current_approx[-step:, :]
+        
         if j == target_band:
-            target_coefs = (shifted_approx - current_approx) * inv_sqrt2
+            target_coefs = (shifted - current_approx) * inv_sqrt2
         else:
-            current_approx = (current_approx + shifted_approx) * inv_sqrt2
+            current_approx = (current_approx + shifted) * inv_sqrt2
 
     if target_band == n_bands:
         target_coefs = current_approx
 
-    # Inverse reconstruction
     current_recon = target_coefs.copy()
 
     if target_band == n_bands:
         for j in range(level, 0, -1):
             step = 2 ** (j - 1)
-            A_shifted = np.roll(current_recon, -step, axis=0)
-            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
+            shifted = np.zeros_like(current_recon)
+            shifted[:-step, :] = current_recon[step:, :]
+            shifted[-step:, :] = current_recon[:step, :]
+            current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
     else:
         j = target_band
         step = 2 ** (j - 1)
-        D_shifted = np.roll(current_recon, -step, axis=0)
-        current_recon = 0.5 * inv_sqrt2 * (D_shifted - current_recon)
+        shifted = np.zeros_like(current_recon)
+        shifted[:-step, :] = current_recon[step:, :]
+        shifted[-step:, :] = current_recon[:step, :]
+        current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
+        
         for j in range(target_band - 1, 0, -1):
             step = 2 ** (j - 1)
-            A_shifted = np.roll(current_recon, -step, axis=0)
-            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
+            shifted = np.zeros_like(current_recon)
+            shifted[:-step, :] = current_recon[step:, :]
+            shifted[-step:, :] = current_recon[:step, :]
+            current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
 
-    return current_recon.T
+    out = np.zeros((n_ch, n_times), dtype=np.float64)
+    for c in range(n_ch):
+        for t in range(n_times):
+            out[c, t] = current_recon[t, c]
+    return out
 
 
 def _apply_wavelet_highpass_prefilter(
@@ -265,9 +358,11 @@ def _apply_wavelet_highpass_prefilter(
     if not bands_to_hp_zero:
         return data
 
+    data_T = np.ascontiguousarray(data.T.astype(np.float64))
+    all_bands = _modwt_haar_all_bands(data_T, hp_wavelet_levels)
+    
     low_freq_noise = np.zeros_like(data, dtype=np.float64)
-    data_T = data.T.astype(np.float64)
     for b in bands_to_hp_zero:
-        low_freq_noise += _modwt_haar_single_band(data_T, hp_wavelet_levels, b)
+        low_freq_noise += all_bands[b]
 
     return (data.astype(np.float64) - low_freq_noise).astype(data.dtype)
