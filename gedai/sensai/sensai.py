@@ -39,9 +39,6 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return np.sort(angles_rad)
 
 
-from numba import njit
-
-@njit(nogil=True, cache=True)
 def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int = 0) -> float:
     """Product of cosines of principal angles between column spaces.
 
@@ -58,20 +55,12 @@ def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int = 0) -> float:
     -------
     similarity : float in [0, 1]
     """
-    M = np.ascontiguousarray(A.T) @ np.ascontiguousarray(B)
-    _, S, _ = np.linalg.svd(M)
-    
-    for i in range(len(S)):
-        if S[i] > 1.0: S[i] = 1.0
-        elif S[i] < -1.0: S[i] = -1.0
-        
-    if n_pc > 0 and n_pc < len(S):
+    M = A.T @ B
+    S = np.linalg.svd(M, compute_uv=False)
+    S = np.clip(S, -1.0, 1.0)
+    if 0 < n_pc < len(S):
         S = S[:n_pc]
-        
-    prod = 1.0
-    for i in range(len(S)):
-        prod *= S[i]
-    return float(prod)
+    return float(np.prod(S))
 
 
 def _sensai_to_eigen(sensai_value, eigenvalues):
@@ -122,105 +111,53 @@ def _precompute_gevd(epochs_data: np.ndarray, reference_cov: np.ndarray):
     return all_eval, all_evec
 
 
-@njit(nogil=True, cache=True)
-def _numba_sensai_score_loop(
+def _sensai_score_loop(
     abs_evals: np.ndarray,
     all_VR: np.ndarray,
     template: np.ndarray,
     threshold: float,
-    n_pc: int
+    n_pc: int,
 ):
-    """Inner Numba compiled loop for fast SENSAI optimization scoring."""
+    """NumPy optimized loop for fast SENSAI optimization scoring."""
     n_ep, n_ch = abs_evals.shape
     sig_sims = np.zeros(n_ep, dtype=np.float64)
     noi_sims = np.zeros(n_ep, dtype=np.float64)
-    eye_n_pc = np.eye(n_ch)
-    eye_n_pc = eye_n_pc[:, :n_pc].copy()
+    eye_n_pc = np.eye(n_ch)[:, :n_pc]
 
     for e in range(n_ep):
         evals_e = abs_evals[e]
         VR_e = all_VR[e]
-        
-        n_bad = 0
-        for i in range(n_ch):
-            if evals_e[i] >= threshold:
-                n_bad += 1
-        n_good = n_ch - n_bad
-        
-        VR_bad = np.zeros((n_ch, n_bad), dtype=np.float64)
-        d_bad = np.zeros(n_bad, dtype=np.float64)
-        VR_good = np.zeros((n_ch, n_good), dtype=np.float64)
-        d_good = np.zeros(n_good, dtype=np.float64)
-        
-        b_idx = 0
-        g_idx = 0
-        for i in range(n_ch):
-            if evals_e[i] >= threshold:
-                VR_bad[:, b_idx] = VR_e[:, i]
-                d_bad[b_idx] = evals_e[i]
-                b_idx += 1
-            else:
-                VR_good[:, g_idx] = VR_e[:, i]
-                d_good[g_idx] = evals_e[i]
-                g_idx += 1
-                
+        bad_mask = evals_e >= threshold
+
         # --- Artifact noise subspace ---
-        if n_bad > 0:
-            cov_noise = np.zeros((n_ch, n_ch), dtype=np.float64)
-            for i in range(n_bad):
-                col = VR_bad[:, i] * d_bad[i]
-                for j in range(n_ch):
-                    for k in range(n_ch):
-                        cov_noise[j, k] += col[j] * VR_bad[k, i]
-            
+        if np.any(bad_mask):
+            VR_bad = VR_e[:, bad_mask]
+            d_bad = evals_e[bad_mask]
+            cov_noise = (VR_bad * d_bad) @ VR_bad.T
             cov_noise = (cov_noise + cov_noise.T) * 0.5
-            
-            max_val = 0.0
-            for i in range(n_ch):
-                for j in range(n_ch):
-                    val = cov_noise[i, j]
-                    if val < 0: val = -val
-                    if val > max_val: max_val = val
-                        
-            if max_val < 1e-12:
-                Y1_n = eye_n_pc.copy()
+
+            if np.max(np.abs(cov_noise)) < 1e-12:
+                Y1_n = eye_n_pc
             else:
-                Y1_n = np.ascontiguousarray(cov_noise) @ np.ascontiguousarray(template)
-            
-            # Use ascontiguousarray to prevent numba warnings and qr failure on non-contiguous memory
-            Y1_n_contig = np.ascontiguousarray(Y1_n)
-            Q1_n, _ = np.linalg.qr(Y1_n_contig)
-            
-            Q1_n_contig = np.ascontiguousarray(Q1_n)
-            cov_n_contig = np.ascontiguousarray(cov_noise)
-            basis_n, _ = np.linalg.qr(cov_n_contig @ Q1_n_contig)
-            
-            basis_n_contig = np.ascontiguousarray(basis_n)
-            noi_sims[e] = subspace_similarity(basis_n_contig, np.ascontiguousarray(template), n_pc)
-            
+                Y1_n = cov_noise @ template
+
+            Q1_n, _ = np.linalg.qr(Y1_n)
+            basis_n, _ = np.linalg.qr(cov_noise @ Q1_n)
+            noi_sims[e] = subspace_similarity(basis_n, template, n_pc)
+
         # --- Clean signal subspace ---
-        if n_good > 0:
-            cov_signal = np.zeros((n_ch, n_ch), dtype=np.float64)
-            for i in range(n_good):
-                col = VR_good[:, i] * d_good[i]
-                for j in range(n_ch):
-                    for k in range(n_ch):
-                        cov_signal[j, k] += col[j] * VR_good[k, i]
-            
+        good_mask = ~bad_mask
+        if np.any(good_mask):
+            VR_good = VR_e[:, good_mask]
+            d_good = evals_e[good_mask]
+            cov_signal = (VR_good * d_good) @ VR_good.T
             cov_signal = (cov_signal + cov_signal.T) * 0.5
-            
-            cov_s_contig = np.ascontiguousarray(cov_signal)
-            Y1_s = cov_s_contig @ np.ascontiguousarray(template)
-            
-            Y1_s_contig = np.ascontiguousarray(Y1_s)
-            Q1_s, _ = np.linalg.qr(Y1_s_contig)
-            
-            Q1_s_contig = np.ascontiguousarray(Q1_s)
-            basis_s, _ = np.linalg.qr(cov_s_contig @ Q1_s_contig)
-            
-            basis_s_contig = np.ascontiguousarray(basis_s)
-            sig_sims[e] = subspace_similarity(basis_s_contig, np.ascontiguousarray(template), n_pc)
-            
+
+            Y1_s = cov_signal @ template
+            Q1_s, _ = np.linalg.qr(Y1_s)
+            basis_s, _ = np.linalg.qr(cov_signal @ Q1_s)
+            sig_sims[e] = subspace_similarity(basis_s, template, n_pc)
+
     return sig_sims, noi_sims
 
 
@@ -240,12 +177,12 @@ def _sensai_score_from_gevd(
     all_VR = np.einsum("ij,ejk->eik", reference_cov, all_eigenvectors)
     abs_evals = np.abs(all_eigenvalues)
 
-    sig_sims, noi_sims = _numba_sensai_score_loop(
+    sig_sims, noi_sims = _sensai_score_loop(
         np.ascontiguousarray(abs_evals),
         np.ascontiguousarray(all_VR),
         template,
         threshold,
-        n_pc
+        n_pc,
     )
 
     sig_sim = np.mean(sig_sims) * 100.0
@@ -371,7 +308,7 @@ def _sensai_gridsearch(
 
     runs = []
     for threshold in eigen_thresholds:
-        sig_sims, noi_sims = _numba_sensai_score_loop(
+        sig_sims, noi_sims = _sensai_score_loop(
             abs_evals,
             all_VR,
             template,
@@ -461,7 +398,7 @@ def _sensai_optimize(
 
     def objective_function(sensai_threshold):
         eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
-        sig_sims, noi_sims = _numba_sensai_score_loop(
+        sig_sims, noi_sims = _sensai_score_loop(
             abs_evals,
             all_VR,
             template,

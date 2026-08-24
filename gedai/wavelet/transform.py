@@ -166,9 +166,6 @@ def get_modwt_band_limits(sfreq: float, n_bands: int) -> list[tuple[float, float
     return limits
 
 
-from numba import njit
-
-@njit(cache=True, nogil=True)
 def _modwt_haar_all_bands(
     data_T: np.ndarray, level: int
 ) -> np.ndarray:
@@ -198,10 +195,7 @@ def _modwt_haar_all_bands(
     
     for j in range(1, level + 1):
         step = 2 ** (j - 1)
-        shifted = np.zeros_like(current_approx)
-        shifted[step:, :] = current_approx[:-step, :]
-        shifted[:step, :] = current_approx[-step:, :]
-        
+        shifted = np.roll(current_approx, step, axis=0)
         detail_coeffs[j - 1] = (shifted - current_approx) * inv_sqrt2
         current_approx = (current_approx + shifted) * inv_sqrt2
         
@@ -216,32 +210,24 @@ def _modwt_haar_all_bands(
         if target_band == n_bands:
             for j in range(level, 0, -1):
                 step = 2 ** (j - 1)
-                shifted = np.zeros_like(current_recon)
-                shifted[:-step, :] = current_recon[step:, :]
-                shifted[-step:, :] = current_recon[:step, :]
+                shifted = np.roll(current_recon, -step, axis=0)
                 current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
         else:
             j = target_band
             step = 2 ** (j - 1)
-            shifted = np.zeros_like(current_recon)
-            shifted[:-step, :] = current_recon[step:, :]
-            shifted[-step:, :] = current_recon[:step, :]
+            shifted = np.roll(current_recon, -step, axis=0)
             current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
             
             for j in range(target_band - 1, 0, -1):
                 step = 2 ** (j - 1)
-                shifted = np.zeros_like(current_recon)
-                shifted[:-step, :] = current_recon[step:, :]
-                shifted[-step:, :] = current_recon[:step, :]
+                shifted = np.roll(current_recon, -step, axis=0)
                 current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
                 
-        for c in range(n_ch):
-            for t in range(n_times):
-                bands_out[band_idx, c, t] = current_recon[t, c]
+        bands_out[band_idx] = current_recon.T
                 
     return bands_out
 
-@njit(cache=True, nogil=True)
+
 def _modwt_haar_single_band(
     data_T: np.ndarray, level: int, band_idx: int
 ) -> np.ndarray:
@@ -266,22 +252,20 @@ def _modwt_haar_single_band(
     inv_sqrt2 = 1.0 / np.sqrt(2.0)
     target_band = band_idx + 1
     n_bands = level + 1
-    n_times, n_ch = data_T.shape
+    data_T = data_T.astype(np.float64)
 
-    current_approx = data_T.copy()
-    shifted = np.empty((n_times, n_ch), dtype=np.float64)
+    current_approx = data_T
     max_level_needed = min(target_band, level)
-    target_coefs = np.empty((n_times, n_ch), dtype=np.float64)
+    target_coefs = None
 
     for j in range(1, max_level_needed + 1):
         step = 2 ** (j - 1)
-        shifted[step:, :] = current_approx[:-step, :]
-        shifted[:step, :] = current_approx[-step:, :]
+        shifted_approx = np.roll(current_approx, step, axis=0)
         
         if j == target_band:
-            target_coefs = (shifted - current_approx) * inv_sqrt2
+            target_coefs = (shifted_approx - current_approx) * inv_sqrt2
         else:
-            current_approx = (current_approx + shifted) * inv_sqrt2
+            current_approx = (current_approx + shifted_approx) * inv_sqrt2
 
     if target_band == n_bands:
         target_coefs = current_approx
@@ -291,30 +275,22 @@ def _modwt_haar_single_band(
     if target_band == n_bands:
         for j in range(level, 0, -1):
             step = 2 ** (j - 1)
-            shifted[:-step, :] = current_recon[step:, :]
-            shifted[-step:, :] = current_recon[:step, :]
-            current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
+            A_shifted = np.roll(current_recon, -step, axis=0)
+            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
     else:
         j = target_band
         step = 2 ** (j - 1)
-        shifted[:-step, :] = current_recon[step:, :]
-        shifted[-step:, :] = current_recon[:step, :]
-        current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
+        D_shifted = np.roll(current_recon, -step, axis=0)
+        current_recon = 0.5 * inv_sqrt2 * (D_shifted - current_recon)
         
         for j in range(target_band - 1, 0, -1):
             step = 2 ** (j - 1)
-            shifted[:-step, :] = current_recon[step:, :]
-            shifted[-step:, :] = current_recon[:step, :]
-            current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
+            A_shifted = np.roll(current_recon, -step, axis=0)
+            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
 
-    out = np.empty((n_ch, n_times), dtype=np.float64)
-    for c in range(n_ch):
-        for t in range(n_times):
-            out[c, t] = current_recon[t, c]
-    return out
+    return current_recon.T
 
 
-@njit(cache=True, nogil=True)
 def _modwt_haar_sum_bands(
     data_T: np.ndarray, level: int, bands_to_sum: np.ndarray
 ) -> np.ndarray:
@@ -328,48 +304,38 @@ def _modwt_haar_sum_bands(
     
     detail_coeffs = np.empty((n_bands, n_times, n_ch), dtype=np.float64)
     current_approx = data_T.copy()
-    shifted = np.empty((n_times, n_ch), dtype=np.float64)
     
     for j in range(1, level + 1):
         step = 2 ** (j - 1)
-        shifted[step:, :] = current_approx[:-step, :]
-        shifted[:step, :] = current_approx[-step:, :]
-        
+        shifted = np.roll(current_approx, step, axis=0)
         detail_coeffs[j - 1] = (shifted - current_approx) * inv_sqrt2
         current_approx = (current_approx + shifted) * inv_sqrt2
         
     detail_coeffs[level] = current_approx
     
     out = np.zeros((n_ch, n_times), dtype=np.float64)
-    current_recon = np.empty((n_times, n_ch), dtype=np.float64)
     
-    for b_idx in range(len(bands_to_sum)):
-        band_idx = bands_to_sum[b_idx]
+    for band_idx in bands_to_sum:
         target_band = band_idx + 1
-        current_recon[:] = detail_coeffs[band_idx]
+        current_recon = detail_coeffs[band_idx].copy()
         
         if target_band == n_bands:
             for j in range(level, 0, -1):
                 step = 2 ** (j - 1)
-                shifted[:-step, :] = current_recon[step:, :]
-                shifted[-step:, :] = current_recon[:step, :]
+                shifted = np.roll(current_recon, -step, axis=0)
                 current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
         else:
             j = target_band
             step = 2 ** (j - 1)
-            shifted[:-step, :] = current_recon[step:, :]
-            shifted[-step:, :] = current_recon[:step, :]
+            shifted = np.roll(current_recon, -step, axis=0)
             current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
             
             for j in range(target_band - 1, 0, -1):
                 step = 2 ** (j - 1)
-                shifted[:-step, :] = current_recon[step:, :]
-                shifted[-step:, :] = current_recon[:step, :]
+                shifted = np.roll(current_recon, -step, axis=0)
                 current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
                 
-        for c in range(n_ch):
-            for t in range(n_times):
-                out[c, t] += current_recon[t, c]
+        out += current_recon.T
                 
     return out
 
