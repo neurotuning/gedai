@@ -123,6 +123,7 @@ def _sensai_score_loop(
     sig_sims = np.zeros(n_ep, dtype=np.float64)
     noi_sims = np.zeros(n_ep, dtype=np.float64)
     eye_n_pc = np.eye(n_ch)[:, :n_pc]
+    empty_noi_sim = subspace_similarity(eye_n_pc, template, n_pc)
 
     for e in range(n_ep):
         evals_e = abs_evals[e]
@@ -137,13 +138,14 @@ def _sensai_score_loop(
             cov_noise = (cov_noise + cov_noise.T) * 0.5
 
             if np.max(np.abs(cov_noise)) < 1e-12:
-                Y1_n = eye_n_pc
+                noi_sims[e] = empty_noi_sim
             else:
                 Y1_n = cov_noise @ template
-
-            Q1_n, _ = np.linalg.qr(Y1_n)
-            basis_n, _ = np.linalg.qr(cov_noise @ Q1_n)
-            noi_sims[e] = subspace_similarity(basis_n, template, n_pc)
+                Q1_n, _ = np.linalg.qr(Y1_n)
+                basis_n, _ = np.linalg.qr(cov_noise @ Q1_n)
+                noi_sims[e] = subspace_similarity(basis_n, template, n_pc)
+        else:
+            noi_sims[e] = empty_noi_sim
 
         # --- Clean signal subspace ---
         good_mask = ~bad_mask
@@ -153,10 +155,15 @@ def _sensai_score_loop(
             cov_signal = (VR_good * d_good) @ VR_good.T
             cov_signal = (cov_signal + cov_signal.T) * 0.5
 
-            Y1_s = cov_signal @ template
-            Q1_s, _ = np.linalg.qr(Y1_s)
-            basis_s, _ = np.linalg.qr(cov_signal @ Q1_s)
-            sig_sims[e] = subspace_similarity(basis_s, template, n_pc)
+            if np.max(np.abs(cov_signal)) < 1e-12:
+                sig_sims[e] = 0.0
+            else:
+                Y1_s = cov_signal @ template
+                Q1_s, _ = np.linalg.qr(Y1_s)
+                basis_s, _ = np.linalg.qr(cov_signal @ Q1_s)
+                sig_sims[e] = subspace_similarity(basis_s, template, n_pc)
+        else:
+            sig_sims[e] = 0.0
 
     return sig_sims, noi_sims
 
