@@ -593,7 +593,7 @@ class AdaptiveMultibandGedai:
         metrics : dict
             A dictionary containing the computed SENSAI and ENOVA metrics.
         """
-        from ..viz.sensai import plot_sensai_visualization
+        from ..viz.sensai_viz import plot_sensai_visualization
 
         self._check_fit()
         if raw_after is None:
