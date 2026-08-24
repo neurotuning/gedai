@@ -50,7 +50,13 @@ jobs:
       - run: gedai sys-info --developer
       - name: Download data
         run: |
-          python -c 'import mne; mne.datasets.fetch_fsaverage()'
+          for attempt in 1 2 3; do
+            python -c 'import mne; mne.datasets.fetch_fsaverage()' && break
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep 10
+          done
       - run: xvfb-run -a -s "-screen 0 1920x1080x24" env MPLBACKEND=Agg QT_API=pyqt5 MNE_3D_BACKEND=pyvistaqt make -C doc html
       - name: Prune sphinx environment
         run: rm -R ./doc/_build/html/.doctrees
