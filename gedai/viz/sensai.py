@@ -5,7 +5,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.linalg import eigh, svd
 from scipy.stats import gaussian_kde
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import silhouette_score
+from sklearn.metrics import silhouette_samples
 
 
 def plot_sensai_visualization(
@@ -137,7 +137,11 @@ def plot_sensai_visualization(
         float("nan")
 
     try:
-        sil_signal = float(silhouette_score(X_lda[:, [1]], y_lda))
+        # Match MATLAB SENSAI_visualization.m lines 98-101:
+        # sil_scores = silhouette(X_lda(:, 1), Y_lda, 'sqEuclidean');
+        # sil_signal = mean(sil_scores(Y_lda == 1));
+        sil_scores = silhouette_samples(X_lda[:, [1]], y_lda, metric="sqeuclidean")
+        sil_signal = float(np.mean(sil_scores[y_lda == 1]))
     except Exception:
         sil_signal = float("nan")
 
