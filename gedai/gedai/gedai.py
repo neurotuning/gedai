@@ -151,12 +151,16 @@ class Gedai:
         reference_cov = (reference_cov + reference_cov.T) * 0.5
         cov.update(data=reference_cov)
 
-        all_eval, all_evec = _precompute_gevd(data, reference_cov)
+        MAX_SENSAI_EPOCHS = 200
+        if len(data) > MAX_SENSAI_EPOCHS:
+            idx = np.linspace(0, len(data) - 1, MAX_SENSAI_EPOCHS, dtype=int)
+            sensai_data = data[idx]
+        else:
+            sensai_data = data
+
+        all_eval, all_evec = _precompute_gevd(sensai_data, reference_cov)
         epochs_eigenvalues = all_eval
 
-        fit_epochs = mne.EpochsArray(
-            data, epochs_fit.info, tmin=epochs.tmin, verbose=False
-        )
         min_sensai_threshold, max_sensai_threshold = (
             float(sensai_bounds[0]),
             float(sensai_bounds[1]),
@@ -173,7 +177,7 @@ class Gedai:
                 for sensai_value in sensai_thresholds
             ]
             threshold, runs = _sensai_gridsearch(
-                fit_epochs,
+                sensai_data,
                 reference_cov,
                 n_pc=n_pc,
                 noise_multiplier=noise_multiplier,
@@ -186,7 +190,7 @@ class Gedai:
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
             threshold, runs = _sensai_optimize(
-                fit_epochs,
+                sensai_data,
                 reference_cov,
                 n_pc=n_pc,
                 noise_multiplier=noise_multiplier,
@@ -613,18 +617,18 @@ def _process_single_epoch(epoch_data, reference_cov, threshold):
     cleaned_epoch : np.ndarray
         The cleaned epoch data.
     """
-    covariance = np.cov(epoch_data)
-    eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+    centered = epoch_data - epoch_data.mean(axis=1, keepdims=True)
+    covariance = (centered @ centered.T) * (1.0 / (epoch_data.shape[1] - 1))
+    eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=False)
 
-    eigvecs_filtered = eigenvectors.copy()
-    signal_mask = np.abs(eigenvalues) < threshold
-    eigvecs_filtered[:, signal_mask] = 0
+    bad_mask = np.abs(eigenvalues) >= threshold
+    if not np.any(bad_mask):
+        return epoch_data
 
-    # Direct Regularized Reference Covariance Projection:
-    # Since V^T * C_ref * V = I, the inverse transpose (spatial maps) is C_ref * V.
-    # Therefore, artifact projection is: C_ref * V_art * (V_art^T * X)
-    artifact_tc = eigvecs_filtered.T @ epoch_data
-    artefact_data = reference_cov @ (eigvecs_filtered @ artifact_tc)
+    # Direct Regularized Reference Covariance Projection on artifact subspace:
+    bad_evecs = eigenvectors[:, bad_mask]
+    artifact_tc = bad_evecs.T @ epoch_data
+    artefact_data = reference_cov @ (bad_evecs @ artifact_tc)
     cleaned_epoch = epoch_data - artefact_data
 
     return cleaned_epoch

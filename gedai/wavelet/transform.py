@@ -269,12 +269,12 @@ def _modwt_haar_single_band(
     n_times, n_ch = data_T.shape
 
     current_approx = data_T.copy()
+    shifted = np.empty((n_times, n_ch), dtype=np.float64)
     max_level_needed = min(target_band, level)
-    target_coefs = np.zeros_like(data_T)
+    target_coefs = np.empty((n_times, n_ch), dtype=np.float64)
 
     for j in range(1, max_level_needed + 1):
         step = 2 ** (j - 1)
-        shifted = np.zeros_like(current_approx)
         shifted[step:, :] = current_approx[:-step, :]
         shifted[:step, :] = current_approx[-step:, :]
         
@@ -291,29 +291,86 @@ def _modwt_haar_single_band(
     if target_band == n_bands:
         for j in range(level, 0, -1):
             step = 2 ** (j - 1)
-            shifted = np.zeros_like(current_recon)
             shifted[:-step, :] = current_recon[step:, :]
             shifted[-step:, :] = current_recon[:step, :]
             current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
     else:
         j = target_band
         step = 2 ** (j - 1)
-        shifted = np.zeros_like(current_recon)
         shifted[:-step, :] = current_recon[step:, :]
         shifted[-step:, :] = current_recon[:step, :]
         current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
         
         for j in range(target_band - 1, 0, -1):
             step = 2 ** (j - 1)
-            shifted = np.zeros_like(current_recon)
             shifted[:-step, :] = current_recon[step:, :]
             shifted[-step:, :] = current_recon[:step, :]
             current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
 
-    out = np.zeros((n_ch, n_times), dtype=np.float64)
+    out = np.empty((n_ch, n_times), dtype=np.float64)
     for c in range(n_ch):
         for t in range(n_times):
             out[c, t] = current_recon[t, c]
+    return out
+
+
+@njit(cache=True, nogil=True)
+def _modwt_haar_sum_bands(
+    data_T: np.ndarray, level: int, bands_to_sum: np.ndarray
+) -> np.ndarray:
+    """Haar MODWT selective band reconstruction and summation.
+
+    Reconstructs only the selected bands and sums them into a single (n_ch, n_times) array.
+    """
+    inv_sqrt2 = 1.0 / np.sqrt(2.0)
+    n_bands = level + 1
+    n_times, n_ch = data_T.shape
+    
+    detail_coeffs = np.empty((n_bands, n_times, n_ch), dtype=np.float64)
+    current_approx = data_T.copy()
+    shifted = np.empty((n_times, n_ch), dtype=np.float64)
+    
+    for j in range(1, level + 1):
+        step = 2 ** (j - 1)
+        shifted[step:, :] = current_approx[:-step, :]
+        shifted[:step, :] = current_approx[-step:, :]
+        
+        detail_coeffs[j - 1] = (shifted - current_approx) * inv_sqrt2
+        current_approx = (current_approx + shifted) * inv_sqrt2
+        
+    detail_coeffs[level] = current_approx
+    
+    out = np.zeros((n_ch, n_times), dtype=np.float64)
+    current_recon = np.empty((n_times, n_ch), dtype=np.float64)
+    
+    for b_idx in range(len(bands_to_sum)):
+        band_idx = bands_to_sum[b_idx]
+        target_band = band_idx + 1
+        current_recon[:] = detail_coeffs[band_idx]
+        
+        if target_band == n_bands:
+            for j in range(level, 0, -1):
+                step = 2 ** (j - 1)
+                shifted[:-step, :] = current_recon[step:, :]
+                shifted[-step:, :] = current_recon[:step, :]
+                current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
+        else:
+            j = target_band
+            step = 2 ** (j - 1)
+            shifted[:-step, :] = current_recon[step:, :]
+            shifted[-step:, :] = current_recon[:step, :]
+            current_recon = 0.5 * inv_sqrt2 * (shifted - current_recon)
+            
+            for j in range(target_band - 1, 0, -1):
+                step = 2 ** (j - 1)
+                shifted[:-step, :] = current_recon[step:, :]
+                shifted[-step:, :] = current_recon[:step, :]
+                current_recon = 0.5 * inv_sqrt2 * (current_recon + shifted)
+                
+        for c in range(n_ch):
+            for t in range(n_times):
+                out[c, t] += current_recon[t, c]
+                
     return out
 
 
@@ -352,17 +409,13 @@ def _apply_wavelet_highpass_prefilter(
     hp_wavelet_levels = min(hp_wavelet_levels, int(np.floor(np.log2(n_times))))
     n_bands_hp = hp_wavelet_levels + 1
 
-    bands_to_hp_zero = [
+    bands_to_hp_zero = np.array([
         j for j in range(n_bands_hp) if (sfreq / (2 ** (j + 1))) <= lowcut_hz
-    ]
-    if not bands_to_hp_zero:
+    ], dtype=np.int64)
+    if len(bands_to_hp_zero) == 0:
         return data
 
     data_T = np.ascontiguousarray(data.T.astype(np.float64))
-    all_bands = _modwt_haar_all_bands(data_T, hp_wavelet_levels)
-    
-    low_freq_noise = np.zeros_like(data, dtype=np.float64)
-    for b in bands_to_hp_zero:
-        low_freq_noise += all_bands[b]
+    low_freq_noise = _modwt_haar_sum_bands(data_T, hp_wavelet_levels, bands_to_hp_zero)
 
     return (data.astype(np.float64) - low_freq_noise).astype(data.dtype)

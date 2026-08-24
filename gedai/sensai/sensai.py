@@ -364,18 +364,24 @@ def _sensai_gridsearch(
     if all_eval is None or all_evec is None:
         all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov)
 
-    runs = [
-        _sensai_score_from_gevd(
-            all_eval,
-            all_evec,
-            reference_cov,
-            reference_eigenvectors,
+    # Precompute template and all_VR once for all scoring evaluations
+    template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
+    all_VR = np.ascontiguousarray(np.einsum("ij,ejk->eik", reference_cov, all_evec))
+    abs_evals = np.ascontiguousarray(np.abs(all_eval))
+
+    runs = []
+    for threshold in eigen_thresholds:
+        sig_sims, noi_sims = _numba_sensai_score_loop(
+            abs_evals,
+            all_VR,
+            template,
             threshold,
             n_pc,
-            noise_multiplier,
         )
-        for threshold in eigen_thresholds
-    ]
+        sig_sim = float(np.mean(sig_sims) * 100.0)
+        noi_sim = float(np.mean(noi_sims) * 100.0)
+        score = float(sig_sim - (noise_multiplier * noi_sim))
+        runs.append((score, sig_sim, noi_sim))
 
     scores = np.array([run[0] for run in runs])
     noise_sims = np.array([run[2] for run in runs])
@@ -447,27 +453,31 @@ def _sensai_optimize(
     if all_eval is None or all_evec is None:
         all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov)
 
+    template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
+    all_VR = np.ascontiguousarray(np.einsum("ij,ejk->eik", reference_cov, all_evec))
+    abs_evals = np.ascontiguousarray(np.abs(all_eval))
+
     runs = []
 
     def objective_function(sensai_threshold):
         eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
-        score, signal_subspace_similarity, noise_subspace_similarity = (
-            _sensai_score_from_gevd(
-                all_eval,
-                all_evec,
-                reference_cov,
-                reference_eigenvectors,
-                eigen_threshold,
-                n_pc=n_pc,
-                noise_multiplier=noise_multiplier,
-            )
+        sig_sims, noi_sims = _numba_sensai_score_loop(
+            abs_evals,
+            all_VR,
+            template,
+            eigen_threshold,
+            n_pc,
         )
+        sig_sim = float(np.mean(sig_sims) * 100.0)
+        noi_sim = float(np.mean(noi_sims) * 100.0)
+        score = float(sig_sim - (noise_multiplier * noi_sim))
+
         runs.append(
             [
                 eigen_threshold,
                 score,
-                signal_subspace_similarity,
-                noise_subspace_similarity,
+                sig_sim,
+                noi_sim,
             ]
         )
         return -score
