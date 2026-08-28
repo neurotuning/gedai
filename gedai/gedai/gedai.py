@@ -149,6 +149,13 @@ class Gedai:
         cov = _pick_cov(cov, epochs_fit.info["ch_names"])
         reference_cov = cov.data.copy()
 
+        # Scale reference_cov to match data scale
+        data_cov_trace = float(np.mean([np.trace(np.cov(d)) for d in data]))
+        ref_cov_trace = float(np.trace(reference_cov))
+        if ref_cov_trace > 0 and data_cov_trace > 0:
+            scale_factor = data_cov_trace / ref_cov_trace
+            reference_cov = reference_cov * scale_factor
+
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
         reference_cov = (1.0 - regularization_lambda) * reference_cov + (
