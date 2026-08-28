@@ -7,13 +7,15 @@ from ..utils._checks import _check_type
 
 
 def _ensure_cov(reference_cov):
-    _check_type(reference_cov, (str, mne.Covariance), "reference_cov")
+    _check_type(reference_cov, (str, mne.Covariance, mne.Forward), "reference_cov")
+    if isinstance(reference_cov, mne.Forward):
+        return compute_covariance_from_forward(reference_cov)
     if isinstance(reference_cov, str):
         if reference_cov == "leadfield":
             reference_cov = mne.read_cov(str(get_leadfield_cov_path()))
         else:
             raise ValueError(
-                "Reference covariance must be 'leadfield'"
+                "Reference covariance must be 'leadfield', an mne.Covariance, or an mne.Forward instance, "
                 f"got '{reference_cov}' instead."
             )
     return reference_cov
@@ -31,11 +33,18 @@ def _pick_cov(cov, ch_names):
                 picks_ch_names.append(ch_name)
                 break
     if len(picks_cov) == 0:
-        raise ValueError(
+        msg = (
             "No matching channel names found between inst and cov.\n"
-            f"Available channels in covariance are {cov_ch_names}.\n"
-            f"but instance has channels {ch_names}."
+            f"Available channels in covariance are {cov_ch_names[:10]}... (total {len(cov_ch_names)}).\n"
+            f"but instance has channels {ch_names[:10]}... (total {len(ch_names)})."
         )
+        if any("meg" in ch.lower() for ch in ch_names) or any(ch.startswith("M") for ch in ch_names):
+            msg += (
+                "\nNote: If you are processing MEG data ('mag' or 'grad'), the default 'leadfield' "
+                "bundled with GEDAI is an EEG leadfield. For MEG data, please provide an MEG forward "
+                "model (mne.Forward) or reference covariance (mne.Covariance) via the 'reference_cov' argument."
+            )
+        raise ValueError(msg)
     if len(picks_cov) < len(ch_names):
         raise ValueError(
             "Only a subset of channels in the instance are present"

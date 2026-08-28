@@ -1,3 +1,11 @@
+def _detect_signal_type(info):
+    """Detect whether data is 'eeg' or 'meg' based on channel types."""
+    ch_types = info.get_channel_types(unique=True)
+    if any(t in ("mag", "grad") for t in ch_types):
+        return "meg"
+    return "eeg"
+
+
 import numpy as np
 from mne import BaseEpochs
 from mne._fiff.pick import _picks_to_idx

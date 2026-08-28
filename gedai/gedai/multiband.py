@@ -5,6 +5,7 @@ from mne import BaseEpochs
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
+    _detect_signal_type,
     _check_fit_info,
     _format_summary_table,
     _prepare_epochs_fit,
@@ -215,11 +216,12 @@ class MultibandGedai:
     def fit_epochs(
         self,
         epochs: BaseEpochs,
-        picks: list | str = "eeg",
-        reference_cov: str = "leadfield",
+        picks: list | str | None = None,
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         wavelet_low_cutoff="auto",
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -551,6 +553,7 @@ class MultibandGedai:
         cov,
         sensai_method,
         noise_multiplier,
+        n_pc="auto",
     ):
         """Fit a single wavelet band model."""
         w, (fmin, fmax) = item
@@ -595,6 +598,7 @@ class MultibandGedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=band_bounds,
+            n_pc=n_pc,
             n_jobs=1,
             verbose=False,
         )

@@ -7,6 +7,7 @@ from mne.parallel import parallel_func
 from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
+    _detect_signal_type,
     _check_fit_info,
     _format_summary_table,
     _prepare_epochs_fit,
@@ -22,6 +23,7 @@ from ..metrics.enova import (
     compute_enova_per_epoch,
 )
 from ..sensai.sensai import (
+    _compute_default_n_pc,
     _eigen_to_sensai,
     _precompute_gevd,
     _sensai_gridsearch,
@@ -75,6 +77,9 @@ class Gedai:
         self._n_samples = None
         self._duration = None
         self._highpass_prefilter = None
+        self._signal_type = None
+        self._n_pc = None
+        self._percentile = None
         self.fit_metrics_ = None
 
     def _check_fit(self):
@@ -106,11 +111,12 @@ class Gedai:
     def fit_epochs(
         self,
         epochs: BaseEpochs,
-        picks: list | str = "eeg",
-        reference_cov: str = "leadfield",
+        picks: list | str | None = None,
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -154,6 +160,13 @@ class Gedai:
         all_eval, all_evec = _precompute_gevd(data, reference_cov)
         epochs_eigenvalues = all_eval
 
+        signal_type = _detect_signal_type(epochs_fit.info)
+        percentile = 99 if signal_type == "meg" else 98
+        if n_pc == "auto":
+            resolved_n_pc = _compute_default_n_pc(reference_cov, signal_type=signal_type)
+        else:
+            resolved_n_pc = int(n_pc)
+
         fit_epochs = mne.EpochsArray(
             data, epochs_fit.info, tmin=epochs.tmin, verbose=False
         )
@@ -162,20 +175,19 @@ class Gedai:
             float(sensai_bounds[1]),
         )
         step = 0.1
-        n_pc = 3
 
         if sensai_method == "gridsearch":
             sensai_thresholds = np.arange(
                 min_sensai_threshold, max_sensai_threshold, step
             )
             eigen_thresholds = [
-                _sensai_to_eigen(sensai_value, epochs_eigenvalues)
+                _sensai_to_eigen(sensai_value, epochs_eigenvalues, percentile=percentile)
                 for sensai_value in sensai_thresholds
             ]
             threshold, runs = _sensai_gridsearch(
                 fit_epochs,
                 reference_cov,
-                n_pc=n_pc,
+                n_pc=resolved_n_pc,
                 noise_multiplier=noise_multiplier,
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
@@ -188,12 +200,13 @@ class Gedai:
             threshold, runs = _sensai_optimize(
                 fit_epochs,
                 reference_cov,
-                n_pc=n_pc,
+                n_pc=resolved_n_pc,
                 noise_multiplier=noise_multiplier,
                 epochs_eigenvalues=epochs_eigenvalues,
                 bounds=sensai_threshold_bounds,
                 all_eval=all_eval,
                 all_evec=all_evec,
+                percentile=percentile,
             )
         else:
             raise ValueError(
@@ -219,6 +232,9 @@ class Gedai:
         self.fitted = True
         self._info = epochs_fit.info.copy()
         self._reference_cov = cov
+        self._signal_type = signal_type
+        self._n_pc = resolved_n_pc
+        self._percentile = percentile
 
         self._n_samples = data.shape[-1]
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
@@ -229,15 +245,16 @@ class Gedai:
     def fit_raw(
         self,
         raw: BaseRaw,
-        picks: list | str = "eeg",
+        picks: list | str | None = None,
         duration: float = 1.0,
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         highpass_prefilter: float | None = 0.1,
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -374,7 +391,7 @@ class Gedai:
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
         enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
         sensai_val = compute_composite_sensai(
-            clean_2d, noise_2d, epochs_transform.info["sfreq"], reference_cov
+            clean_2d, noise_2d, epochs_transform.info["sfreq"], reference_cov, n_pc=(self._n_pc or 3)
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,

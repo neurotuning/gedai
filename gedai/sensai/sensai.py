@@ -62,20 +62,42 @@ def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int | None = None) -
     return float(np.prod(S))
 
 
-def _sensai_to_eigen(sensai_value, eigenvalues):
+def _compute_default_n_pc(reference_cov: np.ndarray, signal_type: str = "eeg") -> int:
+    """Compute default or adaptive number of PCs for SENSAI.
+
+    For EEG, returns min(3, n_channels).
+    For MEG, computes eigenvalues of reference_cov and finds the components
+    explaining >= 85% of variance, capped at 4 (matching MATLAB GEDAI_per_band.m).
+    """
+    n_ch = reference_cov.shape[0]
+    if str(signal_type).lower() == "eeg":
+        return min(3, n_ch)
+
+    evals = eigh(reference_cov, eigvals_only=True)
+    evals = np.sort(evals)[::-1]
+    total_var = float(np.sum(evals))
+    if total_var > 0:
+        cumvar = np.cumsum(evals) / total_var
+        ref_pcs = int(np.searchsorted(cumvar, 0.85) + 1)
+        ref_pcs = max(1, min(ref_pcs, n_ch - 1))
+        return min(4, ref_pcs)
+    return min(4, n_ch)
+
+
+def _sensai_to_eigen(sensai_value, eigenvalues, percentile=98):
     all_diagonals = np.abs(np.asarray(eigenvalues).T.flatten())
     log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
     T1 = (105 - sensai_value) / 100
-    threshold1 = T1 * np.percentile(log_eig_val_all, 98)
+    threshold1 = T1 * np.percentile(log_eig_val_all, percentile)
     eigenvalue = np.exp(threshold1 - 100)
     return eigenvalue
 
 
-def _eigen_to_sensai(eigenvalue, eigenvalues):
+def _eigen_to_sensai(eigenvalue, eigenvalues, percentile=98):
     all_diagonals = np.abs(np.asarray(eigenvalues).T.flatten())
     log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
     threshold1 = np.log(eigenvalue) + 100
-    T1 = threshold1 / np.percentile(log_eig_val_all, 98)
+    T1 = threshold1 / np.percentile(log_eig_val_all, percentile)
     sensai_value = 105 - T1 * 100
     return sensai_value
 
@@ -346,6 +368,7 @@ def _sensai_optimize(
     bounds,
     all_eval=None,
     all_evec=None,
+    percentile=98,
 ):
     if hasattr(epochs, "get_data"):
         epochs_data = epochs.get_data(verbose=False)
@@ -361,7 +384,7 @@ def _sensai_optimize(
     runs = []
 
     def objective_function(sensai_threshold):
-        eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
+        eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues, percentile=percentile)
         score, signal_subspace_similarity, noise_subspace_similarity = (
             _sensai_score_from_gevd(
                 all_eval,
@@ -397,6 +420,6 @@ def _sensai_optimize(
         raise ValueError("Optimization failed: " + result.message)
 
     sensai_threshold = result.x
-    eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues)
+    eigen_threshold = _sensai_to_eigen(sensai_threshold, epochs_eigenvalues, percentile=percentile)
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs

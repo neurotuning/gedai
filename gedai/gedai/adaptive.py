@@ -335,6 +335,7 @@ class AdaptiveMultibandGedai:
         cov,
         sensai_method,
         noise_multiplier,
+        n_pc="auto",
     ):
         """Fit a single adaptive wavelet band model."""
         w = wavelet_parameter["band_index"]
@@ -390,6 +391,7 @@ class AdaptiveMultibandGedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=band_bounds,
+            n_pc=n_pc,
             n_jobs=1,
             verbose=False,
         )
