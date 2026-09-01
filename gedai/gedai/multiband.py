@@ -459,7 +459,7 @@ class MultibandGedai:
 
         # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
         signal_type = _detect_signal_type(raw_fit.info)
-        bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
+        bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 10.0)
         if self.broadband_pass:
             logger.info(
                 "Applying wavelet HP pre-filter "
