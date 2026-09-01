@@ -114,10 +114,9 @@ sensai_method : str
 # -- V ---------------------------------------------------------------------------------
 docdict["verbose"] = """
 verbose : int | str | bool | None
-    Sets the verbosity level. The verbosity increases gradually between ``"CRITICAL"``,
-    ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``. If None is provided, the
-    verbosity is set to ``"WARNING"``. If a bool is provided, the verbosity is set to
-    ``"WARNING"`` for False and to ``"INFO"`` for True."""
+    Control verbosity of the logging output. If ``None``, use the default verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds to ``"WARNING"``.
+    The default is ``None`` (interpreted as ``"INFO"``)."""
 
 # -- W ---------------------------------------------------------------------------------
 docdict["wavelet_level"] = """
