@@ -42,9 +42,9 @@ def _ensure_wavelet_low_cutoff(
 ):
     if wavelet_low_cutoff == "auto":
         if filter_highpass is not None and filter_highpass > 0:
-            wavelet_low_cutoff = float(filter_highpass)
+            wavelet_low_cutoff = max(0.5, float(filter_highpass))
         else:
-            wavelet_low_cutoff = 0.1
+            wavelet_low_cutoff = 0.5
     elif wavelet_low_cutoff is None:
         wavelet_low_cutoff = 0.0
     else:
@@ -220,7 +220,7 @@ class MultibandGedai:
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
-        wavelet_low_cutoff="auto",
+        wavelet_low_cutoff: float | str | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -386,7 +386,7 @@ class MultibandGedai:
         reference_cov: str = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
-        wavelet_low_cutoff="auto",
+        wavelet_low_cutoff: float | str | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -423,8 +423,14 @@ class MultibandGedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
-        cov = _pick_cov(cov, raw_fit.info["ch_names"])
         sfreq = raw_fit.info["sfreq"]
+        
+        # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
+        raw_fit._data = _apply_wavelet_highpass_prefilter(
+            raw_fit._data, sfreq, lowcut_hz=0.1
+        )
+        
+        cov = _pick_cov(cov, raw_fit.info["ch_names"])
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, filter_cutoff, duration

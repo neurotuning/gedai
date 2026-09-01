@@ -177,7 +177,7 @@ class AdaptiveMultibandGedai:
         reference_cov: str = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
-        wavelet_low_cutoff: str | float | None = "auto",
+        wavelet_low_cutoff: str | float | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -212,14 +212,19 @@ class AdaptiveMultibandGedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
+        sfreq = raw_fit.info["sfreq"]
+
+        # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
+        raw_fit._data = _apply_wavelet_highpass_prefilter(
+            raw_fit._data, sfreq, lowcut_hz=0.1
+        )
 
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
-        sfreq = raw_fit.info["sfreq"]
 
         filter_cutoff = raw_fit.info["highpass"]
         if wavelet_low_cutoff == "auto":
             if filter_cutoff is not None and filter_cutoff > 0:
-                wavelet_low_cutoff = float(filter_cutoff)
+                wavelet_low_cutoff = max(0.5, float(filter_cutoff))
             else:
                 wavelet_low_cutoff = 0.5
         elif wavelet_low_cutoff is None:

@@ -129,11 +129,11 @@ wavelet_low_cutoff : float | None
     If a float is provided, zero out all wavelet levels whose upper frequency
     bound is below this cutoff frequency in Hz. If ``None``, no frequency band
     is zeroed out. If ``"auto"``, the cutoff is automatically determined based
-    on the info['highpass'] value of the fitted instance. While reading data
+    on the info['highpass'] value (minimum 0.5 Hz). While reading data
     from a file, info['highpass'] might be missing (i.e., equal to 0.0). If
     you know that your data has been high-pass filtered, make sure to set
     ``wavelet_low_cutoff`` to the high-pass cutoff frequency.
-    The default is ``"auto"``."""
+    The default is ``0.5``."""
 docdict["wavelet_type"] = """
 wavelet_type : str
     Wavelet to use for the decomposition. The default is ``'haar'``.
