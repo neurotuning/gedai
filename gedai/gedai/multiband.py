@@ -449,6 +449,8 @@ class MultibandGedai:
         duration = valid_duration
 
         # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
+        signal_type = _detect_signal_type(raw_fit.info)
+        bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
         if self.broadband_pass:
             logger.info(
                 "Applying wavelet HP pre-filter "
@@ -468,7 +470,7 @@ class MultibandGedai:
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
-                sensai_bounds=(-4.0, 12.0),
+                sensai_bounds=bb_bounds,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -587,8 +589,12 @@ class MultibandGedai:
             verbose=False,
         )
 
+        signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
-        band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+        if signal_type == "meg":
+            band_bounds = (-6.0, 8.0) if w in (0, 1) else (0.0, 6.0)
+        else:
+            band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
 
         model = Gedai()
         model.fit_epochs(
@@ -809,10 +815,15 @@ class MultibandGedai:
         if epoch_duration is None:
             epoch_duration = 1.0
 
+        band_ref_cov = (
+            wavelet_fit["model"]._reference_cov.data
+            if wavelet_fit["model"] is not None
+            else self._reference_cov.data
+        )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,
             sfreq=sfreq,
-            reference_cov=self._reference_cov.data,
+            reference_cov=band_ref_cov,
             epoch_duration=epoch_duration,
             threshold=threshold,
         )

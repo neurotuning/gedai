@@ -170,7 +170,9 @@ class Gedai:
         signal_type = _detect_signal_type(epochs_fit.info)
         percentile = 99 if signal_type == "meg" else 98
         if n_pc == "auto":
-            resolved_n_pc = _compute_default_n_pc(reference_cov, signal_type=signal_type)
+            resolved_n_pc = _compute_default_n_pc(
+                reference_cov, signal_type=signal_type, data=data
+            )
         else:
             resolved_n_pc = int(n_pc)
 
@@ -201,6 +203,7 @@ class Gedai:
                 verbose=verbose,
                 all_eval=all_eval,
                 all_evec=all_evec,
+                signal_type=signal_type,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -214,6 +217,7 @@ class Gedai:
                 all_eval=all_eval,
                 all_evec=all_evec,
                 percentile=percentile,
+                signal_type=signal_type,
             )
         else:
             raise ValueError(
