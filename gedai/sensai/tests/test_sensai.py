@@ -98,3 +98,22 @@ def test_sensai_gridsearch_and_optimize():
     )
     assert isinstance(opt_thresh, float)
     assert len(opt_runs) > 0
+
+
+def test_prescan_meg_artifact_spectrum():
+    """Verify the MEG artifact spectrum prescan returns 2 or 3 appropriately."""
+    from gedai.sensai.sensai import _compute_default_n_pc, _prescan_meg_artifact_spectrum
+
+    rng = np.random.default_rng(42)
+    n_ch = 20
+    ref_cov = np.eye(n_ch)
+
+    # Low noise / flat spectrum -> should return 2
+    data_low = rng.standard_normal((n_ch, 500))
+    n_pc_low = _prescan_meg_artifact_spectrum(data_low, ref_cov)
+    assert n_pc_low in (2, 3)
+
+    # Check _compute_default_n_pc dispatcher
+    assert _compute_default_n_pc(ref_cov, signal_type="eeg") == 3
+    assert _compute_default_n_pc(ref_cov, signal_type="meg", data=data_low) in (2, 3)
+

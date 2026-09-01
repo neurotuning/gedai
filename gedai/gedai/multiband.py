@@ -387,6 +387,7 @@ class MultibandGedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         wavelet_low_cutoff="auto",
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -404,6 +405,8 @@ class MultibandGedai:
         %(sensai_method)s
         %(noise_multiplier)s
         %(wavelet_low_cutoff)s
+        n_pc : int | "auto", default="auto"
+            Number of principal components for SENSAI template subspace.
         %(n_jobs)s
         %(verbose)s
         """
@@ -471,6 +474,7 @@ class MultibandGedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
+                n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -504,6 +508,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    n_pc=n_pc,
                 )
                 for item in items
             ]
@@ -521,6 +526,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    n_pc=n_pc,
                 )
                 for item in items
             )
