@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=626094ed"></script>
+    <script src="../../../_static/documentation_options.js?v=e973cc28"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/basics/10_gedai_multiband';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -410,6 +410,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</a></li>
 </ul>
 </details></li>
 </ul>
@@ -667,9 +668,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-10271226-6bdc-424b-ba7a-297f6f77cb01"
+<tr class="mne-repr-section-header general-1282713f-ee4f-473c-82b6-af40e16ef6fe"
      title="Hide section"
-    onclick="toggleVisibility('general-10271226-6bdc-424b-ba7a-297f6f77cb01')">
+    onclick="toggleVisibility('general-1282713f-ee4f-473c-82b6-af40e16ef6fe')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -681,7 +682,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-10271226-6bdc-424b-ba7a-297f6f77cb01 ">
+<tr class="repr-element general-1282713f-ee4f-473c-82b6-af40e16ef6fe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -692,26 +693,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-10271226-6bdc-424b-ba7a-297f6f77cb01 ">
+<tr class="repr-element general-1282713f-ee4f-473c-82b6-af40e16ef6fe ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-10271226-6bdc-424b-ba7a-297f6f77cb01 ">
+<tr class="repr-element general-1282713f-ee4f-473c-82b6-af40e16ef6fe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-10271226-6bdc-424b-ba7a-297f6f77cb01 ">
+<tr class="repr-element general-1282713f-ee4f-473c-82b6-af40e16ef6fe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-10271226-6bdc-424b-ba7a-297f6f77cb01 ">
+<tr class="repr-element general-1282713f-ee4f-473c-82b6-af40e16ef6fe ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -726,9 +727,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-9450c720-537e-4c48-a774-5b9b044d66ea"
+<tr class="mne-repr-section-header acquisition-911d4062-a021-4374-ada6-2f6394a7bfa8"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-9450c720-537e-4c48-a774-5b9b044d66ea')">
+    onclick="toggleVisibility('acquisition-911d4062-a021-4374-ada6-2f6394a7bfa8')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -740,7 +741,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-9450c720-537e-4c48-a774-5b9b044d66ea ">
+<tr class="repr-element acquisition-911d4062-a021-4374-ada6-2f6394a7bfa8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -753,14 +754,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-9450c720-537e-4c48-a774-5b9b044d66ea ">
+<tr class="repr-element acquisition-911d4062-a021-4374-ada6-2f6394a7bfa8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-9450c720-537e-4c48-a774-5b9b044d66ea ">
+<tr class="repr-element acquisition-911d4062-a021-4374-ada6-2f6394a7bfa8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -775,9 +776,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-bc232639-fd00-4132-9de0-18b187916589"
+<tr class="mne-repr-section-header channels-e600c7a9-c5d8-48cf-b563-c7eb89007c8d"
      title="Hide section"
-    onclick="toggleVisibility('channels-bc232639-fd00-4132-9de0-18b187916589')">
+    onclick="toggleVisibility('channels-e600c7a9-c5d8-48cf-b563-c7eb89007c8d')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -790,7 +791,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-bc232639-fd00-4132-9de0-18b187916589 ">
+<tr class="repr-element channels-e600c7a9-c5d8-48cf-b563-c7eb89007c8d ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -803,7 +804,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-bc232639-fd00-4132-9de0-18b187916589 ">
+<tr class="repr-element channels-e600c7a9-c5d8-48cf-b563-c7eb89007c8d ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -818,9 +819,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-d4d8e497-f905-4ca5-8859-1f7cc90726b1"
+<tr class="mne-repr-section-header filters-f1d4663d-12f6-46a7-b759-514e090e8317"
      title="Hide section"
-    onclick="toggleVisibility('filters-d4d8e497-f905-4ca5-8859-1f7cc90726b1')">
+    onclick="toggleVisibility('filters-f1d4663d-12f6-46a7-b759-514e090e8317')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -832,14 +833,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-d4d8e497-f905-4ca5-8859-1f7cc90726b1 ">
+<tr class="repr-element filters-f1d4663d-12f6-46a7-b759-514e090e8317 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-d4d8e497-f905-4ca5-8859-1f7cc90726b1 ">
+<tr class="repr-element filters-f1d4663d-12f6-46a7-b759-514e090e8317 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -889,8 +890,8 @@ signal and noise components using SENSAI optimization (<code class="docutils lit
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>    343 x 343 full covariance (kind = 1) found.
-[multiband.fit_raw] WARNING: Requested duration 2.000s adjusted to 20.480s (4096 samples) to satisfy wavelet level 11 requirements.
-[multiband.fit_raw] INFO: Applying wavelet HP pre-filter (sub-0.10 Hz) and running broadband GEDAI pass...
+[multiband.fit_raw] WARNING: Requested duration 2.000s adjusted to 5.120s (1024 samples) to satisfy wavelet level 9 requirements.
+[multiband.fit_raw] INFO: Applying wavelet HP pre-filter (sub-0.50 Hz) and running broadband GEDAI pass...
 </pre></div>
 </div>
 <div class="admonition note">
@@ -913,8 +914,6 @@ decomposition.</p>
 <li><img src="../../../_images/sphx_glr_10_gedai_multiband_006.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_006.png" alt="Band 6: 1.56-3.12 Hz" class = "sphx-glr-multi-img"/></li>
 <li><img src="../../../_images/sphx_glr_10_gedai_multiband_007.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_007.png" alt="Band 7: 0.78-1.56 Hz" class = "sphx-glr-multi-img"/></li>
 <li><img src="../../../_images/sphx_glr_10_gedai_multiband_008.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_008.png" alt="Band 8: 0.39-0.78 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_10_gedai_multiband_009.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_009.png" alt="Band 9: 0.20-0.39 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_10_gedai_multiband_010.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_010.png" alt="Band 10: 0.10-0.20 Hz" class = "sphx-glr-multi-img"/></li>
 </ul>
 </section>
 <section id="transform-the-data-denoising">
@@ -939,11 +938,11 @@ low frequency bands below the signal bandwidth.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">plot_mne_style_overlay_interactive</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">denoised_raw</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">15.0</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../../../_images/sphx_glr_10_gedai_multiband_011.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_011.png" alt="10 gedai multiband" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
+<img src="../../../_images/sphx_glr_10_gedai_multiband_009.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_009.png" alt="10 gedai multiband" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.478 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  309 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 8.182 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  290 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-basics-10-gedai-multiband-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/2511487d24aaa8273d2b5c7aae5b3336/10_gedai_multiband.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_multiband.ipynb</span></code></a></p>
@@ -1028,8 +1027,8 @@ low frequency bands below the signal bandwidth.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1055,7 +1054,7 @@ low frequency bands below the signal bandwidth.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

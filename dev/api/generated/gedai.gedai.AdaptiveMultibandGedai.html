@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=626094ed"></script>
+    <script src="../../_static/documentation_options.js?v=e973cc28"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'api/generated/gedai.gedai.AdaptiveMultibandGedai';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -479,7 +479,7 @@
 <h1>gedai.gedai.AdaptiveMultibandGedai<a class="headerlink" href="#gedai-gedai-adaptivemultibandgedai" title="Link to this heading">🔗</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gedai.gedai.</span></span><span class="sig-name descname"><span class="pre">AdaptiveMultibandGedai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelet_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'haar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cycles_per_wavelet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">broadband_pass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L68-L625"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai" title="Link to this definition">🔗</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gedai.gedai.</span></span><span class="sig-name descname"><span class="pre">AdaptiveMultibandGedai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelet_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'haar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cycles_per_wavelet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">broadband_pass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L70-L653"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai" title="Link to this definition">🔗</a></dt>
 <dd><p>Adaptive Multiband Generalized Eigenvalue De-Artifacting Instrument.</p>
 <p>A extension of <a class="reference internal" href="gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> that uses
 adaptive window lengths for each wavelet band to ensure
@@ -503,7 +503,7 @@ copies when necessary to ensure the original data remains unchanged.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
 <dt><strong>wavelet_type</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>Wavelet to use for the decomposition. The default is <code class="docutils literal notranslate"><span class="pre">'haar'</span></code>.
-See <a class="reference external" href="https://pywavelets.readthedocs.io/en/latest/ref/dwt-discrete-wavelet-transform.html#pywt.wavedec" title="(in PyWavelets v1.8.0.dev0+bbdf7eb)"><code class="xref py py-func docutils literal notranslate"><span class="pre">pywt.wavedec()</span></code></a> for the list of available wavelets.</p>
+See <a class="reference external" href="https://pywavelets.readthedocs.io/en/latest/ref/dwt-discrete-wavelet-transform.html#pywt.wavedec" title="(in PyWavelets v1.8.0.dev0+d291c3d)"><code class="xref py py-func docutils literal notranslate"><span class="pre">pywt.wavedec()</span></code></a> for the list of available wavelets.</p>
 </dd>
 <dt><strong>wavelet_level</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> or ‘auto’</span></dt><dd><p>The wavelet decomposition level. If ‘auto’, automatically computed from sfreq.</p>
 </dd>
@@ -564,7 +564,7 @@ wavelet decomposition.</p>
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.fit_raw">
-<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_low_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L168-L324"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_low_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L170-L330"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Fit the model to raw data.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -599,28 +599,43 @@ Can be <code class="docutils literal notranslate"><span class="pre">'optimize'</
 <code class="docutils literal notranslate"><span class="pre">'gridsearch'</span></code>.</p>
 </dd>
 <dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The noise multiplier or string preset for artefact threshold rejection optimization.
-Supported string presets:
-- <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> : Standard balance (noise_multiplier = 3.0, default).
-- <code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (noise_multiplier = 1.5).
-- <code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (noise_multiplier = 6.0).
-Alternatively, a custom numerical float can be passed.</p>
+Supported string presets:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> : Standard balance (noise_multiplier = 3.0, default).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (noise_multiplier = 1.5).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (noise_multiplier = 6.0).</p></li>
+</ul>
+<p>Alternatively, a custom numerical float can be passed.</p>
 </dd>
 <dt><strong>wavelet_low_cutoff</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>If a float is provided, zero out all wavelet levels whose upper frequency
 bound is below this cutoff frequency in Hz. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, no frequency band
 is zeroed out. If <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code>, the cutoff is automatically determined based
-on the info[‘highpass’] value of the fitted instance. While reading data
+on the info[‘highpass’] value (minimum 0.5 Hz). While reading data
 from a file, info[‘highpass’] might be missing (i.e., equal to 0.0). If
 you know that your data has been high-pass filtered, make sure to set
 <code class="docutils literal notranslate"><span class="pre">wavelet_low_cutoff</span></code> to the high-pass cutoff frequency.
-The default is <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code>.</p>
+The default is <code class="docutils literal notranslate"><span class="pre">0.5</span></code>.</p>
+</dd>
+<dt><strong>n_pc</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | “auto”, default=”auto”</span></dt><dd><p>The number of principal components to retain for the SENSAI artifact template
+subspace similarity evaluation.
+If <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default):</p>
+<ul class="simple">
+<li><p>For <strong>EEG</strong>: Automatically uses <code class="docutils literal notranslate"><span class="pre">3</span></code> principal components for rank-normalized
+3D volumetric dipolar subspace similarity.</p></li>
+<li><p>For <strong>MEG</strong>: Automatically prescans the GEVD artifact eigenvalue spectrum
+to select <code class="docutils literal notranslate"><span class="pre">2</span></code> or <code class="docutils literal notranslate"><span class="pre">3</span></code> principal components adaptively depending on
+ambient room noise harmonics versus localized bursts.</p></li>
+</ul>
+<p>If an <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, uses the specified number of principal components.</p>
 </dd>
 <dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), computations
 are run serially. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, all available CPU cores are used.</p>
 </dd>
-<dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Sets the verbosity level. The verbosity increases gradually between <code class="docutils literal notranslate"><span class="pre">&quot;CRITICAL&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;ERROR&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;</span></code>. If None is provided, the
-verbosity is set to <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>. If a bool is provided, the verbosity is set to
-<code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code> for False and to <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> for True.</p>
+<dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Control verbosity of the logging output. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, use the default
+verbosity level (<code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code>).
+If a boolean, <code class="docutils literal notranslate"><span class="pre">True</span></code> corresponds to <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">False</span></code> corresponds
+to <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>.
+The default is <code class="docutils literal notranslate"><span class="pre">None</span></code> (interpreted as <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code>).</p>
 </dd>
 </dl>
 </dd>
@@ -629,7 +644,7 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.fit_summary">
-<span class="sig-name descname"><span class="pre">fit_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L548-L558"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L576-L586"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary" title="Link to this definition">🔗</a></dt>
 <dd><p>Print and return a formatted summary table of the model fitting metrics.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -643,7 +658,7 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.plot_fit">
-<span class="sig-name descname"><span class="pre">plot_fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L515-L534"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">plot_fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L543-L562"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="Link to this definition">🔗</a></dt>
 <dd><p>Plot the fitting results.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -657,7 +672,7 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.plot_sensai">
-<span class="sig-name descname"><span class="pre">plot_sensai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_before</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_duration_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L562-L615"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">plot_sensai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_before</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_duration_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L590-L643"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="Link to this definition">🔗</a></dt>
 <dd><p>Plot SENSAI subspace similarity and manifold classification.</p>
 <p>Replicates MATLAB’s SENSAI_visualization.m with side-by-side
 Before/After subspace projections, LDA decision boundary shading,
@@ -690,7 +705,7 @@ and marginal KDE distributions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.summary">
-<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L548-L558"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.summary" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L576-L586"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.summary" title="Link to this definition">🔗</a></dt>
 <dd><p>Print and return a formatted summary table of the model fitting metrics.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -704,7 +719,7 @@ and marginal KDE distributions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.transform_raw">
-<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L412-L486"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L429-L509"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Apply the Adaptive Multiband GEDAI transform to raw data.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -718,10 +733,11 @@ overlap and <code class="docutils literal notranslate"><span class="pre">0.75</s
 <dt><strong>n_jobs</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>The number of jobs to run in parallel. If <code class="docutils literal notranslate"><span class="pre">1</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), computations
 are run serially. If <code class="docutils literal notranslate"><span class="pre">-1</span></code>, all available CPU cores are used.</p>
 </dd>
-<dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Sets the verbosity level. The verbosity increases gradually between <code class="docutils literal notranslate"><span class="pre">&quot;CRITICAL&quot;</span></code>,
-<code class="docutils literal notranslate"><span class="pre">&quot;ERROR&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;DEBUG&quot;</span></code>. If None is provided, the
-verbosity is set to <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>. If a bool is provided, the verbosity is set to
-<code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code> for False and to <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> for True.</p>
+<dt><strong>verbose</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>Control verbosity of the logging output. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, use the default
+verbosity level (<code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code>).
+If a boolean, <code class="docutils literal notranslate"><span class="pre">True</span></code> corresponds to <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">False</span></code> corresponds
+to <code class="docutils literal notranslate"><span class="pre">&quot;WARNING&quot;</span></code>.
+The default is <code class="docutils literal notranslate"><span class="pre">None</span></code> (interpreted as <code class="docutils literal notranslate"><span class="pre">&quot;INFO&quot;</span></code>).</p>
 </dd>
 </dl>
 </dd>
@@ -832,8 +848,8 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -859,7 +875,7 @@ verbosity is set to <code class="docutils literal notranslate"><span class="pre"
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

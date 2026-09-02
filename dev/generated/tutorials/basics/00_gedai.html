@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=626094ed"></script>
+    <script src="../../../_static/documentation_options.js?v=e973cc28"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/basics/00_gedai';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -410,6 +410,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</a></li>
 </ul>
 </details></li>
 </ul>
@@ -658,9 +659,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-3a56633b-7fef-4af5-96e7-f7cc72811981"
+<tr class="mne-repr-section-header general-19ffaf43-77b1-4b06-a065-72afb00d2c48"
      title="Hide section"
-    onclick="toggleVisibility('general-3a56633b-7fef-4af5-96e7-f7cc72811981')">
+    onclick="toggleVisibility('general-19ffaf43-77b1-4b06-a065-72afb00d2c48')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -672,7 +673,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-3a56633b-7fef-4af5-96e7-f7cc72811981 ">
+<tr class="repr-element general-19ffaf43-77b1-4b06-a065-72afb00d2c48 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -683,26 +684,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-3a56633b-7fef-4af5-96e7-f7cc72811981 ">
+<tr class="repr-element general-19ffaf43-77b1-4b06-a065-72afb00d2c48 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-3a56633b-7fef-4af5-96e7-f7cc72811981 ">
+<tr class="repr-element general-19ffaf43-77b1-4b06-a065-72afb00d2c48 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-3a56633b-7fef-4af5-96e7-f7cc72811981 ">
+<tr class="repr-element general-19ffaf43-77b1-4b06-a065-72afb00d2c48 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-3a56633b-7fef-4af5-96e7-f7cc72811981 ">
+<tr class="repr-element general-19ffaf43-77b1-4b06-a065-72afb00d2c48 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -717,9 +718,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-40c9dde4-2b05-4a3b-9a10-d317818886ad"
+<tr class="mne-repr-section-header acquisition-18bbff91-18bb-451c-baae-d3d3fc15ed3a"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-40c9dde4-2b05-4a3b-9a10-d317818886ad')">
+    onclick="toggleVisibility('acquisition-18bbff91-18bb-451c-baae-d3d3fc15ed3a')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -731,7 +732,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-40c9dde4-2b05-4a3b-9a10-d317818886ad ">
+<tr class="repr-element acquisition-18bbff91-18bb-451c-baae-d3d3fc15ed3a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -744,14 +745,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-40c9dde4-2b05-4a3b-9a10-d317818886ad ">
+<tr class="repr-element acquisition-18bbff91-18bb-451c-baae-d3d3fc15ed3a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-40c9dde4-2b05-4a3b-9a10-d317818886ad ">
+<tr class="repr-element acquisition-18bbff91-18bb-451c-baae-d3d3fc15ed3a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -766,9 +767,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-4f61285e-ccd0-4592-a22c-4e886324f56a"
+<tr class="mne-repr-section-header channels-989e55d1-1e64-4274-8ec3-8e5099403fd8"
      title="Hide section"
-    onclick="toggleVisibility('channels-4f61285e-ccd0-4592-a22c-4e886324f56a')">
+    onclick="toggleVisibility('channels-989e55d1-1e64-4274-8ec3-8e5099403fd8')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -781,7 +782,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-4f61285e-ccd0-4592-a22c-4e886324f56a ">
+<tr class="repr-element channels-989e55d1-1e64-4274-8ec3-8e5099403fd8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -794,7 +795,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-4f61285e-ccd0-4592-a22c-4e886324f56a ">
+<tr class="repr-element channels-989e55d1-1e64-4274-8ec3-8e5099403fd8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -809,9 +810,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-fd5ec56d-8157-4362-ab48-2f6f51740500"
+<tr class="mne-repr-section-header filters-1cc41f47-5796-46b6-b310-e32eb9c8c1ad"
      title="Hide section"
-    onclick="toggleVisibility('filters-fd5ec56d-8157-4362-ab48-2f6f51740500')">
+    onclick="toggleVisibility('filters-1cc41f47-5796-46b6-b310-e32eb9c8c1ad')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -823,14 +824,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-fd5ec56d-8157-4362-ab48-2f6f51740500 ">
+<tr class="repr-element filters-1cc41f47-5796-46b6-b310-e32eb9c8c1ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-fd5ec56d-8157-4362-ab48-2f6f51740500 ">
+<tr class="repr-element filters-1cc41f47-5796-46b6-b310-e32eb9c8c1ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -1002,9 +1003,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-a980d753-0030-4618-921f-eea8bf2d886a"
+<tr class="mne-repr-section-header general-aee41f20-088c-4b24-a6d7-064d3deee6ad"
      title="Hide section"
-    onclick="toggleVisibility('general-a980d753-0030-4618-921f-eea8bf2d886a')">
+    onclick="toggleVisibility('general-aee41f20-088c-4b24-a6d7-064d3deee6ad')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1016,7 +1017,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-a980d753-0030-4618-921f-eea8bf2d886a ">
+<tr class="repr-element general-aee41f20-088c-4b24-a6d7-064d3deee6ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -1027,26 +1028,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-a980d753-0030-4618-921f-eea8bf2d886a ">
+<tr class="repr-element general-aee41f20-088c-4b24-a6d7-064d3deee6ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-a980d753-0030-4618-921f-eea8bf2d886a ">
+<tr class="repr-element general-aee41f20-088c-4b24-a6d7-064d3deee6ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-a980d753-0030-4618-921f-eea8bf2d886a ">
+<tr class="repr-element general-aee41f20-088c-4b24-a6d7-064d3deee6ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-a980d753-0030-4618-921f-eea8bf2d886a ">
+<tr class="repr-element general-aee41f20-088c-4b24-a6d7-064d3deee6ad ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -1061,9 +1062,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-fafb586d-5989-42a1-a8b5-9d8ad8776706"
+<tr class="mne-repr-section-header acquisition-d4a56b47-8a55-4720-8980-ed94b134c8e4"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-fafb586d-5989-42a1-a8b5-9d8ad8776706')">
+    onclick="toggleVisibility('acquisition-d4a56b47-8a55-4720-8980-ed94b134c8e4')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1075,7 +1076,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-fafb586d-5989-42a1-a8b5-9d8ad8776706 ">
+<tr class="repr-element acquisition-d4a56b47-8a55-4720-8980-ed94b134c8e4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -1088,14 +1089,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-fafb586d-5989-42a1-a8b5-9d8ad8776706 ">
+<tr class="repr-element acquisition-d4a56b47-8a55-4720-8980-ed94b134c8e4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-fafb586d-5989-42a1-a8b5-9d8ad8776706 ">
+<tr class="repr-element acquisition-d4a56b47-8a55-4720-8980-ed94b134c8e4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -1110,9 +1111,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-bd2ec01a-8448-4c79-b7a7-c527b19083c4"
+<tr class="mne-repr-section-header channels-4eb2a995-43b6-4191-abad-621ef7beb8e8"
      title="Hide section"
-    onclick="toggleVisibility('channels-bd2ec01a-8448-4c79-b7a7-c527b19083c4')">
+    onclick="toggleVisibility('channels-4eb2a995-43b6-4191-abad-621ef7beb8e8')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1125,7 +1126,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-bd2ec01a-8448-4c79-b7a7-c527b19083c4 ">
+<tr class="repr-element channels-4eb2a995-43b6-4191-abad-621ef7beb8e8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -1138,7 +1139,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-bd2ec01a-8448-4c79-b7a7-c527b19083c4 ">
+<tr class="repr-element channels-4eb2a995-43b6-4191-abad-621ef7beb8e8 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -1153,9 +1154,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-48cc6ea9-1802-475c-8352-287586f848dc"
+<tr class="mne-repr-section-header filters-0d33fd5b-c4f1-4d99-ad57-90a01a06c31f"
      title="Hide section"
-    onclick="toggleVisibility('filters-48cc6ea9-1802-475c-8352-287586f848dc')">
+    onclick="toggleVisibility('filters-0d33fd5b-c4f1-4d99-ad57-90a01a06c31f')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1167,14 +1168,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-48cc6ea9-1802-475c-8352-287586f848dc ">
+<tr class="repr-element filters-0d33fd5b-c4f1-4d99-ad57-90a01a06c31f ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-48cc6ea9-1802-475c-8352-287586f848dc ">
+<tr class="repr-element filters-0d33fd5b-c4f1-4d99-ad57-90a01a06c31f ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -1302,8 +1303,8 @@ how <code class="docutils literal notranslate"><span class="pre">GEDAI</span></c
 <img src="../../../_images/sphx_glr_00_gedai_002.png" srcset="../../../_images/sphx_glr_00_gedai_002.png" alt="00 gedai" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 4.920 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  302 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 4.960 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  287 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-basics-00-gedai-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/22a46c982e906f3e0f632cb6dba94117/00_gedai.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">00_gedai.ipynb</span></code></a></p>
@@ -1385,8 +1386,8 @@ how <code class="docutils literal notranslate"><span class="pre">GEDAI</span></c
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1412,7 +1413,7 @@ how <code class="docutils literal notranslate"><span class="pre">GEDAI</span></c
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

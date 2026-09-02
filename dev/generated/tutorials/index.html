@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=626094ed"></script>
+    <script src="../../_static/documentation_options.js?v=e973cc28"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/index';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -410,6 +410,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
 <li class="toctree-l2"><a class="reference internal" href="advanced/10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced/20_gedai_opm.html">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</a></li>
 </ul>
 </details></li>
 </ul>
@@ -518,6 +519,7 @@ GEDAI pipeline.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">00_gedai_online.py</span></code>: online denoising with chunked/epoch-wise processing.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">10_gedai_forward.py</span></code>: building a custom reference covariance from an MNE forward model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">20_gedai_opm.py</span></code>: denoising Optically Pumped Magnetometer (OPM) MEG recordings using a subject-specific forward model.</p></li>
 </ul>
 <div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use GEDAI for online (real-time) denoising."><img alt="" src="../../_images/sphx_glr_00_gedai_online_thumb.png" />
 <p><a class="reference internal" href="advanced/00_gedai_online.html"><span class="doc">Using GEDAI for online (real-time) denoising</span></a></p>
@@ -525,6 +527,9 @@ GEDAI pipeline.</p>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to compute a custom covariance matrix using a mne.Forward solution."><img alt="" src="../../_images/sphx_glr_10_gedai_forward_thumb.png" />
 <p><a class="reference internal" href="advanced/10_gedai_forward.html"><span class="doc">GEDAI forward</span></a></p>
   <div class="sphx-glr-thumbnail-title">GEDAI forward</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to apply pyGEDAI to Optically Pumped Magnetometer (OPM) MEG data, following and extending the official MNE-Python tutorial: Preprocessing optically pumped magnetometer (OPM) MEG data."><img alt="" src="../../_images/sphx_glr_20_gedai_opm_thumb.png" />
+<p><a class="reference internal" href="advanced/20_gedai_opm.html"><span class="doc">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</div>
 </div></div><div class="toctree-wrapper compound">
 </div>
 <div class="sphx-glr-footer sphx-glr-footer-gallery docutils container">
@@ -609,8 +614,8 @@ GEDAI pipeline.</p>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -636,7 +641,7 @@ GEDAI pipeline.</p>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>

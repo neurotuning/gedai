@@ -134,7 +134,6 @@ intersphinx_mapping = get_intersphinx_mapping(
         "numpy",
         "pandas",
         "python",
-        "scipy",
         "sklearn",
     },
 )

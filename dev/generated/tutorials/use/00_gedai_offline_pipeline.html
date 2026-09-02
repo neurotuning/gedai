@@ -27,8 +27,8 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
@@ -40,12 +40,12 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/css/style.css?v=0bd98ae2" />
   
   <!-- So that users can add custom icons -->
-  <script defer src="../../../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=626094ed"></script>
+    <script src="../../../_static/documentation_options.js?v=e973cc28"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -54,7 +54,7 @@
     <script src="../../../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/use/00_gedai_offline_pipeline';</script>
     <script>
-        DOCUMENTATION_OPTIONS.theme_version = '0.20.0';
+        DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
         DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
@@ -410,6 +410,7 @@
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</a></li>
 </ul>
 </details></li>
 </ul>
@@ -512,6 +513,19 @@ the rank of your data. For example, if your data was recorded with a
 <p>High-pass filtering before GEDAI usually improves covariance estimation by
 reducing slow drifts and non-stationarities.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">l_freq</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">h_freq</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Filtering raw data in 1 contiguous segment
+Setting up high-pass filter at 0.5 Hz
+
+FIR filter parameters
+---------------------
+Designing a one-pass, zero-phase, non-causal highpass filter:
+- Windowed time-domain design (firwin) method
+- Hamming window with 0.0194 passband ripple and 53 dB stopband attenuation
+- Lower passband edge: 0.50
+- Lower transition bandwidth: 0.50 Hz (-6 dB cutoff frequency: 0.25 Hz)
+- Filter length: 1321 samples (6.605 s)
 </pre></div>
 </div>
 <div class="output_subarea output_html rendered_html output_result">
@@ -662,9 +676,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d"
+<tr class="mne-repr-section-header general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4"
      title="Hide section"
-    onclick="toggleVisibility('general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d')">
+    onclick="toggleVisibility('general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -676,7 +690,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d ">
+<tr class="repr-element general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -687,26 +701,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d ">
+<tr class="repr-element general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d ">
+<tr class="repr-element general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d ">
+<tr class="repr-element general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-8f9682e5-f3e3-4988-be0f-ed7fb8a58a4d ">
+<tr class="repr-element general-04bf9a57-9930-479e-95cb-0ea7bf6a92a4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -721,9 +735,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-f72c28e6-9cad-496e-b266-d1da551d49f9"
+<tr class="mne-repr-section-header acquisition-f59e8f59-84af-4aba-aee8-ac3652943fd2"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-f72c28e6-9cad-496e-b266-d1da551d49f9')">
+    onclick="toggleVisibility('acquisition-f59e8f59-84af-4aba-aee8-ac3652943fd2')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -735,7 +749,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-f72c28e6-9cad-496e-b266-d1da551d49f9 ">
+<tr class="repr-element acquisition-f59e8f59-84af-4aba-aee8-ac3652943fd2 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:01:00 (HH:MM:SS)</td>
@@ -748,14 +762,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-f72c28e6-9cad-496e-b266-d1da551d49f9 ">
+<tr class="repr-element acquisition-f59e8f59-84af-4aba-aee8-ac3652943fd2 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-f72c28e6-9cad-496e-b266-d1da551d49f9 ">
+<tr class="repr-element acquisition-f59e8f59-84af-4aba-aee8-ac3652943fd2 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>12,000</td>
@@ -770,9 +784,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-fdeed8e4-0d84-4441-96b6-e9c7ac618637"
+<tr class="mne-repr-section-header channels-a357bd95-8990-4bcc-b008-f694aa4edc27"
      title="Hide section"
-    onclick="toggleVisibility('channels-fdeed8e4-0d84-4441-96b6-e9c7ac618637')">
+    onclick="toggleVisibility('channels-a357bd95-8990-4bcc-b008-f694aa4edc27')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -785,7 +799,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-fdeed8e4-0d84-4441-96b6-e9c7ac618637 ">
+<tr class="repr-element channels-a357bd95-8990-4bcc-b008-f694aa4edc27 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -798,7 +812,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-fdeed8e4-0d84-4441-96b6-e9c7ac618637 ">
+<tr class="repr-element channels-a357bd95-8990-4bcc-b008-f694aa4edc27 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -813,9 +827,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-a8c93a7c-2b4d-41ed-b281-7bc8c81b4178"
+<tr class="mne-repr-section-header filters-89996632-cf05-4d0e-8edc-94598d4023f9"
      title="Hide section"
-    onclick="toggleVisibility('filters-a8c93a7c-2b4d-41ed-b281-7bc8c81b4178')">
+    onclick="toggleVisibility('filters-89996632-cf05-4d0e-8edc-94598d4023f9')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -827,14 +841,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-a8c93a7c-2b4d-41ed-b281-7bc8c81b4178 ">
+<tr class="repr-element filters-89996632-cf05-4d0e-8edc-94598d4023f9 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.50 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-a8c93a7c-2b4d-41ed-b281-7bc8c81b4178 ">
+<tr class="repr-element filters-89996632-cf05-4d0e-8edc-94598d4023f9 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -861,6 +875,10 @@ decomposing the signal into adaptive wavelet bands.</p>
 
 <span class="c1"># Denoise the data</span>
 <span class="n">denoised_raw</span> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">transform_raw</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>    343 x 343 full covariance (kind = 1) found.
+[adaptive.fit_raw] INFO: Applying wavelet HP pre-filter (sub-0.50 Hz) and running broadband GEDAI pass...
 </pre></div>
 </div>
 <p>Since GEDAI algorithm automatically set the reference to <code class="docutils literal notranslate"><span class="pre">average</span></code>, you can
@@ -940,8 +958,8 @@ the SSSI).</p></li>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure" class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fig</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">metrics</span></a> <span class="o">=</span> <span class="n">ad</span><span class="o">.</span><span class="n">plot_sensai</span><span class="p">(</span><span class="n">raw_before</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">raw_after</span><span class="o">=</span><span class="n">denoised_raw</span><span class="p">)</span>
 </pre></div>
 </div>
-<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" alt="[AdaptiveMultibandGedai], Before Denoising  |  Mean SSI: 0.74, After Denoising  |  Mean SSSI: 0.87  |  Mean NSSI: 0.53 SSI Silhouette Score: 0.95" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.251 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  259 MB</p>
+<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" alt="[AdaptiveMultibandGedai], Before Denoising  |  Mean SSI: 0.74, After Denoising  |  Mean SSSI: 0.83  |  Mean NSSI: 0.39 SSI Silhouette Score: 0.79" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 6.010 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  272 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-use-00-gedai-offline-pipeline-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/8d3e979a9ef2be106ca1dbbae53d0fbe/00_gedai_offline_pipeline.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">00_gedai_offline_pipeline.ipynb</span></code></a></p>
@@ -1022,8 +1040,8 @@ the SSSI).</p></li>
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../../../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
-<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1049,7 +1067,7 @@ the SSSI).</p></li>
         <div class="footer-item">
 <p class="theme-version">
   <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.20.0.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
 </p></div>
       
     </div>
