@@ -10,7 +10,7 @@ from ..utils.logs import logger
 def _detect_signal_type(info):
     """Detect whether data is 'eeg' or 'meg' based on channel types."""
     ch_types = info.get_channel_types(unique=True)
-    if any(t in ("mag", "grad") for t in ch_types):
+    if any(t in ("mag", "grad", "ref_meg") for t in ch_types):
         return "meg"
     return "eeg"
 

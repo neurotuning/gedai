@@ -175,7 +175,7 @@ class AdaptiveMultibandGedai:
         picks: list | str = "eeg",
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         wavelet_low_cutoff: str | float | None = 0.5,
