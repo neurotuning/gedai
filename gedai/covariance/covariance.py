@@ -38,7 +38,7 @@ def _pick_cov(cov, ch_names):
             f"Available channels in covariance are {cov_ch_names[:10]}... (total {len(cov_ch_names)}).\n"
             f"but instance has channels {ch_names[:10]}... (total {len(ch_names)})."
         )
-        if any("meg" in ch.lower() for ch in ch_names) or any(ch.startswith("M") for ch in ch_names):
+        if any(ch.lower().startswith("meg") for ch in ch_names):
             msg += (
                 "\nNote: If you are processing MEG data ('mag' or 'grad'), the default 'leadfield' "
                 "bundled with GEDAI is an EEG leadfield. For MEG data, please provide an MEG forward "

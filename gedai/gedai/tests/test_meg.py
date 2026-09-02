@@ -72,8 +72,7 @@ def test_meg_defaults():
     n_pc_meg = _compute_default_n_pc(ref_cov, signal_type="meg")
 
     assert n_pc_eeg == 3
-    assert n_pc_meg <= 4
-    assert n_pc_meg >= 1
+    assert n_pc_meg == 2
 
     # Test percentile scaling
     evals = np.array([[0.1, 0.5, 1.0, 5.0, 20.0]])

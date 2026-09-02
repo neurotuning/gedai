@@ -152,7 +152,7 @@ class Gedai:
         reference_cov = cov.data.copy()
 
         # Scale reference_cov to match data scale
-        data_cov_trace = float(np.mean([np.trace(np.cov(d)) for d in data]))
+        data_cov_trace = float(np.mean(np.var(data, axis=-1, ddof=1).sum(axis=-1)))
         ref_cov_trace = float(np.trace(reference_cov))
         if ref_cov_trace > 0 and data_cov_trace > 0:
             scale_factor = data_cov_trace / ref_cov_trace
@@ -333,6 +333,7 @@ class Gedai:
             reference_cov=reference_cov,
             sensai_method=sensai_method,
             sensai_bounds=sensai_bounds,
+            n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,
         )
