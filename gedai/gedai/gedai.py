@@ -132,6 +132,8 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        n_pc : int | "auto", default="auto"
+            Number of principal components for SENSAI template subspace.
         %(n_jobs)s
         %(verbose)s
         """
@@ -286,6 +288,8 @@ class Gedai:
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         highpass_prefilter : float | None
             Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).
+        n_pc : int | "auto", default="auto"
+            Number of principal components for SENSAI template subspace.
         %(n_jobs)s
         %(verbose)s
         """

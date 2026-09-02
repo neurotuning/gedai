@@ -236,6 +236,8 @@ class MultibandGedai:
         %(sensai_method)s
         %(noise_multiplier)s
         %(wavelet_low_cutoff)s
+        n_pc : int | "auto", default="auto"
+            Number of principal components for SENSAI template subspace.
         %(n_jobs)s
         %(verbose)s
         """
