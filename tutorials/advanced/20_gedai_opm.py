@@ -459,6 +459,7 @@ stc_gedai = mne.minimum_norm.apply_inverse(
 
 vert_lh_mne, time_lh_mne = stc_mne.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
 vert_rh_mne, time_rh_mne = stc_mne.get_peak(hemi="rh", tmin=0.08, tmax=0.11)
+_, time_lh_gedai = stc_gedai.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
 
 print(
     f"MNE Auditory Peak (LH): vertex {vert_lh_mne} at {time_lh_mne*1000:.1f} ms"
@@ -473,11 +474,11 @@ print(
 times_stc_mne = stc_mne.times * 1000  # seconds to ms
 times_stc_gedai = stc_gedai.times * 1000
 
-# Row index in stc.data for LH vertex 86358
+# Row index in stc.data for the LH peak vertex
 idx_lh_mne = np.where(stc_mne.vertices[0] == vert_lh_mne)[0][0]
 idx_lh_gedai = np.where(stc_gedai.vertices[0] == vert_lh_mne)[0][0]
 
-# Row index for RH vertex 75332
+# Row index for the RH peak vertex
 n_lh_mne = len(stc_mne.vertices[0])
 idx_rh_mne = n_lh_mne + np.where(stc_mne.vertices[1] == vert_rh_mne)[0][0]
 
@@ -516,11 +517,11 @@ ax.plot(
     label=f"GEDAI RH (Vertex {vert_rh_mne})",
 )
 ax.axvline(
-    93.5,
+    time_lh_mne * 1000,
     color="red",
     linestyle="--",
     alpha=0.7,
-    label="M100 Latency (93.5 ms)",
+    label=f"M100 Latency ({time_lh_mne*1000:.1f} ms)",
 )
 ax.set(
     title="Figure 9a: Primary Auditory Cortex Source Time Courses (dSPM)",
@@ -535,8 +536,8 @@ plt.show()
 # %%
 # Top 100 Cortical Vertices at M100 Peak:
 
-t_idx_mne = np.argmin(np.abs(stc_mne.times - 0.0935))
-t_idx_gedai = np.argmin(np.abs(stc_gedai.times - 0.0935))
+t_idx_mne = np.argmin(np.abs(stc_mne.times - time_lh_mne))
+t_idx_gedai = np.argmin(np.abs(stc_gedai.times - time_lh_gedai))
 
 fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(
@@ -567,7 +568,7 @@ brain_mne = stc_mne.plot(
     hemi="both",
     subjects_dir=subjects_dir,
     subject=subject,
-    initial_time=0.093,
+    initial_time=time_lh_mne,
     views=["lat", "med"],
     time_viewer=False,
     show_traces=False,
@@ -580,7 +581,7 @@ brain_gedai = stc_gedai.plot(
     hemi="both",
     subjects_dir=subjects_dir,
     subject=subject,
-    initial_time=0.093,
+    initial_time=time_lh_gedai,
     views=["lat", "med"],
     time_viewer=False,
     show_traces=False,
