@@ -1,9 +1,9 @@
 r"""
 .. _tut-gedai-opm-processing:
 
-========================================================================================
+====================================================================================
 Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI
-========================================================================================
+====================================================================================
 
 This tutorial demonstrates how to apply ``pyGEDAI`` to Optically Pumped
 Magnetometer (OPM) MEG data, following and extending the official MNE-Python
