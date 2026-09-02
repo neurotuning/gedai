@@ -1,0 +1,16 @@
+.. include:: ./names.inc
+
+.. _changes_0_1_0:
+
+Version 0.1.0 (2025.11.21)
+--------------------------
+
+API changes
+~~~~~~~~~~~
+- Initial release by `Victor Férat`_ and `Tomas Ros`_.
+
+Authors
+-------
+
+* `Victor Férat`_
+* `Tomas Ros`_
