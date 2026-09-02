@@ -111,7 +111,7 @@ def test_prescan_meg_artifact_spectrum():
     n_ch = 20
     ref_cov = np.eye(n_ch)
 
-    # Low noise / flat spectrum -> should return 2
+    # Low noise / flat spectrum -> the prescan should prefer the compact MEG default.
     data_low = rng.standard_normal((n_ch, 500))
     n_pc_low = _prescan_meg_artifact_spectrum(data_low, ref_cov)
     assert n_pc_low in (2, 3)

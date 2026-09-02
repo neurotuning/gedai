@@ -16,7 +16,7 @@ def _ensure_cov(reference_cov):
         else:
             raise ValueError(
                 "Reference covariance must be 'leadfield', an mne.Covariance, "
-                "or an mne.Forward instance, "
+                "or an mne.Forward instance; "
                 f"got '{reference_cov}' instead."
             )
     return reference_cov

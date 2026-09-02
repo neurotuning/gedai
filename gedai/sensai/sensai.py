@@ -99,7 +99,7 @@ def _prescan_meg_artifact_spectrum(data: np.ndarray, reference_cov: np.ndarray) 
         data_2d = data
     cov_prescan = np.cov(data_2d)
     cov_prescan = (cov_prescan + cov_prescan.T) * 0.5
-    evals_prescan, _ = eigh(cov_prescan, reference_cov)
+    evals_prescan, _ = eigh(cov_prescan, reference_cov, check_finite=False)
     evals_desc = np.sort(np.abs(evals_prescan))[::-1]
     med_val = np.median(evals_desc)
     norm_evals = evals_desc / med_val if med_val > 0 else evals_desc
