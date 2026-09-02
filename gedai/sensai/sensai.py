@@ -82,7 +82,20 @@ def subspace_similarity(
 def _prescan_meg_artifact_spectrum(
     data: np.ndarray, reference_cov: np.ndarray
 ) -> int:
-    """Prescan GEVD artifact spectrum to adaptively choose n_pc (2 or 3) for MEG."""
+    """Prescan GEVD artifact spectrum to adaptively choose n_pc (2 or 3) for MEG.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        Raw or epoched MEG data.
+    reference_cov : np.ndarray
+        Reference leadfield covariance matrix.
+
+    Returns
+    -------
+    n_pc : int
+        Recommended number of principal components (2 or 3).
+    """
     if data.ndim == 3:
         n_ch = data.shape[1]
         data_2d = data.transpose(1, 0, 2).reshape(n_ch, -1)
@@ -109,7 +122,23 @@ def _compute_default_n_pc(
     signal_type: str = "eeg",
     data: np.ndarray | None = None,
 ) -> int:
-    """Compute default number of PCs for SENSAI (2/3 for MEG, 3 for EEG)."""
+    """Compute default number of PCs for SENSAI (2/3 for MEG, 3 for EEG).
+
+    Parameters
+    ----------
+    reference_cov : np.ndarray
+        Reference leadfield covariance matrix.
+    signal_type : str
+        The detected signal type ('eeg' or 'meg').
+    data : np.ndarray | None
+        Input signal data. If MEG and data is provided, an artifact spectrum prescan
+        is performed.
+
+    Returns
+    -------
+    n_pc : int
+        Default number of principal components to retain.
+    """
     n_ch = reference_cov.shape[0]
     if signal_type == "meg":
         if data is not None:
