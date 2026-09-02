@@ -237,7 +237,7 @@ class MultibandGedai:
         data = epochs_fit.get_data()
 
         cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, epochs_fit.info["ch_names"])
+        cov = _pick_cov(cov, epochs_fit.info)
 
         epoch_duration = epochs_fit.tmax - epochs_fit.tmin
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
@@ -416,7 +416,7 @@ class MultibandGedai:
             raw_fit._data, sfreq, lowcut_hz=0.1
         )
         
-        cov = _pick_cov(cov, raw_fit.info["ch_names"])
+        cov = _pick_cov(cov, raw_fit.info)
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, filter_cutoff, duration

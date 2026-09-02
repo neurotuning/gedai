@@ -219,7 +219,7 @@ class AdaptiveMultibandGedai:
             raw_fit._data, sfreq, lowcut_hz=0.1
         )
 
-        cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
+        cov = _pick_cov(reference_cov, raw_fit.info)
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, raw_fit.info["highpass"]
         )

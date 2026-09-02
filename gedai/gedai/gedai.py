@@ -147,7 +147,7 @@ class Gedai:
         data = epochs_fit.get_data()
 
         cov = _ensure_cov(reference_cov).copy()
-        cov = _pick_cov(cov, epochs_fit.info["ch_names"])
+        cov = _pick_cov(cov, epochs_fit.info)
         reference_cov = cov.data.copy()
 
         # Scale reference_cov to match data scale

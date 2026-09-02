@@ -21,7 +21,14 @@ def _ensure_cov(reference_cov):
     return reference_cov
 
 
-def _pick_cov(cov, ch_names):
+def _pick_cov(cov, ch_names, info=None):
+    if isinstance(ch_names, mne.Info):
+        info = ch_names
+        ch_names = info["ch_names"]
+    elif hasattr(ch_names, "info"):
+        info = ch_names.info
+        ch_names = info["ch_names"]
+
     cov_ch_names = cov.ch_names
 
     picks_cov = []
@@ -38,7 +45,11 @@ def _pick_cov(cov, ch_names):
             f"Available channels in covariance are {cov_ch_names[:10]}... (total {len(cov_ch_names)}).\n"
             f"but instance has channels {ch_names[:10]}... (total {len(ch_names)})."
         )
-        if any(ch.lower().startswith("meg") for ch in ch_names):
+        is_meg = False
+        if info is not None:
+            ch_types = info.get_channel_types(unique=True)
+            is_meg = any(t in ("mag", "grad", "ref_meg") for t in ch_types)
+        if is_meg:
             msg += (
                 "\nNote: If you are processing MEG data ('mag' or 'grad'), the default 'leadfield' "
                 "bundled with GEDAI is an EEG leadfield. For MEG data, please provide an MEG forward "
