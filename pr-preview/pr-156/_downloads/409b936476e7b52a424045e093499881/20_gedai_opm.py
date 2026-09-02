@@ -1,42 +1,53 @@
-"""
+r"""
 .. _tut-gedai-opm-processing:
 
-========================================================================================
+====================================================================================
 Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI
-========================================================================================
+====================================================================================
 
-This tutorial demonstrates how to apply ``pyGEDAI`` to Optically Pumped Magnetometer
-(OPM) MEG data, following and extending the official MNE-Python tutorial:
-`Preprocessing optically pumped magnetometer (OPM) MEG data <https://mne.tools/stable/auto_tutorials/preprocessing/80_opm_processing.html>`_.
+This tutorial demonstrates how to apply ``pyGEDAI`` to Optically Pumped
+Magnetometer (OPM) MEG data, following and extending the official MNE-Python
+tutorial:
+`Preprocessing optically pumped magnetometer (OPM) MEG data
+<https://mne.tools/stable/auto_tutorials/preprocessing/80_opm_processing.html>`_.
 
-Optically Pumped Magnetometers (OPMs) use a distinct sensing technology from traditional
-SQUID MEG systems:
+Optically Pumped Magnetometers (OPMs) use a distinct sensing technology from
+traditional SQUID MEG systems:
 
 - They operate without cryogenics and are placed directly on the scalp.
-- They are highly sensitive to DC magnetic drifts and low-frequency ambient interference.
+- They are highly sensitive to DC magnetic drifts and low-frequency ambient
+  interference.
 - Sensor positions can be customized per subject and cap montage.
-- In wearable setups, subject movement within Earth's ambient field produces large artifacts.
+- In wearable setups, subject movement within Earth's ambient field produces
+  large artifacts.
 
-In the original MNE tutorial, denoising is carried out through a multi-stage workflow:
+In the original MNE tutorial, denoising is carried out through a multi-stage
+workflow:
 
-1. **Reference Sensor Regression** (:class:`~mne.preprocessing.EOGRegression`) using external
-   sensors away from the head to subtract ambient room interference.
-2. **Homogeneous Field Correction (HFC)** (:func:`~mne.preprocessing.compute_proj_hfc`) using
-   multipole spherical harmonic basis functions as SSP projectors.
+1. **Reference Sensor Regression**
+   (:class:`~mne.preprocessing.EOGRegression`) using external sensors away
+   from the head to subtract ambient room interference.
+2. **Homogeneous Field Correction (HFC)**
+   (:func:`~mne.preprocessing.compute_proj_hfc`) using multipole spherical
+   harmonic basis functions as SSP projectors.
 
 **How GEDAI Replaces Reference Regression and HFC:**
 
-Instead of relying on external reference magnetometers (which may not experience the exact
-same field as scalp sensors during movement) or assuming simple homogeneous external fields
-(HFC), ``GEDAI`` constructs a **cortical leadfield reference covariance**
-:math:`C_{\\text{ref}} = G G^T` directly from the subject-specific forward model (:class:`mne.Forward`).
+Instead of relying on external reference magnetometers (which may not
+experience the exact same field as scalp sensors during movement) or assuming
+simple homogeneous external fields (HFC), ``GEDAI`` constructs a **cortical
+leadfield reference covariance**
+:math:`C_{\text{ref}} = G G^T` directly from the subject-specific forward
+model (:class:`mne.Forward`).
 
-By performing Generalized Eigendecomposition (GEVD) across discrete wavelet scales
-(:class:`~gedai.gedai.AdaptiveMultibandGedai`), ``GEDAI`` isolates and projects out all non-dipolar
-ambient noise, DC drifts, and environmental interference in a **single unified step**,
-without requiring external reference sensors or multipole approximations.
+By performing Generalized Eigendecomposition (GEVD) across discrete wavelet
+scales (:class:`~gedai.gedai.AdaptiveMultibandGedai`), ``GEDAI`` isolates and
+projects out all non-dipolar ambient noise, DC drifts, and environmental
+interference in a **single unified step**, without requiring external reference
+sensors or multipole approximations.
 
-We process the `UCL OPM Auditory Dataset <https://mne.tools/stable/overview/datasets_index.html#ucl-opm-auditory-dataset>`_
+We process the `UCL OPM Auditory Dataset
+<https://mne.tools/stable/overview/datasets_index.html#ucl-opm-auditory-dataset>`_
 :footcite:`SeymourEtAl2022` and mirror all figures from the original tutorial.
 
 """
@@ -46,10 +57,9 @@ We process the `UCL OPM Auditory Dataset <https://mne.tools/stable/overview/data
 # -----------------
 
 import matplotlib.pyplot as plt
+import mne
 import nibabel as nib
 import numpy as np
-
-import mne
 from mne.datasets import ucl_opm_auditory
 
 from gedai import AdaptiveMultibandGedai
@@ -57,7 +67,11 @@ from gedai import AdaptiveMultibandGedai
 subject = "sub-002"
 data_path = ucl_opm_auditory.data_path()
 opm_file = (
-    data_path / subject / "ses-001" / "meg" / f"{subject}_ses-001_task-aef_run-001_meg.bin"
+    data_path
+    / subject
+    / "ses-001"
+    / "meg"
+    / f"{subject}_ses-001_task-aef_run-001_meg.bin"
 )
 subjects_dir = data_path / "derivatives" / "freesurfer" / "subjects"
 
@@ -75,8 +89,9 @@ meg_picks = mne.pick_types(raw.info, meg=True, exclude="bads")
 # 1. Examining Raw Data (No Preprocessing)
 # ----------------------------------------
 #
-# First, let's examine the raw un-preprocessed data. Notice the massive low-frequency
-# fluctuations in the sub-1 Hz band, spanning hundreds of picoteslas (pT).
+# First, let's examine the raw un-preprocessed data. Notice the massive
+# low-frequency fluctuations in the sub-1 Hz band, spanning hundreds of
+# picoteslas (pT).
 
 amp_scale = 1e12  # Tesla to picoTesla (pT)
 stop = len(raw.times) - 300
@@ -86,7 +101,10 @@ data_ds, time_ds = data_ds[:, ::step] * amp_scale, time_ds[::step]
 
 plot_kwargs = dict(lw=1, alpha=0.5)
 set_kwargs = dict(
-    ylim=(-500, 500), xlim=time_ds[[0, -1]], xlabel="Time (s)", ylabel="Amplitude (pT)"
+    ylim=(-500, 500),
+    xlim=time_ds[[0, -1]],
+    xlabel="Time (s)",
+    ylabel="Amplitude (pT)",
 )
 
 fig, ax = plt.subplots(layout="constrained")
@@ -96,7 +114,12 @@ ax.set(title="Figure 1: No Preprocessing (Raw OPM)", **set_kwargs)
 plt.show()
 
 # Compute pre-denoising PSD with 1 Hz resolution for shielding factor analysis
-psd_kwargs = dict(fmax=20, n_fft=int(round(raw.info["sfreq"])), picks=meg_picks, verbose=False)
+psd_kwargs = dict(
+    fmax=20,
+    n_fft=int(round(raw.info["sfreq"])),
+    picks=meg_picks,
+    verbose=False,
+)
 psd_pre = raw.compute_psd(**psd_kwargs)
 
 # %%
@@ -150,11 +173,12 @@ psd_post_hfc = raw_hfc.compute_psd(**psd_kwargs)
 # 4. The GEDAI Alternative: Forward-Subspace Denoising
 # ----------------------------------------------------
 #
-# In ``GEDAI``, we replace both Reference Regression and HFC by computing the reference
-# covariance directly from the subject's forward model (:class:`mne.Forward`).
+# In ``GEDAI``, we replace both Reference Regression and HFC by computing the
+# reference covariance directly from the subject's forward model
+# (:class:`mne.Forward`).
 #
-# First, we downsample a copy to 300 Hz (standard for auditory analysis) to allow discrete
-# wavelets to directly resolve sub-1 Hz DC drift frequencies:
+# First, we downsample a copy to 300 Hz (standard for auditory analysis) to
+# allow discrete wavelets to directly resolve sub-1 Hz DC drift frequencies:
 
 raw_300 = raw.copy().resample(300, verbose=False)
 
@@ -167,9 +191,15 @@ bem = subjects_dir / subject / "bem" / f"{subject}-5120-bem-sol.fif"
 src = subjects_dir / subject / "bem" / f"{subject}-oct-6-src.fif"
 
 raw_gedai = raw_300.copy().pick("meg")
-fwd = mne.make_forward_solution(raw_gedai.info, trans=trans, bem=bem, src=src, verbose="error")
+fwd = mne.make_forward_solution(
+    raw_gedai.info,
+    trans=trans,
+    bem=bem,
+    src=src,
+    verbose="error",
+)
 
-# Fit Adaptive Multiband GEDAI directly on the raw un-preprocessed OPM recording
+# Fit Adaptive Multiband GEDAI directly on the raw un-preprocessed OPM record.
 ad = AdaptiveMultibandGedai(
     wavelet_type="haar",
     wavelet_level="auto",
@@ -193,9 +223,17 @@ time_ds_300 = raw_gedai.times[:stop_300:step_300] - raw_gedai.times[0]
 data_ds_gedai = raw_gedai.get_data()[::5, :stop_300:step_300] * amp_scale
 
 fig, ax = plt.subplots(layout="constrained")
-ax.plot(time_ds_300, data_ds_gedai.T - np.mean(data_ds_gedai, axis=1), color="#1b9e77", **plot_kwargs)
+ax.plot(
+    time_ds_300,
+    data_ds_gedai.T - np.mean(data_ds_gedai, axis=1),
+    color="#1b9e77",
+    **plot_kwargs,
+)
 ax.grid(True, ls=":")
-ax.set(title="Figure 3b: After pyGEDAI (Adaptive Multiband, No Ref Sensors)", **set_kwargs)
+ax.set(
+    title="Figure 3b: After pyGEDAI (Adaptive Multiband, No Ref Sensors)",
+    **set_kwargs,
+)
 plt.show()
 
 psd_kwargs_300 = dict(fmax=20, n_fft=300, verbose=False)
@@ -206,13 +244,16 @@ psd_post_gedai = raw_gedai.compute_psd(**psd_kwargs_300)
 # 5. Comparing Shielding Factors
 # ------------------------------
 #
-# The shielding factor measures the attenuation of interference in decibels (dB):
+# The shielding factor measures the attenuation of interference in decibels
+# (dB):
 #
 # .. math::
 #
-#     \\text{Shielding (dB)} = 10 \\log_{10} \\left( \\frac{\\text{PSD}_{\\text{pre}}}{\\text{PSD}_{\\text{post}}} \\right)
+#     \\text{Shielding (dB)} = 10 \\log_{10}
+#     \\left( \\frac{\\text{PSD}_{\\text{pre}}}{\\text{PSD}_{\\text{post}}} \\right)
 #
-# Let's reproduce the original tutorial's shielding plots and compare them against GEDAI:
+# Let's reproduce the original tutorial's shielding plots and compare them
+# against GEDAI:
 
 # Figure 4: Reference regression shielding (Original MNE)
 shielding_reg = 10 * np.log10(psd_pre.get_data() / psd_post_reg.get_data())
@@ -287,7 +328,12 @@ raw_gedai.filter(2, 40, verbose=False)
 data_ds_gfilt = raw_gedai.get_data()[::5, :stop_300:step_300] * amp_scale
 
 fig, ax = plt.subplots(layout="constrained")
-ax.plot(time_ds_300, data_ds_gfilt.T - np.mean(data_ds_gfilt, axis=1), color="#1b9e77", **plot_kwargs)
+ax.plot(
+    time_ds_300,
+    data_ds_gfilt.T - np.mean(data_ds_gfilt, axis=1),
+    color="#1b9e77",
+    **plot_kwargs,
+)
 ax.grid(True, ls=":")
 ax.set(title="Figure 6b: After pyGEDAI and Filtering (2-40 Hz)", **set_kwargs)
 plt.show()
@@ -296,31 +342,53 @@ plt.show()
 # 7. Auditory Evoked Fields (AEF)
 # -------------------------------
 #
-# We extract auditory stimulation epochs and compute the Auditory Evoked Field (AEF).
-# Notice the clear N100m auditory peak around 100-140 ms:
+# We extract auditory stimulation epochs and compute the Auditory Evoked Field
+# (AEF). Notice the clear N100m auditory peak around 100-140 ms:
 #
 # sphinx_gallery_thumbnail_number = 10
 
 events_mne = mne.find_events(raw_mne, min_duration=0.1, verbose=False)
 epochs_mne = mne.Epochs(
-    raw_mne, events_mne, tmin=-0.1, tmax=0.4, baseline=(-0.1, 0.0), picks=meg_picks, verbose="error"
+    raw_mne,
+    events_mne,
+    tmin=-0.1,
+    tmax=0.4,
+    baseline=(-0.1, 0.0),
+    picks=meg_picks,
+    verbose="error",
 )
 evoked_mne = epochs_mne.average()
-# Exact topomap timepoints from the original MNE tutorial: 0.093 s, 0.144 s, 0.223 s
+# Exact topomap timepoints from the original MNE tutorial: 0.093 s, 0.144 s,
+# 0.223 s.
 mne_tutorial_times = [0.093, 0.144, 0.223]
 
-fig = evoked_mne.plot_joint(picks="mag", times=mne_tutorial_times, title="Figure 7: Auditory Evoked Response (MNE Pipeline)")
+fig = evoked_mne.plot_joint(
+    picks="mag",
+    times=mne_tutorial_times,
+    title="Figure 7: Auditory Evoked Response (MNE Pipeline)",
+)
 plt.show()
 
 # GEDAI Pipeline Evoked
 events_gedai = events_mne.copy()
-events_gedai[:, 0] = np.round(events_mne[:, 0] * (raw_gedai.info["sfreq"] / raw_mne.info["sfreq"])).astype(int)
+events_gedai[:, 0] = np.round(
+    events_mne[:, 0] * (raw_gedai.info["sfreq"] / raw_mne.info["sfreq"])
+).astype(int)
 epochs_gedai = mne.Epochs(
-    raw_gedai, events_gedai, tmin=-0.1, tmax=0.4, baseline=(-0.1, 0.0), verbose="error"
+    raw_gedai,
+    events_gedai,
+    tmin=-0.1,
+    tmax=0.4,
+    baseline=(-0.1, 0.0),
+    verbose="error",
 )
 evoked_gedai = epochs_gedai.average()
 
-fig = evoked_gedai.plot_joint(picks="mag", times=mne_tutorial_times, title="Figure 7b: Auditory Evoked Response (pyGEDAI Pipeline)")
+fig = evoked_gedai.plot_joint(
+    picks="mag",
+    times=mne_tutorial_times,
+    title="Figure 7b: Auditory Evoked Response (pyGEDAI Pipeline)",
+)
 plt.show()
 
 # %%
@@ -351,27 +419,56 @@ fig = mne.viz.plot_alignment(
 # GEDAI preserves cortical dipole signals with zero spatial distortion:
 
 noise_cov_mne = mne.compute_covariance(epochs_mne, tmax=0, verbose=False)
-inv_mne = mne.minimum_norm.make_inverse_operator(evoked_mne.info, fwd, noise_cov_mne, verbose=False)
-stc_mne = mne.minimum_norm.apply_inverse(evoked_mne, inv_mne, 1.0 / 9.0, method="dSPM", verbose=False)
+inv_mne = mne.minimum_norm.make_inverse_operator(
+    evoked_mne.info,
+    fwd,
+    noise_cov_mne,
+    verbose=False,
+)
+stc_mne = mne.minimum_norm.apply_inverse(
+    evoked_mne,
+    inv_mne,
+    1.0 / 9.0,
+    method="dSPM",
+    verbose=False,
+)
 
 noise_cov_gedai = mne.compute_covariance(epochs_gedai, tmax=0, verbose=False)
-inv_gedai = mne.minimum_norm.make_inverse_operator(evoked_gedai.info, fwd, noise_cov_gedai, verbose=False)
-stc_gedai = mne.minimum_norm.apply_inverse(evoked_gedai, inv_gedai, 1.0 / 9.0, method="dSPM", verbose=False)
+inv_gedai = mne.minimum_norm.make_inverse_operator(
+    evoked_gedai.info,
+    fwd,
+    noise_cov_gedai,
+    verbose=False,
+)
+stc_gedai = mne.minimum_norm.apply_inverse(
+    evoked_gedai,
+    inv_gedai,
+    1.0 / 9.0,
+    method="dSPM",
+    verbose=False,
+)
 
-print(f"MNE Source Peak: vertex {stc_mne.get_peak()[0]} at {stc_mne.get_peak()[1]:.3f} s")
-print(f"GEDAI Source Peak: vertex {stc_gedai.get_peak()[0]} at {stc_gedai.get_peak()[1]:.3f} s")
+print(
+    f"MNE Source Peak: vertex {stc_mne.get_peak()[0]} "
+    f"at {stc_mne.get_peak()[1]:.3f} s"
+)
+print(
+    f"GEDAI Source Peak: vertex {stc_gedai.get_peak()[0]} "
+    f"at {stc_gedai.get_peak()[1]:.3f} s"
+)
 
 # %%
 # Summary and Takeaways
 # ----------------------
 #
-# - **Unified Preprocessing**: ``GEDAI`` replaces multiple ad-hoc preprocessing stages
-#   (reference sensor regression + multipole HFC) with a single, mathematically principled
-#   decomposition based on the forward leadfield subspace.
-# - **Reference-Free**: No external reference sensors are required, making ``GEDAI`` ideal
-#   for portable and wearable OPM setups.
-# - **Source-Preserving**: Cortical source localization is fully preserved, matching
-#   dipolar generators in primary auditory cortex with high fidelity.
+# - **Unified Preprocessing**: ``GEDAI`` replaces multiple ad-hoc
+#   preprocessing stages (reference sensor regression + multipole HFC) with a
+#   single, mathematically principled decomposition based on the forward
+#   leadfield subspace.
+# - **Reference-Free**: No external reference sensors are required, making
+#   ``GEDAI`` ideal for portable and wearable OPM setups.
+# - **Source-Preserving**: Cortical source localization is fully preserved,
+#   matching dipolar generators in primary auditory cortex with high fidelity.
 #
 # References
 # ----------

@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=93f4b5e8"></script>
+    <script src="../../../_static/documentation_options.js?v=ab0b0323"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -484,42 +484,50 @@ to download the full example code.</p>
 </div>
 <section class="sphx-glr-example-title" id="preprocessing-optically-pumped-magnetometer-opm-meg-data-mne-pipeline-vs-pygedai">
 <span id="tut-gedai-opm-processing"></span><span id="sphx-glr-generated-tutorials-advanced-20-gedai-opm-py"></span><h1>Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI<a class="headerlink" href="#preprocessing-optically-pumped-magnetometer-opm-meg-data-mne-pipeline-vs-pygedai" title="Link to this heading">🔗</a></h1>
-<p>This tutorial demonstrates how to apply <code class="docutils literal notranslate"><span class="pre">pyGEDAI</span></code> to Optically Pumped Magnetometer
-(OPM) MEG data, following and extending the official MNE-Python tutorial:
+<p>This tutorial demonstrates how to apply <code class="docutils literal notranslate"><span class="pre">pyGEDAI</span></code> to Optically Pumped
+Magnetometer (OPM) MEG data, following and extending the official MNE-Python
+tutorial:
 <a class="reference external" href="https://mne.tools/stable/auto_tutorials/preprocessing/80_opm_processing.html">Preprocessing optically pumped magnetometer (OPM) MEG data</a>.</p>
-<p>Optically Pumped Magnetometers (OPMs) use a distinct sensing technology from traditional
-SQUID MEG systems:</p>
+<p>Optically Pumped Magnetometers (OPMs) use a distinct sensing technology from
+traditional SQUID MEG systems:</p>
 <ul class="simple">
 <li><p>They operate without cryogenics and are placed directly on the scalp.</p></li>
-<li><p>They are highly sensitive to DC magnetic drifts and low-frequency ambient interference.</p></li>
+<li><p>They are highly sensitive to DC magnetic drifts and low-frequency ambient
+interference.</p></li>
 <li><p>Sensor positions can be customized per subject and cap montage.</p></li>
-<li><p>In wearable setups, subject movement within Earth’s ambient field produces large artifacts.</p></li>
+<li><p>In wearable setups, subject movement within Earth’s ambient field produces
+large artifacts.</p></li>
 </ul>
-<p>In the original MNE tutorial, denoising is carried out through a multi-stage workflow:</p>
+<p>In the original MNE tutorial, denoising is carried out through a multi-stage
+workflow:</p>
 <ol class="arabic simple">
-<li><p><strong>Reference Sensor Regression</strong> (<a class="reference external" href="https://mne.tools/stable/generated/mne.preprocessing.EOGRegression.html#mne.preprocessing.EOGRegression" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">EOGRegression</span></code></a>) using external
-sensors away from the head to subtract ambient room interference.</p></li>
-<li><p><strong>Homogeneous Field Correction (HFC)</strong> (<a class="reference external" href="https://mne.tools/stable/generated/mne.preprocessing.compute_proj_hfc.html#mne.preprocessing.compute_proj_hfc" title="(in MNE v1.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_proj_hfc()</span></code></a>) using
-multipole spherical harmonic basis functions as SSP projectors.</p></li>
+<li><p><strong>Reference Sensor Regression</strong>
+(<a class="reference external" href="https://mne.tools/stable/generated/mne.preprocessing.EOGRegression.html#mne.preprocessing.EOGRegression" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">EOGRegression</span></code></a>) using external sensors away
+from the head to subtract ambient room interference.</p></li>
+<li><p><strong>Homogeneous Field Correction (HFC)</strong>
+(<a class="reference external" href="https://mne.tools/stable/generated/mne.preprocessing.compute_proj_hfc.html#mne.preprocessing.compute_proj_hfc" title="(in MNE v1.12)"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_proj_hfc()</span></code></a>) using multipole spherical
+harmonic basis functions as SSP projectors.</p></li>
 </ol>
 <p><strong>How GEDAI Replaces Reference Regression and HFC:</strong></p>
-<p>Instead of relying on external reference magnetometers (which may not experience the exact
-same field as scalp sensors during movement) or assuming simple homogeneous external fields
-(HFC), <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> constructs a <strong>cortical leadfield reference covariance</strong>
-<span class="math notranslate nohighlight">\(C_{\text{ref}} = G G^T\)</span> directly from the subject-specific forward model (<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a>).</p>
-<p>By performing Generalized Eigendecomposition (GEVD) across discrete wavelet scales
-(<a class="reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a>), <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> isolates and projects out all non-dipolar
-ambient noise, DC drifts, and environmental interference in a <strong>single unified step</strong>,
-without requiring external reference sensors or multipole approximations.</p>
+<p>Instead of relying on external reference magnetometers (which may not
+experience the exact same field as scalp sensors during movement) or assuming
+simple homogeneous external fields (HFC), <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> constructs a <strong>cortical
+leadfield reference covariance</strong>
+<span class="math notranslate nohighlight">\(C_{\text{ref}} = G G^T\)</span> directly from the subject-specific forward
+model (<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a>).</p>
+<p>By performing Generalized Eigendecomposition (GEVD) across discrete wavelet
+scales (<a class="reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a>), <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> isolates and
+projects out all non-dipolar ambient noise, DC drifts, and environmental
+interference in a <strong>single unified step</strong>, without requiring external reference
+sensors or multipole approximations.</p>
 <p>We process the <a class="reference external" href="https://mne.tools/stable/overview/datasets_index.html#ucl-opm-auditory-dataset">UCL OPM Auditory Dataset</a>
 <a class="footnote-reference brackets" href="#footcite-seymouretal2022" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> and mirror all figures from the original tutorial.</p>
 <section id="imports-and-setup">
 <h2>Imports and Setup<a class="headerlink" href="#imports-and-setup" title="Link to this heading">🔗</a></h2>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mne</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">nibabel</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">mne</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mne.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">ucl_opm_auditory</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdaptiveMultibandGedai</span>
@@ -527,7 +535,11 @@ without requiring external reference sensors or multipole approximations.</p>
 <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a> <span class="o">=</span> <span class="s2">"sub-002"</span>
 <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_path</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.datasets.ucl_opm_auditory.data_path.html#mne.datasets.ucl_opm_auditory.data_path" title="mne.datasets.ucl_opm_auditory.data_path" class="sphx-glr-backref-module-mne-datasets-ucl_opm_auditory sphx-glr-backref-type-py-function"><span class="n">ucl_opm_auditory</span><span class="o">.</span><span class="n">data_path</span></a><span class="p">()</span>
 <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">opm_file</span></a> <span class="o">=</span> <span class="p">(</span>
-    <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_path</span></a> <span class="o">/</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a> <span class="o">/</span> <span class="s2">"ses-001"</span> <span class="o">/</span> <span class="s2">"meg"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a><span class="si">}</span><span class="s2">_ses-001_task-aef_run-001_meg.bin"</span>
+    <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_path</span></a>
+    <span class="o">/</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a>
+    <span class="o">/</span> <span class="s2">"ses-001"</span>
+    <span class="o">/</span> <span class="s2">"meg"</span>
+    <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a><span class="si">}</span><span class="s2">_ses-001_task-aef_run-001_meg.bin"</span>
 <span class="p">)</span>
 <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects_dir</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_path</span></a> <span class="o">/</span> <span class="s2">"derivatives"</span> <span class="o">/</span> <span class="s2">"freesurfer"</span> <span class="o">/</span> <span class="s2">"subjects"</span>
 
@@ -547,161 +559,103 @@ Dataset ucl_opm_auditory version 0.0 out of date, latest version is 0.2
 Fetching 1 file for the ucl_opm_auditory dataset ...
 
   0%|                                               | 0.00/786M [00:00&lt;?, ?B/s]
-  0%|                                       | 48.1k/786M [00:00&lt;34:08, 384kB/s]
-  0%|                                        | 114k/786M [00:00&lt;25:19, 517kB/s]
-  0%|                                        | 261k/786M [00:00&lt;14:20, 914kB/s]
-  0%|                                       | 654k/786M [00:00&lt;06:23, 2.05MB/s]
-  0%|                                      | 1.67M/786M [00:00&lt;02:40, 4.88MB/s]
-  1%|▏                                     | 4.41M/786M [00:00&lt;01:03, 12.3MB/s]
-  1%|▍                                     | 9.85M/786M [00:00&lt;00:29, 25.9MB/s]
-  2%|▊                                     | 15.5M/786M [00:00&lt;00:21, 35.7MB/s]
-  3%|█                                     | 21.0M/786M [00:00&lt;00:18, 41.5MB/s]
-  3%|█▎                                    | 26.8M/786M [00:01&lt;00:16, 46.7MB/s]
-  4%|█▌                                    | 32.2M/786M [00:01&lt;00:15, 48.8MB/s]
-  5%|█▊                                    | 37.2M/786M [00:01&lt;00:15, 49.0MB/s]
-  6%|██                                    | 43.6M/786M [00:01&lt;00:14, 52.7MB/s]
-  6%|██▎                                   | 48.8M/786M [00:01&lt;00:14, 52.2MB/s]
-  7%|██▋                                   | 55.0M/786M [00:01&lt;00:13, 55.0MB/s]
-  8%|██▉                                   | 60.5M/786M [00:01&lt;00:13, 53.6MB/s]
-  8%|███▏                                  | 66.8M/786M [00:01&lt;00:12, 55.7MB/s]
-  9%|███▍                                  | 72.4M/786M [00:01&lt;00:13, 54.3MB/s]
- 10%|███▊                                  | 78.5M/786M [00:01&lt;00:12, 56.3MB/s]
- 11%|████                                  | 84.1M/786M [00:02&lt;00:12, 54.6MB/s]
- 11%|████▎                                 | 90.1M/786M [00:02&lt;00:12, 56.0MB/s]
- 12%|████▋                                 | 95.7M/786M [00:02&lt;00:12, 55.1MB/s]
- 13%|█████                                  | 102M/786M [00:02&lt;00:12, 56.3MB/s]
- 14%|█████▎                                 | 107M/786M [00:02&lt;00:12, 55.1MB/s]
- 14%|█████▌                                 | 113M/786M [00:02&lt;00:11, 56.3MB/s]
- 15%|█████▉                                 | 119M/786M [00:02&lt;00:12, 54.2MB/s]
- 16%|██████▏                                | 125M/786M [00:02&lt;00:11, 57.1MB/s]
- 17%|██████▌                                | 131M/786M [00:02&lt;00:11, 54.9MB/s]
- 17%|██████▊                                | 137M/786M [00:03&lt;00:11, 57.2MB/s]
- 18%|███████                                | 143M/786M [00:03&lt;00:11, 55.2MB/s]
- 19%|███████▍                               | 149M/786M [00:03&lt;00:11, 56.8MB/s]
- 20%|███████▋                               | 155M/786M [00:03&lt;00:11, 55.4MB/s]
- 20%|███████▉                               | 161M/786M [00:03&lt;00:11, 56.1MB/s]
- 21%|████████▏                              | 166M/786M [00:03&lt;00:11, 55.2MB/s]
- 22%|████████▌                              | 172M/786M [00:03&lt;00:10, 56.7MB/s]
- 23%|████████▊                              | 178M/786M [00:03&lt;00:10, 55.3MB/s]
- 23%|█████████                              | 184M/786M [00:03&lt;00:10, 55.9MB/s]
- 24%|█████████▍                             | 189M/786M [00:03&lt;00:10, 55.1MB/s]
- 25%|█████████▋                             | 196M/786M [00:04&lt;00:10, 56.6MB/s]
- 26%|█████████▉                             | 201M/786M [00:04&lt;00:10, 55.0MB/s]
- 26%|██████████▎                            | 207M/786M [00:04&lt;00:10, 55.7MB/s]
- 27%|██████████▌                            | 213M/786M [00:04&lt;00:10, 55.4MB/s]
- 28%|██████████▊                            | 218M/786M [00:04&lt;00:10, 56.1MB/s]
- 28%|███████████                            | 224M/786M [00:04&lt;00:10, 54.8MB/s]
- 29%|███████████▍                           | 229M/786M [00:04&lt;00:10, 54.9MB/s]
- 30%|███████████▋                           | 235M/786M [00:04&lt;00:10, 53.2MB/s]
- 31%|███████████▉                           | 241M/786M [00:04&lt;00:09, 55.7MB/s]
- 31%|████████████▏                          | 247M/786M [00:05&lt;00:09, 54.2MB/s]
- 32%|████████████▌                          | 253M/786M [00:05&lt;00:09, 55.9MB/s]
- 33%|████████████▊                          | 259M/786M [00:05&lt;00:09, 55.0MB/s]
- 34%|█████████████▏                         | 265M/786M [00:05&lt;00:09, 56.2MB/s]
- 34%|█████████████▍                         | 270M/786M [00:05&lt;00:09, 55.1MB/s]
- 35%|█████████████▋                         | 276M/786M [00:05&lt;00:09, 56.5MB/s]
- 36%|█████████████▉                         | 282M/786M [00:05&lt;00:09, 54.9MB/s]
- 37%|██████████████▎                        | 288M/786M [00:05&lt;00:08, 57.0MB/s]
- 37%|██████████████▌                        | 294M/786M [00:05&lt;00:08, 55.5MB/s]
- 38%|██████████████▊                        | 299M/786M [00:05&lt;00:08, 55.7MB/s]
- 39%|███████████████▏                       | 305M/786M [00:06&lt;00:08, 55.3MB/s]
- 40%|███████████████▍                       | 311M/786M [00:06&lt;00:08, 55.3MB/s]
- 40%|███████████████▋                       | 317M/786M [00:06&lt;00:08, 56.1MB/s]
- 41%|████████████████                       | 323M/786M [00:06&lt;00:08, 55.6MB/s]
- 42%|████████████████▎                      | 328M/786M [00:06&lt;00:08, 56.4MB/s]
- 43%|████████████████▌                      | 334M/786M [00:06&lt;00:08, 55.4MB/s]
- 43%|████████████████▉                      | 340M/786M [00:06&lt;00:07, 56.5MB/s]
- 44%|█████████████████▏                     | 346M/786M [00:06&lt;00:07, 55.6MB/s]
- 45%|█████████████████▍                     | 352M/786M [00:06&lt;00:07, 56.5MB/s]
- 45%|█████████████████▋                     | 357M/786M [00:06&lt;00:07, 55.6MB/s]
- 46%|██████████████████                     | 363M/786M [00:07&lt;00:07, 56.0MB/s]
- 47%|██████████████████▎                    | 369M/786M [00:07&lt;00:07, 55.6MB/s]
- 48%|██████████████████▌                    | 375M/786M [00:07&lt;00:07, 56.0MB/s]
- 48%|██████████████████▉                    | 381M/786M [00:07&lt;00:07, 55.8MB/s]
- 49%|███████████████████▏                   | 386M/786M [00:07&lt;00:07, 55.8MB/s]
- 50%|███████████████████▍                   | 392M/786M [00:07&lt;00:07, 55.4MB/s]
- 51%|███████████████████▋                   | 398M/786M [00:07&lt;00:06, 55.7MB/s]
- 51%|████████████████████                   | 403M/786M [00:07&lt;00:07, 54.3MB/s]
- 52%|████████████████████▎                  | 409M/786M [00:07&lt;00:06, 55.8MB/s]
- 53%|████████████████████▌                  | 415M/786M [00:08&lt;00:06, 54.2MB/s]
- 54%|████████████████████▉                  | 421M/786M [00:08&lt;00:06, 56.7MB/s]
- 54%|█████████████████████▏                 | 427M/786M [00:08&lt;00:06, 51.7MB/s]
- 55%|█████████████████████▍                 | 432M/786M [00:08&lt;00:08, 43.9MB/s]
- 56%|█████████████████████▋                 | 437M/786M [00:08&lt;00:07, 44.1MB/s]
- 56%|█████████████████████▉                 | 443M/786M [00:08&lt;00:06, 49.1MB/s]
- 57%|██████████████████████▏                | 448M/786M [00:08&lt;00:06, 49.1MB/s]
- 58%|██████████████████████▌                | 454M/786M [00:08&lt;00:06, 51.8MB/s]
- 58%|██████████████████████▊                | 459M/786M [00:08&lt;00:06, 52.5MB/s]
- 59%|███████████████████████                | 465M/786M [00:09&lt;00:05, 53.9MB/s]
- 60%|███████████████████████▎               | 471M/786M [00:09&lt;00:05, 53.1MB/s]
- 61%|███████████████████████▋               | 476M/786M [00:09&lt;00:05, 53.9MB/s]
- 61%|███████████████████████▉               | 482M/786M [00:09&lt;00:05, 53.1MB/s]
- 62%|████████████████████████▏              | 488M/786M [00:09&lt;00:05, 54.9MB/s]
- 63%|████████████████████████▍              | 493M/786M [00:09&lt;00:05, 52.9MB/s]
- 64%|████████████████████████▊              | 499M/786M [00:09&lt;00:05, 54.8MB/s]
- 64%|█████████████████████████              | 505M/786M [00:09&lt;00:05, 53.2MB/s]
- 65%|█████████████████████████▎             | 511M/786M [00:09&lt;00:05, 54.9MB/s]
- 66%|█████████████████████████▋             | 516M/786M [00:09&lt;00:05, 52.9MB/s]
- 66%|█████████████████████████▉             | 522M/786M [00:10&lt;00:04, 55.0MB/s]
- 67%|██████████████████████████▏            | 528M/786M [00:10&lt;00:04, 52.6MB/s]
- 68%|██████████████████████████▌            | 534M/786M [00:10&lt;00:04, 55.5MB/s]
- 69%|██████████████████████████▊            | 540M/786M [00:10&lt;00:04, 53.2MB/s]
- 69%|███████████████████████████            | 546M/786M [00:10&lt;00:04, 55.0MB/s]
- 70%|███████████████████████████▎           | 552M/786M [00:10&lt;00:04, 53.2MB/s]
- 71%|███████████████████████████▋           | 557M/786M [00:10&lt;00:04, 55.0MB/s]
- 72%|███████████████████████████▉           | 563M/786M [00:10&lt;00:04, 53.2MB/s]
- 72%|████████████████████████████▏          | 569M/786M [00:10&lt;00:04, 54.0MB/s]
- 73%|████████████████████████████▍          | 574M/786M [00:11&lt;00:03, 53.2MB/s]
- 74%|████████████████████████████▊          | 579M/786M [00:11&lt;00:04, 51.3MB/s]
- 75%|█████████████████████████████          | 586M/786M [00:11&lt;00:03, 54.6MB/s]
- 75%|█████████████████████████████▎         | 591M/786M [00:11&lt;00:03, 51.9MB/s]
- 76%|█████████████████████████████▌         | 596M/786M [00:11&lt;00:03, 50.9MB/s]
- 77%|█████████████████████████████▉         | 603M/786M [00:11&lt;00:03, 53.7MB/s]
- 77%|██████████████████████████████▏        | 608M/786M [00:11&lt;00:03, 52.1MB/s]
- 78%|██████████████████████████████▍        | 614M/786M [00:11&lt;00:03, 54.2MB/s]
- 79%|██████████████████████████████▊        | 620M/786M [00:11&lt;00:03, 52.5MB/s]
- 80%|███████████████████████████████        | 626M/786M [00:12&lt;00:02, 54.9MB/s]
- 80%|███████████████████████████████▎       | 631M/786M [00:12&lt;00:03, 50.2MB/s]
- 81%|███████████████████████████████▌       | 637M/786M [00:12&lt;00:03, 48.5MB/s]
- 82%|███████████████████████████████▉       | 642M/786M [00:12&lt;00:02, 51.1MB/s]
- 82%|████████████████████████████████▏      | 648M/786M [00:12&lt;00:02, 51.1MB/s]
- 83%|████████████████████████████████▍      | 654M/786M [00:12&lt;00:02, 52.8MB/s]
- 84%|████████████████████████████████▋      | 659M/786M [00:12&lt;00:02, 53.0MB/s]
- 85%|█████████████████████████████████      | 665M/786M [00:12&lt;00:02, 54.1MB/s]
- 85%|█████████████████████████████████▎     | 671M/786M [00:12&lt;00:02, 54.3MB/s]
- 86%|█████████████████████████████████▌     | 676M/786M [00:13&lt;00:02, 53.0MB/s]
- 87%|█████████████████████████████████▊     | 682M/786M [00:13&lt;00:01, 54.3MB/s]
- 87%|██████████████████████████████████     | 687M/786M [00:13&lt;00:01, 53.7MB/s]
- 88%|██████████████████████████████████▎    | 693M/786M [00:13&lt;00:01, 52.7MB/s]
- 89%|██████████████████████████████████▋    | 698M/786M [00:13&lt;00:01, 53.5MB/s]
- 90%|██████████████████████████████████▉    | 704M/786M [00:13&lt;00:01, 52.5MB/s]
- 90%|███████████████████████████████████▏   | 710M/786M [00:13&lt;00:01, 54.8MB/s]
- 91%|███████████████████████████████████▍   | 715M/786M [00:13&lt;00:01, 52.1MB/s]
- 92%|███████████████████████████████████▊   | 721M/786M [00:13&lt;00:01, 53.5MB/s]
- 92%|████████████████████████████████████   | 726M/786M [00:13&lt;00:01, 51.7MB/s]
- 93%|████████████████████████████████████▎  | 731M/786M [00:14&lt;00:01, 45.4MB/s]
- 94%|████████████████████████████████████▌  | 736M/786M [00:14&lt;00:01, 40.2MB/s]
- 94%|████████████████████████████████████▋  | 740M/786M [00:14&lt;00:01, 40.9MB/s]
- 95%|████████████████████████████████████▉  | 746M/786M [00:14&lt;00:00, 43.8MB/s]
- 96%|█████████████████████████████████████▎ | 752M/786M [00:14&lt;00:00, 46.8MB/s]
- 96%|█████████████████████████████████████▌ | 757M/786M [00:14&lt;00:00, 48.4MB/s]
- 97%|█████████████████████████████████████▊ | 763M/786M [00:14&lt;00:00, 50.6MB/s]
- 98%|██████████████████████████████████████▏| 769M/786M [00:14&lt;00:00, 51.2MB/s]
- 99%|██████████████████████████████████████▍| 775M/786M [00:14&lt;00:00, 52.7MB/s]
- 99%|██████████████████████████████████████▋| 780M/786M [00:15&lt;00:00, 52.7MB/s]
+  0%|                                       | 179k/786M [00:00&lt;07:24, 1.77MB/s]
+  0%|                                      | 2.10M/786M [00:00&lt;01:05, 11.9MB/s]
+  1%|▍                                     | 8.95M/786M [00:00&lt;00:20, 37.7MB/s]
+  2%|▊                                     | 16.9M/786M [00:00&lt;00:14, 54.3MB/s]
+  3%|█▏                                    | 25.8M/786M [00:00&lt;00:11, 66.6MB/s]
+  4%|█▋                                    | 35.0M/786M [00:00&lt;00:09, 75.2MB/s]
+  6%|██▏                                   | 44.5M/786M [00:00&lt;00:09, 81.9MB/s]
+  7%|██▌                                   | 54.0M/786M [00:00&lt;00:08, 85.8MB/s]
+  8%|███                                   | 63.2M/786M [00:00&lt;00:08, 87.9MB/s]
+  9%|███▍                                  | 72.0M/786M [00:01&lt;00:08, 86.6MB/s]
+ 10%|███▉                                  | 81.8M/786M [00:01&lt;00:07, 89.9MB/s]
+ 12%|████▍                                 | 91.6M/786M [00:01&lt;00:07, 92.5MB/s]
+ 13%|█████                                  | 101M/786M [00:01&lt;00:07, 93.9MB/s]
+ 14%|█████▍                                 | 111M/786M [00:01&lt;00:07, 87.7MB/s]
+ 15%|█████▉                                 | 120M/786M [00:01&lt;00:07, 89.5MB/s]
+ 16%|██████▍                                | 130M/786M [00:01&lt;00:07, 90.9MB/s]
+ 18%|██████▉                                | 139M/786M [00:01&lt;00:07, 91.8MB/s]
+ 19%|███████▍                               | 149M/786M [00:01&lt;00:06, 93.4MB/s]
+ 20%|███████▊                               | 158M/786M [00:01&lt;00:06, 92.3MB/s]
+ 21%|████████▎                              | 167M/786M [00:02&lt;00:06, 92.5MB/s]
+ 22%|████████▊                              | 177M/786M [00:02&lt;00:06, 93.0MB/s]
+ 24%|█████████▏                             | 186M/786M [00:02&lt;00:06, 93.3MB/s]
+ 25%|█████████▋                             | 196M/786M [00:02&lt;00:06, 91.6MB/s]
+ 26%|██████████▏                            | 205M/786M [00:02&lt;00:06, 92.9MB/s]
+ 27%|██████████▋                            | 215M/786M [00:02&lt;00:06, 93.7MB/s]
+ 29%|███████████▏                           | 224M/786M [00:02&lt;00:05, 94.6MB/s]
+ 30%|███████████▌                           | 234M/786M [00:02&lt;00:05, 95.7MB/s]
+ 31%|████████████                           | 244M/786M [00:02&lt;00:05, 96.7MB/s]
+ 32%|████████████▌                          | 254M/786M [00:02&lt;00:05, 97.4MB/s]
+ 34%|█████████████                          | 264M/786M [00:03&lt;00:05, 97.8MB/s]
+ 35%|█████████████▌                         | 274M/786M [00:03&lt;00:05, 98.0MB/s]
+ 36%|██████████████                         | 284M/786M [00:03&lt;00:05, 98.3MB/s]
+ 37%|██████████████▌                        | 294M/786M [00:03&lt;00:04, 98.5MB/s]
+ 39%|███████████████                        | 303M/786M [00:03&lt;00:04, 98.0MB/s]
+ 40%|███████████████▌                       | 313M/786M [00:03&lt;00:04, 98.3MB/s]
+ 41%|████████████████                       | 323M/786M [00:03&lt;00:04, 97.4MB/s]
+ 42%|████████████████▌                      | 333M/786M [00:03&lt;00:04, 98.0MB/s]
+ 44%|█████████████████                      | 343M/786M [00:03&lt;00:04, 98.0MB/s]
+ 45%|█████████████████▌                     | 353M/786M [00:03&lt;00:04, 98.4MB/s]
+ 46%|█████████████████▉                     | 363M/786M [00:04&lt;00:04, 98.6MB/s]
+ 47%|██████████████████▍                    | 373M/786M [00:04&lt;00:04, 97.9MB/s]
+ 49%|██████████████████▉                    | 383M/786M [00:04&lt;00:04, 98.4MB/s]
+ 50%|███████████████████▍                   | 392M/786M [00:04&lt;00:03, 98.6MB/s]
+ 51%|███████████████████▉                   | 402M/786M [00:04&lt;00:03, 98.6MB/s]
+ 52%|████████████████████▍                  | 412M/786M [00:04&lt;00:03, 97.5MB/s]
+ 54%|████████████████████▉                  | 422M/786M [00:04&lt;00:03, 97.9MB/s]
+ 55%|█████████████████████▍                 | 432M/786M [00:04&lt;00:03, 98.0MB/s]
+ 56%|█████████████████████▉                 | 442M/786M [00:04&lt;00:03, 98.4MB/s]
+ 57%|██████████████████████▍                | 452M/786M [00:04&lt;00:03, 98.6MB/s]
+ 59%|██████████████████████▉                | 462M/786M [00:05&lt;00:03, 98.2MB/s]
+ 60%|███████████████████████▍               | 471M/786M [00:05&lt;00:03, 93.2MB/s]
+ 61%|███████████████████████▊               | 481M/786M [00:05&lt;00:03, 82.9MB/s]
+ 62%|████████████████████████▎              | 490M/786M [00:05&lt;00:03, 86.2MB/s]
+ 64%|████████████████████████▊              | 500M/786M [00:05&lt;00:03, 89.4MB/s]
+ 65%|█████████████████████████▎             | 510M/786M [00:05&lt;00:03, 91.7MB/s]
+ 66%|█████████████████████████▊             | 520M/786M [00:05&lt;00:02, 93.3MB/s]
+ 67%|██████████████████████████▎            | 529M/786M [00:05&lt;00:02, 94.2MB/s]
+ 69%|██████████████████████████▋            | 539M/786M [00:05&lt;00:02, 94.7MB/s]
+ 70%|███████████████████████████▏           | 548M/786M [00:06&lt;00:02, 92.3MB/s]
+ 71%|███████████████████████████▋           | 558M/786M [00:06&lt;00:02, 94.0MB/s]
+ 72%|████████████████████████████▏          | 568M/786M [00:06&lt;00:02, 95.5MB/s]
+ 73%|████████████████████████████▋          | 578M/786M [00:06&lt;00:02, 94.6MB/s]
+ 75%|█████████████████████████████▏         | 587M/786M [00:06&lt;00:02, 95.6MB/s]
+ 76%|█████████████████████████████▌         | 597M/786M [00:06&lt;00:01, 95.7MB/s]
+ 77%|██████████████████████████████         | 607M/786M [00:06&lt;00:01, 96.3MB/s]
+ 78%|██████████████████████████████▌        | 616M/786M [00:06&lt;00:01, 96.3MB/s]
+ 80%|███████████████████████████████        | 626M/786M [00:06&lt;00:01, 96.0MB/s]
+ 81%|███████████████████████████████▌       | 636M/786M [00:06&lt;00:01, 96.4MB/s]
+ 82%|████████████████████████████████       | 646M/786M [00:07&lt;00:01, 96.9MB/s]
+ 83%|████████████████████████████████▌      | 655M/786M [00:07&lt;00:01, 96.4MB/s]
+ 85%|████████████████████████████████▉      | 665M/786M [00:07&lt;00:01, 94.4MB/s]
+ 86%|█████████████████████████████████▍     | 674M/786M [00:07&lt;00:01, 69.8MB/s]
+ 87%|█████████████████████████████████▉     | 683M/786M [00:07&lt;00:01, 73.6MB/s]
+ 88%|██████████████████████████████████▎    | 693M/786M [00:07&lt;00:01, 79.7MB/s]
+ 89%|██████████████████████████████████▊    | 702M/786M [00:07&lt;00:01, 83.7MB/s]
+ 91%|███████████████████████████████████▎   | 712M/786M [00:07&lt;00:00, 87.6MB/s]
+ 92%|███████████████████████████████████▊   | 721M/786M [00:07&lt;00:00, 80.9MB/s]
+ 93%|████████████████████████████████████▎  | 731M/786M [00:08&lt;00:00, 85.1MB/s]
+ 94%|████████████████████████████████████▋  | 740M/786M [00:08&lt;00:00, 88.4MB/s]
+ 95%|█████████████████████████████████████▏ | 750M/786M [00:08&lt;00:00, 91.3MB/s]
+ 97%|█████████████████████████████████████▋ | 760M/786M [00:08&lt;00:00, 93.0MB/s]
+ 98%|██████████████████████████████████████▏| 769M/786M [00:08&lt;00:00, 91.8MB/s]
+ 99%|██████████████████████████████████████▋| 779M/786M [00:08&lt;00:00, 92.8MB/s]
   0%|                                               | 0.00/786M [00:00&lt;?, ?B/s]
-100%|███████████████████████████████████████| 786M/786M [00:00&lt;00:00, 4.16TB/s]
-/home/runner/work/gedai/gedai/tutorials/advanced/20_gedai_opm.py:58: RuntimeWarning: Setting non-standard config type: "MNE_DATASETS_UCL_OPM_AUDITORY_PATH"
+100%|███████████████████████████████████████| 786M/786M [00:00&lt;00:00, 2.56TB/s]
+/home/runner/work/gedai/gedai/tutorials/advanced/20_gedai_opm.py:68: RuntimeWarning: Setting non-standard config type: "MNE_DATASETS_UCL_OPM_AUDITORY_PATH"
   data_path = ucl_opm_auditory.data_path()
-Download complete in 26s (749.5 MB)
+Download complete in 22s (749.5 MB)
 Reading 0 ... 540000  =      0.000 ...    90.000 secs...
 </pre></div>
 </div>
 </section>
 <section id="examining-raw-data-no-preprocessing">
 <h2>1. Examining Raw Data (No Preprocessing)<a class="headerlink" href="#examining-raw-data-no-preprocessing" title="Link to this heading">🔗</a></h2>
-<p>First, let’s examine the raw un-preprocessed data. Notice the massive low-frequency
-fluctuations in the sub-1 Hz band, spanning hundreds of picoteslas (pT).</p>
+<p>First, let’s examine the raw un-preprocessed data. Notice the massive
+low-frequency fluctuations in the sub-1 Hz band, spanning hundreds of
+picoteslas (pT).</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">amp_scale</span></a> <span class="o">=</span> <span class="mf">1e12</span>  <span class="c1"># Tesla to picoTesla (pT)</span>
 <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stop</span></a> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw</span><span class="o">.</span><span class="n">times</span><span class="p">)</span> <span class="o">-</span> <span class="mi">300</span>
 <a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">step</span></a> <span class="o">=</span> <span class="mi">300</span>
@@ -710,7 +664,10 @@ fluctuations in the sub-1 Hz band, spanning hundreds of picoteslas (pT).</p>
 
 <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">plot_kwargs</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">set_kwargs</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-    <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span> <span class="n">xlim</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">time_ds</span></a><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Time (s)"</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Amplitude (pT)"</span>
+    <span class="n">ylim</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">500</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span>
+    <span class="n">xlim</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">time_ds</span></a><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+    <span class="n">xlabel</span><span class="o">=</span><span class="s2">"Time (s)"</span><span class="p">,</span>
+    <span class="n">ylabel</span><span class="o">=</span><span class="s2">"Amplitude (pT)"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ax</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">)</span>
@@ -720,7 +677,12 @@ fluctuations in the sub-1 Hz band, spanning hundreds of picoteslas (pT).</p>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 
 <span class="c1"># Compute pre-denoising PSD with 1 Hz resolution for shielding factor analysis</span>
-<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">psd_kwargs</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fmax</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">n_fft</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">"sfreq"</span><span class="p">])),</span> <span class="n">picks</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">meg_picks</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">psd_kwargs</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">fmax</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">n_fft</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">"sfreq"</span><span class="p">])),</span>
+    <span class="n">picks</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">meg_picks</span></a><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 <a href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum" class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">psd_pre</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">compute_psd</span><span class="p">(</span><span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">psd_kwargs</span></a><span class="p">)</span>
 </pre></div>
 </div>
@@ -779,10 +741,11 @@ as SSP projectors to suppress external magnetic fields based on spherical harmon
 </section>
 <section id="the-gedai-alternative-forward-subspace-denoising">
 <h2>4. The GEDAI Alternative: Forward-Subspace Denoising<a class="headerlink" href="#the-gedai-alternative-forward-subspace-denoising" title="Link to this heading">🔗</a></h2>
-<p>In <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code>, we replace both Reference Regression and HFC by computing the reference
-covariance directly from the subject’s forward model (<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a>).</p>
-<p>First, we downsample a copy to 300 Hz (standard for auditory analysis) to allow discrete
-wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code>, we replace both Reference Regression and HFC by computing the
+reference covariance directly from the subject’s forward model
+(<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a>).</p>
+<p>First, we downsample a copy to 300 Hz (standard for auditory analysis) to
+allow discrete wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">raw_300</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="mi">300</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="n">mri</span> <span class="o">=</span> <span class="n">nib</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects_dir</span></a> <span class="o">/</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a> <span class="o">/</span> <span class="s2">"mri"</span> <span class="o">/</span> <span class="s2">"T1.mgz"</span><span class="p">)</span>
@@ -794,9 +757,15 @@ wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
 <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">src</span></a> <span class="o">=</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subjects_dir</span></a> <span class="o">/</span> <a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a> <span class="o">/</span> <span class="s2">"bem"</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><a href="https://docs.python.org/3/library/stdtypes.html#str" title="builtins.str" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">subject</span></a><span class="si">}</span><span class="s2">-oct-6-src.fif"</span>
 
 <span class="n">raw_gedai</span> <span class="o">=</span> <span class="n">raw_300</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="s2">"meg"</span><span class="p">)</span>
-<a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.make_forward_solution.html#mne.make_forward_solution" title="mne.make_forward_solution" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">make_forward_solution</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_gedai</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.transforms.Transform.html#mne.transforms.Transform" title="mne.transforms.Transform" class="sphx-glr-backref-module-mne-transforms sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trans</span></a><span class="o">=</span><a href="https://mne.tools/stable/generated/mne.transforms.Transform.html#mne.transforms.Transform" title="mne.transforms.Transform" class="sphx-glr-backref-module-mne-transforms sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trans</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">bem</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">bem</span></a><span class="p">,</span> <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">src</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">src</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s2">"error"</span><span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.make_forward_solution.html#mne.make_forward_solution" title="mne.make_forward_solution" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">make_forward_solution</span></a><span class="p">(</span>
+    <a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_gedai</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.transforms.Transform.html#mne.transforms.Transform" title="mne.transforms.Transform" class="sphx-glr-backref-module-mne-transforms sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trans</span></a><span class="o">=</span><a href="https://mne.tools/stable/generated/mne.transforms.Transform.html#mne.transforms.Transform" title="mne.transforms.Transform" class="sphx-glr-backref-module-mne-transforms sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">trans</span></a><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">bem</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">bem</span></a><span class="p">,</span>
+    <a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">src</span></a><span class="o">=</span><a href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath" class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">src</span></a><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="c1"># Fit Adaptive Multiband GEDAI directly on the raw un-preprocessed OPM recording</span>
+<span class="c1"># Fit Adaptive Multiband GEDAI directly on the raw un-preprocessed OPM record.</span>
 <span class="n">ad</span> <span class="o">=</span> <span class="n">AdaptiveMultibandGedai</span><span class="p">(</span>
     <span class="n">wavelet_type</span><span class="o">=</span><span class="s2">"haar"</span><span class="p">,</span>
     <span class="n">wavelet_level</span><span class="o">=</span><span class="s2">"auto"</span><span class="p">,</span>
@@ -820,9 +789,17 @@ wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gedai</span></a> <span class="o">=</span> <span class="n">raw_gedai</span><span class="o">.</span><span class="n">get_data</span><span class="p">()[::</span><span class="mi">5</span><span class="p">,</span> <span class="p">:</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stop_300</span></a><span class="p">:</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">step_300</span></a><span class="p">]</span> <span class="o">*</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">amp_scale</span></a>
 
 <span class="n">fig</span><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ax</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">)</span>
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">time_ds_300</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gedai</span><span class="o">.</span><span class="n">T</span></a> <span class="o">-</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gedai</span></a><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#1b9e77"</span><span class="p">,</span> <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">plot_kwargs</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">time_ds_300</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gedai</span><span class="o">.</span><span class="n">T</span></a> <span class="o">-</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gedai</span></a><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">"#1b9e77"</span><span class="p">,</span>
+    <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">plot_kwargs</span></a><span class="p">,</span>
+<span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">":"</span><span class="p">)</span>
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html#matplotlib.axes.Axes.set" title="matplotlib.axes.Axes.set" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set</span></a><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Figure 3b: After pyGEDAI (Adaptive Multiband, No Ref Sensors)"</span><span class="p">,</span> <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">set_kwargs</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html#matplotlib.axes.Axes.set" title="matplotlib.axes.Axes.set" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set</span></a><span class="p">(</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Figure 3b: After pyGEDAI (Adaptive Multiband, No Ref Sensors)"</span><span class="p">,</span>
+    <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">set_kwargs</span></a><span class="p">,</span>
+<span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 
 <a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">psd_kwargs_300</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fmax</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">n_fft</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
@@ -833,10 +810,13 @@ wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
 <img src="../../../_images/sphx_glr_20_gedai_opm_004.png" srcset="../../../_images/sphx_glr_20_gedai_opm_004.png" alt="Figure 3b: After pyGEDAI (Adaptive Multiband, No Ref Sensors)" class = "sphx-glr-single-img"/></section>
 <section id="comparing-shielding-factors">
 <h2>5. Comparing Shielding Factors<a class="headerlink" href="#comparing-shielding-factors" title="Link to this heading">🔗</a></h2>
-<p>The shielding factor measures the attenuation of interference in decibels (dB):</p>
+<p>The shielding factor measures the attenuation of interference in decibels
+(dB):</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\\text{Shielding (dB)} = 10 \\log_{10} \\left( \\frac{\\text{PSD}_{\\text{pre}}}{\\text{PSD}_{\\text{post}}} \\right)\end{split}\]</div>
-<p>Let’s reproduce the original tutorial’s shielding plots and compare them against GEDAI:</p>
+\[\begin{split}\\text{Shielding (dB)} = 10 \\log_{10}
+\\left( \\frac{\\text{PSD}_{\\text{pre}}}{\\text{PSD}_{\\text{post}}} \\right)\end{split}\]</div>
+<p>Let’s reproduce the original tutorial’s shielding plots and compare them
+against GEDAI:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Figure 4: Reference regression shielding (Original MNE)</span>
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">shielding_reg</span></a> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">np</span><span class="o">.</span><span class="n">log10</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum.get_data" title="mne.time_frequency.Spectrum.get_data" class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-method"><span class="n">psd_pre</span><span class="o">.</span><span class="n">get_data</span></a><span class="p">()</span> <span class="o">/</span> <a href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum.get_data" title="mne.time_frequency.Spectrum.get_data" class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-method"><span class="n">psd_post_reg</span><span class="o">.</span><span class="n">get_data</span></a><span class="p">())</span>
 <span class="n">fig</span><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ax</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">)</span>
@@ -914,7 +894,12 @@ wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gfilt</span></a> <span class="o">=</span> <span class="n">raw_gedai</span><span class="o">.</span><span class="n">get_data</span><span class="p">()[::</span><span class="mi">5</span><span class="p">,</span> <span class="p">:</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stop_300</span></a><span class="p">:</span><a href="https://docs.python.org/3/library/functions.html#int" title="builtins.int" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">step_300</span></a><span class="p">]</span> <span class="o">*</span> <a href="https://docs.python.org/3/library/functions.html#float" title="builtins.float" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">amp_scale</span></a>
 
 <span class="n">fig</span><span class="p">,</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.html#matplotlib.axes.Axes" title="matplotlib.axes.Axes" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">ax</span></a> <span class="o">=</span> <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="n">layout</span><span class="o">=</span><span class="s2">"constrained"</span><span class="p">)</span>
-<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">time_ds_300</span></a><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gfilt</span><span class="o">.</span><span class="n">T</span></a> <span class="o">-</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gfilt</span></a><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"#1b9e77"</span><span class="p">,</span> <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">plot_kwargs</span></a><span class="p">)</span>
+<a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.plot.html#matplotlib.axes.Axes.plot" title="matplotlib.axes.Axes.plot" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">plot</span></a><span class="p">(</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">time_ds_300</span></a><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gfilt</span><span class="o">.</span><span class="n">T</span></a> <span class="o">-</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">data_ds_gfilt</span></a><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">color</span><span class="o">=</span><span class="s2">"#1b9e77"</span><span class="p">,</span>
+    <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">plot_kwargs</span></a><span class="p">,</span>
+<span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">":"</span><span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.set.html#matplotlib.axes.Axes.set" title="matplotlib.axes.Axes.set" class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method"><span class="n">ax</span><span class="o">.</span><span class="n">set</span></a><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Figure 6b: After pyGEDAI and Filtering (2-40 Hz)"</span><span class="p">,</span> <span class="o">**</span><a href="https://docs.python.org/3/library/stdtypes.html#dict" title="builtins.dict" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">set_kwargs</span></a><span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
@@ -927,29 +912,51 @@ wavelets to directly resolve sub-1 Hz DC drift frequencies:</p>
 </section>
 <section id="auditory-evoked-fields-aef">
 <h2>7. Auditory Evoked Fields (AEF)<a class="headerlink" href="#auditory-evoked-fields-aef" title="Link to this heading">🔗</a></h2>
-<p>We extract auditory stimulation epochs and compute the Auditory Evoked Field (AEF).
-Notice the clear N100m auditory peak around 100-140 ms:</p>
+<p>We extract auditory stimulation epochs and compute the Auditory Evoked Field
+(AEF). Notice the clear N100m auditory peak around 100-140 ms:</p>
 <p>sphinx_gallery_thumbnail_number = 10</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.find_events.html#mne.find_events" title="mne.find_events" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">find_events</span></a><span class="p">(</span><span class="n">raw_mne</span><span class="p">,</span> <span class="n">min_duration</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">epochs_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class"><span class="n">mne</span><span class="o">.</span><span class="n">Epochs</span></a><span class="p">(</span>
-    <span class="n">raw_mne</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_mne</span></a><span class="p">,</span> <span class="n">tmin</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">picks</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">meg_picks</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s2">"error"</span>
+    <span class="n">raw_mne</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_mne</span></a><span class="p">,</span>
+    <span class="n">tmin</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">tmax</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+    <span class="n">baseline</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+    <span class="n">picks</span><span class="o">=</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">meg_picks</span></a><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span>
 <span class="p">)</span>
 <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray" title="mne.EvokedArray" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.average" title="mne.Epochs.average" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">epochs_mne</span><span class="o">.</span><span class="n">average</span></a><span class="p">()</span>
-<span class="c1"># Exact topomap timepoints from the original MNE tutorial: 0.093 s, 0.144 s, 0.223 s</span>
+<span class="c1"># Exact topomap timepoints from the original MNE tutorial: 0.093 s, 0.144 s,</span>
+<span class="c1"># 0.223 s.</span>
 <a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mne_tutorial_times</span></a> <span class="o">=</span> <span class="p">[</span><span class="mf">0.093</span><span class="p">,</span> <span class="mf">0.144</span><span class="p">,</span> <span class="mf">0.223</span><span class="p">]</span>
 
-<span class="n">fig</span> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray.plot_joint" title="mne.EvokedArray.plot_joint" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">evoked_mne</span><span class="o">.</span><span class="n">plot_joint</span></a><span class="p">(</span><span class="n">picks</span><span class="o">=</span><span class="s2">"mag"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mne_tutorial_times</span></a><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Figure 7: Auditory Evoked Response (MNE Pipeline)"</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray.plot_joint" title="mne.EvokedArray.plot_joint" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">evoked_mne</span><span class="o">.</span><span class="n">plot_joint</span></a><span class="p">(</span>
+    <span class="n">picks</span><span class="o">=</span><span class="s2">"mag"</span><span class="p">,</span>
+    <span class="n">times</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mne_tutorial_times</span></a><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Figure 7: Auditory Evoked Response (MNE Pipeline)"</span><span class="p">,</span>
+<span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 
 <span class="c1"># GEDAI Pipeline Evoked</span>
 <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_gedai</span></a> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_mne</span></a><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_gedai</span></a><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.round.html#numpy.round" title="numpy.round" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">round</span></a><span class="p">(</span><a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_mne</span></a><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_gedai</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">"sfreq"</span><span class="p">]</span> <span class="o">/</span> <a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_mne</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">"sfreq"</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+<a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_gedai</span></a><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.round.html#numpy.round" title="numpy.round" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function"><span class="n">np</span><span class="o">.</span><span class="n">round</span></a><span class="p">(</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_mne</span></a><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_gedai</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">"sfreq"</span><span class="p">]</span> <span class="o">/</span> <a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">raw_mne</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">"sfreq"</span><span class="p">])</span>
+<span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
 <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">epochs_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class"><span class="n">mne</span><span class="o">.</span><span class="n">Epochs</span></a><span class="p">(</span>
-    <span class="n">raw_gedai</span><span class="p">,</span> <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_gedai</span></a><span class="p">,</span> <span class="n">tmin</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span> <span class="n">baseline</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="s2">"error"</span>
+    <span class="n">raw_gedai</span><span class="p">,</span>
+    <a href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray" class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">events_gedai</span></a><span class="p">,</span>
+    <span class="n">tmin</span><span class="o">=-</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">tmax</span><span class="o">=</span><span class="mf">0.4</span><span class="p">,</span>
+    <span class="n">baseline</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span>
 <span class="p">)</span>
 <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray" title="mne.EvokedArray" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs.average" title="mne.Epochs.average" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">epochs_gedai</span><span class="o">.</span><span class="n">average</span></a><span class="p">()</span>
 
-<span class="n">fig</span> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray.plot_joint" title="mne.EvokedArray.plot_joint" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">evoked_gedai</span><span class="o">.</span><span class="n">plot_joint</span></a><span class="p">(</span><span class="n">picks</span><span class="o">=</span><span class="s2">"mag"</span><span class="p">,</span> <span class="n">times</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mne_tutorial_times</span></a><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Figure 7b: Auditory Evoked Response (pyGEDAI Pipeline)"</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray.plot_joint" title="mne.EvokedArray.plot_joint" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">evoked_gedai</span><span class="o">.</span><span class="n">plot_joint</span></a><span class="p">(</span>
+    <span class="n">picks</span><span class="o">=</span><span class="s2">"mag"</span><span class="p">,</span>
+    <span class="n">times</span><span class="o">=</span><a href="https://docs.python.org/3/library/stdtypes.html#list" title="builtins.list" class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">mne_tutorial_times</span></a><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">"Figure 7b: Auditory Evoked Response (pyGEDAI Pipeline)"</span><span class="p">,</span>
+<span class="p">)</span>
 <a href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show" class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">()</span>
 </pre></div>
 </div>
@@ -986,15 +993,43 @@ for both the MNE pipeline and the GEDAI pipeline. Both methods localize the audi
 N100m generator to primary auditory cortex (Heschl’s gyrus / STG), confirming that
 GEDAI preserves cortical dipole signals with zero spatial distortion:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_cov_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.compute_covariance.html#mne.compute_covariance" title="mne.compute_covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">compute_covariance</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">epochs_mne</span></a><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.make_inverse_operator.html#mne.minimum_norm.make_inverse_operator" title="mne.minimum_norm.make_inverse_operator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">make_inverse_operator</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_mne</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_cov_mne</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate" title="mne.SourceEstimate" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stc_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.apply_inverse.html#mne.minimum_norm.apply_inverse" title="mne.minimum_norm.apply_inverse" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">apply_inverse</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray" title="mne.EvokedArray" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_mne</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_mne</span></a><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="mf">9.0</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"dSPM"</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.make_inverse_operator.html#mne.minimum_norm.make_inverse_operator" title="mne.minimum_norm.make_inverse_operator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">make_inverse_operator</span></a><span class="p">(</span>
+    <a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_mne</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_cov_mne</span></a><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate" title="mne.SourceEstimate" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stc_mne</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.apply_inverse.html#mne.minimum_norm.apply_inverse" title="mne.minimum_norm.apply_inverse" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">apply_inverse</span></a><span class="p">(</span>
+    <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray" title="mne.EvokedArray" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_mne</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_mne</span></a><span class="p">,</span>
+    <span class="mf">1.0</span> <span class="o">/</span> <span class="mf">9.0</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">"dSPM"</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 
 <a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_cov_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.compute_covariance.html#mne.compute_covariance" title="mne.compute_covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">compute_covariance</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">epochs_gedai</span></a><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.make_inverse_operator.html#mne.minimum_norm.make_inverse_operator" title="mne.minimum_norm.make_inverse_operator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">make_inverse_operator</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_gedai</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_cov_gedai</span></a><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate" title="mne.SourceEstimate" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stc_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.apply_inverse.html#mne.minimum_norm.apply_inverse" title="mne.minimum_norm.apply_inverse" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">apply_inverse</span></a><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray" title="mne.EvokedArray" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_gedai</span></a><span class="p">,</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_gedai</span></a><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="mf">9.0</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"dSPM"</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.make_inverse_operator.html#mne.minimum_norm.make_inverse_operator" title="mne.minimum_norm.make_inverse_operator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">make_inverse_operator</span></a><span class="p">(</span>
+    <a href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info" class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_gedai</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">fwd</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">noise_cov_gedai</span></a><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate" title="mne.SourceEstimate" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">stc_gedai</span></a> <span class="o">=</span> <a href="https://mne.tools/stable/generated/mne.minimum_norm.apply_inverse.html#mne.minimum_norm.apply_inverse" title="mne.minimum_norm.apply_inverse" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-function"><span class="n">mne</span><span class="o">.</span><span class="n">minimum_norm</span><span class="o">.</span><span class="n">apply_inverse</span></a><span class="p">(</span>
+    <a href="https://mne.tools/stable/generated/mne.EvokedArray.html#mne.EvokedArray" title="mne.EvokedArray" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">evoked_gedai</span></a><span class="p">,</span>
+    <a href="https://mne.tools/stable/generated/mne.minimum_norm.InverseOperator.html#mne.minimum_norm.InverseOperator" title="mne.minimum_norm.InverseOperator" class="sphx-glr-backref-module-mne-minimum_norm sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">inv_gedai</span></a><span class="p">,</span>
+    <span class="mf">1.0</span> <span class="o">/</span> <span class="mf">9.0</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">"dSPM"</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"MNE Source Peak: vertex </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_mne</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_mne</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GEDAI Source Peak: vertex </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_gedai</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_gedai</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"MNE Source Peak: vertex </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_mne</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+    <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_mne</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s"</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s2">"GEDAI Source Peak: vertex </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_gedai</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> "</span>
+    <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><a href="https://mne.tools/stable/generated/mne.SourceEstimate.html#mne.SourceEstimate.get_peak" title="mne.SourceEstimate.get_peak" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method"><span class="n">stc_gedai</span><span class="o">.</span><span class="n">get_peak</span></a><span class="p">()[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> s"</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>MNE Source Peak: vertex 93475 at 0.139 s
@@ -1005,13 +1040,14 @@ GEDAI Source Peak: vertex 93475 at 0.140 s
 <section id="summary-and-takeaways">
 <h2>Summary and Takeaways<a class="headerlink" href="#summary-and-takeaways" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
-<li><p><strong>Unified Preprocessing</strong>: <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> replaces multiple ad-hoc preprocessing stages
-(reference sensor regression + multipole HFC) with a single, mathematically principled
-decomposition based on the forward leadfield subspace.</p></li>
-<li><p><strong>Reference-Free</strong>: No external reference sensors are required, making <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> ideal
-for portable and wearable OPM setups.</p></li>
-<li><p><strong>Source-Preserving</strong>: Cortical source localization is fully preserved, matching
-dipolar generators in primary auditory cortex with high fidelity.</p></li>
+<li><p><strong>Unified Preprocessing</strong>: <code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> replaces multiple ad-hoc
+preprocessing stages (reference sensor regression + multipole HFC) with a
+single, mathematically principled decomposition based on the forward
+leadfield subspace.</p></li>
+<li><p><strong>Reference-Free</strong>: No external reference sensors are required, making
+<code class="docutils literal notranslate"><span class="pre">GEDAI</span></code> ideal for portable and wearable OPM setups.</p></li>
+<li><p><strong>Source-Preserving</strong>: Cortical source localization is fully preserved,
+matching dipolar generators in primary auditory cortex with high fidelity.</p></li>
 </ul>
 </section>
 <section id="references">
@@ -1024,8 +1060,8 @@ dipolar generators in primary auditory cortex with high fidelity.</p></li>
 </aside>
 </aside>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 53.303 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  3384 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 41.855 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  3317 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-advanced-20-gedai-opm-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/2adfc68ab458f5c8e995494bcb722f2a/20_gedai_opm.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">20_gedai_opm.ipynb</span></code></a></p>
