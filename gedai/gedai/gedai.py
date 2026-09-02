@@ -34,6 +34,7 @@ from ..utils._checks import (
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_int,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import verbose
@@ -178,7 +179,13 @@ class Gedai:
                 reference_cov, signal_type=signal_type, data=data
             )
         else:
-            resolved_n_pc = int(n_pc)
+            resolved_n_pc = ensure_int(n_pc, "n_pc")
+            if not 1 <= resolved_n_pc <= reference_cov.shape[0]:
+                max_n_pc = reference_cov.shape[0]
+                raise ValueError(
+                    f"n_pc must be an integer in the range [1, {max_n_pc}], "
+                    f"got {n_pc!r}."
+                )
 
         fit_epochs = mne.EpochsArray(
             data, epochs_fit.info, tmin=epochs.tmin, verbose=False

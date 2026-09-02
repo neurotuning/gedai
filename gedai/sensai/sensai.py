@@ -2,6 +2,8 @@ import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
 
+from ..utils._checks import ensure_int
+
 
 def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     """Calculate the principal angles (in radians) between two subspaces.
@@ -58,6 +60,11 @@ def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int | None = 3) -> f
     -------
     similarity : float in [0, 1]
     """
+    if n_pc is not None:
+        n_pc = ensure_int(n_pc, "n_pc")
+        if n_pc < 1:
+            raise ValueError(f"n_pc must be >= 1, got {n_pc!r}.")
+
     S = np.linalg.svd(A.T @ B, compute_uv=False)
     S = np.clip(S, -1.0, 1.0)
     k = len(S)
@@ -72,7 +79,7 @@ def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int | None = 3) -> f
         else:
             return float(S[0] * S[1] * S[2])
     elif n_pc is not None and n_pc > 0:
-        S_sub = S[:n_pc]
+        S_sub = S[: min(n_pc, len(S))]
         return float(np.prod(S_sub))
     return float(np.prod(S))
 
@@ -227,7 +234,7 @@ def _sensai_score_loop(
                 P_bad = VR_e[:, bad_mask]
                 Q_bad, _ = np.linalg.qr(P_bad)
                 s = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
-                noi_sims[e] = float(np.sum(s**6))
+                noi_sims[e] = float(np.mean(s**6))
             else:
                 noi_sims[e] = 0.0
         else:
@@ -240,7 +247,8 @@ def _sensai_score_loop(
                 T_noi = reference_cov @ Q1_n
                 Y2_n = VR_bad @ (d_bad[:, None] * (evec_bad.T @ T_noi))
                 basis_n, _ = np.linalg.qr(Y2_n)
-                noi_sims[e] = abs(float(np.linalg.det(basis_n.T @ template)))
+                basis_n = basis_n[:, : min(num_bad, basis_n.shape[1])]
+                noi_sims[e] = subspace_similarity(basis_n, template, n_pc=n_pc)
             elif num_bad > 0:
                 VR_bad = VR_e[:, bad_mask]
                 d_bad = evals_e[bad_mask]
@@ -252,7 +260,8 @@ def _sensai_score_loop(
                     Y1_n = cov_noise @ template
                     Q1_n, _ = np.linalg.qr(Y1_n)
                     basis_n, _ = np.linalg.qr(cov_noise @ Q1_n)
-                    noi_sims[e] = abs(float(np.linalg.det(basis_n.T @ template)))
+                    basis_n = basis_n[:, : min(num_bad, basis_n.shape[1])]
+                    noi_sims[e] = subspace_similarity(basis_n, template, n_pc=n_pc)
             else:
                 noi_sims[e] = empty_noi_sim
 
@@ -268,7 +277,8 @@ def _sensai_score_loop(
             T_sig = reference_cov @ Q1_s
             Y2_s = VR_good @ (d_good[:, None] * (evec_good.T @ T_sig))
             basis_s, _ = np.linalg.qr(Y2_s)
-            sig_sims[e] = abs(float(np.linalg.det(basis_s.T @ template)))
+            basis_s = basis_s[:, : min(num_good, basis_s.shape[1])]
+            sig_sims[e] = subspace_similarity(basis_s, template, n_pc=n_pc)
         elif num_good > 0:
             VR_good = VR_e[:, good_mask]
             d_good = evals_e[good_mask]
@@ -280,7 +290,8 @@ def _sensai_score_loop(
                 Y1_s = cov_signal @ template
                 Q1_s, _ = np.linalg.qr(Y1_s)
                 basis_s, _ = np.linalg.qr(cov_signal @ Q1_s)
-                sig_sims[e] = abs(float(np.linalg.det(basis_s.T @ template)))
+                basis_s = basis_s[:, : min(num_good, basis_s.shape[1])]
+                sig_sims[e] = subspace_similarity(basis_s, template, n_pc=n_pc)
         else:
             sig_sims[e] = 0.0
 
@@ -378,6 +389,15 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc=3, noise_multiplier=3.0
     signal_subspace_similarity : float
     noise_subspace_similarity : float
     """
+    if n_pc is None:
+        raise ValueError("n_pc must be a positive integer, got None.")
+    n_pc = ensure_int(n_pc, "n_pc")
+    if not 1 <= n_pc <= reference_cov.shape[0]:
+        raise ValueError(
+            f"n_pc must be an integer in the range [1, {reference_cov.shape[0]}], "
+            f"got {n_pc!r}."
+        )
+
     if hasattr(epochs, "get_data"):
         epochs_data = epochs.get_data(verbose=False)
     else:
@@ -411,6 +431,13 @@ def _sensai_gridsearch(
     sensai_thresholds=None,
     signal_type="eeg",
 ):
+    n_pc = ensure_int(n_pc, "n_pc")
+    if not 1 <= n_pc <= reference_cov.shape[0]:
+        raise ValueError(
+            f"n_pc must be an integer in the range [1, {reference_cov.shape[0]}], "
+            f"got {n_pc!r}."
+        )
+
     if hasattr(epochs, "get_data"):
         epochs_data = epochs.get_data(verbose=False)
     else:
@@ -505,6 +532,13 @@ def _sensai_optimize(
     percentile=98,
     signal_type="eeg",
 ):
+    n_pc = ensure_int(n_pc, "n_pc")
+    if not 1 <= n_pc <= reference_cov.shape[0]:
+        raise ValueError(
+            f"n_pc must be an integer in the range [1, {reference_cov.shape[0]}], "
+            f"got {n_pc!r}."
+        )
+
     if hasattr(epochs, "get_data"):
         epochs_data = epochs.get_data(verbose=False)
     else:
