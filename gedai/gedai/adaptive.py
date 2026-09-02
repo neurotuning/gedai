@@ -389,8 +389,10 @@ class AdaptiveMultibandGedai:
         signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
         if signal_type == "meg":
-            # In MODWT, w=0 is the finest (highest-frequency) detail band (e.g., EMG/sensor noise)
-            # and w=1 is the second-highest detail band. Wider negative bounds are used here
+            # In MODWT, w=0 is the finest (highest-frequency) detail band
+            # (e.g., EMG/sensor noise)
+            # and w=1 is the second-highest detail band. Wider negative bounds
+            # are used here
             # to capture high-frequency MEG noise.
             band_bounds = (-6.0, 8.0) if w in (0, 1) else (0.0, 10.0)
         else:
