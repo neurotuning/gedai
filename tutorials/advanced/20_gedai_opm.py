@@ -2,7 +2,7 @@ r"""
 .. _tut-gedai-opm-processing:
 
 ====================================================================================
-Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI
+Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI
 ====================================================================================
 
 This tutorial demonstrates how to apply ``GEDAI`` to Optically Pumped
@@ -478,8 +478,11 @@ idx_lh_mne = np.where(stc_mne.vertices[0] == vert_lh_mne)[0][0]
 idx_lh_gedai = np.where(stc_gedai.vertices[0] == vert_lh_mne)[0][0]
 
 # Row index for RH vertex 75332
-idx_rh_mne = len(stc_mne.vertices[0]) + np.where(stc_mne.vertices[1] == vert_rh_mne)[0][0]
-idx_rh_gedai = len(stc_gedai.vertices[0]) + np.where(stc_gedai.vertices[1] == vert_rh_mne)[0][0]
+n_lh_mne = len(stc_mne.vertices[0])
+idx_rh_mne = n_lh_mne + np.where(stc_mne.vertices[1] == vert_rh_mne)[0][0]
+
+n_lh_gedai = len(stc_gedai.vertices[0])
+idx_rh_gedai = n_lh_gedai + np.where(stc_gedai.vertices[1] == vert_rh_mne)[0][0]
 
 fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(
