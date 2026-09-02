@@ -51,7 +51,7 @@ jobs:
       - name: Download data
         run: |
           for attempt in 1 2 3; do
-            python -c 'import mne; mne.datasets.fetch_fsaverage()' && break
+            python -c 'import mne; mne.datasets.fetch_fsaverage(); mne.datasets.ucl_opm_auditory.data_path()' && break
             if [ "$attempt" -eq 3 ]; then
               exit 1
             fi
