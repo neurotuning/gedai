@@ -152,11 +152,12 @@ class Gedai:
         reference_cov = cov.data.copy()
 
         # Scale reference_cov to match data scale
-        data_cov_trace = float(np.mean(np.var(data, axis=-1, ddof=1).sum(axis=-1)))
+        centered = data - data.mean(axis=-1, keepdims=True)
+        denom = max(1, data.shape[-1] - 1)
+        data_cov_trace = float(np.mean(np.sum(centered * centered, axis=(1, 2)) / denom))
         ref_cov_trace = float(np.trace(reference_cov))
         if ref_cov_trace > 0 and data_cov_trace > 0:
-            scale_factor = data_cov_trace / ref_cov_trace
-            reference_cov = reference_cov * scale_factor
+            reference_cov *= data_cov_trace / ref_cov_trace
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
