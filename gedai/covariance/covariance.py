@@ -42,8 +42,8 @@ def _pick_cov(cov, ch_names, info=None):
     if len(picks_cov) == 0:
         msg = (
             "No matching channel names found between inst and cov.\n"
-            f"Available channels in covariance are {cov_ch_names[:10]}... (total {len(cov_ch_names)}).\n"
-            f"but instance has channels {ch_names[:10]}... (total {len(ch_names)})."
+            f"Available channels in covariance are {cov_ch_names}.\n"
+            f"but instance has channels {ch_names}."
         )
         is_meg = False
         if info is not None:
