@@ -1,0 +1,49 @@
+.. NOTE: we use cross-references to highlight new functions and classes.
+   Please follow the examples below, so the changelog page will have a link to
+   the function/class documentation.
+
+.. NOTE: there are 3 separate sections for changes, based on type:
+   - "Enhancements" for new features
+   - "Bugs" for bug fixes
+   - "API changes" for backward-incompatible changes
+
+.. NOTE: You can use the :pr:`xx` and :issue:`xx` role to x-ref to a GitHub PR
+   or issue from this project.
+
+.. include:: ./names.inc
+
+.. _changes_0_4_0:
+
+Version 0.4.0
+=============
+
+Enhancements
+------------
+
+- Add comprehensive MEG data support for Magnetometers, Gradiometers, and Optically Pumped Magnetometers (OPM) (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+- Implement MEG-aware SENSAI scoring using singular value projection and adaptive artifact spectrum prescanning (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+- Add support for passing MNE :class:`~mne.Forward` models directly as ``reference_cov`` in :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+- Add :func:`~gedai.covariance.covariance.compute_covariance_from_forward` to compute cortical reference covariance matrices from forward solutions (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+- Add ``n_pc`` parameter to :class:`~gedai.gedai.MultibandGedai` and :class:`~gedai.gedai.AdaptiveMultibandGedai` (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+- Increase SENSAI epoch cap to 500 epochs for improved optimization convergence (:pr:`150` by `Tomas Ros`_).
+- Set default verbosity level to ``INFO`` to provide informative progress logging out of the box (:pr:`150` by `Tomas Ros`_).
+- Tighten wavelet band optimization bounds to guard against overcleaning (:pr:`150` by `Tomas Ros`_).
+
+Bugs
+----
+
+- Fix reference covariance channel picking and case-insensitive matching in :func:`~gedai.covariance.covariance._pick_cov` (:pr:`150` by `Tomas Ros`_).
+- Ensure average reference is never applied to MEG sensor arrays (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+- Preserve raw metadata and sensor coordinates across transformation (:pr:`150` by `Tomas Ros`_ and `Victor Férat`_).
+
+API and behavior changes
+------------------------
+
+- Automatic signal type detection (:func:`~gedai.gedai._utils._detect_signal_type`) from channel types.
+- Default ``verbose=None`` now defaults to ``logging.INFO`` level.
+
+Authors
+-------
+
+* `Tomas Ros`_
+* `Victor Férat`_
