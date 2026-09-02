@@ -5,8 +5,8 @@ from mne import BaseEpochs
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
-    _detect_signal_type,
     _check_fit_info,
+    _detect_signal_type,
     _ensure_wavelet_low_cutoff,
     _format_summary_table,
     _prepare_epochs_fit,
@@ -410,12 +410,12 @@ class MultibandGedai:
 
         raw_fit = _prepare_raw_fit(raw, picks)
         sfreq = raw_fit.info["sfreq"]
-        
+
         # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
         raw_fit._data = _apply_wavelet_highpass_prefilter(
             raw_fit._data, sfreq, lowcut_hz=0.1
         )
-        
+
         cov = _pick_cov(cov, raw_fit.info)
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(

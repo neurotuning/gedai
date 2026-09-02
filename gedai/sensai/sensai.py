@@ -38,9 +38,7 @@ def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     return np.sort(angles_rad)
 
 
-def subspace_similarity(
-    A: np.ndarray, B: np.ndarray, n_pc: int | None = 3
-) -> float:
+def subspace_similarity(A: np.ndarray, B: np.ndarray, n_pc: int | None = 3) -> float:
     """Compute rank-normalized volumetric subspace similarity.
 
     When n_pc == 3, uses the rank-normalized 3D volumetric scale:
@@ -79,9 +77,7 @@ def subspace_similarity(
     return float(np.prod(S))
 
 
-def _prescan_meg_artifact_spectrum(
-    data: np.ndarray, reference_cov: np.ndarray
-) -> int:
+def _prescan_meg_artifact_spectrum(data: np.ndarray, reference_cov: np.ndarray) -> int:
     """Prescan GEVD artifact spectrum to adaptively choose n_pc (2 or 3) for MEG.
 
     Parameters
@@ -227,7 +223,7 @@ def _sensai_score_loop(
                 P_bad = VR_e[:, bad_mask]
                 Q_bad, _ = np.linalg.qr(P_bad)
                 s = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
-                noi_sims[e] = float(np.sum(s ** 6))
+                noi_sims[e] = float(np.sum(s**6))
             else:
                 noi_sims[e] = 0.0
         else:
@@ -297,7 +293,7 @@ def _sensai_score_from_gevd(
     noise_multiplier: float = 3.0,
     signal_type: str = "eeg",
 ) -> tuple[float, float, float]:
-    """Fast SENSAI score using cached GEVD and power-weighted 2-step QR subspace iteration."""
+    """Fast SENSAI score using cached GEVD and power-weighted 2-step QR subspace."""
     template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
 
     # Precompute reference_cov @ eigenvectors for all epochs at once

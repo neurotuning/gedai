@@ -5,7 +5,10 @@ import numpy as np
 import pytest
 from mne.datasets import testing
 
-from gedai.covariance.covariance import _ensure_cov
+from gedai.covariance.covariance import (
+    _ensure_cov,
+    compute_covariance_from_forward,
+)
 from gedai.gedai.gedai import Gedai
 from gedai.gedai.multiband import MultibandGedai
 from gedai.sensai.sensai import _compute_default_n_pc, _sensai_to_eigen
@@ -53,7 +56,7 @@ def meg_grad_epochs(meg_raw):
 
 @pytest.fixture
 def meg_ref_cov(meg_fwd):
-    """Compute reference covariance from MNE testing forward solution for magnetometers."""
+    """Compute reference covariance for magnetometers from testing forward."""
     fwd_mag = mne.pick_types_forward(meg_fwd, meg="mag", eeg=False)
     cov = compute_covariance_from_forward(fwd_mag)
     return cov

@@ -1,3 +1,12 @@
+import numpy as np
+from mne import BaseEpochs
+from mne._fiff.pick import _picks_to_idx
+from mne.io import BaseRaw
+
+from ..utils._checks import _check_picks_uniqueness
+from ..utils.logs import logger
+
+
 def _detect_signal_type(info):
     """Detect whether data is 'eeg' or 'meg' based on channel types."""
     ch_types = info.get_channel_types(unique=True)
@@ -17,15 +26,6 @@ def _ensure_wavelet_low_cutoff(
     elif wavelet_low_cutoff is None:
         return 0.0
     return float(wavelet_low_cutoff)
-
-
-import numpy as np
-from mne import BaseEpochs
-from mne._fiff.pick import _picks_to_idx
-from mne.io import BaseRaw
-
-from ..utils._checks import _check_picks_uniqueness
-from ..utils.logs import logger
 
 
 def _check_fit_info(model, inst):

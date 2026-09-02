@@ -71,8 +71,8 @@ n_pc : int | "auto", default="auto"
     - For **EEG**: Automatically uses ``3`` principal components for rank-normalized
       3D volumetric dipolar subspace similarity.
     - For **MEG**: Automatically prescans the GEVD artifact eigenvalue spectrum
-      to select ``2`` or ``3`` principal components adaptively depending on ambient room noise
-      harmonics versus localized bursts.
+      to select ``2`` or ``3`` principal components adaptively depending on
+      ambient room noise harmonics versus localized bursts.
     If an :class:`int`, uses the specified number of principal components."""
 docdict["noise_multiplier"] = """
 noise_multiplier : float | str
@@ -125,8 +125,10 @@ sensai_method : str
 # -- V ---------------------------------------------------------------------------------
 docdict["verbose"] = """
 verbose : int | str | bool | None
-    Control verbosity of the logging output. If ``None``, use the default verbosity level (``"INFO"``).
-    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds to ``"WARNING"``.
+    Control verbosity of the logging output. If ``None``, use the default
+    verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds
+    to ``"WARNING"``.
     The default is ``None`` (interpreted as ``"INFO"``)."""
 
 # -- W ---------------------------------------------------------------------------------

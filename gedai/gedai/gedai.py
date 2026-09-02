@@ -7,8 +7,8 @@ from mne.parallel import parallel_func
 from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
-    _detect_signal_type,
     _check_fit_info,
+    _detect_signal_type,
     _format_summary_table,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
@@ -153,7 +153,9 @@ class Gedai:
         # Scale reference_cov to match data scale
         centered = data - data.mean(axis=-1, keepdims=True)
         denom = max(1, data.shape[-1] - 1)
-        data_cov_trace = float(np.mean(np.sum(centered * centered, axis=(1, 2)) / denom))
+        data_cov_trace = float(
+            np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
+        )
         ref_cov_trace = float(np.trace(reference_cov))
         if ref_cov_trace > 0 and data_cov_trace > 0:
             reference_cov *= data_cov_trace / ref_cov_trace
@@ -192,7 +194,9 @@ class Gedai:
                 min_sensai_threshold, max_sensai_threshold, step
             )
             eigen_thresholds = [
-                _sensai_to_eigen(sensai_value, epochs_eigenvalues, percentile=percentile)
+                _sensai_to_eigen(
+                    sensai_value, epochs_eigenvalues, percentile=percentile
+                )
                 for sensai_value in sensai_thresholds
             ]
             threshold, runs = _sensai_gridsearch(
@@ -406,7 +410,11 @@ class Gedai:
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
         enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
         sensai_val = compute_composite_sensai(
-            clean_2d, noise_2d, epochs_transform.info["sfreq"], reference_cov, n_pc=(self._n_pc or 3)
+            clean_2d,
+            noise_2d,
+            epochs_transform.info["sfreq"],
+            reference_cov,
+            n_pc=(self._n_pc or 3),
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,

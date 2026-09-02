@@ -15,7 +15,8 @@ def _ensure_cov(reference_cov):
             reference_cov = mne.read_cov(str(get_leadfield_cov_path()))
         else:
             raise ValueError(
-                "Reference covariance must be 'leadfield', an mne.Covariance, or an mne.Forward instance, "
+                "Reference covariance must be 'leadfield', an mne.Covariance, "
+                "or an mne.Forward instance, "
                 f"got '{reference_cov}' instead."
             )
     return reference_cov
@@ -51,9 +52,11 @@ def _pick_cov(cov, ch_names, info=None):
             is_meg = any(t in ("mag", "grad", "ref_meg") for t in ch_types)
         if is_meg:
             msg += (
-                "\nNote: If you are processing MEG data ('mag' or 'grad'), the default 'leadfield' "
-                "bundled with GEDAI is an EEG leadfield. For MEG data, please provide an MEG forward "
-                "model (mne.Forward) or reference covariance (mne.Covariance) via the 'reference_cov' argument."
+                "\nNote: If you are processing MEG data ('mag' or 'grad'), "
+                "the default 'leadfield' bundled with GEDAI is an EEG leadfield. "
+                "For MEG data, please provide an MEG forward model "
+                "(mne.Forward) or reference covariance (mne.Covariance) via "
+                "the 'reference_cov' argument."
             )
         raise ValueError(msg)
     if len(picks_cov) < len(ch_names):
