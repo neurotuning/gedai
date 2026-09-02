@@ -177,7 +177,8 @@ def _precompute_gevd(epochs_data: np.ndarray, reference_cov: np.ndarray):
     n_ep, n_ch, n_times = epochs_data.shape
     if n_times < 2:
         raise ValueError(
-            "epochs_data must contain at least 2 time points per epoch to compute covariance."
+            "epochs_data must contain at least 2 time points per epoch to "
+            "compute covariance."
         )
     all_eval = np.zeros((n_ep, n_ch), dtype=np.float64)
     all_evec = np.zeros((n_ep, n_ch, n_ch), dtype=np.float64)
