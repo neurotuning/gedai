@@ -11,6 +11,7 @@ import sys
 from datetime import date
 from importlib import import_module
 
+import pyvista
 from intersphinx_registry import get_intersphinx_mapping
 from sphinx_gallery.sorting import ExplicitOrder, FileNameSortKey
 
@@ -260,8 +261,6 @@ if sys.platform.startswith("win"):
         compress_images = ()
 else:
     compress_images = ("images", "thumbnails")
-
-import pyvista
 
 pyvista.OFF_SCREEN = True
 pyvista.BUILDING_GALLERY = True
