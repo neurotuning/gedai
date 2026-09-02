@@ -257,6 +257,8 @@ class MultibandGedai:
 
         # Broadband pre-cleaning pass if requested
         if self.broadband_pass:
+            signal_type = _detect_signal_type(epochs_fit.info)
+            bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 10.0)
             logger.info("Running broadband GEDAI pre-cleaning pass on epochs...")
             broadband_model = Gedai()
             broadband_model.fit_epochs(
@@ -265,6 +267,8 @@ class MultibandGedai:
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
+                sensai_bounds=bb_bounds,
+                n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -324,6 +328,7 @@ class MultibandGedai:
                     sensai_method=sensai_method,
                     noise_multiplier=noise_multiplier,
                     sensai_bounds=band_bounds,
+                    n_pc=n_pc,
                     n_jobs=n_jobs,
                     verbose=verbose,
                 )
