@@ -175,6 +175,10 @@ def _precompute_gevd(epochs_data: np.ndarray, reference_cov: np.ndarray):
     all_evec : np.ndarray, shape (n_epochs, n_channels, n_channels)
     """
     n_ep, n_ch, n_times = epochs_data.shape
+    if n_times < 2:
+        raise ValueError(
+            "epochs_data must contain at least 2 time points per epoch to compute covariance."
+        )
     all_eval = np.zeros((n_ep, n_ch), dtype=np.float64)
     all_evec = np.zeros((n_ep, n_ch, n_ch), dtype=np.float64)
 
@@ -182,7 +186,6 @@ def _precompute_gevd(epochs_data: np.ndarray, reference_cov: np.ndarray):
     centered = epochs_data - epochs_data.mean(axis=-1, keepdims=True)
     all_covs = np.einsum("eij,ekj->eik", centered, centered)
     all_covs *= 1.0 / (n_times - 1)
-
     for i in range(n_ep):
         evals, evecs = eigh(all_covs[i], reference_cov, check_finite=False)
         all_eval[i] = evals
