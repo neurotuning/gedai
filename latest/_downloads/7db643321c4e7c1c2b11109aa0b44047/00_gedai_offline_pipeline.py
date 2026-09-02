@@ -67,3 +67,70 @@ denoised_raw = ad.transform_raw(raw, verbose=False)
 # %%
 # Visualize the results
 plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
+
+# %%
+# SENSAI Subspace Similarity & Manifold Visualization
+# ---------------------------------------------------
+# We can evaluate and visualize the quality of the denoising using the SENSAI
+# subspace projection. This displays the side-by-side Before/After subspace similarity
+# projections, LDA decision boundary shading between signal and noise manifolds,
+# and marginal distributions.
+#
+# The SENSAI figure summarizes how effectively GEDAI separated genuine brain
+# activity (signal) from artifacts (noise) by comparing the spatial patterns of
+# the epoched data to a theoretical brain model.
+#
+# Each plotted point represents a 1-second epoch in the original data (left panel),
+# the denoised data (right panel, green points) and the removed noise (right panel,
+# red dots).
+#
+# The Axes:
+#
+# - **Y-axis (SSI - Subspace Similarity Index)**: This measures how closely the
+#   spatial topography of an epoch matches the theoretical brain model (the BEM
+#   leadfield). A value closer to 1.0 (marked by the dashed yellow line) indicates
+#   the activity is highly likely to be originating from the brain.
+# - **X-axis (Epoch Power in dB)**: This represents the amplitude or strength of
+#   the signal in that specific time window. Artifacts often (but not always)
+#   have higher power than resting brain activity.
+#
+# Panels:
+#
+# - **Left Panel (Before Denoising)**: This displays your raw EEG epochs prior to
+#   cleaning. The color gradient corresponds to the SSI score (yellow/green is
+#   more brain-like, blue/purple is less brain-like). You will typically see a
+#   wide spread of data here, where epochs with high power and low SSI are clear
+#   indicators of prominent, non-brain artifacts (like blinks or gross muscle
+#   movement).
+# - **Right Panel (After Denoising)**: This illustrates the core separation
+#   achieved by the algorithm, dividing the data into two distinct clusters
+#   (along with density distribution curves on the top and right borders):
+#
+#   - **Green dots (Signal)**: These are the components GEDAI identified as
+#     genuine brain activity and kept. Notice how they cluster tightly near the
+#     1.0 line, indicating high spatial similarity to the brain leadfield.
+#   - **Red dots (Noise)**: These are the artifact components GEDAI removed.
+#     They generally exhibit lower similarity to the brain leadfield and are
+#     often scattered across a wider range of power levels.
+#
+# Sub-optimal Denoising Outcomes:
+#
+# - **Noise-in-the-Signal**: The Red (Noise) cluster contains some Green (Signal)
+#   dots (i.e. under-cleaning, "noise" components were missclassified as "signal").
+# - **Signal-in-the-Noise**: The Green (Signal) cluster contains some Red (Noise)
+#   dots (i.e. over-cleaning, "signal" components were missclassified as "noise").
+#
+# Key Metrics:
+#
+# - **SSI Silhouette Score**: This is a clustering metric that evaluates how cleanly
+#   separated the "Signal" (green) and "Noise" (red) groups are along the SSI axis.
+#   A score close to 1.0 (e.g., 0.97) represents excellent, distinct separation,
+#   meaning the algorithm confidently isolated artifacts from brain signals.
+# - **Mean SSSI (Signal Subspace Similarity Index)**: The average similarity score
+#   of the retained brain data (you want this to be high).
+# - **Mean NSSI (Noise Subspace Similarity Index)**: The average similarity score
+#   of the rejected artifact data (you generally expect this to be much lower than
+#   the SSSI).
+
+fig, metrics = ad.plot_sensai(raw_before=raw, raw_after=denoised_raw)
+
