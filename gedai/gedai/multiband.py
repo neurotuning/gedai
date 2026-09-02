@@ -202,7 +202,7 @@ class MultibandGedai:
     def fit_epochs(
         self,
         epochs: BaseEpochs,
-        picks: list | str | None = None,
+        picks: list | str = "eeg",
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",

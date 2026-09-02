@@ -111,7 +111,7 @@ class Gedai:
     def fit_epochs(
         self,
         epochs: BaseEpochs,
-        picks: list | str | None = None,
+        picks: list | str = "eeg",
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
@@ -262,7 +262,7 @@ class Gedai:
     def fit_raw(
         self,
         raw: BaseRaw,
-        picks: list | str | None = None,
+        picks: list | str = "eeg",
         duration: float = 1.0,
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,

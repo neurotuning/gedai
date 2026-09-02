@@ -88,7 +88,24 @@ def _check_reference_channel(inst):
     return
 
 
+def _resolve_default_picks(info, picks):
+    """Resolve default picks to a single sensor type if picks is None."""
+    if picks is not None:
+        return picks
+    ch_types = info.get_channel_types(unique=True)
+    if "eeg" in ch_types:
+        return "eeg"
+    if "mag" in ch_types and "grad" not in ch_types:
+        return "mag"
+    if "grad" in ch_types and "mag" not in ch_types:
+        return "grad"
+    if "mag" in ch_types and "grad" in ch_types:
+        return "mag"
+    return "data"
+
+
 def _prepare_epochs_fit(epochs, picks):
+    picks = _resolve_default_picks(epochs.info, picks)
     picks = _picks_to_idx(epochs.info, picks, none="all", exclude=[])
     _check_picks_uniqueness(epochs.info, picks)
     epochs_fit = epochs.copy()
@@ -133,6 +150,7 @@ def _prepare_epochs_transform(epochs, picks):
 
 
 def _prepare_raw_fit(raw, picks):
+    picks = _resolve_default_picks(raw.info, picks)
     picks = _picks_to_idx(raw.info, picks, none="all", exclude=[])
     _check_picks_uniqueness(raw.info, picks)
     raw_fit = raw.copy().load_data().pick(picks)
