@@ -7,6 +7,7 @@ from mne.io import BaseRaw
 from gedai.gedai._utils import (
     _detect_signal_type,
     _check_fit_info,
+    _ensure_wavelet_low_cutoff,
     _format_summary_table,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
@@ -35,21 +36,6 @@ from ..wavelet.transform import (
     get_modwt_band_limits,
 )
 from .gedai import Gedai, _clean_continuous_dual_stream
-
-
-def _ensure_wavelet_low_cutoff(
-    wavelet_low_cutoff, filter_highpass, epoch_duration=None
-):
-    if wavelet_low_cutoff == "auto":
-        if filter_highpass is not None and filter_highpass > 0:
-            wavelet_low_cutoff = max(0.5, float(filter_highpass))
-        else:
-            wavelet_low_cutoff = 0.5
-    elif wavelet_low_cutoff is None:
-        wavelet_low_cutoff = 0.0
-    else:
-        wavelet_low_cutoff = float(wavelet_low_cutoff)
-    return wavelet_low_cutoff
 
 
 def compute_required_duration(wavelet_level, sfreq):

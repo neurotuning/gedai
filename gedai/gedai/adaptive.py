@@ -6,6 +6,7 @@ from mne.io import BaseRaw
 from gedai.gedai._utils import (
     _check_fit_info,
     _detect_signal_type,
+    _ensure_wavelet_low_cutoff,
     _format_summary_table,
     _prepare_raw_fit,
     _prepare_raw_transform,
@@ -219,17 +220,9 @@ class AdaptiveMultibandGedai:
         )
 
         cov = _pick_cov(reference_cov, raw_fit.info["ch_names"])
-
-        filter_cutoff = raw_fit.info["highpass"]
-        if wavelet_low_cutoff == "auto":
-            if filter_cutoff is not None and filter_cutoff > 0:
-                wavelet_low_cutoff = max(0.5, float(filter_cutoff))
-            else:
-                wavelet_low_cutoff = 0.5
-        elif wavelet_low_cutoff is None:
-            wavelet_low_cutoff = 0.0
-        else:
-            wavelet_low_cutoff = float(wavelet_low_cutoff)
+        wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
+            wavelet_low_cutoff, raw_fit.info["highpass"]
+        )
 
         # Automatic wavelet level calculation adaptively matching low cutoff
         if self.wavelet_level == "auto":
