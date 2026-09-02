@@ -53,7 +53,6 @@ import mne
 from mne.datasets import ucl_opm_auditory
 
 from gedai import AdaptiveMultibandGedai
-from gedai.covariance import compute_covariance_from_forward
 
 subject = "sub-002"
 data_path = ucl_opm_auditory.data_path()
