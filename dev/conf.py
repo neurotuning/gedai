@@ -261,6 +261,11 @@ if sys.platform.startswith("win"):
 else:
     compress_images = ("images", "thumbnails")
 
+import pyvista
+
+pyvista.OFF_SCREEN = True
+pyvista.BUILDING_GALLERY = True
+
 sphinx_gallery_conf = {
     "backreferences_dir": "generated/backreferences",
     "compress_images": compress_images,
@@ -269,6 +274,7 @@ sphinx_gallery_conf = {
     "exclude_implicit_doc": {},  # set
     "filename_pattern": r"\d{2}_",
     "gallery_dirs": ["generated/tutorials"],
+    "image_scrapers": ("matplotlib", "pyvista"),
     "line_numbers": False,
     "plot_gallery": "True",  # str, to enable overwrite from CLI without warning
     "reference_url": {f"{package}": None},

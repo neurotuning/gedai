@@ -2,10 +2,10 @@ r"""
 .. _tut-gedai-opm-processing:
 
 ====================================================================================
-Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI
+Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI
 ====================================================================================
 
-This tutorial demonstrates how to apply ``pyGEDAI`` to Optically Pumped
+This tutorial demonstrates how to apply ``GEDAI`` to Optically Pumped
 Magnetometer (OPM) MEG data, following and extending the official MNE-Python
 tutorial:
 `Preprocessing optically pumped magnetometer (OPM) MEG data
@@ -40,7 +40,7 @@ leadfield reference covariance**
 :math:`C_{\text{ref}} = G G^T` directly from the subject-specific forward
 model (:class:`mne.Forward`).
 
-By performing Generalized Eigendecomposition (GEVD) across discrete wavelet
+By performing Generalized Eigendecomposition (GED) across discrete wavelet
 scales (:class:`~gedai.gedai.AdaptiveMultibandGedai`), ``GEDAI`` isolates and
 projects out all non-dipolar ambient noise, DC drifts, and environmental
 interference in a **single unified step**, without requiring external reference
@@ -231,7 +231,7 @@ ax.plot(
 )
 ax.grid(True, ls=":")
 ax.set(
-    title="Figure 3b: After pyGEDAI (Adaptive Multiband, No Ref Sensors)",
+    title="Figure 3b: After GEDAI (Adaptive Multiband, No Ref Sensors)",
     **set_kwargs,
 )
 plt.show()
@@ -249,15 +249,15 @@ psd_post_gedai = raw_gedai.compute_psd(**psd_kwargs_300)
 #
 # .. math::
 #
-#     \\text{Shielding (dB)} = 10 \\log_{10}
-#     \\left( \\frac{\\text{PSD}_{\\text{pre}}}{\\text{PSD}_{\\text{post}}} \\right)
+#     \text{Shielding (dB)} = 10 \log_{10}
+#     \left( \frac{\text{PSD}_{\text{pre}}}{\text{PSD}_{\text{post}}} \right)
 #
 # Let's reproduce the original tutorial's shielding plots and compare them
 # against GEDAI:
 
 # Figure 4: Reference regression shielding (Original MNE)
 shielding_reg = 10 * np.log10(psd_pre.get_data() / psd_post_reg.get_data())
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(psd_post_reg.freqs, shielding_reg.T, **plot_kwargs)
 ax.grid(True, ls=":")
 ax.set(
@@ -270,9 +270,12 @@ ax.set(
 )
 plt.show()
 
+# %%
+# Adding Homogeneous Field Correction (HFC) increases shielding across all sensors:
+
 # Figure 5: Reference regression & HFC shielding (Original MNE)
 shielding_hfc = 10 * np.log10(psd_pre.get_data() / psd_post_hfc.get_data())
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(psd_post_hfc.freqs, shielding_hfc.T, **plot_kwargs)
 ax.grid(True, ls=":")
 ax.set(
@@ -285,16 +288,20 @@ ax.set(
 )
 plt.show()
 
-# Figure 5b: pyGEDAI shielding factor
+# %%
+# In comparison, ``GEDAI`` achieves up to 37 dB of broadband interference suppression
+# without requiring any external reference sensors:
+
+# Figure 5b: GEDAI shielding factor
 shielding_gedai = 10 * np.log10(psd_pre_300.get_data() / psd_post_gedai.get_data())
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(psd_post_gedai.freqs, shielding_gedai.T, color="#1b9e77", **plot_kwargs)
 ax.grid(True, ls=":")
 ax.set(
     xticks=psd_post_gedai.freqs,
     xlim=(0, 20),
     ylim=(-5, 45),
-    title="Figure 5b: pyGEDAI Shielding Factor (Broadband Suppression)",
+    title="Figure 5b: GEDAI Shielding Factor (Broadband Suppression)",
     xlabel="Frequency (Hz)",
     ylabel="Shielding (dB)",
 )
@@ -315,19 +322,21 @@ raw_mne.filter(2, 40, picks="meg", verbose=False)
 data_ds_filt, _ = raw_mne[meg_picks[::5], :stop]
 data_ds_filt = data_ds_filt[:, ::step] * amp_scale
 
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(time_ds, data_ds_filt.T - np.mean(data_ds_filt, axis=1), **plot_kwargs)
 ax.grid(True, ls=":")
 ax.set(title="Figure 6: After Regression, HFC, and Filtering (MNE)", **set_kwargs)
 plt.show()
 
-# Filter GEDAI pipeline data
+# %%
+# Filter GEDAI pipeline data:
+
 raw_gedai.notch_filter([50, 100], notch_widths=4, verbose=False)
 raw_gedai.filter(2, 40, verbose=False)
 
 data_ds_gfilt = raw_gedai.get_data()[::5, :stop_300:step_300] * amp_scale
 
-fig, ax = plt.subplots(layout="constrained")
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(
     time_ds_300,
     data_ds_gfilt.T - np.mean(data_ds_gfilt, axis=1),
@@ -335,7 +344,7 @@ ax.plot(
     **plot_kwargs,
 )
 ax.grid(True, ls=":")
-ax.set(title="Figure 6b: After pyGEDAI and Filtering (2-40 Hz)", **set_kwargs)
+ax.set(title="Figure 6b: After GEDAI and Filtering (2-40 Hz)", **set_kwargs)
 plt.show()
 
 # %%
@@ -358,8 +367,7 @@ epochs_mne = mne.Epochs(
     verbose="error",
 )
 evoked_mne = epochs_mne.average()
-# Exact topomap timepoints from the original MNE tutorial: 0.093 s, 0.144 s,
-# 0.223 s.
+# Exact topomap timepoints from the original MNE tutorial: 0.093 s, 0.144 s, 0.223 s.
 mne_tutorial_times = [0.093, 0.144, 0.223]
 
 fig = evoked_mne.plot_joint(
@@ -369,7 +377,9 @@ fig = evoked_mne.plot_joint(
 )
 plt.show()
 
-# GEDAI Pipeline Evoked
+# %%
+# Evoked response for the GEDAI pipeline at the exact same time points:
+
 events_gedai = events_mne.copy()
 events_gedai[:, 0] = np.round(
     events_mne[:, 0] * (raw_gedai.info["sfreq"] / raw_mne.info["sfreq"])
@@ -387,7 +397,7 @@ evoked_gedai = epochs_gedai.average()
 fig = evoked_gedai.plot_joint(
     picks="mag",
     times=mne_tutorial_times,
-    title="Figure 7b: Auditory Evoked Response (pyGEDAI Pipeline)",
+    title="Figure 7b: Auditory Evoked Response (GEDAI Pipeline)",
 )
 plt.show()
 
@@ -397,14 +407,13 @@ plt.show()
 #
 # We visualize the OPM helmet sensors with respect to the FreeSurfer MRI surface:
 
-fig = mne.viz.plot_alignment(
+mne.viz.plot_alignment(
     evoked_gedai.info,
-    subjects_dir=subjects_dir,
-    subject=subject,
     trans=trans,
+    subject=subject,
+    subjects_dir=subjects_dir,
     surfaces={"head": 0.1, "inner_skull": 0.2, "white": 1.0},
     meg=["helmet", "sensors"],
-    verbose="error",
     bem=bem,
     src=src,
 )
@@ -455,6 +464,99 @@ print(
 print(
     f"GEDAI Source Peak: vertex {stc_gedai.get_peak()[0]} "
     f"at {stc_gedai.get_peak()[1]:.3f} s"
+)
+
+# %%
+# Auditory Cortex Source Time Courses (dSPM):
+
+times_stc_mne = stc_mne.times * 1000  # seconds to ms
+times_stc_gedai = stc_gedai.times * 1000
+peak_vert_mne = np.argmax(np.max(stc_mne.data, axis=1))
+peak_vert_gedai = np.argmax(np.max(stc_gedai.data, axis=1))
+
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
+ax.plot(
+    times_stc_mne,
+    stc_mne.data[peak_vert_mne],
+    lw=2,
+    color="#7570b3",
+    label=f"MNE (Peak dSPM = {np.max(stc_mne.data):.2f})",
+)
+ax.plot(
+    times_stc_gedai,
+    stc_gedai.data[peak_vert_gedai],
+    lw=2,
+    color="#1b9e77",
+    label=f"GEDAI (Peak dSPM = {np.max(stc_gedai.data):.2f})",
+)
+ax.axvline(
+    0.093 * 1000,
+    color="red",
+    linestyle="--",
+    alpha=0.7,
+    label="M100 Latency (93.5 ms)",
+)
+ax.set(
+    title="Figure 9a: Auditory Cortex Source Time Course (dSPM)",
+    xlabel="Time (ms)",
+    ylabel="dSPM Amplitude",
+)
+ax.grid(True, ls=":")
+ax.legend(loc="upper right")
+plt.show()
+
+# %%
+# Top 100 Cortical Vertices at M100 Peak:
+
+t_idx_mne = np.argmin(np.abs(stc_mne.times - 0.0935))
+t_idx_gedai = np.argmin(np.abs(stc_gedai.times - 0.0935))
+
+fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
+ax.plot(
+    np.sort(stc_mne.data[:, t_idx_mne])[::-1][:100],
+    lw=2,
+    color="#7570b3",
+    label="MNE",
+)
+ax.plot(
+    np.sort(stc_gedai.data[:, t_idx_gedai])[::-1][:100],
+    lw=2,
+    color="#1b9e77",
+    label="GEDAI",
+)
+ax.set(
+    title="Figure 9b: Top 100 Cortical Vertices at M100 Peak",
+    xlabel="Source Vertex Rank",
+    ylabel="dSPM Amplitude",
+)
+ax.grid(True, ls=":")
+ax.legend(loc="upper right")
+plt.show()
+
+# %%
+# Cortical source localization for the MNE pipeline:
+
+brain_mne = stc_mne.plot(
+    hemi="both",
+    subjects_dir=subjects_dir,
+    subject=subject,
+    initial_time=0.093,
+    views=["lat", "med"],
+    time_viewer=False,
+    show_traces=False,
+)
+
+# %%
+# Cortical source localization for the GEDAI pipeline:
+
+brain_gedai = stc_gedai.plot(
+    hemi="both",
+    subjects_dir=subjects_dir,
+    subject=subject,
+    initial_time=0.093,
+    views=["lat", "med"],
+    time_viewer=False,
+    show_traces=False,
 )
 
 # %%
