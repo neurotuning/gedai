@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 from mne.datasets import testing
 
-from gedai.covariance.covariance import _ensure_cov, compute_covariance_from_forward
+from gedai.covariance.covariance import _ensure_cov
 from gedai.gedai.gedai import Gedai
 from gedai.gedai.multiband import MultibandGedai
 from gedai.sensai.sensai import _compute_default_n_pc, _sensai_to_eigen
