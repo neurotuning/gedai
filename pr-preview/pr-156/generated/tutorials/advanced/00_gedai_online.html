@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=ff15da2d"></script>
+    <script src="../../../_static/documentation_options.js?v=7db92799"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -406,6 +406,7 @@
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Advanced Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2 current active"><a class="current reference internal" href="#">Using GEDAI for online (real-time) denoising</a></li>
 <li class="toctree-l2"><a class="reference internal" href="10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="20_gedai_opm.html">Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. pyGEDAI</a></li>
 </ul>
 </details></li>
 </ul>
@@ -649,9 +650,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-769874bf-de9a-439e-9f2c-15d9003b71ff"
+<tr class="mne-repr-section-header general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd"
      title="Hide section"
-    onclick="toggleVisibility('general-769874bf-de9a-439e-9f2c-15d9003b71ff')">
+    onclick="toggleVisibility('general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -663,7 +664,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-769874bf-de9a-439e-9f2c-15d9003b71ff ">
+<tr class="repr-element general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -674,26 +675,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-769874bf-de9a-439e-9f2c-15d9003b71ff ">
+<tr class="repr-element general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-769874bf-de9a-439e-9f2c-15d9003b71ff ">
+<tr class="repr-element general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-769874bf-de9a-439e-9f2c-15d9003b71ff ">
+<tr class="repr-element general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-769874bf-de9a-439e-9f2c-15d9003b71ff ">
+<tr class="repr-element general-73a30cca-e9c3-46eb-930a-cf587fdf5bcd ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -708,9 +709,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-186b8cfc-3723-47f9-a55e-6d6b90961bea"
+<tr class="mne-repr-section-header acquisition-2b633a56-fa16-4a51-bb92-de129005881b"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-186b8cfc-3723-47f9-a55e-6d6b90961bea')">
+    onclick="toggleVisibility('acquisition-2b633a56-fa16-4a51-bb92-de129005881b')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -722,7 +723,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-186b8cfc-3723-47f9-a55e-6d6b90961bea ">
+<tr class="repr-element acquisition-2b633a56-fa16-4a51-bb92-de129005881b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -735,14 +736,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-186b8cfc-3723-47f9-a55e-6d6b90961bea ">
+<tr class="repr-element acquisition-2b633a56-fa16-4a51-bb92-de129005881b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-186b8cfc-3723-47f9-a55e-6d6b90961bea ">
+<tr class="repr-element acquisition-2b633a56-fa16-4a51-bb92-de129005881b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -757,9 +758,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-813c4df9-d165-4c25-bf05-28a2ac397d37"
+<tr class="mne-repr-section-header channels-cd55be60-b25c-4574-b46f-153f48afed22"
      title="Hide section"
-    onclick="toggleVisibility('channels-813c4df9-d165-4c25-bf05-28a2ac397d37')">
+    onclick="toggleVisibility('channels-cd55be60-b25c-4574-b46f-153f48afed22')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -772,7 +773,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-813c4df9-d165-4c25-bf05-28a2ac397d37 ">
+<tr class="repr-element channels-cd55be60-b25c-4574-b46f-153f48afed22 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -785,7 +786,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-813c4df9-d165-4c25-bf05-28a2ac397d37 ">
+<tr class="repr-element channels-cd55be60-b25c-4574-b46f-153f48afed22 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -800,9 +801,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-21db2941-16af-4744-8323-0bb1d96f8041"
+<tr class="mne-repr-section-header filters-550d4812-addd-464c-a898-5c91aca3d788"
      title="Hide section"
-    onclick="toggleVisibility('filters-21db2941-16af-4744-8323-0bb1d96f8041')">
+    onclick="toggleVisibility('filters-550d4812-addd-464c-a898-5c91aca3d788')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -814,14 +815,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-21db2941-16af-4744-8323-0bb1d96f8041 ">
+<tr class="repr-element filters-550d4812-addd-464c-a898-5c91aca3d788 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-21db2941-16af-4744-8323-0bb1d96f8041 ">
+<tr class="repr-element filters-550d4812-addd-464c-a898-5c91aca3d788 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -869,8 +870,8 @@ epoch for denoising.</p>
     <a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">denoised_epoch</span></a> <span class="o">=</span> <span class="n">gedai</span><span class="o">.</span><span class="n">transform_epochs</span><span class="p">(</span><a href="https://mne.tools/stable/generated/mne.Epochs.html#mne.Epochs" title="mne.Epochs" class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance"><span class="n">epoch</span></a><span class="p">)</span>
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.956 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  247 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 0.936 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  246 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-advanced-00-gedai-online-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/c40e9334a71a03a409f1832aed9e6518/00_gedai_online.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">00_gedai_online.ipynb</span></code></a></p>
