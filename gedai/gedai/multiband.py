@@ -312,13 +312,13 @@ class MultibandGedai:
                     "model": None,
                     "ignore": True,
                     "n_samples": n_samples,
-                    "sensai_bounds": (0.0, 12.0),
+                    "sensai_bounds": (0.0, 10.0),
                     "enova": 0.0,
                 }
             else:
                 center_freq = (fmin + fmax) / 2.0
                 band_bounds = (
-                    (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+                    (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 10.0)
                 )
 
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -604,9 +604,9 @@ class MultibandGedai:
         signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
         if signal_type == "meg":
-            band_bounds = (-6.0, 8.0) if w in (0, 1) else (0.0, 6.0)
+            band_bounds = (-6.0, 8.0) if w in (0, 1) else (0.0, 10.0)
         else:
-            band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+            band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 10.0)
 
         model = Gedai()
         model.fit_epochs(
