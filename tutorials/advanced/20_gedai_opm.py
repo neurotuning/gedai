@@ -457,49 +457,73 @@ stc_gedai = mne.minimum_norm.apply_inverse(
     verbose=False,
 )
 
+vert_lh_mne, time_lh_mne = stc_mne.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
+vert_rh_mne, time_rh_mne = stc_mne.get_peak(hemi="rh", tmin=0.08, tmax=0.11)
+
 print(
-    f"MNE Source Peak: vertex {stc_mne.get_peak()[0]} "
-    f"at {stc_mne.get_peak()[1]:.3f} s"
+    f"MNE Auditory Peak (LH): vertex {vert_lh_mne} at {time_lh_mne*1000:.1f} ms"
 )
 print(
-    f"GEDAI Source Peak: vertex {stc_gedai.get_peak()[0]} "
-    f"at {stc_gedai.get_peak()[1]:.3f} s"
+    f"MNE Auditory Peak (RH): vertex {vert_rh_mne} at {time_rh_mne*1000:.1f} ms"
 )
 
 # %%
-# Auditory Cortex Source Time Courses (dSPM):
+# Auditory Cortex Source Time Courses (dSPM at M100 Peak):
 
 times_stc_mne = stc_mne.times * 1000  # seconds to ms
 times_stc_gedai = stc_gedai.times * 1000
-peak_vert_mne = np.argmax(np.max(stc_mne.data, axis=1))
-peak_vert_gedai = np.argmax(np.max(stc_gedai.data, axis=1))
+
+# Row index in stc.data for LH vertex 86358
+idx_lh_mne = np.where(stc_mne.vertices[0] == vert_lh_mne)[0][0]
+idx_lh_gedai = np.where(stc_gedai.vertices[0] == vert_lh_mne)[0][0]
+
+# Row index for RH vertex 75332
+idx_rh_mne = len(stc_mne.vertices[0]) + np.where(stc_mne.vertices[1] == vert_rh_mne)[0][0]
+idx_rh_gedai = len(stc_gedai.vertices[0]) + np.where(stc_gedai.vertices[1] == vert_rh_mne)[0][0]
 
 fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(
     times_stc_mne,
-    stc_mne.data[peak_vert_mne],
+    stc_mne.data[idx_lh_mne],
     lw=2,
     color="#7570b3",
-    label=f"MNE (Peak dSPM = {np.max(stc_mne.data):.2f})",
+    label=f"MNE LH (Vertex {vert_lh_mne}, Peak = {time_lh_mne*1000:.1f} ms)",
 )
 ax.plot(
     times_stc_gedai,
-    stc_gedai.data[peak_vert_gedai],
+    stc_gedai.data[idx_lh_gedai],
     lw=2,
     color="#1b9e77",
-    label=f"GEDAI (Peak dSPM = {np.max(stc_gedai.data):.2f})",
+    label=f"GEDAI LH (Vertex {vert_lh_mne})",
+)
+ax.plot(
+    times_stc_mne,
+    stc_mne.data[idx_rh_mne],
+    lw=1.5,
+    linestyle=":",
+    color="#7570b3",
+    label=f"MNE RH (Vertex {vert_rh_mne}, Peak = {time_rh_mne*1000:.1f} ms)",
+)
+ax.plot(
+    times_stc_gedai,
+    stc_gedai.data[idx_rh_gedai],
+    lw=1.5,
+    linestyle=":",
+    color="#1b9e77",
+    label=f"GEDAI RH (Vertex {vert_rh_mne})",
 )
 ax.axvline(
-    0.093 * 1000,
+    93.5,
     color="red",
     linestyle="--",
     alpha=0.7,
     label="M100 Latency (93.5 ms)",
 )
 ax.set(
-    title="Figure 9a: Auditory Cortex Source Time Course (dSPM)",
+    title="Figure 9a: Primary Auditory Cortex Source Time Courses (dSPM)",
     xlabel="Time (ms)",
     ylabel="dSPM Amplitude",
+    xlim=(-100, 400),
 )
 ax.grid(True, ls=":")
 ax.legend(loc="upper right")
