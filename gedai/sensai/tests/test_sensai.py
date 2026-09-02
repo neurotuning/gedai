@@ -1,6 +1,7 @@
 """Tests for SENSAI optimization module."""
 
 import numpy as np
+import pytest
 
 from gedai.sensai.sensai import (
     _find_changepoint,
@@ -41,6 +42,34 @@ def test_changepoint_detection():
     cp = _find_changepoint(y, smooth_window=2)
     assert cp is not None
     assert 10 <= cp <= 18
+
+
+def test_sensai_similarity_is_normalized_and_rejects_invalid_n_pc():
+    """Similarity metrics stay in [0, 1] and invalid n_pc values are rejected."""
+    rng = np.random.default_rng(42)
+    n_ch = 8
+    ref_cov = np.eye(n_ch)
+    epochs_data = rng.standard_normal((5, n_ch, 40))
+
+    score, sig_sim, noi_sim = _sensai_score(
+        epochs_data,
+        threshold=2.0,
+        reference_cov=ref_cov,
+        n_pc=3,
+        noise_multiplier=3.0,
+    )
+    assert np.isfinite(score)
+    assert 0.0 <= sig_sim <= 100.0
+    assert 0.0 <= noi_sim <= 100.0
+
+    with pytest.raises(ValueError, match="n_pc"):
+        _sensai_score(
+            epochs_data,
+            threshold=2.0,
+            reference_cov=ref_cov,
+            n_pc=0,
+            noise_multiplier=3.0,
+        )
 
 
 def test_gevd_and_sensai_scoring():
@@ -98,3 +127,24 @@ def test_sensai_gridsearch_and_optimize():
     )
     assert isinstance(opt_thresh, float)
     assert len(opt_runs) > 0
+
+
+def test_prescan_meg_artifact_spectrum():
+    """Verify the MEG artifact spectrum prescan returns 2 or 3 appropriately."""
+    from gedai.sensai.sensai import (
+        _compute_default_n_pc,
+        _prescan_meg_artifact_spectrum,
+    )
+
+    rng = np.random.default_rng(42)
+    n_ch = 20
+    ref_cov = np.eye(n_ch)
+
+    # Low noise / flat spectrum -> the prescan should prefer the compact MEG default.
+    data_low = rng.standard_normal((n_ch, 500))
+    n_pc_low = _prescan_meg_artifact_spectrum(data_low, ref_cov)
+    assert n_pc_low in (2, 3)
+
+    # Check _compute_default_n_pc dispatcher
+    assert _compute_default_n_pc(ref_cov, signal_type="eeg") == 3
+    assert _compute_default_n_pc(ref_cov, signal_type="meg", data=data_low) in (2, 3)

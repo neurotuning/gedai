@@ -35,4 +35,5 @@ API and behavior changes
 Authors
 -------
 
+* `Tomas Ros`_
 * `Victor Férat`_

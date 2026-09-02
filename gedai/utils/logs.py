@@ -169,4 +169,4 @@ class _use_log_level:
         set_log_level(self._old_level)
 
 
-logger = _init_logger(verbose="WARNING")  # equivalent to verbose=None
+logger = _init_logger(verbose="INFO")  # equivalent to verbose=None

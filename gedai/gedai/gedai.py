@@ -8,6 +8,7 @@ from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
     _check_fit_info,
+    _detect_signal_type,
     _format_summary_table,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
@@ -22,6 +23,7 @@ from ..metrics.enova import (
     compute_enova_per_epoch,
 )
 from ..sensai.sensai import (
+    _compute_default_n_pc,
     _eigen_to_sensai,
     _precompute_gevd,
     _sensai_gridsearch,
@@ -32,6 +34,7 @@ from ..utils._checks import (
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_int,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import verbose
@@ -75,6 +78,9 @@ class Gedai:
         self._n_samples = None
         self._duration = None
         self._highpass_prefilter = None
+        self._signal_type = None
+        self._n_pc = None
+        self._percentile = None
         self.fit_metrics_ = None
 
     def _check_fit(self):
@@ -107,10 +113,11 @@ class Gedai:
         self,
         epochs: BaseEpochs,
         picks: list | str = "eeg",
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -126,6 +133,7 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        %(n_pc)s
         %(n_jobs)s
         %(verbose)s
         """
@@ -140,8 +148,18 @@ class Gedai:
         data = epochs_fit.get_data()
 
         cov = _ensure_cov(reference_cov).copy()
-        cov = _pick_cov(cov, epochs_fit.info["ch_names"])
+        cov = _pick_cov(cov, epochs_fit.info)
         reference_cov = cov.data.copy()
+
+        # Scale reference_cov to match data scale
+        centered = data - data.mean(axis=-1, keepdims=True)
+        denom = max(1, data.shape[-1] - 1)
+        data_cov_trace = float(
+            np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
+        )
+        ref_cov_trace = float(np.trace(reference_cov))
+        if ref_cov_trace > 0 and data_cov_trace > 0:
+            reference_cov *= data_cov_trace / ref_cov_trace
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
@@ -154,6 +172,21 @@ class Gedai:
         all_eval, all_evec = _precompute_gevd(data, reference_cov)
         epochs_eigenvalues = all_eval
 
+        signal_type = _detect_signal_type(epochs_fit.info)
+        percentile = 99 if signal_type == "meg" else 98
+        if n_pc == "auto":
+            resolved_n_pc = _compute_default_n_pc(
+                reference_cov, signal_type=signal_type, data=data
+            )
+        else:
+            resolved_n_pc = ensure_int(n_pc, "n_pc")
+            if not 1 <= resolved_n_pc <= reference_cov.shape[0]:
+                max_n_pc = reference_cov.shape[0]
+                raise ValueError(
+                    f"n_pc must be an integer in the range [1, {max_n_pc}], "
+                    f"got {n_pc!r}."
+                )
+
         fit_epochs = mne.EpochsArray(
             data, epochs_fit.info, tmin=epochs.tmin, verbose=False
         )
@@ -162,38 +195,42 @@ class Gedai:
             float(sensai_bounds[1]),
         )
         step = 0.1
-        n_pc = 3
 
         if sensai_method == "gridsearch":
             sensai_thresholds = np.arange(
                 min_sensai_threshold, max_sensai_threshold, step
             )
             eigen_thresholds = [
-                _sensai_to_eigen(sensai_value, epochs_eigenvalues)
+                _sensai_to_eigen(
+                    sensai_value, epochs_eigenvalues, percentile=percentile
+                )
                 for sensai_value in sensai_thresholds
             ]
             threshold, runs = _sensai_gridsearch(
                 fit_epochs,
                 reference_cov,
-                n_pc=n_pc,
+                n_pc=resolved_n_pc,
                 noise_multiplier=noise_multiplier,
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
                 verbose=verbose,
                 all_eval=all_eval,
                 all_evec=all_evec,
+                signal_type=signal_type,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
             threshold, runs = _sensai_optimize(
                 fit_epochs,
                 reference_cov,
-                n_pc=n_pc,
+                n_pc=resolved_n_pc,
                 noise_multiplier=noise_multiplier,
                 epochs_eigenvalues=epochs_eigenvalues,
                 bounds=sensai_threshold_bounds,
                 all_eval=all_eval,
                 all_evec=all_evec,
+                percentile=percentile,
+                signal_type=signal_type,
             )
         else:
             raise ValueError(
@@ -219,6 +256,9 @@ class Gedai:
         self.fitted = True
         self._info = epochs_fit.info.copy()
         self._reference_cov = cov
+        self._signal_type = signal_type
+        self._n_pc = resolved_n_pc
+        self._percentile = percentile
 
         self._n_samples = data.shape[-1]
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
@@ -233,11 +273,12 @@ class Gedai:
         duration: float = 1.0,
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         highpass_prefilter: float | None = 0.1,
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -258,6 +299,7 @@ class Gedai:
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         highpass_prefilter : float | None
             Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).
+        %(n_pc)s
         %(n_jobs)s
         %(verbose)s
         """
@@ -301,6 +343,7 @@ class Gedai:
             reference_cov=reference_cov,
             sensai_method=sensai_method,
             sensai_bounds=sensai_bounds,
+            n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,
         )
@@ -374,7 +417,11 @@ class Gedai:
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
         enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
         sensai_val = compute_composite_sensai(
-            clean_2d, noise_2d, epochs_transform.info["sfreq"], reference_cov
+            clean_2d,
+            noise_2d,
+            epochs_transform.info["sfreq"],
+            reference_cov,
+            n_pc=(3 if self._n_pc is None else self._n_pc),
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,

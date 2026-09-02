@@ -77,7 +77,7 @@ def test__ensure_verbose():
     assert _ensure_verbose("DEBUG") == logging.DEBUG
     assert _ensure_verbose(True) == logging.INFO
     assert _ensure_verbose(False) == logging.WARNING
-    assert _ensure_verbose(None) == logging.WARNING
+    assert _ensure_verbose(None) == logging.INFO
 
     # invalids
     with pytest.raises(TypeError, match="must be an instance of"):

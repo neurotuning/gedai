@@ -7,6 +7,27 @@ from ..utils._checks import _check_picks_uniqueness
 from ..utils.logs import logger
 
 
+def _detect_signal_type(info):
+    """Detect whether data is 'eeg' or 'meg' based on channel types."""
+    ch_types = info.get_channel_types(unique=True)
+    if any(t in ("mag", "grad", "ref_meg") for t in ch_types):
+        return "meg"
+    return "eeg"
+
+
+def _ensure_wavelet_low_cutoff(
+    wavelet_low_cutoff, filter_highpass=None, epoch_duration=None
+):
+    """Resolve wavelet low cutoff frequency from user parameter and filter highpass."""
+    if wavelet_low_cutoff == "auto":
+        if filter_highpass is not None and filter_highpass > 0:
+            return max(0.5, float(filter_highpass))
+        return 0.5
+    elif wavelet_low_cutoff is None:
+        return 0.0
+    return float(wavelet_low_cutoff)
+
+
 def _check_fit_info(model, inst):
     missing_ch = set(model.ch_names) - set(inst.info["ch_names"])
     if len(missing_ch) > 0:

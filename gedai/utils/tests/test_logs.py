@@ -13,14 +13,14 @@ if TYPE_CHECKING:
 
 def test_default_log_level(caplog: pytest.LogCaptureFixture):
     """Test the default log level."""
-    with _use_log_level("WARNING"):  # set to default
+    with _use_log_level(None):  # default (INFO)
         caplog.clear()
         logger.debug("101")
         assert "101" not in caplog.text
 
         caplog.clear()
         logger.info("101")
-        assert "101" not in caplog.text
+        assert "101" in caplog.text
 
         caplog.clear()
         logger.warning("101")

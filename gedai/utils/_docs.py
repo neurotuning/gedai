@@ -63,13 +63,28 @@ docdict["n_jobs"] = """
 n_jobs : int | None
     The number of jobs to run in parallel. If ``1`` or ``None`` (default), computations
     are run serially. If ``-1``, all available CPU cores are used."""
+docdict["n_pc"] = """
+n_pc : int | "auto", default="auto"
+    The number of principal components to retain for the SENSAI artifact template
+    subspace similarity evaluation.
+    If ``"auto"`` (default):
+
+    - For **EEG**: Automatically uses ``3`` principal components for rank-normalized
+      3D volumetric dipolar subspace similarity.
+    - For **MEG**: Automatically prescans the GEVD artifact eigenvalue spectrum
+      to select ``2`` or ``3`` principal components adaptively depending on
+      ambient room noise harmonics versus localized bursts.
+
+    If an :class:`int`, uses the specified number of principal components."""
 docdict["noise_multiplier"] = """
 noise_multiplier : float | str
     The noise multiplier or string preset for artefact threshold rejection optimization.
     Supported string presets:
+
     - ``"auto"`` : Standard balance (noise_multiplier = 3.0, default).
     - ``"auto+"`` : More aggressive denoising (noise_multiplier = 1.5).
     - ``"auto-"`` : More conservative denoising (noise_multiplier = 6.0).
+
     Alternatively, a custom numerical float can be passed."""
 # -- O ---------------------------------------------------------------------------------
 docdict["overlap"] = """
@@ -114,10 +129,11 @@ sensai_method : str
 # -- V ---------------------------------------------------------------------------------
 docdict["verbose"] = """
 verbose : int | str | bool | None
-    Sets the verbosity level. The verbosity increases gradually between ``"CRITICAL"``,
-    ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``. If None is provided, the
-    verbosity is set to ``"WARNING"``. If a bool is provided, the verbosity is set to
-    ``"WARNING"`` for False and to ``"INFO"`` for True."""
+    Control verbosity of the logging output. If ``None``, use the default
+    verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds
+    to ``"WARNING"``.
+    The default is ``None`` (interpreted as ``"INFO"``)."""
 
 # -- W ---------------------------------------------------------------------------------
 docdict["wavelet_level"] = """
@@ -129,11 +145,11 @@ wavelet_low_cutoff : float | None
     If a float is provided, zero out all wavelet levels whose upper frequency
     bound is below this cutoff frequency in Hz. If ``None``, no frequency band
     is zeroed out. If ``"auto"``, the cutoff is automatically determined based
-    on the info['highpass'] value of the fitted instance. While reading data
+    on the info['highpass'] value (minimum 0.5 Hz). While reading data
     from a file, info['highpass'] might be missing (i.e., equal to 0.0). If
     you know that your data has been high-pass filtered, make sure to set
     ``wavelet_low_cutoff`` to the high-pass cutoff frequency.
-    The default is ``"auto"``."""
+    The default is ``0.5``."""
 docdict["wavelet_type"] = """
 wavelet_type : str
     Wavelet to use for the decomposition. The default is ``'haar'``.

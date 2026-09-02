@@ -6,6 +6,8 @@ from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
     _check_fit_info,
+    _detect_signal_type,
+    _ensure_wavelet_low_cutoff,
     _format_summary_table,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
@@ -34,21 +36,6 @@ from ..wavelet.transform import (
     get_modwt_band_limits,
 )
 from .gedai import Gedai, _clean_continuous_dual_stream
-
-
-def _ensure_wavelet_low_cutoff(
-    wavelet_low_cutoff, filter_highpass, epoch_duration=None
-):
-    if wavelet_low_cutoff == "auto":
-        if filter_highpass is not None and filter_highpass > 0:
-            wavelet_low_cutoff = float(filter_highpass)
-        else:
-            wavelet_low_cutoff = 0.1
-    elif wavelet_low_cutoff is None:
-        wavelet_low_cutoff = 0.0
-    else:
-        wavelet_low_cutoff = float(wavelet_low_cutoff)
-    return wavelet_low_cutoff
 
 
 def compute_required_duration(wavelet_level, sfreq):
@@ -216,10 +203,11 @@ class MultibandGedai:
         self,
         epochs: BaseEpochs,
         picks: list | str = "eeg",
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
-        wavelet_low_cutoff="auto",
+        wavelet_low_cutoff: float | str | None = 0.5,
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -234,6 +222,7 @@ class MultibandGedai:
         %(sensai_method)s
         %(noise_multiplier)s
         %(wavelet_low_cutoff)s
+        %(n_pc)s
         %(n_jobs)s
         %(verbose)s
         """
@@ -248,7 +237,7 @@ class MultibandGedai:
         data = epochs_fit.get_data()
 
         cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, epochs_fit.info["ch_names"])
+        cov = _pick_cov(cov, epochs_fit.info)
 
         epoch_duration = epochs_fit.tmax - epochs_fit.tmin
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
@@ -268,6 +257,8 @@ class MultibandGedai:
 
         # Broadband pre-cleaning pass if requested
         if self.broadband_pass:
+            signal_type = _detect_signal_type(epochs_fit.info)
+            bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 10.0)
             logger.info("Running broadband GEDAI pre-cleaning pass on epochs...")
             broadband_model = Gedai()
             broadband_model.fit_epochs(
@@ -276,6 +267,8 @@ class MultibandGedai:
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
+                sensai_bounds=bb_bounds,
+                n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -310,13 +303,13 @@ class MultibandGedai:
                     "model": None,
                     "ignore": True,
                     "n_samples": n_samples,
-                    "sensai_bounds": (0.0, 12.0),
+                    "sensai_bounds": (0.0, 10.0),
                     "enova": 0.0,
                 }
             else:
                 center_freq = (fmin + fmax) / 2.0
                 band_bounds = (
-                    (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+                    (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 10.0)
                 )
 
                 wavelet_epochs_data = epochs_wavelet[:, :, w, :]
@@ -335,6 +328,7 @@ class MultibandGedai:
                     sensai_method=sensai_method,
                     noise_multiplier=noise_multiplier,
                     sensai_bounds=band_bounds,
+                    n_pc=n_pc,
                     n_jobs=n_jobs,
                     verbose=verbose,
                 )
@@ -381,10 +375,11 @@ class MultibandGedai:
         duration: float = 1.0,
         overlap: float = 0.5,
         reject_by_annotation: bool | None = False,
-        reference_cov: str = "leadfield",
+        reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
-        wavelet_low_cutoff="auto",
+        wavelet_low_cutoff: float | str | None = 0.5,
+        n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
     ):
@@ -402,6 +397,7 @@ class MultibandGedai:
         %(sensai_method)s
         %(noise_multiplier)s
         %(wavelet_low_cutoff)s
+        %(n_pc)s
         %(n_jobs)s
         %(verbose)s
         """
@@ -418,8 +414,14 @@ class MultibandGedai:
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
-        cov = _pick_cov(cov, raw_fit.info["ch_names"])
         sfreq = raw_fit.info["sfreq"]
+
+        # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
+        raw_fit._data = _apply_wavelet_highpass_prefilter(
+            raw_fit._data, sfreq, lowcut_hz=0.1
+        )
+
+        cov = _pick_cov(cov, raw_fit.info)
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, filter_cutoff, duration
@@ -447,6 +449,8 @@ class MultibandGedai:
         duration = valid_duration
 
         # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
+        signal_type = _detect_signal_type(raw_fit.info)
+        bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 10.0)
         if self.broadband_pass:
             logger.info(
                 "Applying wavelet HP pre-filter "
@@ -466,7 +470,8 @@ class MultibandGedai:
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
-                sensai_bounds=(-4.0, 12.0),
+                sensai_bounds=bb_bounds,
+                n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
             )
@@ -500,6 +505,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    n_pc=n_pc,
                 )
                 for item in items
             ]
@@ -517,6 +523,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    n_pc=n_pc,
                 )
                 for item in items
             )
@@ -551,6 +558,7 @@ class MultibandGedai:
         cov,
         sensai_method,
         noise_multiplier,
+        n_pc="auto",
     ):
         """Fit a single wavelet band model."""
         w, (fmin, fmax) = item
@@ -584,8 +592,17 @@ class MultibandGedai:
             verbose=False,
         )
 
+        signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
-        band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 12.0)
+        if signal_type == "meg":
+            # In MODWT, w=0 is the finest (highest-frequency) detail band
+            # (e.g., EMG/sensor noise)
+            # and w=1 is the second-highest detail band. Wider negative bounds
+            # are used here
+            # to capture high-frequency MEG noise.
+            band_bounds = (-6.0, 8.0) if w in (0, 1) else (0.0, 10.0)
+        else:
+            band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 10.0)
 
         model = Gedai()
         model.fit_epochs(
@@ -595,6 +612,7 @@ class MultibandGedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=band_bounds,
+            n_pc=n_pc,
             n_jobs=1,
             verbose=False,
         )
@@ -747,12 +765,18 @@ class MultibandGedai:
 
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
+        sfreq = raw_transform.info["sfreq"]
+
+        # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
+        raw_transform._data = _apply_wavelet_highpass_prefilter(
+            raw_transform._data, sfreq, lowcut_hz=0.1
+        )
 
         # Broadband pre-cleaning if model was fitted with broadband_pass
         if self.broadband_pass and self._broadband_model is not None:
             raw_transform._data = _apply_wavelet_highpass_prefilter(
                 raw_transform._data,
-                raw_transform.info["sfreq"],
+                sfreq,
                 lowcut_hz=self._wavelet_low_cutoff,
             )
             raw_input = self._broadband_model.transform_raw(
@@ -805,10 +829,15 @@ class MultibandGedai:
         if epoch_duration is None:
             epoch_duration = 1.0
 
+        band_ref_cov = (
+            wavelet_fit["model"]._reference_cov.data
+            if wavelet_fit["model"] is not None
+            else self._reference_cov.data
+        )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,
             sfreq=sfreq,
-            reference_cov=self._reference_cov.data,
+            reference_cov=band_ref_cov,
             epoch_duration=epoch_duration,
             threshold=threshold,
         )

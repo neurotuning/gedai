@@ -223,7 +223,7 @@ def _ensure_verbose(verbose: Any) -> int:
     _check_type(verbose, (bool, str, "int-like", None), item_name="verbose")
 
     if verbose is None:
-        verbose = logging.WARNING
+        verbose = logging.INFO
     elif isinstance(verbose, str):
         verbose = verbose.upper()
         _check_value(verbose, logging_types, item_name="verbose")

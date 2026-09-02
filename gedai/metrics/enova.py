@@ -3,6 +3,8 @@
 import numpy as np
 from scipy.linalg import eigh, subspace_angles
 
+from ..utils._checks import ensure_int
+
 
 def compute_enova_per_epoch(
     clean: np.ndarray,
@@ -134,6 +136,13 @@ def compute_composite_sensai(
     sensai_score : float
         Composite SENSAI score in percent.
     """
+    n_pc = ensure_int(n_pc, "n_pc")
+    if not 1 <= n_pc <= reference_cov.shape[0]:
+        max_n_pc = reference_cov.shape[0]
+        raise ValueError(
+            f"n_pc must be an integer in the range [1, {max_n_pc}], got {n_pc!r}."
+        )
+
     ref_cov = np.real(np.asarray(reference_cov, dtype=np.float64))
     ref_cov = (ref_cov + ref_cov.T) * 0.5
     lam = 0.05

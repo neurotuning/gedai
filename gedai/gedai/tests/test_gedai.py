@@ -4,7 +4,7 @@ import mne
 import pytest
 from mne import make_fixed_length_epochs
 
-from gedai import Gedai
+from gedai import Gedai, MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
 
 raw_fname = get_contaminated_eeg_set_path()
@@ -85,6 +85,27 @@ def test_gedai_raw_picks():
         match="The following channels are missing in the input inst but were present",
     ):
         model.transform_raw(raw_test)
+
+
+def test_gedai_invalid_n_pc_raises():
+    """Explicit n_pc values must be integer-like and within the valid range."""
+    with pytest.raises(ValueError, match="n_pc must be an integer in the range"):
+        Gedai().fit_epochs(epochs_eeg, n_pc=0)
+
+    with pytest.raises(ValueError, match="n_pc must be an integer in the range"):
+        Gedai().fit_epochs(epochs_eeg, n_pc=epochs_eeg.info["nchan"] + 1)
+
+
+def test_multiband_broadband_pass_forwards_n_pc():
+    """The broadband pre-cleaning pass should honor the requested n_pc."""
+    model = MultibandGedai(wavelet_level=2, broadband_pass=True)
+    model.fit_epochs(epochs_eeg, picks="all", n_pc=2, n_jobs=1)
+
+    assert model._broadband_model is not None
+    assert model._broadband_model._n_pc == 2
+    for wavelet_fit in model._wavelets_fits:
+        if wavelet_fit["model"] is not None:
+            assert wavelet_fit["model"]._n_pc == 2
 
 
 def test_gedai_average_reference_not_reapplied():
