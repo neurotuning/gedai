@@ -18,6 +18,7 @@ SQUID MEG systems:
 - In wearable setups, subject movement within Earth's ambient field produces large artifacts.
 
 In the original MNE tutorial, denoising is carried out through a multi-stage workflow:
+
 1. **Reference Sensor Regression** (:class:`~mne.preprocessing.EOGRegression`) using external
    sensors away from the head to subtract ambient room interference.
 2. **Homogeneous Field Correction (HFC)** (:func:`~mne.preprocessing.compute_proj_hfc`) using
@@ -37,6 +38,7 @@ without requiring external reference sensors or multipole approximations.
 
 We process the `UCL OPM Auditory Dataset <https://mne.tools/stable/overview/datasets_index.html#ucl-opm-auditory-dataset>`_
 :footcite:`SeymourEtAl2022` and mirror all figures from the original tutorial.
+
 """
 
 # %%
@@ -147,7 +149,7 @@ psd_post_hfc = raw_hfc.compute_psd(**psd_kwargs)
 
 # %%
 # 4. The GEDAI Alternative: Forward-Subspace Denoising
-# ---------------------------------------------------
+# ----------------------------------------------------
 #
 # In ``GEDAI``, we replace both Reference Regression and HFC by computing the reference
 # covariance directly from the subject's forward model (:class:`mne.Forward`).
@@ -362,7 +364,7 @@ print(f"GEDAI Source Peak: vertex {stc_gedai.get_peak()[0]} at {stc_gedai.get_pe
 
 # %%
 # Summary and Takeaways
-# ---------------------
+# ----------------------
 #
 # - **Unified Preprocessing**: ``GEDAI`` replaces multiple ad-hoc preprocessing stages
 #   (reference sensor regression + multipole HFC) with a single, mathematically principled
