@@ -414,7 +414,7 @@ class Gedai:
             noise_2d,
             epochs_transform.info["sfreq"],
             reference_cov,
-            n_pc=(self._n_pc or 3),
+            n_pc=(3 if self._n_pc is None else self._n_pc),
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,
