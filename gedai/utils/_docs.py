@@ -63,6 +63,17 @@ docdict["n_jobs"] = """
 n_jobs : int | None
     The number of jobs to run in parallel. If ``1`` or ``None`` (default), computations
     are run serially. If ``-1``, all available CPU cores are used."""
+docdict["n_pc"] = """
+n_pc : int | "auto", default="auto"
+    The number of principal components to retain for the SENSAI artifact template
+    subspace similarity evaluation.
+    If ``"auto"`` (default):
+    - For **EEG**: Automatically uses ``3`` principal components for rank-normalized
+      3D volumetric dipolar subspace similarity.
+    - For **MEG**: Automatically prescans the GEVD artifact eigenvalue spectrum
+      to select ``2`` or ``3`` principal components adaptively depending on ambient room noise
+      harmonics versus localized bursts.
+    If an :class:`int`, uses the specified number of principal components."""
 docdict["noise_multiplier"] = """
 noise_multiplier : float | str
     The noise multiplier or string preset for artefact threshold rejection optimization.
