@@ -15,7 +15,7 @@ components are recombined to reconstruct the cleaned EEG signal.
 # %%
 # .. note::
 #
-#     This purpose of this tutorial is to explain the differrent parameters of
+#     The purpose of this tutorial is to explain the different parameters of
 #     the :class:`~gedai.gedai.MultibandGedai` model and help you better
 #     understand the underlying algorithm. If you want to learn how to use
 #     ``Multiband GEDAI`` in a practical, end-to-end offline denoising
