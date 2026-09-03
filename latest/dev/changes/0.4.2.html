@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Version 0.4.0 &#8212; gedai</title>
+    <title>Version 0.4.2 &#8212; gedai</title>
   
   
   
@@ -52,7 +52,7 @@
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'dev/changes/0.4.0';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'dev/changes/0.4.2';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
@@ -63,8 +63,8 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Version 0.3.0" href="0.3.0.html" />
-    <link rel="prev" title="Version 0.4.2" href="0.4.2.html" />
+    <link rel="next" title="Version 0.4.0" href="0.4.0.html" />
+    <link rel="prev" title="Version x.x" href="latest.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -400,8 +400,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Changelog</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="latest.html">Version x.x</a></li>
-<li class="toctree-l2"><a class="reference internal" href="0.4.2.html">Version 0.4.2</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Version 0.4.0</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Version 0.4.2</a></li>
+<li class="toctree-l2"><a class="reference internal" href="0.4.0.html">Version 0.4.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.3.0.html">Version 0.3.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.2.0.html">Version 0.2.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.1.0.html">Version 0.1.0 (2025.11.21)</a></li>
@@ -454,7 +454,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Changelog</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Version 0.4.0</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Version 0.4.2</span></li>
   </ul>
 </nav>
 </div>
@@ -471,34 +471,26 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="version-0-4-0">
-<span id="changes-0-4-0"></span><h1>Version 0.4.0<a class="headerlink" href="#version-0-4-0" title="Link to this heading">🔗</a></h1>
+  <section id="version-0-4-2">
+<span id="changes-0-4-2"></span><h1>Version 0.4.2<a class="headerlink" href="#version-0-4-2" title="Link to this heading">🔗</a></h1>
 <section id="enhancements">
 <h2>Enhancements<a class="headerlink" href="#enhancements" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
-<li><p>Add comprehensive MEG data support for Magnetometers, Gradiometers, and Optically Pumped Magnetometers (OPM) (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-<li><p>Implement MEG-aware SENSAI scoring using singular value projection and adaptive artifact spectrum prescanning (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-<li><p>Add support for passing MNE <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Forward</span></code></a> models directly as <code class="docutils literal notranslate"><span class="pre">reference_cov</span></code> in <a class="reference internal" href="../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.gedai.Gedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">Gedai</span></code></a>, <a class="reference internal" href="../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a>, and <a class="reference internal" href="../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a> (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-<li><p>Add <a class="reference internal" href="../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a> to compute cortical reference covariance matrices from forward solutions (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-<li><p>Add <code class="docutils literal notranslate"><span class="pre">n_pc</span></code> parameter to <a class="reference internal" href="../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> and <a class="reference internal" href="../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a> (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-<li><p>Increase SENSAI epoch cap to 500 epochs for improved optimization convergence (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
-<li><p>Set default verbosity level to <code class="docutils literal notranslate"><span class="pre">INFO</span></code> to provide informative progress logging out of the box (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
-<li><p>Tighten wavelet band optimization bounds to guard against overcleaning (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Add native 3D PyVista scraper support in Sphinx-Gallery for headless 3D sensor coregistration and cortical source plots (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Introduce comprehensive Optically Pumped Magnetometer (OPM) preprocessing tutorial comparing the standard MNE-Python workflow to single-step GEDAI (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Automatically pre-fetch UCL OPM auditory dataset in documentation CI workflow to ensure reliable builds (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Add Seymour et al. (2022) citation on OPM MEG movement and speech to the bibliography (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
 </ul>
 </section>
 <section id="bugs">
 <h2>Bugs<a class="headerlink" href="#bugs" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
-<li><p>Fix reference covariance channel picking and case-insensitive matching in <code class="docutils literal notranslate"><span class="pre">_pick_cov</span></code> (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
-<li><p>Ensure average reference is never applied to MEG sensor arrays (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-<li><p>Preserve raw metadata and sensor coordinates across transformation (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/150">#150</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
-</ul>
-</section>
-<section id="api-and-behavior-changes">
-<h2>API and behavior changes<a class="headerlink" href="#api-and-behavior-changes" title="Link to this heading">🔗</a></h2>
-<ul class="simple">
-<li><p>Automatic signal type detection (<code class="docutils literal notranslate"><span class="pre">_detect_signal_type</span></code>) from channel types.</p></li>
-<li><p>Default <code class="docutils literal notranslate"><span class="pre">verbose=None</span></code> now defaults to <code class="docutils literal notranslate"><span class="pre">logging.INFO</span></code> level.</p></li>
+<li><p>Fix <code class="docutils literal notranslate"><span class="pre">n_pc</span></code> propagation in <a class="reference internal" href="../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.fit_epochs" title="gedai.gedai.MultibandGedai.fit_epochs"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit_epochs()</span></code></a> so user-specified component counts are forwarded to both broadband and per-band models (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Validate <code class="docutils literal notranslate"><span class="pre">n_pc</span></code> before scoring in <a class="reference internal" href="../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.gedai.Gedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">Gedai</span></code></a> and <code class="docutils literal notranslate"><span class="pre">compute_composite_sensai</span></code> to reject non-positive or over-channel component counts (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Treat <code class="docutils literal notranslate"><span class="pre">ref_meg</span></code> channels as MEG in <code class="docutils literal notranslate"><span class="pre">_detect_signal_type</span></code> for correct signal classification (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Widen <code class="docutils literal notranslate"><span class="pre">reference_cov</span></code> type annotations in <a class="reference internal" href="../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a> and <a class="reference internal" href="../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> to support <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a> and <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a> (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Align primary auditory cortex (Heschl’s gyrus / STG) dipole peak latency and time courses in OPM tutorial to target N100m latency (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Fix typo in multiband and adaptive tutorial callouts (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/157">#157</a> by <a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
 </ul>
 </section>
 <section id="authors">
@@ -521,20 +513,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="0.4.2.html"
+       href="latest.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Version 0.4.2</p>
+        <p class="prev-next-title">Version x.x</p>
       </div>
     </a>
     <a class="right-next"
-       href="0.3.0.html"
+       href="0.4.0.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Version 0.3.0</p>
+        <p class="prev-next-title">Version 0.4.0</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -559,7 +551,6 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#enhancements">Enhancements</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bugs">Bugs</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api-and-behavior-changes">API and behavior changes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#authors">Authors</a></li>
 </ul>
   </nav></div>

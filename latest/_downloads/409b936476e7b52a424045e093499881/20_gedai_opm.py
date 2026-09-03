@@ -2,7 +2,7 @@ r"""
 .. _tut-gedai-opm-processing:
 
 ====================================================================================
-Preprocessing Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI
+Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI
 ====================================================================================
 
 This tutorial demonstrates how to apply ``GEDAI`` to Optically Pumped
@@ -457,49 +457,77 @@ stc_gedai = mne.minimum_norm.apply_inverse(
     verbose=False,
 )
 
+vert_lh_mne, time_lh_mne = stc_mne.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
+vert_rh_mne, time_rh_mne = stc_mne.get_peak(hemi="rh", tmin=0.08, tmax=0.11)
+_, time_lh_gedai = stc_gedai.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
+
 print(
-    f"MNE Source Peak: vertex {stc_mne.get_peak()[0]} "
-    f"at {stc_mne.get_peak()[1]:.3f} s"
+    f"MNE Auditory Peak (LH): vertex {vert_lh_mne} at {time_lh_mne*1000:.1f} ms"
 )
 print(
-    f"GEDAI Source Peak: vertex {stc_gedai.get_peak()[0]} "
-    f"at {stc_gedai.get_peak()[1]:.3f} s"
+    f"MNE Auditory Peak (RH): vertex {vert_rh_mne} at {time_rh_mne*1000:.1f} ms"
 )
 
 # %%
-# Auditory Cortex Source Time Courses (dSPM):
+# Auditory Cortex Source Time Courses (dSPM at M100 Peak):
 
 times_stc_mne = stc_mne.times * 1000  # seconds to ms
 times_stc_gedai = stc_gedai.times * 1000
-peak_vert_mne = np.argmax(np.max(stc_mne.data, axis=1))
-peak_vert_gedai = np.argmax(np.max(stc_gedai.data, axis=1))
+
+# Row index in stc.data for the LH peak vertex
+idx_lh_mne = np.where(stc_mne.vertices[0] == vert_lh_mne)[0][0]
+idx_lh_gedai = np.where(stc_gedai.vertices[0] == vert_lh_mne)[0][0]
+
+# Row index for the RH peak vertex
+n_lh_mne = len(stc_mne.vertices[0])
+idx_rh_mne = n_lh_mne + np.where(stc_mne.vertices[1] == vert_rh_mne)[0][0]
+
+n_lh_gedai = len(stc_gedai.vertices[0])
+idx_rh_gedai = n_lh_gedai + np.where(stc_gedai.vertices[1] == vert_rh_mne)[0][0]
 
 fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(
     times_stc_mne,
-    stc_mne.data[peak_vert_mne],
+    stc_mne.data[idx_lh_mne],
     lw=2,
     color="#7570b3",
-    label=f"MNE (Peak dSPM = {np.max(stc_mne.data):.2f})",
+    label=f"MNE LH (Vertex {vert_lh_mne}, Peak = {time_lh_mne*1000:.1f} ms)",
 )
 ax.plot(
     times_stc_gedai,
-    stc_gedai.data[peak_vert_gedai],
+    stc_gedai.data[idx_lh_gedai],
     lw=2,
     color="#1b9e77",
-    label=f"GEDAI (Peak dSPM = {np.max(stc_gedai.data):.2f})",
+    label=f"GEDAI LH (Vertex {vert_lh_mne})",
+)
+ax.plot(
+    times_stc_mne,
+    stc_mne.data[idx_rh_mne],
+    lw=1.5,
+    linestyle=":",
+    color="#7570b3",
+    label=f"MNE RH (Vertex {vert_rh_mne}, Peak = {time_rh_mne*1000:.1f} ms)",
+)
+ax.plot(
+    times_stc_gedai,
+    stc_gedai.data[idx_rh_gedai],
+    lw=1.5,
+    linestyle=":",
+    color="#1b9e77",
+    label=f"GEDAI RH (Vertex {vert_rh_mne})",
 )
 ax.axvline(
-    0.093 * 1000,
+    time_lh_mne * 1000,
     color="red",
     linestyle="--",
     alpha=0.7,
-    label="M100 Latency (93.5 ms)",
+    label=f"M100 Latency ({time_lh_mne*1000:.1f} ms)",
 )
 ax.set(
-    title="Figure 9a: Auditory Cortex Source Time Course (dSPM)",
+    title="Figure 9a: Primary Auditory Cortex Source Time Courses (dSPM)",
     xlabel="Time (ms)",
     ylabel="dSPM Amplitude",
+    xlim=(-100, 400),
 )
 ax.grid(True, ls=":")
 ax.legend(loc="upper right")
@@ -508,8 +536,8 @@ plt.show()
 # %%
 # Top 100 Cortical Vertices at M100 Peak:
 
-t_idx_mne = np.argmin(np.abs(stc_mne.times - 0.0935))
-t_idx_gedai = np.argmin(np.abs(stc_gedai.times - 0.0935))
+t_idx_mne = np.argmin(np.abs(stc_mne.times - time_lh_mne))
+t_idx_gedai = np.argmin(np.abs(stc_gedai.times - time_lh_gedai))
 
 fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
 ax.plot(
@@ -540,7 +568,7 @@ brain_mne = stc_mne.plot(
     hemi="both",
     subjects_dir=subjects_dir,
     subject=subject,
-    initial_time=0.093,
+    initial_time=time_lh_mne,
     views=["lat", "med"],
     time_viewer=False,
     show_traces=False,
@@ -553,7 +581,7 @@ brain_gedai = stc_gedai.plot(
     hemi="both",
     subjects_dir=subjects_dir,
     subject=subject,
-    initial_time=0.093,
+    initial_time=time_lh_gedai,
     views=["lat", "med"],
     time_viewer=False,
     show_traces=False,
