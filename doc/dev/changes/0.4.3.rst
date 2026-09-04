@@ -20,7 +20,7 @@ Version 0.4.3
 Enhancements
 ------------
 
-- Align MEG artifact noise subspace scoring in :func:`~gedai.sensai.sensai._sensai_score_loop` to the exact sum of sixth-power singular values (``np.sum(s**6)``) matching MATLAB GEDAI, dramatically improving denoising fidelity on multi-dimensional sensor configurations such as planar gradiometers (`Tomas Ros`_).
+- Align MEG artifact noise subspace scoring in SEnSAI (``_sensai_score_loop``) to the exact sum of sixth-power singular values (``np.sum(s**6)``) matching MATLAB GEDAI, dramatically improving denoising fidelity on multi-dimensional sensor configurations such as planar gradiometers (`Tomas Ros`_).
 - Broaden broadband upper threshold bound to 12.0 for non-MEG data and align detail-band bound frequency ranges with MATLAB (``min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0``) across :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` (`Tomas Ros`_).
 - Standardize min/max threshold bound calculation between epoch-based and raw-data fit paths (`Tomas Ros`_).
 
