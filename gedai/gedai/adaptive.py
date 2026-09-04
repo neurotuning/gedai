@@ -244,7 +244,7 @@ class AdaptiveMultibandGedai:
 
         # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
         signal_type = _detect_signal_type(raw_fit.info)
-        bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 10.0)
+        bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
         if self.broadband_pass:
             logger.info(
                 "Applying wavelet HP pre-filter "
@@ -388,15 +388,10 @@ class AdaptiveMultibandGedai:
 
         signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
-        if signal_type == "meg":
-            # In MODWT, w=0 is the finest (highest-frequency) detail band
-            # (e.g., EMG/sensor noise)
-            # and w=1 is the second-highest detail band. Wider negative bounds
-            # are used here
-            # to capture high-frequency MEG noise.
-            band_bounds = (-6.0, 8.0) if w in (0, 1) else (0.0, 10.0)
-        else:
-            band_bounds = (-6.0, 12.0) if (0.8 <= center_freq <= 60.0) else (0.0, 10.0)
+        lowcut = wavelet_low_cutoff
+        min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0
+        max_thresh = 8.0 if signal_type == "meg" else 12.0
+        band_bounds = (min_thresh, max_thresh)
 
         model = Gedai()
         model.fit_epochs(
