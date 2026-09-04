@@ -596,11 +596,7 @@ class MultibandGedai:
 
         signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
-        lowcut = (
-            wavelet_low_cutoff
-            if (wavelet_low_cutoff is not None and wavelet_low_cutoff > 0)
-            else 0.5
-        )
+        lowcut = wavelet_low_cutoff
         min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0
         max_thresh = 8.0 if signal_type == "meg" else 12.0
         band_bounds = (min_thresh, max_thresh)
