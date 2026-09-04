@@ -234,7 +234,7 @@ def _sensai_score_loop(
                 P_bad = VR_e[:, bad_mask]
                 Q_bad, _ = np.linalg.qr(P_bad)
                 s = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
-                noi_sims[e] = float(np.mean(s**6))
+                noi_sims[e] = float(np.sum(s**6))
             else:
                 noi_sims[e] = 0.0
         else:
