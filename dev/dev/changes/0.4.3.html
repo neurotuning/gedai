@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Version 0.2.0 &#8212; gedai</title>
+    <title>Version 0.4.3 &#8212; gedai</title>
   
   
   
@@ -52,7 +52,7 @@
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'dev/changes/0.2.0';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'dev/changes/0.4.3';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
@@ -63,8 +63,8 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Version 0.1.0 (2025.11.21)" href="0.1.0.html" />
-    <link rel="prev" title="Version 0.3.0" href="0.3.0.html" />
+    <link rel="next" title="Version 0.4.2" href="0.4.2.html" />
+    <link rel="prev" title="Version x.x" href="latest.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -400,11 +400,11 @@
 <li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Changelog</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="latest.html">Version x.x</a></li>
-<li class="toctree-l2"><a class="reference internal" href="0.4.3.html">Version 0.4.3</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Version 0.4.3</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.4.2.html">Version 0.4.2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.4.0.html">Version 0.4.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.3.0.html">Version 0.3.0</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Version 0.2.0</a></li>
+<li class="toctree-l2"><a class="reference internal" href="0.2.0.html">Version 0.2.0</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.1.0.html">Version 0.1.0 (2025.11.21)</a></li>
 
 </ul>
@@ -455,7 +455,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Changelog</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Version 0.2.0</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Version 0.4.3</span></li>
   </ul>
 </nav>
 </div>
@@ -472,31 +472,28 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="version-0-2-0">
-<span id="changes-0-2-0"></span><h1>Version 0.2.0<a class="headerlink" href="#version-0-2-0" title="Link to this heading">🔗</a></h1>
+  <section id="version-0-4-3">
+<span id="changes-0-4-3"></span><h1>Version 0.4.3<a class="headerlink" href="#version-0-4-3" title="Link to this heading">🔗</a></h1>
 <section id="enhancements">
 <h2>Enhancements<a class="headerlink" href="#enhancements" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
-<li><p>Keep all metadata in transformed raw (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/123">#123</a> by <a class="reference external" href="https://github.com/dominikwelke">Dominik Welke</a> and <a class="reference external" href="https://github.com/vferat">Victor Férat</a>)</p></li>
+<li><p>Align MEG artifact noise subspace scoring in SEnSAI (<code class="docutils literal notranslate"><span class="pre">_sensai_score_loop</span></code>) to the exact sum of sixth-power singular values (<code class="docutils literal notranslate"><span class="pre">np.sum(s**6)</span></code>) matching MATLAB GEDAI, dramatically improving denoising fidelity on multi-dimensional sensor configurations such as planar gradiometers (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Broaden broadband upper threshold bound to 12.0 for non-MEG data and align detail-band bound frequency ranges with MATLAB (<code class="docutils literal notranslate"><span class="pre">min_thresh</span> <span class="pre">=</span> <span class="pre">-6.0</span> <span class="pre">if</span> <span class="pre">(lowcut</span> <span class="pre">&lt;=</span> <span class="pre">center_freq</span> <span class="pre">&lt;=</span> <span class="pre">60.0)</span> <span class="pre">else</span> <span class="pre">0.0</span></code>) across <a class="reference internal" href="../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a> and <a class="reference internal" href="../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Standardize min/max threshold bound calculation between epoch-based and raw-data fit paths (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
 </ul>
 </section>
 <section id="bugs">
 <h2>Bugs<a class="headerlink" href="#bugs" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
-<li><p>xxx</p></li>
-</ul>
-</section>
-<section id="api-and-behavior-changes">
-<h2>API and behavior changes<a class="headerlink" href="#api-and-behavior-changes" title="Link to this heading">🔗</a></h2>
-<ul class="simple">
-<li><p>Add the <a class="reference internal" href="../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a> and <a class="reference internal" href="../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> classes. Refactor and improve the codebase (<a class="reference external" href="https://github.com/neurotuning/gedai/pull/97">#97</a> by <a class="reference external" href="https://github.com/vferat">Victor Férat</a>).</p></li>
+<li><p>Fix under-penalization of multi-component artifact leakage in MEG SENSAI by replacing the mean singular value penalty with the additive sum (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Ensure configured wavelet low-cutoff frequency is properly respected during frequency-adaptive threshold bound calculation (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
 </ul>
 </section>
 <section id="authors">
 <h2>Authors<a class="headerlink" href="#authors" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
+<li><p><a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a></p></li>
 <li><p><a class="reference external" href="https://github.com/vferat">Victor Férat</a></p></li>
-<li><p><a class="reference external" href="https://github.com/dominikwelke">Dominik Welke</a></p></li>
 </ul>
 </section>
 </section>
@@ -512,20 +509,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="0.3.0.html"
+       href="latest.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Version 0.3.0</p>
+        <p class="prev-next-title">Version x.x</p>
       </div>
     </a>
     <a class="right-next"
-       href="0.1.0.html"
+       href="0.4.2.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Version 0.1.0 (2025.11.21)</p>
+        <p class="prev-next-title">Version 0.4.2</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -550,7 +547,6 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#enhancements">Enhancements</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bugs">Bugs</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api-and-behavior-changes">API and behavior changes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#authors">Authors</a></li>
 </ul>
   </nav></div>
