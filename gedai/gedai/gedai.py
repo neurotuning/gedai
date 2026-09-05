@@ -153,8 +153,7 @@ class Gedai:
 
         signal_type = _detect_signal_type(epochs_fit.info)
 
-        # Scale reference_cov to match data scale for MEG
-        # (calibrated leadfield in physical units)
+        # Scale the MEG reference covariance to calibrated leadfield units.
         if signal_type == "meg":
             centered = data - data.mean(axis=-1, keepdims=True)
             denom = max(1, data.shape[-1] - 1)
