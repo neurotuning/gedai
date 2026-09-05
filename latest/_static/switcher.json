@@ -1,7 +1,7 @@
 [
     {
-        "name": "latest (0.4.3)",
-        "version": "0.4.3",
+        "name": "latest (0.4.4)",
+        "version": "0.4.4",
         "url": "https://neurotuning.github.io/gedai/latest/"
     },
     {
@@ -38,5 +38,10 @@
         "name": "0.4.3",
         "version": "0.4.3",
         "url": "https://neurotuning.github.io/gedai/0.4.3/"
+    },
+    {
+        "name": "0.4.4",
+        "version": "0.4.4",
+        "url": "https://neurotuning.github.io/gedai/0.4.4/"
     }
 ]
