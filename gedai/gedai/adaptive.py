@@ -182,6 +182,7 @@ class AdaptiveMultibandGedai:
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
+        sensai_tol: float = 0.1,
         wavelet_low_cutoff: str | float | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
@@ -199,6 +200,7 @@ class AdaptiveMultibandGedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        %(sensai_tol)s
         %(wavelet_low_cutoff)s
         %(n_pc)s
         %(n_jobs)s
@@ -213,6 +215,9 @@ class AdaptiveMultibandGedai:
         reference_cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -269,6 +274,7 @@ class AdaptiveMultibandGedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
+                sensai_tol=sensai_tol,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -295,6 +301,7 @@ class AdaptiveMultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                 )
                 for p in wavelet_parameters
@@ -312,6 +319,7 @@ class AdaptiveMultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                 )
                 for p in wavelet_parameters
@@ -345,6 +353,7 @@ class AdaptiveMultibandGedai:
         cov,
         sensai_method,
         noise_multiplier,
+        sensai_tol=0.1,
         n_pc="auto",
     ):
         """Fit a single adaptive wavelet band model."""
@@ -360,20 +369,21 @@ class AdaptiveMultibandGedai:
                 "fmax": fmax,
                 "model": None,
                 "duration": target_duration,
-                "n_samples": 0,
+                "n_samples": wavelet_parameter["n_samples"],
                 "ignore": True,
                 "sensai_bounds": (0.0, 12.0),
                 "enova": 0.0,
             }
 
-        max_duration = n_times / sfreq / 3.0
-        duration = min(target_duration, max(max_duration, 0.5))
-        epoch_samples = max(2, int(round(duration * sfreq)))
+        band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+
+        epoch_samples = wavelet_parameter["n_samples"]
         if epoch_samples % 2 != 0:
             epoch_samples += 1
+        n_ep = raw_data_fit.shape[1] // epoch_samples
 
-        band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
-        n_ep = band_data.shape[1] // epoch_samples
+        duration = epoch_samples / sfreq
+
         if n_ep > 0:
             band_epochs_data = (
                 band_data[:, : n_ep * epoch_samples]
@@ -405,6 +415,7 @@ class AdaptiveMultibandGedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=band_bounds,
+            sensai_tol=sensai_tol,
             n_pc=n_pc,
             n_jobs=1,
             verbose=False,

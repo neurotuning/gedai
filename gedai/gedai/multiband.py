@@ -215,6 +215,7 @@ class MultibandGedai:
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
+        sensai_tol: float = 0.1,
         wavelet_low_cutoff: float | str | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
@@ -230,6 +231,7 @@ class MultibandGedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        %(sensai_tol)s
         %(wavelet_low_cutoff)s
         %(n_pc)s
         %(n_jobs)s
@@ -240,6 +242,9 @@ class MultibandGedai:
         _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
@@ -277,6 +282,7 @@ class MultibandGedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
+                sensai_tol=sensai_tol,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -339,6 +345,7 @@ class MultibandGedai:
                     sensai_method=sensai_method,
                     noise_multiplier=noise_multiplier,
                     sensai_bounds=band_bounds,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     n_jobs=n_jobs,
                     verbose=verbose,
@@ -389,6 +396,7 @@ class MultibandGedai:
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
+        sensai_tol: float = 0.1,
         wavelet_low_cutoff: float | str | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
@@ -407,6 +415,7 @@ class MultibandGedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        %(sensai_tol)s
         %(wavelet_low_cutoff)s
         %(n_pc)s
         %(n_jobs)s
@@ -422,6 +431,9 @@ class MultibandGedai:
         cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -482,6 +494,7 @@ class MultibandGedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
+                sensai_tol=sensai_tol,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -516,6 +529,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                 )
                 for item in items
@@ -534,6 +548,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                 )
                 for item in items
@@ -569,6 +584,7 @@ class MultibandGedai:
         cov,
         sensai_method,
         noise_multiplier,
+        sensai_tol=0.1,
         n_pc="auto",
     ):
         """Fit a single wavelet band model."""
@@ -618,6 +634,7 @@ class MultibandGedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=band_bounds,
+            sensai_tol=sensai_tol,
             n_pc=n_pc,
             n_jobs=1,
             verbose=False,

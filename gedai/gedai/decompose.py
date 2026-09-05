@@ -1,7 +1,18 @@
 import numpy as np
 from scipy.linalg import eigh
 
-from ..utils._torch_backend import clean_epochs_batched_torch, resolve_engine
+from ..utils._torch_backend import (
+    batched_gevd_cholesky,
+    clean_epochs_batched_torch,
+    resolve_engine,
+    robust_cholesky_gevd,
+)
+
+__all__ = [
+    "_clean_epochs",
+    "robust_cholesky_gevd",
+    "batched_gevd_cholesky",
+]
 
 
 def _clean_epochs(epochs_data, reference_cov, threshold, engine="numpy"):

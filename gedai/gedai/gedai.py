@@ -125,6 +125,7 @@ class Gedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        sensai_tol: float = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -142,6 +143,7 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        %(sensai_tol)s
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
@@ -157,6 +159,9 @@ class Gedai:
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
@@ -252,6 +257,7 @@ class Gedai:
                 percentile=percentile,
                 signal_type=signal_type,
                 engine=self._resolved_engine,
+                sensai_tol=sensai_tol,
             )
         else:
             raise ValueError(
@@ -298,6 +304,7 @@ class Gedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        sensai_tol: float = 0.1,
         highpass_prefilter: float | None = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
@@ -319,6 +326,7 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        %(sensai_tol)s
         highpass_prefilter : float | None
             Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).
         %(n_pc)s
@@ -337,6 +345,9 @@ class Gedai:
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -367,6 +378,7 @@ class Gedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=sensai_bounds,
+            sensai_tol=sensai_tol,
             n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,

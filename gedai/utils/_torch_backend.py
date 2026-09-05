@@ -48,19 +48,29 @@ def resolve_engine(engine: str = "numpy") -> str:
     return "numpy"
 
 
-def gevd_torch(cov_a, cov_b):
-    """Batched Generalized Eigendecomposition solving A V = B V Lambda using PyTorch.
+def robust_cholesky_gevd(
+    cov_a,
+    cov_b,
+    eps_jitter: float = 1e-6,
+):
+    """Batched Generalized Eigendecomposition with robust Cholesky factorization.
 
-    Solves the generalized eigenvalue problem for symmetric positive-definite B,
-    satisfying V.mT @ B @ V = I and A @ V = B @ V @ diag(evals).
+    Solves the generalized eigenvalue problem A V = B V Lambda for symmetric
+    matrices cov_a and symmetric positive-definite (or regularized) reference cov_b.
+    Satisfies V.mT @ B @ V = I and A @ V = B @ V @ diag(evals).
+
+    Handles near-singular or non-strictly-positive-definite reference covariances
+    via adaptive diagonal jitter fallback (cholesky_ex).
 
     Parameters
     ----------
     cov_a : torch.Tensor
         Symmetric matrix or batch of matrices with shape (..., n_channels, n_channels).
     cov_b : torch.Tensor
-        Symmetric positive-definite reference covariance matrix with shape
-        (..., n_channels, n_channels) or (n_channels, n_channels).
+        Symmetric reference covariance matrix with shape (..., n_channels, n_channels)
+        or (n_channels, n_channels).
+    eps_jitter : float, default 1e-6
+        Initial diagonal jitter scaling factor for fallback regularization.
 
     Returns
     -------
@@ -76,13 +86,38 @@ def gevd_torch(cov_a, cov_b):
     a = cov_a.to(torch.float64)
     b = cov_b.to(torch.float64)
 
-    # Cholesky factorization: B = L @ L.mT
-    l_factor = torch.linalg.cholesky(b)
+    # Symmetrize inputs
+    b = 0.5 * (b + b.mT)
+    a = 0.5 * (a + a.mT)
+
+    n_ch = b.shape[-1]
+
+    # Robust Cholesky factorization with adaptive jitter fallback
+    l_factor, info = torch.linalg.cholesky_ex(b)
+    if bool((info != 0).any()):
+        eye = torch.eye(n_ch, dtype=b.dtype, device=b.device)
+        diag_mean = float(
+            torch.diagonal(b, dim1=-2, dim2=-1).abs().mean().clamp_min(1e-12)
+        )
+        current_jitter = eps_jitter * diag_mean
+        for _ in range(4):
+            b_jittered = b + current_jitter * eye
+            l_factor, info = torch.linalg.cholesky_ex(b_jittered)
+            if not bool((info != 0).any()):
+                break
+            current_jitter *= 10.0
+        if bool((info != 0).any()):
+            raise RuntimeError(
+                "Reference covariance matrix is not positive-definite even after adaptive jitter."
+            )
 
     # Transform A to standard symmetric eigenproblem:
     # A_tilde = L^(-1) @ A @ L^(-T)
     c_mat = torch.linalg.solve_triangular(l_factor, a, upper=False)
     a_tilde = torch.linalg.solve_triangular(l_factor, c_mat.mT, upper=False).mT
+
+    # Ensure exact numerical symmetry to prevent eigh drift
+    a_tilde = 0.5 * (a_tilde + a_tilde.mT)
 
     # Standard symmetric eigendecomposition
     evals, y_mat = torch.linalg.eigh(a_tilde)
@@ -91,6 +126,11 @@ def gevd_torch(cov_a, cov_b):
     evecs = torch.linalg.solve_triangular(l_factor.mT, y_mat, upper=True)
 
     return evals, evecs
+
+
+# Aliases for convenience and backward compatibility
+batched_gevd_cholesky = robust_cholesky_gevd
+gevd_torch = robust_cholesky_gevd
 
 
 def precompute_gevd_torch(
@@ -124,7 +164,7 @@ def precompute_gevd_torch(
     x_centered = x - x.mean(dim=-1, keepdim=True)
     covs = torch.bmm(x_centered, x_centered.mT) / (n_times - 1)
 
-    evals, evecs = gevd_torch(covs, b)
+    evals, evecs = robust_cholesky_gevd(covs, b)
 
     return evals.cpu().numpy(), evecs.cpu().numpy()
 
@@ -159,7 +199,7 @@ def clean_epochs_batched_torch(
     covs = torch.bmm(x_centered, x_centered.mT) / max(1, n_times - 1)
 
     # Batched GEVD
-    evals, evecs = gevd_torch(covs, b)
+    evals, evecs = robust_cholesky_gevd(covs, b)
 
     # Filter artifact eigenvectors: signal_mask zeroes out columns where |eval| < thresh
     signal_mask = torch.abs(evals) < threshold  # shape (n_epochs, n_channels)

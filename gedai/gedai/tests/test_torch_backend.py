@@ -9,9 +9,11 @@ from gedai.gedai.gedai import Gedai
 from gedai.gedai.multiband import MultibandGedai
 from gedai.sensai.sensai import _precompute_gevd
 from gedai.utils._torch_backend import (
+    batched_gevd_cholesky,
     gevd_torch,
     has_torch,
     resolve_engine,
+    robust_cholesky_gevd,
 )
 
 pytestmark = pytest.mark.skipif(not has_torch(), reason="PyTorch is not installed")
@@ -227,3 +229,80 @@ def test_adaptive_multiband_gedai_torch():
     for wf in amb._wavelets_fits:
         if wf["model"] is not None:
             assert wf["model"].engine == "torch"
+
+
+def test_robust_cholesky_gevd_and_alias():
+    """Test robust_cholesky_gevd and batched_gevd_cholesky against SciPy eigh."""
+    import torch
+
+    rng = np.random.RandomState(42)
+    n_ch = 6
+    A_np = np.cov(rng.randn(n_ch, 50))
+    B_np = np.cov(rng.randn(n_ch, 80)) + 0.2 * np.eye(n_ch)
+
+    w_sp, v_sp = eigh(A_np, B_np)
+
+    w_pt, v_pt = robust_cholesky_gevd(torch.from_numpy(A_np), torch.from_numpy(B_np))
+    w_alias, v_alias = batched_gevd_cholesky(
+        torch.from_numpy(A_np), torch.from_numpy(B_np)
+    )
+
+    np.testing.assert_allclose(w_pt.numpy(), w_sp, atol=1e-10)
+    np.testing.assert_allclose(w_alias.numpy(), w_sp, atol=1e-10)
+
+
+def test_robust_cholesky_gevd_jitter_fallback():
+    """Test that robust_cholesky_gevd gracefully handles singular/non-SPD reference cov."""
+    import torch
+
+    rng = np.random.RandomState(42)
+    n_ch = 6
+    A = torch.from_numpy(np.cov(rng.randn(n_ch, 50)))
+    # Create rank-deficient covariance (rank 3 in 6D space)
+    low_rank = rng.randn(n_ch, 3)
+    B_singular = torch.from_numpy(low_rank @ low_rank.T)
+
+    # Standard cholesky would throw LinAlgError; robust_cholesky_gevd should succeed via jitter
+    w, v = robust_cholesky_gevd(A, B_singular)
+    assert w.shape == (n_ch,)
+    assert v.shape == (n_ch, n_ch)
+    assert not torch.isnan(w).any()
+    assert not torch.isnan(v).any()
+
+
+def test_sensai_tol_parameter():
+    """Test that sensai_tol parameter is accepted and affects optimization in Gedai & AdaptiveMultibandGedai."""
+    rng = np.random.RandomState(42)
+    n_ch, n_times = 6, 500
+    data = rng.randn(n_ch, n_times)
+    ch_names = [f"EEG{i:03d}" for i in range(n_ch)]
+    info = mne.create_info(ch_names=ch_names, sfreq=100.0, ch_types="eeg")
+    raw = mne.io.RawArray(data, info, verbose=False)
+    cov = mne.Covariance(np.eye(n_ch), ch_names, [], [], 0)
+
+    # Gedai fit_raw with custom sensai_tol
+    g = Gedai(engine="torch")
+    g.fit_raw(
+        raw.copy(),
+        reference_cov=cov,
+        sensai_method="optimize",
+        sensai_tol=0.2,
+        verbose=False,
+    )
+    assert g.fitted is True
+
+    # AdaptiveMultibandGedai fit_raw with custom sensai_tol
+    amb = AdaptiveMultibandGedai(wavelet_level=1, broadband_pass=False, engine="torch")
+    amb.fit_raw(
+        raw.copy(),
+        reference_cov=cov,
+        sensai_method="optimize",
+        sensai_tol=0.1,
+        verbose=False,
+    )
+    assert amb.fitted is True
+
+    # Invalid sensai_tol should raise ValueError
+    with pytest.raises(ValueError, match="sensai_tol must be > 0"):
+        g.fit_raw(raw.copy(), reference_cov=cov, sensai_tol=-0.5)
+

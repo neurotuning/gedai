@@ -547,6 +547,7 @@ def _sensai_optimize(
     percentile=98,
     signal_type="eeg",
     engine="numpy",
+    sensai_tol: float = 0.1,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -615,7 +616,7 @@ def _sensai_optimize(
         bounds=bounds,
         method="bounded",
         options={
-            "xatol": 0.01,
+            "xatol": float(sensai_tol),
             "maxiter": 500,
         },
     )

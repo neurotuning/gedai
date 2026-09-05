@@ -124,6 +124,12 @@ sensai_method : str
     Can be ``'optimize'`` (default, continuous scalar minimization) or
     ``'gridsearch'``.
 """
+docdict["sensai_tol"] = """
+sensai_tol : float
+    Absolute tolerance (``xatol``) for threshold optimization when
+    ``sensai_method='optimize'``. Defaults to ``0.1`` for fast convergence.
+    Can be set to smaller values (e.g. ``0.01``) for finer search precision.
+"""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------
