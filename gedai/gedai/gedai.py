@@ -151,15 +151,18 @@ class Gedai:
         cov = _pick_cov(cov, epochs_fit.info)
         reference_cov = cov.data.copy()
 
-        # Scale reference_cov to match data scale
-        centered = data - data.mean(axis=-1, keepdims=True)
-        denom = max(1, data.shape[-1] - 1)
-        data_cov_trace = float(
-            np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
-        )
-        ref_cov_trace = float(np.trace(reference_cov))
-        if ref_cov_trace > 0 and data_cov_trace > 0:
-            reference_cov *= data_cov_trace / ref_cov_trace
+        signal_type = _detect_signal_type(epochs_fit.info)
+
+        # Scale the MEG reference covariance to calibrated leadfield units.
+        if signal_type == "meg":
+            centered = data - data.mean(axis=-1, keepdims=True)
+            denom = max(1, data.shape[-1] - 1)
+            data_cov_trace = float(
+                np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
+            )
+            ref_cov_trace = float(np.trace(reference_cov))
+            if ref_cov_trace > 0 and data_cov_trace > 0:
+                reference_cov *= data_cov_trace / ref_cov_trace
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05
@@ -171,8 +174,6 @@ class Gedai:
 
         all_eval, all_evec = _precompute_gevd(data, reference_cov)
         epochs_eigenvalues = all_eval
-
-        signal_type = _detect_signal_type(epochs_fit.info)
         percentile = 99 if signal_type == "meg" else 98
         if n_pc == "auto":
             resolved_n_pc = _compute_default_n_pc(
