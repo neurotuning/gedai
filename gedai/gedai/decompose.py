@@ -1,8 +1,14 @@
 import numpy as np
 from scipy.linalg import eigh
 
+from ..utils._torch_backend import clean_epochs_batched_torch, resolve_engine
 
-def _clean_epochs(epochs_data, reference_cov, threshold):
+
+def _clean_epochs(epochs_data, reference_cov, threshold, engine="numpy"):
+    resolved = resolve_engine(engine)
+    if resolved == "torch":
+        return clean_epochs_batched_torch(epochs_data, reference_cov, threshold)
+
     # Reconstruct data
     cleaned_epochs = np.zeros_like(epochs_data)
     artefact_epochs = np.zeros_like(epochs_data)

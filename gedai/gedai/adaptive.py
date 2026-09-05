@@ -20,6 +20,7 @@ from ..utils._checks import (
     _ensure_noise_multiplier,
 )
 from ..utils._docs import fill_doc
+from ..utils._torch_backend import resolve_engine
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import (
     _apply_wavelet_highpass_prefilter,
@@ -110,6 +111,7 @@ class AdaptiveMultibandGedai:
         wavelet_level="auto",
         cycles_per_wavelet=10,
         broadband_pass=True,
+        engine="numpy",
     ):
         if wavelet_level != "auto":
             _check_type(wavelet_level, (int,), "wavelet_level")
@@ -121,6 +123,8 @@ class AdaptiveMultibandGedai:
         self._wavelet_level = wavelet_level
         self.cycles_per_wavelet = cycles_per_wavelet
         self.broadband_pass = broadband_pass
+        self.engine = engine
+        self._resolved_engine = resolve_engine(engine)
 
         self.fitted = False
 
@@ -254,7 +258,7 @@ class AdaptiveMultibandGedai:
             raw_fit._data = _apply_wavelet_highpass_prefilter(
                 raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
             )
-            broadband_model = Gedai()
+            broadband_model = Gedai(engine=self.engine)
             broadband_model.fit_raw(
                 raw_fit,
                 picks="all",
@@ -393,7 +397,7 @@ class AdaptiveMultibandGedai:
         max_thresh = 8.0 if signal_type == "meg" else 12.0
         band_bounds = (min_thresh, max_thresh)
 
-        model = Gedai()
+        model = Gedai(engine=self.engine)
         model.fit_epochs(
             wavelet_epochs,
             picks="all",
@@ -526,6 +530,7 @@ class AdaptiveMultibandGedai:
             reference_cov=band_ref_cov,
             epoch_duration=epoch_duration,
             threshold=threshold,
+            engine=getattr(self, "engine", "numpy"),
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(

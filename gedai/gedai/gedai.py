@@ -37,6 +37,11 @@ from ..utils._checks import (
     ensure_int,
 )
 from ..utils._docs import fill_doc
+from ..utils._torch_backend import (
+    clean_continuous_stream_torch,
+    clean_epochs_batched_torch,
+    resolve_engine,
+)
 from ..utils.logs import verbose
 from ..wavelet.transform import _apply_wavelet_highpass_prefilter
 
@@ -70,7 +75,10 @@ class Gedai:
 
     def __init__(
         self,
+        engine: str = "numpy",
     ):
+        self.engine = engine
+        self._resolved_engine = resolve_engine(engine)
         self.fitted = False
         self._fit = None
         self._info = None
@@ -120,6 +128,7 @@ class Gedai:
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Fit the GEDAI model to the epochs.
 
@@ -136,8 +145,14 @@ class Gedai:
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            engine specified at initialization.
         """
         self._check_unfitted()
+        if engine is not None:
+            self.engine = engine
+            self._resolved_engine = resolve_engine(engine)
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
@@ -173,7 +188,9 @@ class Gedai:
         reference_cov = (reference_cov + reference_cov.T) * 0.5
         cov.update(data=reference_cov)
 
-        all_eval, all_evec = _precompute_gevd(data, reference_cov)
+        all_eval, all_evec = _precompute_gevd(
+            data, reference_cov, engine=self._resolved_engine
+        )
         epochs_eigenvalues = all_eval
         percentile = 99 if signal_type == "meg" else 98
         if n_pc == "auto":
@@ -219,6 +236,7 @@ class Gedai:
                 all_eval=all_eval,
                 all_evec=all_evec,
                 signal_type=signal_type,
+                engine=self._resolved_engine,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -233,6 +251,7 @@ class Gedai:
                 all_evec=all_evec,
                 percentile=percentile,
                 signal_type=signal_type,
+                engine=self._resolved_engine,
             )
         else:
             raise ValueError(
@@ -283,6 +302,7 @@ class Gedai:
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -304,6 +324,8 @@ class Gedai:
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto').
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
@@ -340,14 +362,15 @@ class Gedai:
         )
         self.fit_epochs(
             epochs,
-            picks=picks,
-            noise_multiplier=noise_multiplier,
+            picks=raw_fit.ch_names,
             reference_cov=reference_cov,
             sensai_method=sensai_method,
+            noise_multiplier=noise_multiplier,
             sensai_bounds=sensai_bounds,
             n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,
+            engine=engine,
         )
 
     @fill_doc
@@ -394,7 +417,12 @@ class Gedai:
         threshold = self._fit["threshold"]
         cleaned_epochs_data = np.zeros_like(data)
 
-        if n_jobs == 1:
+        resolved_engine = getattr(self, "_resolved_engine", "numpy")
+        if resolved_engine == "torch":
+            cleaned_epochs_data, _ = clean_epochs_batched_torch(
+                data, reference_cov, threshold
+            )
+        elif n_jobs == 1:
             for e, epoch_data in enumerate(data):
                 cleaned_epochs_data[e] = _process_single_epoch(
                     epoch_data, reference_cov, threshold
@@ -494,6 +522,7 @@ class Gedai:
             if hasattr(self, "_duration") and self._duration > 0
             else 1.0,
             threshold=threshold,
+            engine=getattr(self, "_resolved_engine", "numpy"),
         )
 
         raw_transform.get_data(verbose=False).copy()
@@ -685,6 +714,7 @@ def _clean_continuous_dual_stream(
     reference_cov: np.ndarray,
     epoch_duration: float,
     threshold: float,
+    engine: str = "numpy",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
 
@@ -700,12 +730,15 @@ def _clean_continuous_dual_stream(
         Epoch length in seconds.
     threshold : float
         Eigenvalue threshold.
+    engine : str, default 'numpy'
+        Computation engine ('numpy', 'torch', or 'auto').
 
     Returns
     -------
     clean : np.ndarray, shape (n_channels, n_times)
     noise : np.ndarray, shape (n_channels, n_times)
     """
+    resolved_engine = resolve_engine(engine)
     n_ch, orig_len = data.shape
     epoch_samples = max(2, int(round(epoch_duration * sfreq)))
     if epoch_samples % 2 != 0:
@@ -744,6 +777,8 @@ def _clean_continuous_dual_stream(
     cw = create_cosine_weights(epoch_samples)
 
     def _process_stream(stream):
+        if resolved_engine == "torch":
+            return clean_continuous_stream_torch(stream, reference_cov, threshold, cw)
         n_ep = len(stream)
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
         noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
