@@ -7,6 +7,7 @@ Changelog
     :titlesonly:
 
     latest.rst
+    0.4.4
     0.4.3
     0.4.2
     0.4.0
