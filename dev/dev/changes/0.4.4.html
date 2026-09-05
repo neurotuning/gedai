@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Version x.x &#8212; gedai</title>
+    <title>Version 0.4.4 &#8212; gedai</title>
   
   
   
@@ -52,7 +52,7 @@
     <script src="../../_static/copybutton.js?v=30646c52"></script>
     <script src="../../_static/sg-tags.js?v=d80f6fa4"></script>
     <script src="../../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'dev/changes/latest';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'dev/changes/0.4.4';</script>
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.21.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
@@ -63,8 +63,8 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Version 0.4.4" href="0.4.4.html" />
-    <link rel="prev" title="Changelog" href="index.html" />
+    <link rel="next" title="Version 0.4.3" href="0.4.3.html" />
+    <link rel="prev" title="Version x.x" href="latest.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -399,8 +399,8 @@
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="../development.html">Development</a></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Changelog</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">Version x.x</a></li>
-<li class="toctree-l2"><a class="reference internal" href="0.4.4.html">Version 0.4.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="latest.html">Version x.x</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Version 0.4.4</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.4.3.html">Version 0.4.3</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.4.2.html">Version 0.4.2</a></li>
 <li class="toctree-l2"><a class="reference internal" href="0.4.0.html">Version 0.4.0</a></li>
@@ -456,7 +456,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Changelog</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Version x.x</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Version 0.4.4</span></li>
   </ul>
 </nav>
 </div>
@@ -473,24 +473,13 @@
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="version-x-x">
-<span id="latest"></span><h1>Version x.x<a class="headerlink" href="#version-x-x" title="Link to this heading">🔗</a></h1>
-<section id="enhancements">
-<h2>Enhancements<a class="headerlink" href="#enhancements" title="Link to this heading">🔗</a></h2>
-<ul class="simple">
-<li><p>xxx</p></li>
-</ul>
-</section>
+  <section id="version-0-4-4">
+<span id="changes-0-4-4"></span><h1>Version 0.4.4<a class="headerlink" href="#version-0-4-4" title="Link to this heading">🔗</a></h1>
 <section id="bugs">
 <h2>Bugs<a class="headerlink" href="#bugs" title="Link to this heading">🔗</a></h2>
 <ul class="simple">
-<li><p>xxx</p></li>
-</ul>
-</section>
-<section id="api-and-behavior-changes">
-<h2>API and behavior changes<a class="headerlink" href="#api-and-behavior-changes" title="Link to this heading">🔗</a></h2>
-<ul class="simple">
-<li><p>xxx</p></li>
+<li><p>Restrict reference covariance trace scaling strictly to MEG data (<code class="docutils literal notranslate"><span class="pre">signal_type</span> <span class="pre">==</span> <span class="pre">&quot;meg&quot;</span></code>), avoiding unwarranted down-scaling of calibrated OpenMEEG physical EEG leadfields and restoring high-fidelity artifact component rejection in EEG denoising (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
+<li><p>Align noise and signal subspace similarity computation in SEnSAI (<code class="docutils literal notranslate"><span class="pre">_sensai_score_loop</span></code>) to the exact 3x3 determinant matching MATLAB EEGLAB GEDAI, improving artifact detection sensitivity across multi-component sensor subspaces (<a class="reference external" href="https://github.com/neurotuning-personal">Tomas Ros</a>).</p></li>
 </ul>
 </section>
 <section id="authors">
@@ -513,20 +502,20 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="index.html"
+       href="latest.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Changelog</p>
+        <p class="prev-next-title">Version x.x</p>
       </div>
     </a>
     <a class="right-next"
-       href="0.4.4.html"
+       href="0.4.3.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Version 0.4.4</p>
+        <p class="prev-next-title">Version 0.4.3</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -549,9 +538,7 @@
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#enhancements">Enhancements</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#bugs">Bugs</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#api-and-behavior-changes">API and behavior changes</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#authors">Authors</a></li>
 </ul>
   </nav></div>
