@@ -134,6 +134,10 @@ class AdaptiveMultibandGedai:
         self._actual_wavelet_level = None
         self._broadband_model = None
         self.metrics_ = None
+        self._fitted_raw_id = None
+        self._fitted_raw_shape = None
+        self._fitted_raw_ch_names = None
+        self._cached_broadband_data = None
 
     @property
     def wavelet_level(self):
@@ -331,6 +335,14 @@ class AdaptiveMultibandGedai:
         self._wavelets_fits = wavelets_fits
         self._wavelet_low_cutoff = wavelet_low_cutoff
 
+        # Cache reference and intermediate data for fast transform_raw on the fitted signal
+        self._fitted_raw_id = id(raw)
+        self._fitted_raw_shape = (
+            raw._data.shape if hasattr(raw, "_data") else None
+        )
+        self._fitted_raw_ch_names = list(raw.ch_names)
+        self._cached_broadband_data = raw_data_fit
+
         sensai_scores = [
             wf["model"].fit_metrics_["sensai_score"]
             for wf in wavelets_fits
@@ -373,6 +385,7 @@ class AdaptiveMultibandGedai:
                 "ignore": True,
                 "sensai_bounds": (0.0, 12.0),
                 "enova": 0.0,
+                "band_data": None,
             }
 
         band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
@@ -434,6 +447,7 @@ class AdaptiveMultibandGedai:
             "sensai_bounds": band_bounds,
             "sensai": sensai_score,
             "enova": 0.0,
+            "band_data": band_data,
         }
 
     @fill_doc
@@ -471,37 +485,55 @@ class AdaptiveMultibandGedai:
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
         sfreq = raw_transform.info["sfreq"]
 
-        # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
-        raw_transform._data = _apply_wavelet_highpass_prefilter(
-            raw_transform._data, sfreq, lowcut_hz=0.1
+        # Check if transforming the exact same raw data that was just fitted
+        is_same_raw = (
+            getattr(self, "_fitted_raw_id", None) == id(raw)
+            or (
+                hasattr(raw, "_data")
+                and getattr(self, "_fitted_raw_shape", None) == raw._data.shape
+                and getattr(self, "_fitted_raw_ch_names", None) == raw.ch_names
+                and getattr(self, "_cached_broadband_data", None) is not None
+            )
         )
 
-        if self.broadband_pass and self._broadband_model is not None:
-            raw_transform._data = _apply_wavelet_highpass_prefilter(
-                raw_transform._data,
-                sfreq,
-                lowcut_hz=self._wavelet_low_cutoff,
-            )
-            raw_input = self._broadband_model.transform_raw(
-                raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
-            )
+        if is_same_raw and getattr(self, "_cached_broadband_data", None) is not None:
+            raw_data = self._cached_broadband_data
         else:
-            raw_input = raw_transform
+            # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
+            raw_transform._data = _apply_wavelet_highpass_prefilter(
+                raw_transform._data, sfreq, lowcut_hz=0.1
+            )
 
-        sfreq = raw_transform.info["sfreq"]
-        raw_data = raw_input.get_data(verbose=False)
+            if self.broadband_pass and self._broadband_model is not None:
+                raw_transform._data = _apply_wavelet_highpass_prefilter(
+                    raw_transform._data,
+                    sfreq,
+                    lowcut_hz=self._wavelet_low_cutoff,
+                )
+                raw_input = self._broadband_model.transform_raw(
+                    raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
+                )
+            else:
+                raw_input = raw_transform
+
+            raw_data = raw_input.get_data(verbose=False)
+
         _, n_times = raw_data.shape
 
         actual_level = self._actual_wavelet_level or self.wavelet_level
 
         if n_jobs == 1 or len(self._wavelets_fits) <= 1:
             band_results = [
-                self._transform_wavelet_band(wf, raw_data, sfreq, actual_level)
+                self._transform_wavelet_band(
+                    wf, raw_data, sfreq, actual_level, is_same_raw=is_same_raw
+                )
                 for wf in self._wavelets_fits
             ]
         else:
             band_results = Parallel(n_jobs=n_jobs, prefer="threads")(
-                delayed(self._transform_wavelet_band)(wf, raw_data, sfreq, actual_level)
+                delayed(self._transform_wavelet_band)(
+                    wf, raw_data, sfreq, actual_level, is_same_raw=is_same_raw
+                )
                 for wf in self._wavelets_fits
             )
 
@@ -518,7 +550,9 @@ class AdaptiveMultibandGedai:
 
         return raw_transform
 
-    def _transform_wavelet_band(self, wavelet_fit, raw_data, sfreq, actual_level):
+    def _transform_wavelet_band(
+        self, wavelet_fit, raw_data, sfreq, actual_level, is_same_raw=False
+    ):
         """Transform a single adaptive wavelet band."""
         band_idx = wavelet_fit["band_index"]
         ignore = wavelet_fit["ignore"]
@@ -526,7 +560,11 @@ class AdaptiveMultibandGedai:
         if ignore:
             return np.zeros_like(raw_data), 0.0, 0.0
 
-        band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+        if is_same_raw and wavelet_fit.get("band_data") is not None:
+            band_data = wavelet_fit["band_data"]
+        else:
+            band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+
         threshold = wavelet_fit["model"].threshold
         epoch_duration = wavelet_fit["duration"]
 
@@ -550,6 +588,24 @@ class AdaptiveMultibandGedai:
         runs = wavelet_fit["model"]._fit.get("sensai_runs", [])
         sensai_band = max(r[1] for r in runs) if len(runs) > 0 else 0.0
         return clean_band, enova_band, sensai_band
+
+    def clear_cache(self):
+        """Clear cached intermediate representations to free memory.
+
+        Returns
+        -------
+        self : AdaptiveMultibandGedai
+            The instance itself.
+        """
+        self._fitted_raw_id = None
+        self._fitted_raw_shape = None
+        self._fitted_raw_ch_names = None
+        self._cached_broadband_data = None
+        if self._wavelets_fits is not None:
+            for wf in self._wavelets_fits:
+                if "band_data" in wf:
+                    wf["band_data"] = None
+        return self
 
     def plot_fit(self):
         """Plot the fitting results.
