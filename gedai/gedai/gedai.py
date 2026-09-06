@@ -37,6 +37,11 @@ from ..utils._checks import (
     ensure_int,
 )
 from ..utils._docs import fill_doc
+from ..utils._torch_backend import (
+    clean_continuous_stream_torch,
+    clean_epochs_batched_torch,
+    resolve_engine,
+)
 from ..utils.logs import verbose
 from ..wavelet.transform import _apply_wavelet_highpass_prefilter
 
@@ -63,6 +68,10 @@ class Gedai:
 
     See :footcite:`deCheveigne2018`.
 
+    Parameters
+    ----------
+    %(engine)s
+
     References
     ----------
     .. footbibliography::
@@ -70,7 +79,10 @@ class Gedai:
 
     def __init__(
         self,
+        engine: str = "auto",
     ):
+        self.engine = engine
+        self._resolved_engine = resolve_engine(engine)
         self.fitted = False
         self._fit = None
         self._info = None
@@ -117,9 +129,11 @@ class Gedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        sensai_tol: float = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Fit the GEDAI model to the epochs.
 
@@ -133,15 +147,25 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        %(sensai_tol)s
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            engine specified at initialization.
         """
         self._check_unfitted()
+        if engine is not None:
+            self.engine = engine
+            self._resolved_engine = resolve_engine(engine)
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
@@ -153,7 +177,8 @@ class Gedai:
 
         signal_type = _detect_signal_type(epochs_fit.info)
 
-        # Scale the MEG reference covariance to calibrated leadfield units.
+        # Scale reference_cov to match data scale for MEG
+        # (calibrated leadfield in physical units)
         if signal_type == "meg":
             centered = data - data.mean(axis=-1, keepdims=True)
             denom = max(1, data.shape[-1] - 1)
@@ -172,7 +197,9 @@ class Gedai:
         reference_cov = (reference_cov + reference_cov.T) * 0.5
         cov.update(data=reference_cov)
 
-        all_eval, all_evec = _precompute_gevd(data, reference_cov)
+        all_eval, all_evec = _precompute_gevd(
+            data, reference_cov, engine=self._resolved_engine
+        )
         epochs_eigenvalues = all_eval
         percentile = 99 if signal_type == "meg" else 98
         if n_pc == "auto":
@@ -218,6 +245,7 @@ class Gedai:
                 all_eval=all_eval,
                 all_evec=all_evec,
                 signal_type=signal_type,
+                engine=self._resolved_engine,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -232,6 +260,8 @@ class Gedai:
                 all_evec=all_evec,
                 percentile=percentile,
                 signal_type=signal_type,
+                engine=self._resolved_engine,
+                sensai_tol=sensai_tol,
             )
         else:
             raise ValueError(
@@ -278,10 +308,12 @@ class Gedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        sensai_tol: float = 0.1,
         highpass_prefilter: float | None = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -298,11 +330,14 @@ class Gedai:
         %(noise_multiplier)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
+        %(sensai_tol)s
         highpass_prefilter : float | None
             Wavelet high-pass pre-filtering cutoff frequency in Hz (default 0.1 Hz).
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto').
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
@@ -314,6 +349,9 @@ class Gedai:
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -339,14 +377,16 @@ class Gedai:
         )
         self.fit_epochs(
             epochs,
-            picks=picks,
-            noise_multiplier=noise_multiplier,
+            picks=raw_fit.ch_names,
             reference_cov=reference_cov,
             sensai_method=sensai_method,
+            noise_multiplier=noise_multiplier,
             sensai_bounds=sensai_bounds,
+            sensai_tol=sensai_tol,
             n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,
+            engine=engine,
         )
 
     @fill_doc
@@ -393,7 +433,14 @@ class Gedai:
         threshold = self._fit["threshold"]
         cleaned_epochs_data = np.zeros_like(data)
 
-        if n_jobs == 1:
+        resolved_engine = getattr(
+            self, "_resolved_engine", resolve_engine(getattr(self, "engine", "auto"))
+        )
+        if resolved_engine == "torch":
+            cleaned_epochs_data, _ = clean_epochs_batched_torch(
+                data, reference_cov, threshold
+            )
+        elif n_jobs == 1:
             for e, epoch_data in enumerate(data):
                 cleaned_epochs_data[e] = _process_single_epoch(
                     epoch_data, reference_cov, threshold
@@ -493,6 +540,7 @@ class Gedai:
             if hasattr(self, "_duration") and self._duration > 0
             else 1.0,
             threshold=threshold,
+            engine=getattr(self, "_resolved_engine", getattr(self, "engine", "auto")),
         )
 
         raw_transform.get_data(verbose=False).copy()
@@ -684,6 +732,7 @@ def _clean_continuous_dual_stream(
     reference_cov: np.ndarray,
     epoch_duration: float,
     threshold: float,
+    engine: str = "numpy",
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
 
@@ -699,12 +748,15 @@ def _clean_continuous_dual_stream(
         Epoch length in seconds.
     threshold : float
         Eigenvalue threshold.
+    engine : str, default 'numpy'
+        Computation engine ('numpy', 'torch', or 'auto').
 
     Returns
     -------
     clean : np.ndarray, shape (n_channels, n_times)
     noise : np.ndarray, shape (n_channels, n_times)
     """
+    resolved_engine = resolve_engine(engine)
     n_ch, orig_len = data.shape
     epoch_samples = max(2, int(round(epoch_duration * sfreq)))
     if epoch_samples % 2 != 0:
@@ -743,6 +795,8 @@ def _clean_continuous_dual_stream(
     cw = create_cosine_weights(epoch_samples)
 
     def _process_stream(stream):
+        if resolved_engine == "torch":
+            return clean_continuous_stream_torch(stream, reference_cov, threshold, cw)
         n_ep = len(stream)
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
         noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)

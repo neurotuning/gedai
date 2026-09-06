@@ -1,6 +1,7 @@
 """Tests for Adaptive multiband GEDAI."""
 
 import mne
+import numpy as np
 import pytest
 
 from gedai.data import get_contaminated_eeg_set_path
@@ -79,3 +80,28 @@ def test_gedai_multiband_adaptive_broadband_pass():
 
     transformed_raw = model.transform_raw(raw_eeg, n_jobs=1)
     assert transformed_raw.get_data().shape[0] == 6
+
+
+def test_adaptive_fit_transform_cache_compatibility():
+    """Test that transform_raw reuses cached fit_raw outputs with numerical parity."""
+    model = AdaptiveMultibandGedai(
+        wavelet_type="haar", wavelet_level=2, broadband_pass=True
+    )
+    raw_sub = raw_eeg.copy().pick(raw_eeg.ch_names[:6])
+    model.fit_raw(raw_sub, n_jobs=1)
+
+    assert hasattr(model, "_cached_broadband_data")
+    assert model._cached_broadband_data is not None
+    assert model._fitted_raw_id == id(raw_sub)
+
+    # Transform with cache
+    clean_cached = model.transform_raw(raw_sub, n_jobs=1)
+
+    # Clear cache and transform again to verify numerical equivalence
+    model.clear_cache()
+    assert model._cached_broadband_data is None
+    clean_uncached = model.transform_raw(raw_sub, n_jobs=1)
+
+    np.testing.assert_allclose(
+        clean_cached.get_data(), clean_uncached.get_data(), rtol=1e-10, atol=1e-10
+    )

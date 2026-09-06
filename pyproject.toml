@@ -47,6 +47,7 @@ all = [
   'gedai[stubs]',
   'gedai[style]',
   'gedai[test]',
+  'gedai[torch]',
 ]
 build = [
   'build',
@@ -90,6 +91,9 @@ test = [
   'pytest-cov',
   'pytest-timeout',
   'pytest>=8.0',
+]
+torch = [
+  'torch>=2.0.0',
 ]
 
 [project.scripts]

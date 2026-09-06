@@ -10,6 +10,30 @@
 
 For more details about the GEDAI algorithm, please refer to the [MATLAB implementation](https://github.com/neurotuning/GEDAI-master).
 
+## Installation
+
+### Standard (Lightweight NumPy)
+For standard CPU usage without heavy dependencies (~50 MB download):
+
+```bash
+pip install gedai
+```
+
+### Accelerated (PyTorch Engine)
+For accelerated performance (up to 2.2x faster execution via vectorized PyTorch linear algebra):
+
+```bash
+pip install "gedai[torch]"
+```
+
+> **Note**: `gedai` defaults to `engine="auto"`. If PyTorch is installed, acceleration is used automatically; otherwise, it falls back cleanly to NumPy.
+>
+> **Tip for CPU-only systems**: If you only need CPU acceleration on Windows/Linux and want to avoid downloading large GPU/CUDA binaries (~2 GB), install the lightweight PyTorch CPU wheel:
+> ```bash
+> pip install torch --index-url https://download.pytorch.org/whl/cpu
+> pip install gedai
+> ```
+
 ## Documentation
 [![doc](https://github.com/neurotuning/GEDAI/actions/workflows/doc.yaml/badge.svg?branch=main)](https://github.com/neurotuning/GEDAI/actions/workflows/doc.yaml)
 

@@ -148,3 +148,70 @@ def test_prescan_meg_artifact_spectrum():
     # Check _compute_default_n_pc dispatcher
     assert _compute_default_n_pc(ref_cov, signal_type="eeg") == 3
     assert _compute_default_n_pc(ref_cov, signal_type="meg", data=data_low) in (2, 3)
+
+
+def test_sensai_numpy_torch_parity():
+    """Verify numerical parity between numpy and torch SENSAI optimization."""
+    from gedai.sensai.sensai import _precompute_gevd, _sensai_optimize
+    from gedai.utils._torch_backend import has_torch
+
+    if not has_torch():
+        return
+
+    rng = np.random.default_rng(123)
+    n_ep, n_ch, n_times = 20, 15, 100
+    epochs_data = rng.standard_normal((n_ep, n_ch, n_times))
+    ref_cov = rng.standard_normal((n_ch, n_ch))
+    ref_cov = ref_cov @ ref_cov.T + np.eye(n_ch) * 0.1
+
+    all_eval, all_evec = _precompute_gevd(epochs_data, ref_cov, engine="torch")
+
+    opt_thresh_np, runs_np = _sensai_optimize(
+        epochs_data,
+        reference_cov=ref_cov,
+        n_pc=3,
+        noise_multiplier=3.0,
+        epochs_eigenvalues=all_eval,
+        bounds=(0.0, 12.0),
+        all_eval=all_eval,
+        all_evec=all_evec,
+        engine="numpy",
+        sensai_tol=0.1,
+    )
+
+    opt_thresh_torch, runs_torch = _sensai_optimize(
+        epochs_data,
+        reference_cov=ref_cov,
+        n_pc=3,
+        noise_multiplier=3.0,
+        epochs_eigenvalues=all_eval,
+        bounds=(0.0, 12.0),
+        all_eval=all_eval,
+        all_evec=all_evec,
+        engine="torch",
+        sensai_tol=0.1,
+    )
+
+    assert abs(opt_thresh_np - opt_thresh_torch) < 1e-3
+
+    # Verify score parity across fixed thresholds
+    import torch
+
+    from gedai.sensai.sensai import _sensai_score_loop, _sensai_score_torch
+
+    template = np.ascontiguousarray(ref_cov[:3, :].T)
+    template, _ = np.linalg.qr(template)
+    all_VR = np.ascontiguousarray(np.einsum("ij,ejk->eik", ref_cov, all_evec))
+    abs_evals = np.ascontiguousarray(np.abs(all_eval))
+
+    abs_evals_t = torch.from_numpy(abs_evals)
+    all_VR_t = torch.from_numpy(all_VR)
+    template_t = torch.from_numpy(template)
+
+    for th in [0.5, 1.0, 2.0, 5.0]:
+        sig_np, noi_np = _sensai_score_loop(abs_evals, all_VR, template, th, n_pc=3)
+        sig_t, noi_t = _sensai_score_torch(
+            abs_evals_t, all_VR_t, template_t, th, n_pc=3
+        )
+        assert abs(float(np.mean(sig_np)) - float(sig_t.mean().item())) < 0.02
+        assert abs(float(np.mean(noi_np)) - float(noi_t.mean().item())) < 0.02

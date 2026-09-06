@@ -27,6 +27,7 @@ from ..utils._checks import (
     _ensure_noise_multiplier,
 )
 from ..utils._docs import fill_doc
+from ..utils._torch_backend import resolve_engine
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import (
     _apply_wavelet_highpass_prefilter,
@@ -135,13 +136,20 @@ class MultibandGedai:
     broadband_pass : bool
         Whether to run an initial broadband GED pass before multiband
         wavelet decomposition.
+    %(engine)s
 
     References
     ----------
     .. footbibliography::
     """
 
-    def __init__(self, wavelet_type="haar", wavelet_level="auto", broadband_pass=True):
+    def __init__(
+        self,
+        wavelet_type="haar",
+        wavelet_level="auto",
+        broadband_pass=True,
+        engine="auto",
+    ):
         if wavelet_level != "auto":
             _check_type(wavelet_level, (int,), "wavelet_level")
         _check_type(wavelet_type, (str,), "wavelet_type")
@@ -149,6 +157,8 @@ class MultibandGedai:
         self.wavelet_type = wavelet_type
         self._wavelet_level = wavelet_level
         self.broadband_pass = broadband_pass
+        self.engine = engine
+        self._resolved_engine = resolve_engine(engine)
 
         self.fitted = False
         self._wavelet_low_cutoff = None
@@ -206,6 +216,7 @@ class MultibandGedai:
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
+        sensai_tol: float = 0.1,
         wavelet_low_cutoff: float | str | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
@@ -221,6 +232,7 @@ class MultibandGedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        %(sensai_tol)s
         %(wavelet_low_cutoff)s
         %(n_pc)s
         %(n_jobs)s
@@ -231,6 +243,9 @@ class MultibandGedai:
         _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         epochs_fit = _prepare_epochs_fit(epochs, picks)
@@ -260,7 +275,7 @@ class MultibandGedai:
             signal_type = _detect_signal_type(epochs_fit.info)
             bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
             logger.info("Running broadband GEDAI pre-cleaning pass on epochs...")
-            broadband_model = Gedai()
+            broadband_model = Gedai(engine=self.engine)
             broadband_model.fit_epochs(
                 epochs_fit,
                 picks="all",
@@ -268,6 +283,7 @@ class MultibandGedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
+                sensai_tol=sensai_tol,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -322,7 +338,7 @@ class MultibandGedai:
                     verbose=False,
                 )
 
-                model = Gedai()
+                model = Gedai(engine=self.engine)
                 model.fit_epochs(
                     wavelet_epochs,
                     picks="all",
@@ -330,6 +346,7 @@ class MultibandGedai:
                     sensai_method=sensai_method,
                     noise_multiplier=noise_multiplier,
                     sensai_bounds=band_bounds,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     n_jobs=n_jobs,
                     verbose=verbose,
@@ -380,6 +397,7 @@ class MultibandGedai:
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
+        sensai_tol: float = 0.1,
         wavelet_low_cutoff: float | str | None = 0.5,
         n_pc: int | str = "auto",
         n_jobs: int = None,
@@ -398,6 +416,7 @@ class MultibandGedai:
         %(reference_cov)s
         %(sensai_method)s
         %(noise_multiplier)s
+        %(sensai_tol)s
         %(wavelet_low_cutoff)s
         %(n_pc)s
         %(n_jobs)s
@@ -413,6 +432,9 @@ class MultibandGedai:
         cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        _check_type(sensai_tol, (float, int), "sensai_tol")
+        if sensai_tol <= 0:
+            raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
 
         raw_fit = _prepare_raw_fit(raw, picks)
@@ -460,9 +482,9 @@ class MultibandGedai:
                 "broadband GEDAI pass..."
             )
             raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
+                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff, engine=self.engine
             )
-            broadband_model = Gedai()
+            broadband_model = Gedai(engine=self.engine)
             broadband_model.fit_raw(
                 raw_fit,
                 picks="all",
@@ -473,6 +495,7 @@ class MultibandGedai:
                 sensai_method=sensai_method,
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
+                sensai_tol=sensai_tol,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -507,6 +530,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                 )
                 for item in items
@@ -525,6 +549,7 @@ class MultibandGedai:
                     cov,
                     sensai_method,
                     noise_multiplier,
+                    sensai_tol=sensai_tol,
                     n_pc=n_pc,
                 )
                 for item in items
@@ -560,6 +585,7 @@ class MultibandGedai:
         cov,
         sensai_method,
         noise_multiplier,
+        sensai_tol=0.1,
         n_pc="auto",
     ):
         """Fit a single wavelet band model."""
@@ -577,7 +603,9 @@ class MultibandGedai:
                 "enova": 0.0,
             }
 
-        band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+        band_data = _modwt_haar_single_band(
+            raw_data_fit.T, actual_wavelet_level, w, engine=self.engine
+        )
         if n_ep > 0:
             band_epochs_data = (
                 band_data[:, : n_ep * epoch_samples]
@@ -601,7 +629,7 @@ class MultibandGedai:
         max_thresh = 8.0 if signal_type == "meg" else 12.0
         band_bounds = (min_thresh, max_thresh)
 
-        model = Gedai()
+        model = Gedai(engine=self.engine)
         model.fit_epochs(
             wavelet_epochs,
             picks="all",
@@ -609,6 +637,7 @@ class MultibandGedai:
             sensai_method=sensai_method,
             noise_multiplier=noise_multiplier,
             sensai_bounds=band_bounds,
+            sensai_tol=sensai_tol,
             n_pc=n_pc,
             n_jobs=1,
             verbose=False,
@@ -820,7 +849,9 @@ class MultibandGedai:
         if ignore:
             return np.zeros_like(raw_data), 0.0, 0.0
 
-        band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+        band_data = _modwt_haar_single_band(
+            raw_data.T, actual_level, band_idx, engine=self.engine
+        )
         threshold = wavelet_fit["model"].threshold
         epoch_duration = wavelet_fit.get("duration", 1.0)
         if epoch_duration is None:
@@ -837,6 +868,7 @@ class MultibandGedai:
             reference_cov=band_ref_cov,
             epoch_duration=epoch_duration,
             threshold=threshold,
+            engine=getattr(self, "engine", "auto"),
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(

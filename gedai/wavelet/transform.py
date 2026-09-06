@@ -159,35 +159,54 @@ def get_modwt_band_limits(sfreq: float, n_bands: int) -> list[tuple[float, float
     return limits
 
 
-def _modwt_haar_single_band(
-    data_T: np.ndarray, level: int, band_idx: int
-) -> np.ndarray:
-    """Haar MODWT single-band reconstruction — exact port of MATLAB modwt_single_band.m.
+def _modwt_haar_single_band_core_torch(data_T, level: int, target_band: int):
+    """Core single-band forward and inverse Haar MODWT in PyTorch."""
+    import torch
 
-    Uses circular shifts (np.roll) matching MATLAB circshift, with the same
-    forward/inverse Haar filter bank. Returns the time-domain reconstructed
-    signal for one wavelet band only (MRA reconstruction).
-
-    Parameters
-    ----------
-    data_T : (n_times, n_ch) float64
-        Samples x channels.
-    level : int
-        Decomposition level.
-    band_idx : int
-        0-indexed band (0 = finest detail D1, ..., level = approximation A_J).
-
-    Returns
-    -------
-    (n_ch, n_times) float64
-        Reconstructed band signal in time domain.
-    """
     inv_sqrt2 = 1.0 / np.sqrt(2.0)
-    target_band = band_idx + 1
     n_bands = level + 1
-    data_T = data_T.astype(np.float64)
+    current_approx = data_T
+    max_level_needed = min(target_band, level)
+    target_coefs = None
 
-    # Forward decomposition
+    for j in range(1, max_level_needed + 1):
+        step = 2 ** (j - 1)
+        shifted_approx = torch.roll(current_approx, shifts=step, dims=0)
+        if j == target_band:
+            target_coefs = (shifted_approx - current_approx) * inv_sqrt2
+        else:
+            current_approx = (current_approx + shifted_approx) * inv_sqrt2
+
+    if target_band == n_bands:
+        target_coefs = current_approx
+
+    current_recon = target_coefs.clone()
+    if target_band == n_bands:
+        for j in range(level, 0, -1):
+            step = 2 ** (j - 1)
+            A_shifted = torch.roll(current_recon, shifts=-step, dims=0)
+            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
+    else:
+        j = target_band
+        step = 2 ** (j - 1)
+        D_shifted = torch.roll(current_recon, shifts=-step, dims=0)
+        current_recon = 0.5 * inv_sqrt2 * (D_shifted - current_recon)
+        for j in range(target_band - 1, 0, -1):
+            step = 2 ** (j - 1)
+            A_shifted = torch.roll(current_recon, shifts=-step, dims=0)
+            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
+
+    return current_recon
+
+
+def _modwt_haar_single_band_core_numpy(
+    data_T: np.ndarray, level: int, target_band: int
+) -> np.ndarray:
+    """Core single-band forward and inverse Haar MODWT in NumPy."""
+    dtype = data_T.dtype
+    inv_sqrt2 = dtype.type(1.0 / np.sqrt(2.0))
+    half_inv_sqrt2 = dtype.type(0.5 / np.sqrt(2.0))
+    n_bands = level + 1
     current_approx = data_T
     max_level_needed = min(target_band, level)
     target_coefs = None
@@ -203,29 +222,173 @@ def _modwt_haar_single_band(
     if target_band == n_bands:
         target_coefs = current_approx
 
-    # Inverse reconstruction
     current_recon = target_coefs.copy()
-
     if target_band == n_bands:
         for j in range(level, 0, -1):
             step = 2 ** (j - 1)
             A_shifted = np.roll(current_recon, -step, axis=0)
-            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
+            current_recon = half_inv_sqrt2 * (current_recon + A_shifted)
     else:
         j = target_band
         step = 2 ** (j - 1)
         D_shifted = np.roll(current_recon, -step, axis=0)
-        current_recon = 0.5 * inv_sqrt2 * (D_shifted - current_recon)
+        current_recon = half_inv_sqrt2 * (D_shifted - current_recon)
         for j in range(target_band - 1, 0, -1):
             step = 2 ** (j - 1)
             A_shifted = np.roll(current_recon, -step, axis=0)
-            current_recon = 0.5 * inv_sqrt2 * (current_recon + A_shifted)
+            current_recon = half_inv_sqrt2 * (current_recon + A_shifted)
 
-    return current_recon.T
+    return current_recon
+
+
+def _modwt_haar_single_band(
+    data_T: np.ndarray,
+    level: int,
+    band_idx: int,
+    chunk_size: int = 50000,
+    engine: str = "auto",
+) -> np.ndarray:
+    """Haar MODWT single-band reconstruction matching MATLAB modwt_single_band.m.
+
+    Uses circular shifts matching MATLAB circshift with stateful overlap-save
+    chunking (matching stateful_modwt_single_band.m). Bounded memory ceiling
+    and accelerated via PyTorch when available.
+
+    Parameters
+    ----------
+    data_T : (n_times, n_ch) float32 or float64
+        Samples x channels.
+    level : int
+        Decomposition level.
+    band_idx : int
+        0-indexed band (0 = finest detail D1, ..., level = approximation A_J).
+    chunk_size : int
+        Chunk size for overlap-save processing (default 50,000 samples).
+    engine : str
+        Computation engine ('auto', 'torch', or 'numpy').
+
+    Returns
+    -------
+    (n_ch, n_times) ndarray
+        Reconstructed band signal in time domain.
+    """
+    from ..utils._torch_backend import has_torch
+
+    target_band = band_idx + 1
+    use_torch = (
+        engine == "torch" or (engine == "auto" and has_torch())
+    ) and has_torch()
+
+    num_samples, num_channels = data_T.shape
+
+    if use_torch:
+        import torch
+
+        is_numpy = isinstance(data_T, np.ndarray)
+        if is_numpy:
+            tensor_data = torch.from_numpy(data_T)
+        else:
+            tensor_data = data_T
+
+        if num_samples <= chunk_size:
+            recon = _modwt_haar_single_band_core_torch(
+                tensor_data, level, target_band
+            ).T
+        else:
+            P = 2**level
+            band_signal = torch.empty(
+                (num_samples, num_channels),
+                dtype=tensor_data.dtype,
+                device=tensor_data.device,
+            )
+            num_chunks = int(np.ceil(num_samples / chunk_size))
+
+            for chunk in range(num_chunks):
+                c_start = chunk * chunk_size
+                c_end = min(num_samples, (chunk + 1) * chunk_size)
+                c_len = c_end - c_start
+
+                # 1. Prepend buffer (wrap around if needed)
+                if c_start >= P:
+                    prepend = tensor_data[c_start - P : c_start]
+                else:
+                    needed = P - c_start
+                    wrap_end = tensor_data[-needed:]
+                    if c_start > 0:
+                        prepend = torch.cat([wrap_end, tensor_data[:c_start]], dim=0)
+                    else:
+                        prepend = wrap_end
+
+                # 2. Append buffer (wrap around if needed)
+                if c_end + P <= num_samples:
+                    append = tensor_data[c_end : c_end + P]
+                else:
+                    needed = P - (num_samples - c_end)
+                    wrap_start = tensor_data[:needed]
+                    if c_end < num_samples:
+                        append = torch.cat([tensor_data[c_end:], wrap_start], dim=0)
+                    else:
+                        append = wrap_start
+
+                padded_block = torch.cat(
+                    [prepend, tensor_data[c_start:c_end], append], dim=0
+                )
+                recon_padded = _modwt_haar_single_band_core_torch(
+                    padded_block, level, target_band
+                )
+                band_signal[c_start:c_end] = recon_padded[P : P + c_len]
+
+            recon = band_signal.T
+
+        return recon.cpu().numpy() if is_numpy else recon
+
+    # NumPy path
+    data_T_np = np.asarray(data_T)
+    if num_samples <= chunk_size:
+        return _modwt_haar_single_band_core_numpy(data_T_np, level, target_band).T
+
+    P = 2**level
+    band_signal = np.empty((num_samples, num_channels), dtype=data_T_np.dtype)
+    num_chunks = int(np.ceil(num_samples / chunk_size))
+
+    for chunk in range(num_chunks):
+        c_start = chunk * chunk_size
+        c_end = min(num_samples, (chunk + 1) * chunk_size)
+        c_len = c_end - c_start
+
+        if c_start >= P:
+            prepend = data_T_np[c_start - P : c_start]
+        else:
+            needed = P - c_start
+            wrap_end = data_T_np[-needed:]
+            if c_start > 0:
+                prepend = np.concatenate([wrap_end, data_T_np[:c_start]], axis=0)
+            else:
+                prepend = wrap_end
+
+        if c_end + P <= num_samples:
+            append = data_T_np[c_end : c_end + P]
+        else:
+            needed = P - (num_samples - c_end)
+            wrap_start = data_T_np[:needed]
+            if c_end < num_samples:
+                append = np.concatenate([data_T_np[c_end:], wrap_start], axis=0)
+            else:
+                append = wrap_start
+
+        padded_block = np.concatenate(
+            [prepend, data_T_np[c_start:c_end], append], axis=0
+        )
+        recon_padded = _modwt_haar_single_band_core_numpy(
+            padded_block, level, target_band
+        )
+        band_signal[c_start:c_end] = recon_padded[P : P + c_len]
+
+    return band_signal.T
 
 
 def _apply_wavelet_highpass_prefilter(
-    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.5
+    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.5, engine: str = "auto"
 ) -> np.ndarray:
     """Remove sub-lowcut_hz slow drift using continuous Haar MODWT decomposition.
 
@@ -242,6 +405,8 @@ def _apply_wavelet_highpass_prefilter(
         Sampling frequency in Hz.
     lowcut_hz : float
         Highpass cutoff frequency (default 0.5 Hz).
+    engine : str
+        Computation engine ('auto', 'torch', or 'numpy').
 
     Returns
     -------
@@ -265,9 +430,11 @@ def _apply_wavelet_highpass_prefilter(
     if not bands_to_hp_zero:
         return data
 
-    low_freq_noise = np.zeros_like(data, dtype=np.float64)
-    data_T = data.T.astype(np.float64)
+    low_freq_noise = np.zeros_like(data)
+    data_T = data.T
     for b in bands_to_hp_zero:
-        low_freq_noise += _modwt_haar_single_band(data_T, hp_wavelet_levels, b)
+        low_freq_noise += _modwt_haar_single_band(
+            data_T, hp_wavelet_levels, b, engine=engine
+        )
 
-    return (data.astype(np.float64) - low_freq_noise).astype(data.dtype)
+    return (data - low_freq_noise).astype(data.dtype)

@@ -3,6 +3,7 @@ from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
 
 from ..utils._checks import ensure_int
+from ..utils._torch_backend import precompute_gevd_torch, resolve_engine
 
 
 def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
@@ -168,19 +169,27 @@ def _eigen_to_sensai(eigenvalue, eigenvalues, percentile=98):
     return sensai_value
 
 
-def _precompute_gevd(epochs_data: np.ndarray, reference_cov: np.ndarray):
+def _precompute_gevd(
+    epochs_data: np.ndarray, reference_cov: np.ndarray, engine: str = "auto"
+):
     """Precompute generalized eigenvalue decomposition across all epochs.
 
     Parameters
     ----------
     epochs_data : np.ndarray, shape (n_epochs, n_channels, n_times)
     reference_cov : np.ndarray, shape (n_channels, n_channels)
+    engine : str, default 'auto'
+        Computation engine ('numpy', 'torch', or 'auto').
 
     Returns
     -------
     all_eval : np.ndarray, shape (n_epochs, n_channels)
     all_evec : np.ndarray, shape (n_epochs, n_channels, n_channels)
     """
+    resolved = resolve_engine(engine)
+    if resolved == "torch":
+        return precompute_gevd_torch(epochs_data, reference_cov)
+
     n_ep, n_ch, n_times = epochs_data.shape
     if n_times < 2:
         raise ValueError(
@@ -219,12 +228,9 @@ def _sensai_score_loop(
     eye_n_pc = np.eye(n_ch)[:, :n_pc]
     empty_noi_sim = abs(float(np.linalg.det(eye_n_pc.T @ template)))
 
-    T_mat = (reference_cov @ template) if reference_cov is not None else None
-
     for e in range(n_ep):
         evals_e = abs_evals[e]
         VR_e = all_VR[e]
-        evec_e = all_evec[e] if all_evec is not None else None
         bad_mask = evals_e >= threshold
         num_bad = int(np.sum(bad_mask))
 
@@ -238,14 +244,12 @@ def _sensai_score_loop(
             else:
                 noi_sims[e] = 0.0
         else:
-            if num_bad >= n_pc and evec_e is not None and T_mat is not None:
+            if num_bad >= n_pc:
                 VR_bad = VR_e[:, bad_mask]
-                evec_bad = evec_e[:, bad_mask]
-                d_bad = evals_e[bad_mask]
-                Y1_n = VR_bad @ (d_bad[:, None] * (evec_bad.T @ T_mat))
+                d_bad = evals_e[bad_mask, None]
+                Y1_n = VR_bad @ (d_bad * (VR_bad.T @ template))
                 Q1_n, _ = np.linalg.qr(Y1_n)
-                T_noi = reference_cov @ Q1_n
-                Y2_n = VR_bad @ (d_bad[:, None] * (evec_bad.T @ T_noi))
+                Y2_n = VR_bad @ (d_bad * (VR_bad.T @ Q1_n))
                 basis_n, _ = np.linalg.qr(Y2_n)
                 noi_sims[e] = abs(float(np.linalg.det(basis_n[:, :n_pc].T @ template)))
             elif num_bad > 0:
@@ -266,14 +270,12 @@ def _sensai_score_loop(
         # --- Clean signal subspace ---
         good_mask = ~bad_mask
         num_good = int(np.sum(good_mask))
-        if num_good >= n_pc and evec_e is not None and T_mat is not None:
+        if num_good >= n_pc:
             VR_good = VR_e[:, good_mask]
-            evec_good = evec_e[:, good_mask]
-            d_good = evals_e[good_mask]
-            Y1_s = VR_good @ (d_good[:, None] * (evec_good.T @ T_mat))
+            d_good = evals_e[good_mask, None]
+            Y1_s = VR_good @ (d_good * (VR_good.T @ template))
             Q1_s, _ = np.linalg.qr(Y1_s)
-            T_sig = reference_cov @ Q1_s
-            Y2_s = VR_good @ (d_good[:, None] * (evec_good.T @ T_sig))
+            Y2_s = VR_good @ (d_good * (VR_good.T @ Q1_s))
             basis_s, _ = np.linalg.qr(Y2_s)
             sig_sims[e] = abs(float(np.linalg.det(basis_s[:, :n_pc].T @ template)))
         elif num_good > 0:
@@ -290,6 +292,99 @@ def _sensai_score_loop(
             sig_sims[e] = abs(float(np.linalg.det(basis_s[:, :n_pc].T @ template)))
         else:
             sig_sims[e] = empty_noi_sim
+
+    return sig_sims, noi_sims
+
+
+def _sensai_score_torch(
+    abs_evals_t,
+    all_VR_t,
+    template_t,
+    threshold: float,
+    n_pc: int = 3,
+    signal_type: str = "eeg",
+):
+    """Batched PyTorch implementation for fast power-weighted SENSAI scoring."""
+    import torch
+
+    n_ep, n_ch = abs_evals_t.shape
+    eye_n_pc = torch.eye(n_ch, dtype=template_t.dtype, device=template_t.device)[
+        :, :n_pc
+    ]
+    empty_noi_sim = float(torch.abs(torch.linalg.det(eye_n_pc.T @ template_t)))
+
+    # --- Clean signal subspace ---
+    w_good = torch.where(abs_evals_t < threshold, abs_evals_t, 0.0).unsqueeze(-1)
+    num_good = (abs_evals_t < threshold).sum(dim=1)
+    Y1_s = torch.bmm(
+        all_VR_t, w_good * torch.matmul(all_VR_t.transpose(1, 2), template_t)
+    )
+    Q1_s = torch.linalg.qr(Y1_s).Q
+    Y2_s = torch.bmm(all_VR_t, w_good * torch.bmm(all_VR_t.transpose(1, 2), Q1_s))
+    basis_s = torch.linalg.qr(Y2_s).Q
+    overlap_s = torch.matmul(basis_s[:, :, :n_pc].transpose(1, 2), template_t)
+    sig_sims = torch.abs(torch.linalg.det(overlap_s))
+    sig_sims = torch.where(num_good > 0, sig_sims, empty_noi_sim)
+
+    fallback_good = (num_good > 0) & (num_good < n_pc)
+    if fallback_good.any():
+        for e in torch.where(fallback_good)[0]:
+            mask_e = abs_evals_t[e] < threshold
+            VR_good = all_VR_t[e, :, mask_e]
+            d_good = abs_evals_t[e, mask_e]
+            cov_s = (VR_good * d_good) @ VR_good.T
+            cov_s = (cov_s + cov_s.T) * 0.5
+            if torch.max(torch.abs(cov_s)) < 1e-12:
+                Y1_s_e = eye_n_pc
+            else:
+                Y1_s_e = cov_s @ template_t
+            Q1_s_e = torch.linalg.qr(Y1_s_e).Q
+            basis_s_e = torch.linalg.qr(cov_s @ Q1_s_e).Q
+            sig_sims[e] = torch.abs(
+                torch.linalg.det(basis_s_e[:, :n_pc].T @ template_t)
+            )
+
+    # --- Artifact noise subspace ---
+    if signal_type == "meg":
+        noi_sims = torch.zeros(n_ep, dtype=template_t.dtype, device=template_t.device)
+        bad_mask = abs_evals_t >= threshold
+        for e in range(n_ep):
+            mask_e = bad_mask[e]
+            if mask_e.any():
+                P_bad = all_VR_t[e, :, mask_e]
+                Q_bad = torch.linalg.qr(P_bad).Q
+                s = torch.linalg.svdvals(Q_bad.T @ template_t)
+                noi_sims[e] = torch.sum(s**6)
+    else:
+        w_bad = torch.where(abs_evals_t >= threshold, abs_evals_t, 0.0).unsqueeze(-1)
+        num_bad = (abs_evals_t >= threshold).sum(dim=1)
+        Y1_n = torch.bmm(
+            all_VR_t, w_bad * torch.matmul(all_VR_t.transpose(1, 2), template_t)
+        )
+        Q1_n = torch.linalg.qr(Y1_n).Q
+        Y2_n = torch.bmm(all_VR_t, w_bad * torch.bmm(all_VR_t.transpose(1, 2), Q1_n))
+        basis_n = torch.linalg.qr(Y2_n).Q
+        overlap_n = torch.matmul(basis_n[:, :, :n_pc].transpose(1, 2), template_t)
+        noi_sims = torch.abs(torch.linalg.det(overlap_n))
+        noi_sims = torch.where(num_bad > 0, noi_sims, empty_noi_sim)
+
+        fallback_bad = (num_bad > 0) & (num_bad < n_pc)
+        if fallback_bad.any():
+            for e in torch.where(fallback_bad)[0]:
+                mask_e = abs_evals_t[e] >= threshold
+                VR_bad = all_VR_t[e, :, mask_e]
+                d_bad = abs_evals_t[e, mask_e]
+                cov_n = (VR_bad * d_bad) @ VR_bad.T
+                cov_n = (cov_n + cov_n.T) * 0.5
+                if torch.max(torch.abs(cov_n)) < 1e-12:
+                    Y1_n_e = eye_n_pc
+                else:
+                    Y1_n_e = cov_n @ template_t
+                Q1_n_e = torch.linalg.qr(Y1_n_e).Q
+                basis_n_e = torch.linalg.qr(cov_n @ Q1_n_e).Q
+                noi_sims[e] = torch.abs(
+                    torch.linalg.det(basis_n_e[:, :n_pc].T @ template_t)
+                )
 
     return sig_sims, noi_sims
 
@@ -363,7 +458,14 @@ def _find_changepoint(y: np.ndarray, smooth_window: int = 6) -> int | None:
     return best_idx + 1
 
 
-def _sensai_score(epochs, threshold, reference_cov, n_pc=3, noise_multiplier=3.0):
+def _sensai_score(
+    epochs,
+    threshold,
+    reference_cov,
+    n_pc=3,
+    noise_multiplier=3.0,
+    engine="auto",
+):
     """Compute the SENSAI score for given threshold.
 
     Parameters
@@ -378,6 +480,8 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc=3, noise_multiplier=3.0
         Number of principal components.
     noise_multiplier : float
         Noise multiplier.
+    engine : str
+        Computation engine ('numpy', 'torch', or 'auto').
 
     Returns
     -------
@@ -402,7 +506,7 @@ def _sensai_score(epochs, threshold, reference_cov, n_pc=3, noise_multiplier=3.0
     _, reference_eigenvectors = eigh(reference_cov)
     reference_eigenvectors = reference_eigenvectors[:, ::-1][:, :n_pc]
 
-    all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov)
+    all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov, engine=engine)
     return _sensai_score_from_gevd(
         all_eval,
         all_evec,
@@ -426,6 +530,7 @@ def _sensai_gridsearch(
     all_evec=None,
     sensai_thresholds=None,
     signal_type="eeg",
+    engine="auto",
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -453,27 +558,47 @@ def _sensai_gridsearch(
     reference_eigenvectors = reference_eigenvectors[:, ::-1][:, :n_pc]
 
     if all_eval is None or all_evec is None:
-        all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov)
+        all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov, engine=engine)
+
+    resolved = resolve_engine(engine)
 
     # Precompute template and all_VR once for all scoring evaluations
     template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
     all_VR = np.ascontiguousarray(np.einsum("ij,ejk->eik", reference_cov, all_evec))
     abs_evals = np.ascontiguousarray(np.abs(all_eval))
 
+    if resolved == "torch":
+        import torch
+
+        abs_evals_t = torch.from_numpy(abs_evals)
+        all_VR_t = torch.from_numpy(all_VR)
+        template_t = torch.from_numpy(template)
+
     runs = []
     for threshold in eigen_thresholds:
-        sig_sims, noi_sims = _sensai_score_loop(
-            abs_evals,
-            all_VR,
-            template,
-            threshold,
-            n_pc=n_pc,
-            signal_type=signal_type,
-            all_evec=all_evec,
-            reference_cov=reference_cov,
-        )
-        sig_sim = float(np.mean(sig_sims) * 100.0)
-        noi_sim = float(np.mean(noi_sims) * 100.0)
+        if resolved == "torch":
+            sig_sims_t, noi_sims_t = _sensai_score_torch(
+                abs_evals_t,
+                all_VR_t,
+                template_t,
+                threshold,
+                n_pc=n_pc,
+                signal_type=signal_type,
+            )
+            sig_sim = float(sig_sims_t.mean().item() * 100.0)
+            noi_sim = float(noi_sims_t.mean().item() * 100.0)
+        else:
+            sig_sims, noi_sims = _sensai_score_loop(
+                abs_evals,
+                all_VR,
+                template,
+                threshold,
+                n_pc=n_pc,
+                signal_type=signal_type,
+            )
+            sig_sim = float(np.mean(sig_sims) * 100.0)
+            noi_sim = float(np.mean(noi_sims) * 100.0)
+
         score = float(sig_sim - (noise_multiplier * noi_sim))
         runs.append((score, sig_sim, noi_sim))
 
@@ -527,6 +652,8 @@ def _sensai_optimize(
     all_evec=None,
     percentile=98,
     signal_type="eeg",
+    engine="auto",
+    sensai_tol: float = 0.1,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -534,6 +661,8 @@ def _sensai_optimize(
             f"n_pc must be an integer in the range [1, {reference_cov.shape[0]}], "
             f"got {n_pc!r}."
         )
+
+    resolved = resolve_engine(engine)
 
     if hasattr(epochs, "get_data"):
         epochs_data = epochs.get_data(verbose=False)
@@ -554,30 +683,53 @@ def _sensai_optimize(
     reference_eigenvectors = reference_eigenvectors[:, ::-1][:, :n_pc]
 
     if all_eval is None or all_evec is None:
-        all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov)
+        all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov, engine=engine)
 
     template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
     all_VR = np.ascontiguousarray(np.einsum("ij,ejk->eik", reference_cov, all_evec))
     abs_evals = np.ascontiguousarray(np.abs(all_eval))
 
+    # Precompute log-percentile scalar once outside the objective loop
+    all_diagonals = np.abs(np.asarray(epochs_eigenvalues).T.flatten())
+    log_eig_val_all = np.log(all_diagonals[all_diagonals > 0]) + 100
+    p_val = float(np.percentile(log_eig_val_all, percentile))
+
+    if resolved == "torch":
+        import torch
+
+        abs_evals_t = torch.from_numpy(abs_evals)
+        all_VR_t = torch.from_numpy(all_VR)
+        template_t = torch.from_numpy(template)
+
     runs = []
 
     def objective_function(sensai_threshold):
-        eigen_threshold = _sensai_to_eigen(
-            sensai_threshold, epochs_eigenvalues, percentile=percentile
-        )
-        sig_sims, noi_sims = _sensai_score_loop(
-            abs_evals,
-            all_VR,
-            template,
-            eigen_threshold,
-            n_pc=n_pc,
-            signal_type=signal_type,
-            all_evec=all_evec,
-            reference_cov=reference_cov,
-        )
-        sig_sim = float(np.mean(sig_sims) * 100.0)
-        noi_sim = float(np.mean(noi_sims) * 100.0)
+        T1 = (105 - sensai_threshold) / 100
+        eigen_threshold = float(np.exp(T1 * p_val - 100))
+
+        if resolved == "torch":
+            sig_sims_t, noi_sims_t = _sensai_score_torch(
+                abs_evals_t,
+                all_VR_t,
+                template_t,
+                eigen_threshold,
+                n_pc=n_pc,
+                signal_type=signal_type,
+            )
+            sig_sim = float(sig_sims_t.mean().item() * 100.0)
+            noi_sim = float(noi_sims_t.mean().item() * 100.0)
+        else:
+            sig_sims, noi_sims = _sensai_score_loop(
+                abs_evals,
+                all_VR,
+                template,
+                eigen_threshold,
+                n_pc=n_pc,
+                signal_type=signal_type,
+            )
+            sig_sim = float(np.mean(sig_sims) * 100.0)
+            noi_sim = float(np.mean(noi_sims) * 100.0)
+
         score = float(sig_sim - (noise_multiplier * noi_sim))
 
         runs.append(
@@ -595,7 +747,7 @@ def _sensai_optimize(
         bounds=bounds,
         method="bounded",
         options={
-            "xatol": 0.01,
+            "xatol": float(sensai_tol),
             "maxiter": 500,
         },
     )
@@ -604,8 +756,7 @@ def _sensai_optimize(
         raise ValueError("Optimization failed: " + result.message)
 
     sensai_threshold = result.x
-    eigen_threshold = _sensai_to_eigen(
-        sensai_threshold, epochs_eigenvalues, percentile=percentile
-    )
+    T1_opt = (105 - sensai_threshold) / 100
+    eigen_threshold = float(np.exp(T1_opt * p_val - 100))
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, runs
