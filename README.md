@@ -26,7 +26,7 @@ For accelerated performance (up to 2.2x faster execution via vectorized PyTorch 
 pip install "gedai[torch]"
 ```
 
-> **Note**: `pyGEDAI` defaults to `engine="auto"`. If PyTorch is installed, acceleration is used automatically; otherwise, it falls back cleanly to NumPy.
+> **Note**: `gedai` defaults to `engine="auto"`. If PyTorch is installed, acceleration is used automatically; otherwise, it falls back cleanly to NumPy.
 >
 > **Tip for CPU-only systems**: If you only need CPU acceleration on Windows/Linux and want to avoid downloading large GPU/CUDA binaries (~2 GB), install the lightweight PyTorch CPU wheel:
 > ```bash
