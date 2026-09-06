@@ -152,7 +152,7 @@ def test_prescan_meg_artifact_spectrum():
 
 def test_sensai_numpy_torch_parity():
     """Verify numerical parity between numpy and torch SENSAI optimization."""
-    from gedai.sensai.sensai import _sensai_optimize, _precompute_gevd
+    from gedai.sensai.sensai import _precompute_gevd, _sensai_optimize
     from gedai.utils._torch_backend import has_torch
 
     if not has_torch():
@@ -195,8 +195,9 @@ def test_sensai_numpy_torch_parity():
     assert abs(opt_thresh_np - opt_thresh_torch) < 1e-3
 
     # Verify score parity across fixed thresholds
-    from gedai.sensai.sensai import _sensai_score_loop, _sensai_score_torch
     import torch
+
+    from gedai.sensai.sensai import _sensai_score_loop, _sensai_score_torch
 
     template = np.ascontiguousarray(ref_cov[:3, :].T)
     template, _ = np.linalg.qr(template)
@@ -209,7 +210,8 @@ def test_sensai_numpy_torch_parity():
 
     for th in [0.5, 1.0, 2.0, 5.0]:
         sig_np, noi_np = _sensai_score_loop(abs_evals, all_VR, template, th, n_pc=3)
-        sig_t, noi_t = _sensai_score_torch(abs_evals_t, all_VR_t, template_t, th, n_pc=3)
+        sig_t, noi_t = _sensai_score_torch(
+            abs_evals_t, all_VR_t, template_t, th, n_pc=3
+        )
         assert abs(float(np.mean(sig_np)) - float(sig_t.mean().item())) < 0.02
         assert abs(float(np.mean(noi_np)) - float(noi_t.mean().item())) < 0.02
-

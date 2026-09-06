@@ -53,8 +53,8 @@ duration : float
 docdict["engine"] = """
 engine : "auto" | "torch" | "numpy", default="auto"
     Computation engine for generalized eigendecomposition, batched SENSAI evaluation,
-    and wavelet decomposition. If ``"auto"`` (default), uses PyTorch CPU acceleration when
-    installed, and falls back cleanly to NumPy otherwise."""
+    and wavelet decomposition. If ``"auto"`` (default), uses PyTorch CPU
+    acceleration when installed, and falls back cleanly to NumPy otherwise."""
 # -- F ---------------------------------------------------------------------------------
 # -- G ---------------------------------------------------------------------------------
 # -- H ---------------------------------------------------------------------------------

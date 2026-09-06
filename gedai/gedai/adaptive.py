@@ -339,11 +339,10 @@ class AdaptiveMultibandGedai:
         self._wavelets_fits = wavelets_fits
         self._wavelet_low_cutoff = wavelet_low_cutoff
 
-        # Cache reference and intermediate data for fast transform_raw on the fitted signal
+        # Cache reference and intermediate data for fast transform_raw on the
+        # fitted signal
         self._fitted_raw_id = id(raw)
-        self._fitted_raw_shape = (
-            raw._data.shape if hasattr(raw, "_data") else None
-        )
+        self._fitted_raw_shape = raw._data.shape if hasattr(raw, "_data") else None
         self._fitted_raw_ch_names = list(raw.ch_names)
         self._cached_broadband_data = raw_data_fit
 
@@ -492,14 +491,11 @@ class AdaptiveMultibandGedai:
         sfreq = raw_transform.info["sfreq"]
 
         # Check if transforming the exact same raw data that was just fitted
-        is_same_raw = (
-            getattr(self, "_fitted_raw_id", None) == id(raw)
-            or (
-                hasattr(raw, "_data")
-                and getattr(self, "_fitted_raw_shape", None) == raw._data.shape
-                and getattr(self, "_fitted_raw_ch_names", None) == raw.ch_names
-                and getattr(self, "_cached_broadband_data", None) is not None
-            )
+        is_same_raw = getattr(self, "_fitted_raw_id", None) == id(raw) or (
+            hasattr(raw, "_data")
+            and getattr(self, "_fitted_raw_shape", None) == raw._data.shape
+            and getattr(self, "_fitted_raw_ch_names", None) == raw.ch_names
+            and getattr(self, "_cached_broadband_data", None) is not None
         )
 
         if is_same_raw and getattr(self, "_cached_broadband_data", None) is not None:

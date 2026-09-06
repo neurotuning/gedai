@@ -108,7 +108,8 @@ def robust_cholesky_gevd(
             current_jitter *= 10.0
         if bool((info != 0).any()):
             raise RuntimeError(
-                "Reference covariance matrix is not positive-definite even after adaptive jitter."
+                "Reference covariance matrix is not positive-definite even after "
+                "adaptive jitter."
             )
 
     # Transform A to standard symmetric eigenproblem:

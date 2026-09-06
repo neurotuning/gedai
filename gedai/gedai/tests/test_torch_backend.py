@@ -36,8 +36,9 @@ def test_has_torch_and_resolve_engine():
 
 
 def test_default_engine_is_auto():
-    """Test that all estimators default to engine='auto' and resolve to 'torch' when PyTorch is present."""
+    """Test that all estimators default to engine='auto' and resolve to 'torch'."""
     import inspect
+
     from gedai.gedai.decompose import _clean_epochs
     from gedai.sensai.sensai import (
         _precompute_gevd,
@@ -56,10 +57,17 @@ def test_default_engine_is_auto():
     amb = AdaptiveMultibandGedai()
     assert amb.engine == "auto"
 
-    for fn in (_clean_epochs, _precompute_gevd, _sensai_score, _sensai_gridsearch, _sensai_optimize):
+    for fn in (
+        _clean_epochs,
+        _precompute_gevd,
+        _sensai_score,
+        _sensai_gridsearch,
+        _sensai_optimize,
+    ):
         sig = inspect.signature(fn)
-        assert sig.parameters["engine"].default == "auto", f"{fn.__name__} default engine is not 'auto'"
-
+        assert sig.parameters["engine"].default == "auto", (
+            f"{fn.__name__} default engine is not 'auto'"
+        )
 
 
 def test_gevd_torch_single_and_batched():
@@ -279,7 +287,7 @@ def test_robust_cholesky_gevd_and_alias():
 
 
 def test_robust_cholesky_gevd_jitter_fallback():
-    """Test that robust_cholesky_gevd gracefully handles singular/non-SPD reference cov."""
+    """Test that robust_cholesky_gevd gracefully handles singular cov."""
     import torch
 
     rng = np.random.RandomState(42)
@@ -289,7 +297,7 @@ def test_robust_cholesky_gevd_jitter_fallback():
     low_rank = rng.randn(n_ch, 3)
     B_singular = torch.from_numpy(low_rank @ low_rank.T)
 
-    # Standard cholesky would throw LinAlgError; robust_cholesky_gevd should succeed via jitter
+    # Standard cholesky would throw LinAlgError; robust_cholesky succeeds via jitter
     w, v = robust_cholesky_gevd(A, B_singular)
     assert w.shape == (n_ch,)
     assert v.shape == (n_ch, n_ch)
@@ -298,7 +306,7 @@ def test_robust_cholesky_gevd_jitter_fallback():
 
 
 def test_sensai_tol_parameter():
-    """Test that sensai_tol parameter is accepted and affects optimization in Gedai & AdaptiveMultibandGedai."""
+    """Test that sensai_tol parameter is accepted and affects optimization."""
     rng = np.random.RandomState(42)
     n_ch, n_times = 6, 500
     data = rng.randn(n_ch, n_times)
@@ -332,4 +340,3 @@ def test_sensai_tol_parameter():
     # Invalid sensai_tol should raise ValueError
     with pytest.raises(ValueError, match="sensai_tol must be > 0"):
         g.fit_raw(raw.copy(), reference_cov=cov, sensai_tol=-0.5)
-

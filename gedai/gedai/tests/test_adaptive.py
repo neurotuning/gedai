@@ -83,7 +83,7 @@ def test_gedai_multiband_adaptive_broadband_pass():
 
 
 def test_adaptive_fit_transform_cache_compatibility():
-    """Test that transform_raw reuses cached fit_raw outputs with identical numerical results."""
+    """Test that transform_raw reuses cached fit_raw outputs with numerical parity."""
     model = AdaptiveMultibandGedai(
         wavelet_type="haar", wavelet_level=2, broadband_pass=True
     )
@@ -105,4 +105,3 @@ def test_adaptive_fit_transform_cache_compatibility():
     np.testing.assert_allclose(
         clean_cached.get_data(), clean_uncached.get_data(), rtol=1e-10, atol=1e-10
     )
-

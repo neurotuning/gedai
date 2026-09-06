@@ -308,13 +308,17 @@ def _sensai_score_torch(
     import torch
 
     n_ep, n_ch = abs_evals_t.shape
-    eye_n_pc = torch.eye(n_ch, dtype=template_t.dtype, device=template_t.device)[:, :n_pc]
+    eye_n_pc = torch.eye(n_ch, dtype=template_t.dtype, device=template_t.device)[
+        :, :n_pc
+    ]
     empty_noi_sim = float(torch.abs(torch.linalg.det(eye_n_pc.T @ template_t)))
 
     # --- Clean signal subspace ---
     w_good = torch.where(abs_evals_t < threshold, abs_evals_t, 0.0).unsqueeze(-1)
     num_good = (abs_evals_t < threshold).sum(dim=1)
-    Y1_s = torch.bmm(all_VR_t, w_good * torch.matmul(all_VR_t.transpose(1, 2), template_t))
+    Y1_s = torch.bmm(
+        all_VR_t, w_good * torch.matmul(all_VR_t.transpose(1, 2), template_t)
+    )
     Q1_s = torch.linalg.qr(Y1_s).Q
     Y2_s = torch.bmm(all_VR_t, w_good * torch.bmm(all_VR_t.transpose(1, 2), Q1_s))
     basis_s = torch.linalg.qr(Y2_s).Q
@@ -336,7 +340,9 @@ def _sensai_score_torch(
                 Y1_s_e = cov_s @ template_t
             Q1_s_e = torch.linalg.qr(Y1_s_e).Q
             basis_s_e = torch.linalg.qr(cov_s @ Q1_s_e).Q
-            sig_sims[e] = torch.abs(torch.linalg.det(basis_s_e[:, :n_pc].T @ template_t))
+            sig_sims[e] = torch.abs(
+                torch.linalg.det(basis_s_e[:, :n_pc].T @ template_t)
+            )
 
     # --- Artifact noise subspace ---
     if signal_type == "meg":
@@ -352,7 +358,9 @@ def _sensai_score_torch(
     else:
         w_bad = torch.where(abs_evals_t >= threshold, abs_evals_t, 0.0).unsqueeze(-1)
         num_bad = (abs_evals_t >= threshold).sum(dim=1)
-        Y1_n = torch.bmm(all_VR_t, w_bad * torch.matmul(all_VR_t.transpose(1, 2), template_t))
+        Y1_n = torch.bmm(
+            all_VR_t, w_bad * torch.matmul(all_VR_t.transpose(1, 2), template_t)
+        )
         Q1_n = torch.linalg.qr(Y1_n).Q
         Y2_n = torch.bmm(all_VR_t, w_bad * torch.bmm(all_VR_t.transpose(1, 2), Q1_n))
         basis_n = torch.linalg.qr(Y2_n).Q
@@ -374,7 +382,9 @@ def _sensai_score_torch(
                     Y1_n_e = cov_n @ template_t
                 Q1_n_e = torch.linalg.qr(Y1_n_e).Q
                 basis_n_e = torch.linalg.qr(cov_n @ Q1_n_e).Q
-                noi_sims[e] = torch.abs(torch.linalg.det(basis_n_e[:, :n_pc].T @ template_t))
+                noi_sims[e] = torch.abs(
+                    torch.linalg.det(basis_n_e[:, :n_pc].T @ template_t)
+                )
 
     return sig_sims, noi_sims
 
@@ -559,6 +569,7 @@ def _sensai_gridsearch(
 
     if resolved == "torch":
         import torch
+
         abs_evals_t = torch.from_numpy(abs_evals)
         all_VR_t = torch.from_numpy(all_VR)
         template_t = torch.from_numpy(template)
@@ -685,6 +696,7 @@ def _sensai_optimize(
 
     if resolved == "torch":
         import torch
+
         abs_evals_t = torch.from_numpy(abs_evals)
         all_VR_t = torch.from_numpy(all_VR)
         template_t = torch.from_numpy(template)

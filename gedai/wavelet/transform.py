@@ -199,7 +199,9 @@ def _modwt_haar_single_band_core_torch(data_T, level: int, target_band: int):
     return current_recon
 
 
-def _modwt_haar_single_band_core_numpy(data_T: np.ndarray, level: int, target_band: int) -> np.ndarray:
+def _modwt_haar_single_band_core_numpy(
+    data_T: np.ndarray, level: int, target_band: int
+) -> np.ndarray:
     """Core single-band forward and inverse Haar MODWT in NumPy."""
     dtype = data_T.dtype
     inv_sqrt2 = dtype.type(1.0 / np.sqrt(2.0))
@@ -273,7 +275,9 @@ def _modwt_haar_single_band(
     from ..utils._torch_backend import has_torch
 
     target_band = band_idx + 1
-    use_torch = (engine == "torch" or (engine == "auto" and has_torch())) and has_torch()
+    use_torch = (
+        engine == "torch" or (engine == "auto" and has_torch())
+    ) and has_torch()
 
     num_samples, num_channels = data_T.shape
 
@@ -287,9 +291,11 @@ def _modwt_haar_single_band(
             tensor_data = data_T
 
         if num_samples <= chunk_size:
-            recon = _modwt_haar_single_band_core_torch(tensor_data, level, target_band).T
+            recon = _modwt_haar_single_band_core_torch(
+                tensor_data, level, target_band
+            ).T
         else:
-            P = 2 ** level
+            P = 2**level
             band_signal = torch.empty(
                 (num_samples, num_channels),
                 dtype=tensor_data.dtype,
@@ -324,8 +330,12 @@ def _modwt_haar_single_band(
                     else:
                         append = wrap_start
 
-                padded_block = torch.cat([prepend, tensor_data[c_start:c_end], append], dim=0)
-                recon_padded = _modwt_haar_single_band_core_torch(padded_block, level, target_band)
+                padded_block = torch.cat(
+                    [prepend, tensor_data[c_start:c_end], append], dim=0
+                )
+                recon_padded = _modwt_haar_single_band_core_torch(
+                    padded_block, level, target_band
+                )
                 band_signal[c_start:c_end] = recon_padded[P : P + c_len]
 
             recon = band_signal.T
@@ -337,7 +347,7 @@ def _modwt_haar_single_band(
     if num_samples <= chunk_size:
         return _modwt_haar_single_band_core_numpy(data_T_np, level, target_band).T
 
-    P = 2 ** level
+    P = 2**level
     band_signal = np.empty((num_samples, num_channels), dtype=data_T_np.dtype)
     num_chunks = int(np.ceil(num_samples / chunk_size))
 
@@ -366,8 +376,12 @@ def _modwt_haar_single_band(
             else:
                 append = wrap_start
 
-        padded_block = np.concatenate([prepend, data_T_np[c_start:c_end], append], axis=0)
-        recon_padded = _modwt_haar_single_band_core_numpy(padded_block, level, target_band)
+        padded_block = np.concatenate(
+            [prepend, data_T_np[c_start:c_end], append], axis=0
+        )
+        recon_padded = _modwt_haar_single_band_core_numpy(
+            padded_block, level, target_band
+        )
         band_signal[c_start:c_end] = recon_padded[P : P + c_len]
 
     return band_signal.T
