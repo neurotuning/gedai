@@ -503,7 +503,7 @@ class AdaptiveMultibandGedai:
         else:
             # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
             raw_transform._data = _apply_wavelet_highpass_prefilter(
-                raw_transform._data, sfreq, lowcut_hz=0.1
+                raw_transform._data, sfreq, lowcut_hz=0.1, engine=self.engine
             )
 
             if self.broadband_pass and self._broadband_model is not None:
@@ -511,6 +511,7 @@ class AdaptiveMultibandGedai:
                     raw_transform._data,
                     sfreq,
                     lowcut_hz=self._wavelet_low_cutoff,
+                    engine=self.engine,
                 )
                 raw_input = self._broadband_model.transform_raw(
                     raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
