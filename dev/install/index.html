@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=97fbfd4a"></script>
+    <script src="../_static/documentation_options.js?v=33d19830"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -454,7 +454,7 @@
                   
   <span class="target" id="install"></span><section id="id1">
 <h1>Install<a class="headerlink" href="#id1" title="Link to this heading">🔗</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> requires Python <code class="docutils literal notranslate"><span class="pre">3.12</span></code> or higher.</p>
+<p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> requires Python <code class="docutils literal notranslate"><span class="pre">3.10</span></code> or higher.</p>
 <p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> works best with the latest stable release of MNE-Python. To
 ensure MNE-Python is up-to-date, see the
 <a class="reference external" href="https://mne.tools/stable/install/index.html">MNE installation instructions</a>.</p>
@@ -463,22 +463,38 @@ ensure MNE-Python is up-to-date, see the
 <div class="sd-tab-set docutils">
 <input checked="checked" id="sd-tab-item-0" name="sd-tab-set-0" type="radio">
 <label class="sd-tab-label" for="sd-tab-item-0">
-Pypi [Recommended]</label><div class="sd-tab-content docutils">
-<p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> can be installed from <a class="reference external" href="https://pypi.org/project/gedai">Pypi</a>:</p>
+PyPI [Standard]</label><div class="sd-tab-content docutils">
+<p>Standard lightweight CPU installation using NumPy (~50 MB download):</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>gedai
 </pre></div>
 </div>
 </div>
 <input id="sd-tab-item-1" name="sd-tab-set-0" type="radio">
 <label class="sd-tab-label" for="sd-tab-item-1">
-Snapshot of the current version</label><div class="sd-tab-content docutils">
-<p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> can be installed from <a class="reference external" href="https://github.com/neurotuning/gedai">GitHub</a>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/neurotuning/gedai
+PyPI [Accelerated with PyTorch]</label><div class="sd-tab-content docutils">
+<p>Accelerated performance (up to 2.2x faster) using vectorized PyTorch linear algebra:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gedai[torch]"</span>
 </pre></div>
 </div>
+<p>To install lightweight CPU-only PyTorch wheels on Windows/Linux without large GPU/CUDA binaries:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>torch<span class="w"> </span>--index-url<span class="w"> </span>https://download.pytorch.org/whl/cpu
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>gedai
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">engine=&quot;auto&quot;</span></code>, which automatically activates PyTorch acceleration when available and falls back cleanly to NumPy otherwise.</p>
 </div>
 <input id="sd-tab-item-2" name="sd-tab-set-0" type="radio">
 <label class="sd-tab-label" for="sd-tab-item-2">
+Snapshot of the current version</label><div class="sd-tab-content docutils">
+<p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> can be installed from <a class="reference external" href="https://github.com/neurotuning/gedai">GitHub</a>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/neurotuning/gedai
+<span class="c1"># or with PyTorch acceleration:</span>
+$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"gedai[torch] @ git+https://github.com/neurotuning/gedai"</span>
+</pre></div>
+</div>
+</div>
+<input id="sd-tab-item-3" name="sd-tab-set-0" type="radio">
+<label class="sd-tab-label" for="sd-tab-item-3">
 Development version</label><div class="sd-tab-content docutils">
 <p><code class="docutils literal notranslate"><span class="pre">gedai</span></code> can be installed by cloning the repository and installing:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/neurotuning/gedai.git

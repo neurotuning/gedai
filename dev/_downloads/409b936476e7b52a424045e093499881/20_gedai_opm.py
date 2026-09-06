@@ -461,12 +461,8 @@ vert_lh_mne, time_lh_mne = stc_mne.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
 vert_rh_mne, time_rh_mne = stc_mne.get_peak(hemi="rh", tmin=0.08, tmax=0.11)
 _, time_lh_gedai = stc_gedai.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
 
-print(
-    f"MNE Auditory Peak (LH): vertex {vert_lh_mne} at {time_lh_mne*1000:.1f} ms"
-)
-print(
-    f"MNE Auditory Peak (RH): vertex {vert_rh_mne} at {time_rh_mne*1000:.1f} ms"
-)
+print(f"MNE Auditory Peak (LH): vertex {vert_lh_mne} at {time_lh_mne * 1000:.1f} ms")
+print(f"MNE Auditory Peak (RH): vertex {vert_rh_mne} at {time_rh_mne * 1000:.1f} ms")
 
 # %%
 # Auditory Cortex Source Time Courses (dSPM at M100 Peak):
@@ -491,7 +487,7 @@ ax.plot(
     stc_mne.data[idx_lh_mne],
     lw=2,
     color="#7570b3",
-    label=f"MNE LH (Vertex {vert_lh_mne}, Peak = {time_lh_mne*1000:.1f} ms)",
+    label=f"MNE LH (Vertex {vert_lh_mne}, Peak = {time_lh_mne * 1000:.1f} ms)",
 )
 ax.plot(
     times_stc_gedai,
@@ -506,7 +502,7 @@ ax.plot(
     lw=1.5,
     linestyle=":",
     color="#7570b3",
-    label=f"MNE RH (Vertex {vert_rh_mne}, Peak = {time_rh_mne*1000:.1f} ms)",
+    label=f"MNE RH (Vertex {vert_rh_mne}, Peak = {time_rh_mne * 1000:.1f} ms)",
 )
 ax.plot(
     times_stc_gedai,
@@ -521,7 +517,7 @@ ax.axvline(
     color="red",
     linestyle="--",
     alpha=0.7,
-    label=f"M100 Latency ({time_lh_mne*1000:.1f} ms)",
+    label=f"M100 Latency ({time_lh_mne * 1000:.1f} ms)",
 )
 ax.set(
     title="Figure 9a: Primary Auditory Cortex Source Time Courses (dSPM)",

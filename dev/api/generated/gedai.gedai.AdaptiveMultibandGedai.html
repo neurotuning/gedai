@@ -45,7 +45,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=97fbfd4a"></script>
+    <script src="../../_static/documentation_options.js?v=33d19830"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -479,7 +479,7 @@
 <h1>gedai.gedai.AdaptiveMultibandGedai<a class="headerlink" href="#gedai-gedai-adaptivemultibandgedai" title="Link to this heading">🔗</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gedai.gedai.</span></span><span class="sig-name descname"><span class="pre">AdaptiveMultibandGedai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelet_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'haar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cycles_per_wavelet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">broadband_pass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L70-L648"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai" title="Link to this definition">🔗</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">gedai.gedai.</span></span><span class="sig-name descname"><span class="pre">AdaptiveMultibandGedai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wavelet_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'haar'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_level</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cycles_per_wavelet</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">broadband_pass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L71-L725"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai" title="Link to this definition">🔗</a></dt>
 <dd><p>Adaptive Multiband Generalized Eigenvalue De-Artifacting Instrument.</p>
 <p>A extension of <a class="reference internal" href="gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> that uses
 adaptive window lengths for each wavelet band to ensure
@@ -514,6 +514,10 @@ this target. The default is <code class="docutils literal notranslate"><span cla
 <dt><strong>broadband_pass</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a></span></dt><dd><p>Whether to run an initial broadband GED pass before multiband
 wavelet decomposition.</p>
 </dd>
+<dt><strong>engine</strong><span class="classifier">“auto” | “torch” | “numpy”, default=”auto”</span></dt><dd><p>Computation engine for generalized eigendecomposition, batched SENSAI evaluation,
+and wavelet decomposition. If <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default), uses PyTorch CPU
+acceleration when installed, and falls back cleanly to NumPy otherwise.</p>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -532,22 +536,25 @@ wavelet decomposition.</p>
 <p class="rubric">Methods</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="gedai.gedai.AdaptiveMultibandGedai.fit_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_raw</span></code></a>(raw[, picks, overlap, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.clear_cache" title="gedai.gedai.AdaptiveMultibandGedai.clear_cache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clear_cache</span></code></a>()</p></td>
+<td><p>Clear cached intermediate representations to free memory.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="gedai.gedai.AdaptiveMultibandGedai.fit_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_raw</span></code></a>(raw[, picks, overlap, ...])</p></td>
 <td><p>Fit the model to raw data.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary" title="gedai.gedai.AdaptiveMultibandGedai.fit_summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_summary</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary" title="gedai.gedai.AdaptiveMultibandGedai.fit_summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_summary</span></code></a>()</p></td>
 <td><p>Print and return a formatted summary table of the model fitting metrics.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="gedai.gedai.AdaptiveMultibandGedai.plot_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_fit</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="gedai.gedai.AdaptiveMultibandGedai.plot_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_fit</span></code></a>()</p></td>
 <td><p>Plot the fitting results.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="gedai.gedai.AdaptiveMultibandGedai.plot_sensai"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_sensai</span></code></a>(raw_before[, raw_after, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="gedai.gedai.AdaptiveMultibandGedai.plot_sensai"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_sensai</span></code></a>(raw_before[, raw_after, ...])</p></td>
 <td><p>Plot SENSAI subspace similarity and manifold classification.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.summary" title="gedai.gedai.AdaptiveMultibandGedai.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.summary" title="gedai.gedai.AdaptiveMultibandGedai.summary"><code class="xref py py-obj docutils literal notranslate"><span class="pre">summary</span></code></a>()</p></td>
 <td><p>Print and return a formatted summary table of the model fitting metrics.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="gedai.gedai.AdaptiveMultibandGedai.transform_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_raw</span></code></a>(raw[, overlap, n_jobs, verbose])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="gedai.gedai.AdaptiveMultibandGedai.transform_raw"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform_raw</span></code></a>(raw[, overlap, n_jobs, verbose])</p></td>
 <td><p>Apply the Adaptive Multiband GEDAI transform to raw data.</p></td>
 </tr>
 </tbody>
@@ -563,8 +570,22 @@ wavelet decomposition.</p>
 </aside>
 </div>
 <dl class="py method">
+<dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.clear_cache">
+<span class="sig-name descname"><span class="pre">clear_cache</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L597-L613"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.clear_cache" title="Link to this definition">🔗</a></dt>
+<dd><p>Clear cached intermediate representations to free memory.</p>
+<dl class="field-list">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><dl>
+<dt><strong>self</strong><span class="classifier"><a class="reference internal" href="#gedai.gedai.AdaptiveMultibandGedai" title="gedai.gedai.AdaptiveMultibandGedai"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a></span></dt><dd><p>The instance itself.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.fit_raw">
-<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_low_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L170-L330"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wavelet_low_cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L179-L357"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Fit the model to raw data.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -607,6 +628,10 @@ Supported string presets:</p>
 </ul>
 <p>Alternatively, a custom numerical float can be passed.</p>
 </dd>
+<dt><strong>sensai_tol</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>Absolute tolerance (<code class="docutils literal notranslate"><span class="pre">xatol</span></code>) for threshold optimization when
+<code class="docutils literal notranslate"><span class="pre">sensai_method='optimize'</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">0.1</span></code> for fast convergence.
+Can be set to smaller values (e.g. <code class="docutils literal notranslate"><span class="pre">0.01</span></code>) for finer search precision.</p>
+</dd>
 <dt><strong>wavelet_low_cutoff</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></span></dt><dd><p>If a float is provided, zero out all wavelet levels whose upper frequency
 bound is below this cutoff frequency in Hz. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, no frequency band
 is zeroed out. If <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code>, the cutoff is automatically determined based
@@ -644,7 +669,7 @@ The default is <code class="docutils literal notranslate"><span class="pre">None
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.fit_summary">
-<span class="sig-name descname"><span class="pre">fit_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L571-L581"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L648-L658"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary" title="Link to this definition">🔗</a></dt>
 <dd><p>Print and return a formatted summary table of the model fitting metrics.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -658,7 +683,7 @@ The default is <code class="docutils literal notranslate"><span class="pre">None
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.plot_fit">
-<span class="sig-name descname"><span class="pre">plot_fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L538-L557"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">plot_fit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L615-L634"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="Link to this definition">🔗</a></dt>
 <dd><p>Plot the fitting results.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -672,7 +697,7 @@ The default is <code class="docutils literal notranslate"><span class="pre">None
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.plot_sensai">
-<span class="sig-name descname"><span class="pre">plot_sensai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_before</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_duration_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L585-L638"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">plot_sensai</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_before</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epoch_duration_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L662-L715"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="Link to this definition">🔗</a></dt>
 <dd><p>Plot SENSAI subspace similarity and manifold classification.</p>
 <p>Replicates MATLAB’s SENSAI_visualization.m with side-by-side
 Before/After subspace projections, LDA decision boundary shading,
@@ -705,7 +730,7 @@ and marginal KDE distributions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.summary">
-<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L571-L581"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.summary" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">summary</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/adaptive.py#L648-L658"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.summary" title="Link to this definition">🔗</a></dt>
 <dd><p>Print and return a formatted summary table of the model fitting metrics.</p>
 <dl class="field-list">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -719,7 +744,7 @@ and marginal KDE distributions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.AdaptiveMultibandGedai.transform_raw">
-<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L424-L504"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/neurotuning/gedai/blob/main/gedai/utils/logs.py#L458-L554"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Apply the Adaptive Multiband GEDAI transform to raw data.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -822,6 +847,7 @@ The default is <code class="docutils literal notranslate"><span class="pre">None
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.AdaptiveMultibandGedai"><code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.AdaptiveMultibandGedai.clear_cache"><code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai.clear_cache()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.AdaptiveMultibandGedai.fit_raw"><code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai.fit_raw()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.AdaptiveMultibandGedai.fit_summary"><code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai.fit_summary()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai.gedai.AdaptiveMultibandGedai.plot_fit"><code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai.plot_fit()</span></code></a></li>

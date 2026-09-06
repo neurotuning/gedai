@@ -133,4 +133,3 @@ plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
 #   the SSSI).
 
 fig, metrics = ad.plot_sensai(raw_before=raw, raw_after=denoised_raw)
-
