@@ -99,6 +99,7 @@ class AdaptiveMultibandGedai:
     broadband_pass : bool
         Whether to run an initial broadband GED pass before multiband
         wavelet decomposition.
+    %(engine)s
 
     References
     ----------
@@ -111,7 +112,7 @@ class AdaptiveMultibandGedai:
         wavelet_level="auto",
         cycles_per_wavelet=10,
         broadband_pass=True,
-        engine="numpy",
+        engine="auto",
     ):
         if wavelet_level != "auto":
             _check_type(wavelet_level, (int,), "wavelet_level")
@@ -586,7 +587,7 @@ class AdaptiveMultibandGedai:
             reference_cov=band_ref_cov,
             epoch_duration=epoch_duration,
             threshold=threshold,
-            engine=getattr(self, "engine", "numpy"),
+            engine=getattr(self, "engine", "auto"),
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(

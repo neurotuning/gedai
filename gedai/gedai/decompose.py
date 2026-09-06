@@ -15,7 +15,7 @@ __all__ = [
 ]
 
 
-def _clean_epochs(epochs_data, reference_cov, threshold, engine="numpy"):
+def _clean_epochs(epochs_data, reference_cov, threshold, engine="auto"):
     resolved = resolve_engine(engine)
     if resolved == "torch":
         return clean_epochs_batched_torch(epochs_data, reference_cov, threshold)

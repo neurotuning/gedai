@@ -68,6 +68,10 @@ class Gedai:
 
     See :footcite:`deCheveigne2018`.
 
+    Parameters
+    ----------
+    %(engine)s
+
     References
     ----------
     .. footbibliography::
@@ -75,7 +79,7 @@ class Gedai:
 
     def __init__(
         self,
-        engine: str = "numpy",
+        engine: str = "auto",
     ):
         self.engine = engine
         self._resolved_engine = resolve_engine(engine)
@@ -429,7 +433,9 @@ class Gedai:
         threshold = self._fit["threshold"]
         cleaned_epochs_data = np.zeros_like(data)
 
-        resolved_engine = getattr(self, "_resolved_engine", "numpy")
+        resolved_engine = getattr(
+            self, "_resolved_engine", resolve_engine(getattr(self, "engine", "auto"))
+        )
         if resolved_engine == "torch":
             cleaned_epochs_data, _ = clean_epochs_batched_torch(
                 data, reference_cov, threshold
@@ -534,7 +540,7 @@ class Gedai:
             if hasattr(self, "_duration") and self._duration > 0
             else 1.0,
             threshold=threshold,
-            engine=getattr(self, "_resolved_engine", "numpy"),
+            engine=getattr(self, "_resolved_engine", getattr(self, "engine", "auto")),
         )
 
         raw_transform.get_data(verbose=False).copy()

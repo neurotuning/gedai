@@ -170,7 +170,7 @@ def _eigen_to_sensai(eigenvalue, eigenvalues, percentile=98):
 
 
 def _precompute_gevd(
-    epochs_data: np.ndarray, reference_cov: np.ndarray, engine: str = "numpy"
+    epochs_data: np.ndarray, reference_cov: np.ndarray, engine: str = "auto"
 ):
     """Precompute generalized eigenvalue decomposition across all epochs.
 
@@ -178,7 +178,7 @@ def _precompute_gevd(
     ----------
     epochs_data : np.ndarray, shape (n_epochs, n_channels, n_times)
     reference_cov : np.ndarray, shape (n_channels, n_channels)
-    engine : str, default 'numpy'
+    engine : str, default 'auto'
         Computation engine ('numpy', 'torch', or 'auto').
 
     Returns
@@ -454,7 +454,7 @@ def _sensai_score(
     reference_cov,
     n_pc=3,
     noise_multiplier=3.0,
-    engine="numpy",
+    engine="auto",
 ):
     """Compute the SENSAI score for given threshold.
 
@@ -520,7 +520,7 @@ def _sensai_gridsearch(
     all_evec=None,
     sensai_thresholds=None,
     signal_type="eeg",
-    engine="numpy",
+    engine="auto",
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -641,7 +641,7 @@ def _sensai_optimize(
     all_evec=None,
     percentile=98,
     signal_type="eeg",
-    engine="numpy",
+    engine="auto",
     sensai_tol: float = 0.1,
 ):
     n_pc = ensure_int(n_pc, "n_pc")

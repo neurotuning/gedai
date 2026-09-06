@@ -35,6 +35,33 @@ def test_has_torch_and_resolve_engine():
         resolve_engine(123)
 
 
+def test_default_engine_is_auto():
+    """Test that all estimators default to engine='auto' and resolve to 'torch' when PyTorch is present."""
+    import inspect
+    from gedai.gedai.decompose import _clean_epochs
+    from gedai.sensai.sensai import (
+        _precompute_gevd,
+        _sensai_gridsearch,
+        _sensai_optimize,
+        _sensai_score,
+    )
+
+    g = Gedai()
+    assert g.engine == "auto"
+    assert g._resolved_engine == "torch"
+
+    mb = MultibandGedai()
+    assert mb.engine == "auto"
+
+    amb = AdaptiveMultibandGedai()
+    assert amb.engine == "auto"
+
+    for fn in (_clean_epochs, _precompute_gevd, _sensai_score, _sensai_gridsearch, _sensai_optimize):
+        sig = inspect.signature(fn)
+        assert sig.parameters["engine"].default == "auto", f"{fn.__name__} default engine is not 'auto'"
+
+
+
 def test_gevd_torch_single_and_batched():
     """Test PyTorch GEVD on single and batched matrices against SciPy eigh."""
     import torch
