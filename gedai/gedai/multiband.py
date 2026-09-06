@@ -481,9 +481,9 @@ class MultibandGedai:
                 f"(sub-{wavelet_low_cutoff:.2f} Hz) and running "
                 "broadband GEDAI pass..."
             )
-            raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
-            )
+raw_fit._data = _apply_wavelet_highpass_prefilter(
+    raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff, engine=self.engine
+)
             broadband_model = Gedai(engine=self.engine)
             broadband_model.fit_raw(
                 raw_fit,
