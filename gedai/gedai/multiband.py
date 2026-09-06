@@ -602,7 +602,9 @@ class MultibandGedai:
                 "enova": 0.0,
             }
 
-        band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+        band_data = _modwt_haar_single_band(
+            raw_data_fit.T, actual_wavelet_level, w, engine=self.engine
+        )
         if n_ep > 0:
             band_epochs_data = (
                 band_data[:, : n_ep * epoch_samples]
@@ -846,7 +848,9 @@ class MultibandGedai:
         if ignore:
             return np.zeros_like(raw_data), 0.0, 0.0
 
-        band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+        band_data = _modwt_haar_single_band(
+            raw_data.T, actual_level, band_idx, engine=self.engine
+        )
         threshold = wavelet_fit["model"].threshold
         epoch_duration = wavelet_fit.get("duration", 1.0)
         if epoch_duration is None:

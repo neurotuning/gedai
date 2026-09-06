@@ -265,7 +265,10 @@ class AdaptiveMultibandGedai:
                 "broadband GEDAI pass..."
             )
             raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff
+                raw_fit._data,
+                sfreq,
+                lowcut_hz=wavelet_low_cutoff,
+                engine=self.engine,
             )
             broadband_model = Gedai(engine=self.engine)
             broadband_model.fit_raw(
@@ -388,7 +391,9 @@ class AdaptiveMultibandGedai:
                 "band_data": None,
             }
 
-        band_data = _modwt_haar_single_band(raw_data_fit.T, actual_wavelet_level, w)
+        band_data = _modwt_haar_single_band(
+            raw_data_fit.T, actual_wavelet_level, w, engine=self.engine
+        )
 
         epoch_samples = wavelet_parameter["n_samples"]
         if epoch_samples % 2 != 0:
@@ -563,7 +568,9 @@ class AdaptiveMultibandGedai:
         if is_same_raw and wavelet_fit.get("band_data") is not None:
             band_data = wavelet_fit["band_data"]
         else:
-            band_data = _modwt_haar_single_band(raw_data.T, actual_level, band_idx)
+            band_data = _modwt_haar_single_band(
+                raw_data.T, actual_level, band_idx, engine=self.engine
+            )
 
         threshold = wavelet_fit["model"].threshold
         epoch_duration = wavelet_fit["duration"]
