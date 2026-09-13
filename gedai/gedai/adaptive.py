@@ -192,6 +192,7 @@ class AdaptiveMultibandGedai:
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        align_to_sensors: bool = False,
     ):
         """Fit the model to raw data.
 
