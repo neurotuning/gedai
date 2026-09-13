@@ -78,6 +78,8 @@ def plot_sensai_visualization(
         cov = _ensure_cov(reference_cov)
         cov = _pick_cov(cov, ch_names)
         ref_cov_data = cov.data
+    elif hasattr(reference_cov, 'data'):
+        ref_cov_data = np.asarray(reference_cov.data)
     else:
         ref_cov_data = np.asarray(reference_cov)
 

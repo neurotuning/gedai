@@ -703,8 +703,22 @@ class AdaptiveMultibandGedai:
         if raw_after is None:
             raw_after = self.transform_raw(raw_before, verbose=False)
 
-        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        score = None
+        if self.metrics_ and "sensai_score" in self.metrics_:
+            score = self.metrics_["sensai_score"]
+        elif hasattr(self, "fit_metrics_") and self.fit_metrics_ and "sensai_score" in self.fit_metrics_:
+            score = self.fit_metrics_["sensai_score"]
+
         mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+        if mean_enova is None and raw_after is not None:
+            try:
+                orig = raw_before.get_data()
+                clean = raw_after.get_data()
+                noise = orig - clean
+                ep_samp = max(1, round(raw_after.info["sfreq"] * epoch_duration_sec))
+                mean_enova = float(np.mean(compute_enova_per_epoch(clean, noise, ep_samp)))
+            except Exception:
+                pass
 
         return plot_sensai_visualization(
             raw_before=raw_before,

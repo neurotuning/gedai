@@ -249,3 +249,102 @@ def align_covariance_to_channel_positions(cov, info, n_geom_pcs=3):
             aligned_data, names=ch_names, bads=bads, projs=[], nfree=nfree, verbose=False
         )
     return aligned_data
+
+
+
+def compute_covariance_from_openmeeg(
+    info,
+    trans,
+    src,
+    bem,
+    conductivity=(0.3,),
+    n_dipoles=1000,
+    verbose=None,
+):
+    """Compute subject-specific BEM reference covariance using OpenMEEG.
+
+    Integrates OpenMEEG symmetric boundary element method collocation with MNE's
+    sensor geometry and cortical source spaces to generate an exact anatomical
+    forward model covariance matrix.
+
+    Parameters
+    ----------
+    info : mne.Info
+        Measurement info containing sensor definitions.
+    trans : mne.transforms.Transform | str
+        Head to MRI coregistration transform.
+    src : mne.SourceSpaces
+        Subject cortical source space.
+    bem : mne.bem.ConductorModel | list of dict
+        BEM model surfaces or solution.
+    conductivity : array-like
+        Conductivity values for BEM layers (default [0.3] for 1-layer MEG).
+    verbose : bool | str | int | None
+        Verbosity level.
+
+    Returns
+    -------
+    cov : mne.Covariance
+        The subject-specific reference covariance matrix.
+    """
+    import openmeeg as om
+    from mne.transforms import invert_transform
+    from mne.forward._compute_forward import _concatenate_coils, _make_openmeeg_geometry
+    from mne.forward._make_forward import _create_meg_coils
+
+    if not isinstance(bem, mne.bem.ConductorModel) or "solution" not in bem:
+        bem = mne.make_bem_solution(bem, solver="openmeeg", verbose=verbose)
+
+    if isinstance(trans, str):
+        trans = mne.read_trans(trans, verbose=verbose)
+
+    # 1. Geometry & Inverted Head Matrix
+    hminv = om.SymMatrix(bem["solution"])
+    geom = _make_openmeeg_geometry(bem, invert_transform(trans))
+
+    # 2. Extract Dipole Locations
+    rr_src = np.concatenate([
+        s["rr"][s["inuse"].astype(bool)] for s in src
+    ])
+    if n_dipoles is not None and len(rr_src) > n_dipoles:
+        step = int(np.ceil(len(rr_src) / n_dipoles))
+        rr_src = rr_src[::step][:n_dipoles]
+    dipoles = np.c_[
+        np.kron(rr_src.T, np.ones(3)[None, :]).T,
+        np.kron(np.ones(len(rr_src))[:, None], np.eye(3)),
+    ]
+    dipoles_om = om.Matrix(np.asfortranarray(dipoles))
+
+    domain_name = "Brain"
+    dsm = om.DipSourceMat(geom, dipoles_om, domain_name)
+
+    # 3. Sensor Geometry & Coupling
+    meg_picks = mne.pick_types(info, meg=True, ref_meg=False, exclude="bads")
+    if len(meg_picks) == 0:
+        meg_picks = list(range(len(info["chs"])))
+    meg_chs = [info["chs"][p] for p in meg_picks]
+    meg_names = [info["ch_names"][p] for p in meg_picks]
+
+    meg_coils = _create_meg_coils(meg_chs, "accurate", info["dev_head_t"])
+    rmags, cosmags, ws, bins = _concatenate_coils(meg_coils)
+    rmags = np.asfortranarray(rmags.astype(np.float64))
+    cosmags = np.asfortranarray(cosmags.astype(np.float64))
+    labels = [str(ii) for ii in range(len(rmags))]
+    weights = radii = np.ones(len(labels))
+    meg_sensors = om.Sensors(labels, rmags, cosmags, weights, radii)
+
+    h2mm = om.Head2MEGMat(geom, meg_sensors)
+    ds2mm = om.DipSource2MEGMat(dipoles_om, meg_sensors)
+    gain_meg = om.GainMEG(hminv, dsm, h2mm, ds2mm).array()
+
+    # 4. Integrate Coil Points
+    B = np.array([np.bincount(bins, ws * x, bins[-1] + 1) for x in gain_meg.T], float)
+    leadfield = B.T  # (n_channels, 3 * n_dipoles)
+
+    # 5. Gram Reference Covariance
+    C_ref = leadfield @ leadfield.T
+    C_ref /= np.trace(C_ref)
+    n_ch = len(meg_names)
+    C_ref += 1e-4 * np.eye(n_ch) * (np.trace(C_ref) / n_ch)
+
+    return mne.Covariance(C_ref, meg_names, info.get("bads", []), [], 1000)
