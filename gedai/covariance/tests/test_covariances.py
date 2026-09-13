@@ -6,6 +6,7 @@ from mne.datasets import testing
 
 from gedai.covariance.covariance import (
     _ensure_cov,
+    align_covariance_to_channel_positions,
     _pick_cov,
     compute_covariance_from_channel_positions,
     compute_covariance_from_forward,
@@ -91,3 +92,71 @@ def test_compute_covariance_from_forward():
     forward = mne.read_forward_solution(fname_fwd)
     cov = compute_covariance_from_forward(forward)
     assert isinstance(cov, mne.Covariance)
+
+
+def test_align_covariance_to_channel_positions(sample_info):
+    """Test align_covariance_to_channel_positions with MNE objects and numpy arrays."""
+    import numpy as np
+
+    # 1. Test with mne.Covariance and sample_info
+    cov_orig = mne.make_ad_hoc_cov(sample_info)
+    # Add non-trivial off-diagonals
+    ch_positions = np.array([ch["loc"][:3] for ch in sample_info["chs"]])
+    dists = np.linalg.norm(ch_positions[:, None, :] - ch_positions[None, :, :], axis=-1)
+    cov_dense = np.exp(-dists / 0.05) + 0.1 * np.eye(len(ch_positions))
+    cov_orig = mne.Covariance(
+        cov_dense,
+        names=sample_info["ch_names"],
+        bads=[],
+        projs=[],
+        nfree=len(ch_positions),
+        verbose=False,
+    )
+
+    cov_aligned = align_covariance_to_channel_positions(cov_orig, sample_info)
+    assert isinstance(cov_aligned, mne.Covariance)
+    assert cov_aligned.ch_names == cov_orig.ch_names
+
+    # Check trace and eigenvalue preservation
+    evals_orig = np.sort(np.linalg.eigvalsh(cov_orig.data))[::-1]
+    evals_alg = np.sort(np.linalg.eigvalsh(cov_aligned.data))[::-1]
+    assert np.allclose(evals_orig, evals_alg, rtol=1e-6)
+    assert np.isclose(np.trace(cov_orig.data), np.trace(cov_aligned.data), rtol=1e-6)
+
+    # Check top 3 PCs span the Cartesian sensor coordinate subspace
+    coords_centered = ch_positions - np.mean(ch_positions, axis=0)
+    Q_coords, _ = np.linalg.qr(coords_centered[:, :3])
+    _, evecs_alg = np.linalg.eigh(cov_aligned.data)
+    evecs_alg_top3 = evecs_alg[:, -3:]
+    cos_angles = np.linalg.svd(Q_coords.T @ evecs_alg_top3, compute_uv=False)
+    assert np.allclose(cos_angles, [1.0, 1.0, 1.0], atol=1e-5)
+
+    # 2. Test with raw numpy arrays
+    arr_aligned = align_covariance_to_channel_positions(cov_dense, ch_positions)
+    assert isinstance(arr_aligned, np.ndarray)
+    assert arr_aligned.shape == cov_dense.shape
+
+    # 3. Test missing coordinates (all zeros) returns original unchanged
+    zero_pos = np.zeros_like(ch_positions)
+    cov_zero = align_covariance_to_channel_positions(cov_orig, zero_pos)
+    assert np.array_equal(cov_zero.data, cov_orig.data)
+
+
+def test_ensure_cov_geometric(sample_info):
+    """Test _ensure_cov with geometric identifiers and automatic picking."""
+    cov_geom = _ensure_cov("leadfield_geometric")
+    assert isinstance(cov_geom, mne.Covariance)
+    assert cov_geom.get("_align_to_sensors") is True
+
+    cov_picked = _pick_cov(cov_geom, sample_info)
+    assert isinstance(cov_picked, mne.Covariance)
+    assert set(cov_picked.ch_names) == set(sample_info["ch_names"])
+
+
+def test_compute_covariance_from_channel_positions_methods(sample_info):
+    """Test compute_covariance_from_channel_positions with geometric and rbf."""
+    cov_geom = compute_covariance_from_channel_positions(sample_info, method="geometric")
+    assert isinstance(cov_geom, mne.Covariance)
+
+    cov_rbf = compute_covariance_from_channel_positions(sample_info, method="rbf")
+    assert isinstance(cov_rbf, mne.Covariance)

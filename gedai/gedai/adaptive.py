@@ -234,6 +234,9 @@ class AdaptiveMultibandGedai:
         )
 
         cov = _pick_cov(reference_cov, raw_fit.info)
+        if align_to_sensors or getattr(cov, "_align_to_sensors", False) or cov.get("_align_to_sensors", False):
+            from ..covariance.covariance import align_covariance_to_channel_positions
+            cov = align_covariance_to_channel_positions(cov, raw_fit.info)
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, raw_fit.info["highpass"]
         )

@@ -134,6 +134,7 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        align_to_sensors: bool = False,
     ):
         """Fit the GEDAI model to the epochs.
 
@@ -173,6 +174,9 @@ class Gedai:
 
         cov = _ensure_cov(reference_cov).copy()
         cov = _pick_cov(cov, epochs_fit.info)
+        if align_to_sensors or getattr(cov, "_align_to_sensors", False) or cov.get("_align_to_sensors", False):
+            from ..covariance.covariance import align_covariance_to_channel_positions
+            cov = align_covariance_to_channel_positions(cov, epochs_fit.info)
         reference_cov = cov.data.copy()
 
         signal_type = _detect_signal_type(epochs_fit.info)
@@ -314,6 +318,7 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        align_to_sensors: bool = False,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -387,6 +392,7 @@ class Gedai:
             n_jobs=n_jobs,
             verbose=verbose,
             engine=engine,
+            align_to_sensors=align_to_sensors,
         )
 
     @fill_doc
