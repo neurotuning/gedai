@@ -29,21 +29,21 @@ def compute_enova_per_epoch(
     enova : np.ndarray, shape (n_epochs,)
         ENOVA values per epoch in [0, inf).
     """
-    n_times = clean.shape[1]
+    n_times = clean.shape[-1]
     n_epochs = n_times // epoch_samples
     if n_epochs == 0:
         original = clean + noise
-        var_o = float(np.var(original))
-        var_n = float(np.var(noise))
+        var_o = float(np.mean(np.var(original, axis=-1)))
+        var_n = float(np.mean(np.var(noise, axis=-1)))
         return np.array([var_n / var_o if var_o > 0 else 0.0], dtype=np.float32)
 
     enova = np.zeros(n_epochs, dtype=np.float32)
     for i in range(n_epochs):
         s = i * epoch_samples
         e = s + epoch_samples
-        orig_ep = clean[:, s:e] + noise[:, s:e]
-        var_o = float(np.var(orig_ep))
-        var_n = float(np.var(noise[:, s:e]))
+        orig_ep = clean[..., s:e] + noise[..., s:e]
+        var_o = float(np.mean(np.var(orig_ep, axis=-1)))
+        var_n = float(np.mean(np.var(noise[..., s:e], axis=-1)))
         enova[i] = var_n / var_o if var_o > 0 else 0.0
     return enova
 

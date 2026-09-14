@@ -42,3 +42,25 @@ def test_enova_metrics():
     ref_cov = np.eye(n_ch)
     score = compute_composite_sensai(clean, noise, sfreq=200.0, reference_cov=ref_cov)
     assert isinstance(score, float)
+
+
+def test_enova_dc_offset_invariance():
+    """Verify ENOVA is invariant to static inter-channel DC offsets."""
+    rng = np.random.default_rng(42)
+    n_ch, n_times = 10, 2000
+    epoch_samples = 400
+
+    clean = rng.standard_normal((n_ch, n_times))
+    noise = 0.3 * rng.standard_normal((n_ch, n_times))
+
+    enova_baseline = compute_enova_per_epoch(clean, noise, epoch_samples)
+
+    # Add huge DC offset across channels (typical in raw MEG/SQUID sensors)
+    dc_offsets = rng.uniform(-1e6, 1e6, size=(n_ch, 1))
+    noise_with_dc = noise + dc_offsets
+
+    enova_dc = compute_enova_per_epoch(clean, noise_with_dc, epoch_samples)
+
+    # ENOVA should be virtually identical because temporal variance ignores static channel means
+    np.testing.assert_allclose(enova_dc, enova_baseline, rtol=1e-5)
+

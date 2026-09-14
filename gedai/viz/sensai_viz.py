@@ -408,10 +408,10 @@ def plot_sensai_visualization(
     # ── GLOBAL TITLE ──────────────────────────────────────────────────────
     title_parts = []
     if sensai_score is not None:
-        title_parts.append(f"SENSAI = {sensai_score:.0f}%")
+        title_parts.append(f"SENSAI = {sensai_score:.1f}%")
     if mean_enova is not None:
         enova_val = mean_enova * 100 if mean_enova <= 1.0 else mean_enova
-        title_parts.append(f"ENOVA = {enova_val:.0f}%")
+        title_parts.append(f"ENOVA = {enova_val:.1f}%")
     if title_suffix:
         title_parts.append(f"[{title_suffix}]")
     full_title = (
