@@ -897,8 +897,8 @@ class MultibandGedai:
     def _transform_wavelet_band(
         self, wavelet_fit, raw_data, sfreq, actual_level, engine=None
     ):
-        current_engine = ensure_engine(engine) if engine is not None else self.engine
         """Transform one wavelet band using continuous MODWT cleaning."""
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         band_idx = wavelet_fit["band_index"]
         ignore = wavelet_fit["ignore"]
 

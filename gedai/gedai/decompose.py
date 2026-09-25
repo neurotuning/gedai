@@ -33,24 +33,6 @@ def _clean_epochs(
             percentile=percentile,
         )
 
-    # Numpy fallback: compute dynamic chunk threshold if T1 & percentile are provided
-    if T1 is not None and percentile is not None:
-        all_evals = []
-        for epoch_data in epochs_data:
-            cov_ep = np.cov(epoch_data)
-            evs = eigh(cov_ep, reference_cov, eigvals_only=True, check_finite=True)
-            all_evals.append(evs)
-        all_diags = np.abs(np.concatenate(all_evals))
-        pos = all_diags[all_diags > 0]
-        if len(pos) > 0:
-            log_evals = np.log(pos) + 100.0
-            chunk_prctile = float(np.percentile(log_evals, percentile))
-            eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
-        else:
-            eff_thresh = threshold if threshold is not None else 1.0
-    else:
-        eff_thresh = threshold
-
     # Reconstruct data
     cleaned_epochs = np.zeros_like(epochs_data)
     artefact_epochs = np.zeros_like(epochs_data)
@@ -58,6 +40,18 @@ def _clean_epochs(
     for e, epoch_data in enumerate(epochs_data):
         covariance = np.cov(epoch_data)
         eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+
+        if T1 is not None and percentile is not None:
+            pos = np.abs(eigenvalues)
+            pos = pos[pos > 0]
+            if len(pos) > 0:
+                log_evals = np.log(pos) + 100.0
+                chunk_prctile = float(np.percentile(log_evals, percentile))
+                eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
+            else:
+                eff_thresh = threshold if threshold is not None else 1.0
+        else:
+            eff_thresh = threshold
 
         eigvecs_filtered = eigenvectors.copy()
         signal_mask = np.abs(eigenvalues) < eff_thresh

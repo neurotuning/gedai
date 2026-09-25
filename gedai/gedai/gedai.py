@@ -857,25 +857,21 @@ def _clean_continuous_dual_stream(
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
         noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
 
-        if T1 is not None and percentile is not None:
-            all_evals = []
-            for ep in stream:
-                c_ep = np.cov(ep.astype(np.float64))
-                evs = eigh(c_ep, reference_cov, eigvals_only=True, check_finite=True)
-                all_evals.append(evs)
-            all_diags = np.abs(np.concatenate(all_evals))
-            pos = all_diags[all_diags > 0]
-            if len(pos) > 0:
-                log_evals = np.log(pos) + 100.0
-                chunk_prctile = float(np.percentile(log_evals, percentile))
-                eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
-            else:
-                eff_thresh = threshold if threshold is not None else 1.0
-        else:
-            eff_thresh = threshold
-
         for i in range(n_ep):
             ep = stream[i].astype(np.float64)
+            if T1 is not None and percentile is not None:
+                c_ep = np.cov(ep)
+                evs = eigh(c_ep, reference_cov, eigvals_only=True, check_finite=True)
+                pos = np.abs(evs)
+                pos = pos[pos > 0]
+                if len(pos) > 0:
+                    log_evals = np.log(pos) + 100.0
+                    chunk_prctile = float(np.percentile(log_evals, percentile))
+                    eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
+                else:
+                    eff_thresh = threshold if threshold is not None else 1.0
+            else:
+                eff_thresh = threshold
             c = _process_single_epoch(ep, reference_cov, eff_thresh)
             n = ep - c
             if i == 0:
