@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.linalg import eigh
 
+from ..utils._checks import ensure_engine
 from ..utils._torch_backend import (
     batched_gevd_cholesky,
     clean_epochs_batched_torch,
-    resolve_engine,
     robust_cholesky_gevd,
 )
 
@@ -15,10 +15,23 @@ __all__ = [
 ]
 
 
-def _clean_epochs(epochs_data, reference_cov, threshold, engine="auto"):
-    resolved = resolve_engine(engine)
+def _clean_epochs(
+    epochs_data,
+    reference_cov,
+    threshold=None,
+    engine="auto",
+    T1=None,
+    percentile=None,
+):
+    resolved = ensure_engine(engine)
     if resolved == "torch":
-        return clean_epochs_batched_torch(epochs_data, reference_cov, threshold)
+        return clean_epochs_batched_torch(
+            epochs_data,
+            reference_cov,
+            threshold=threshold,
+            T1=T1,
+            percentile=percentile,
+        )
 
     # Reconstruct data
     cleaned_epochs = np.zeros_like(epochs_data)
@@ -28,8 +41,20 @@ def _clean_epochs(epochs_data, reference_cov, threshold, engine="auto"):
         covariance = np.cov(epoch_data)
         eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
+        if T1 is not None and percentile is not None:
+            pos = np.abs(eigenvalues)
+            pos = pos[pos > 0]
+            if len(pos) > 0:
+                log_evals = np.log(pos) + 100.0
+                chunk_prctile = float(np.percentile(log_evals, percentile))
+                eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
+            else:
+                eff_thresh = threshold if threshold is not None else 1.0
+        else:
+            eff_thresh = threshold
+
         eigvecs_filtered = eigenvectors.copy()
-        signal_mask = np.abs(eigenvalues) < threshold
+        signal_mask = np.abs(eigenvalues) < eff_thresh
         eigvecs_filtered[:, signal_mask] = 0
 
         # Direct Regularized Reference Covariance Projection:

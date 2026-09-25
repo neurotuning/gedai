@@ -10,6 +10,7 @@ from gedai.gedai.multiband import MultibandGedai
 from gedai.sensai.sensai import _precompute_gevd
 from gedai.utils._torch_backend import (
     batched_gevd_cholesky,
+    clean_continuous_stream_torch,
     gevd_torch,
     has_torch,
     resolve_engine,
@@ -48,14 +49,13 @@ def test_default_engine_is_auto():
     )
 
     g = Gedai()
-    assert g.engine == "auto"
-    assert g._resolved_engine == "torch"
+    assert g.engine == "torch"
 
     mb = MultibandGedai()
-    assert mb.engine == "auto"
+    assert mb.engine == "torch"
 
     amb = AdaptiveMultibandGedai()
-    assert amb.engine == "auto"
+    assert amb.engine == "torch"
 
     for fn in (
         _clean_epochs,
@@ -140,6 +140,31 @@ def test_precompute_gevd_torch_parity():
     eval_pt, _ = _precompute_gevd(epochs_data, ref_cov, engine="torch")
 
     np.testing.assert_allclose(eval_pt, eval_np, atol=1e-12)
+
+
+def test_clean_continuous_stream_torch_defaults_cosine_weights():
+    """Missing cosine weights should fall back to the default cosine window."""
+    rng = np.random.RandomState(42)
+    stream = rng.randn(3, 4, 10)
+    reference_cov = np.cov(rng.randn(4, 80)) + 0.1 * np.eye(4)
+    threshold = 1.2
+    u = np.arange(1, stream.shape[-1] + 1, dtype=np.float64)
+    cosine_weights = 0.5 - 0.5 * np.cos(2 * u * np.pi / stream.shape[-1])
+
+    clean_default, noise_default = clean_continuous_stream_torch(
+        stream,
+        reference_cov,
+        threshold=threshold,
+    )
+    clean_explicit, noise_explicit = clean_continuous_stream_torch(
+        stream,
+        reference_cov,
+        threshold=threshold,
+        cosine_weights=cosine_weights,
+    )
+
+    np.testing.assert_allclose(clean_default, clean_explicit, atol=1e-12)
+    np.testing.assert_allclose(noise_default, noise_explicit, atol=1e-12)
 
 
 def test_gedai_fit_transform_epochs_torch_parity():
@@ -340,3 +365,51 @@ def test_sensai_tol_parameter():
     # Invalid sensai_tol should raise ValueError
     with pytest.raises(ValueError, match="sensai_tol must be > 0"):
         g.fit_raw(raw.copy(), reference_cov=cov, sensai_tol=-0.5)
+
+
+def test_engine_per_call_and_transform_override():
+    """Verify per-call engine overrides do not mutate estimator state."""
+    g = Gedai(engine="numpy")
+    assert g.engine == "numpy"
+
+    rng = np.random.default_rng(42)
+    n_ch, n_times = 4, 800
+    sfreq = 100.0
+    info = mne.create_info(
+        [f"EEG{i:03d}" for i in range(n_ch)],
+        sfreq=sfreq,
+        ch_types="eeg",
+    )
+    raw = mne.io.RawArray(rng.standard_normal((n_ch, n_times)), info)
+    custom_cov = mne.Covariance(np.eye(n_ch), raw.ch_names, [], [], 0)
+    epochs = mne.make_fixed_length_epochs(raw.copy(), duration=1.0, preload=True)
+
+    # Calling fit_raw with engine='torch' should NOT mutate g.engine
+    g.fit_raw(
+        raw.copy(),
+        reference_cov=custom_cov,
+        duration=1.0,
+        engine="torch",
+        verbose=False,
+    )
+    assert g.engine == "numpy"
+
+    # Calling transform_raw with engine='torch' should run cleanly and preserve g.engine
+    transformed = g.transform_raw(raw.copy(), engine="torch", verbose=False)
+    assert g.engine == "numpy"
+    assert transformed.get_data().shape == raw.get_data().shape
+
+    g_epochs = Gedai(engine="numpy")
+    g_epochs.fit_epochs(
+        epochs.copy(),
+        reference_cov=custom_cov,
+        engine="torch",
+        verbose=False,
+    )
+    transformed_epochs = g_epochs.transform_epochs(
+        epochs.copy(),
+        engine="torch",
+        verbose=False,
+    )
+    assert g_epochs.engine == "numpy"
+    assert transformed_epochs.get_data().shape == epochs.get_data().shape

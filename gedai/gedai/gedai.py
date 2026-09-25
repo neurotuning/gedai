@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
@@ -34,13 +36,13 @@ from ..utils._checks import (
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_engine,
     ensure_int,
 )
 from ..utils._docs import fill_doc
 from ..utils._torch_backend import (
     clean_continuous_stream_torch,
     clean_epochs_batched_torch,
-    resolve_engine,
 )
 from ..utils.logs import verbose
 from ..wavelet.transform import _apply_wavelet_highpass_prefilter
@@ -62,11 +64,24 @@ def _check_sensai_method(sensai_method):
         )
 
 
+def _get_channel_multiplier() -> float:
+    """Return the channel sample constraint multiplier (default 1.0)."""
+    value = os.environ.get("GEDAI_CHANNEL_MULTIPLIER")
+    if value is None:
+        return 1.0
+    try:
+        return float(value)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(
+            f"GEDAI_CHANNEL_MULTIPLIER must be a parseable float, got {value!r}."
+        ) from exc
+
+
 @fill_doc
 class Gedai:
     """Generalized Eigenvalue De-Artifacting Instrument.
 
-    See :footcite:`deCheveigne2018`.
+    See :footcite:`Ros2025`.
 
     Parameters
     ----------
@@ -81,8 +96,7 @@ class Gedai:
         self,
         engine: str = "auto",
     ):
-        self.engine = engine
-        self._resolved_engine = resolve_engine(engine)
+        self.engine = ensure_engine(engine)
         self.fitted = False
         self._fit = None
         self._info = None
@@ -156,9 +170,7 @@ class Gedai:
             engine specified at initialization.
         """
         self._check_unfitted()
-        if engine is not None:
-            self.engine = engine
-            self._resolved_engine = resolve_engine(engine)
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
@@ -198,7 +210,7 @@ class Gedai:
         cov.update(data=reference_cov)
 
         all_eval, all_evec = _precompute_gevd(
-            data, reference_cov, engine=self._resolved_engine
+            data, reference_cov, engine=current_engine
         )
         epochs_eigenvalues = all_eval
         percentile = 99 if signal_type == "meg" else 98
@@ -234,7 +246,7 @@ class Gedai:
                 )
                 for sensai_value in sensai_thresholds
             ]
-            threshold, runs = _sensai_gridsearch(
+            threshold, sensai_value, runs = _sensai_gridsearch(
                 fit_epochs,
                 reference_cov,
                 n_pc=resolved_n_pc,
@@ -245,11 +257,11 @@ class Gedai:
                 all_eval=all_eval,
                 all_evec=all_evec,
                 signal_type=signal_type,
-                engine=self._resolved_engine,
+                engine=current_engine,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
-            threshold, runs = _sensai_optimize(
+            threshold, sensai_value, runs = _sensai_optimize(
                 fit_epochs,
                 reference_cov,
                 n_pc=resolved_n_pc,
@@ -260,7 +272,7 @@ class Gedai:
                 all_evec=all_evec,
                 percentile=percentile,
                 signal_type=signal_type,
-                engine=self._resolved_engine,
+                engine=current_engine,
                 sensai_tol=sensai_tol,
             )
         else:
@@ -269,12 +281,17 @@ class Gedai:
                 f"got '{sensai_method}' instead."
             )
 
+        # Compute dimensionless scale factor T1 matching MATLAB clean_EEG.m
+        T1 = float((105.0 - sensai_value) / 100.0)
+
         best_run = max(runs, key=lambda x: x[1]) if runs else None
         self.fit_metrics_ = {
             "sensai_score": best_run[1] if best_run else 0.0,
             "signal_similarity": best_run[2] if best_run else 0.0,
             "noise_similarity": best_run[3] if best_run else 0.0,
             "threshold": threshold,
+            "sensai_value": sensai_value,
+            "T1": T1,
         }
 
         self._fit = {
@@ -282,7 +299,12 @@ class Gedai:
             "epochs_eigenvalues": epochs_eigenvalues,
             "sensai_runs": runs,
             "sensai_bounds": (min_sensai_threshold, max_sensai_threshold),
+            "sensai_value": sensai_value,
+            "T1": T1,
+            "percentile": percentile,
         }
+        self.T1_ = T1
+        self.percentile_ = percentile
 
         self.fitted = True
         self._info = epochs_fit.info.copy()
@@ -341,6 +363,7 @@ class Gedai:
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(overlap, (float, int), "overlap")
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
@@ -356,13 +379,23 @@ class Gedai:
 
         raw_fit = _prepare_raw_fit(raw, picks)
 
+        # Enforce at least k*C samples to avoid rank deficiency and
+        # ill-conditioning in high-density arrays
+        k_mult = _get_channel_multiplier()
+        min_samples = min(int(np.ceil(k_mult * len(raw_fit.ch_names))), raw_fit.n_times)
+        if duration * raw_fit.info["sfreq"] < min_samples:
+            duration = min_samples / raw_fit.info["sfreq"]
+
         if highpass_prefilter is not None and highpass_prefilter > 0:
             if (
                 raw_fit.info["highpass"] is None
                 or raw_fit.info["highpass"] < highpass_prefilter
             ):
                 raw_fit._data = _apply_wavelet_highpass_prefilter(
-                    raw_fit._data, raw_fit.info["sfreq"], lowcut_hz=highpass_prefilter
+                    raw_fit._data,
+                    raw_fit.info["sfreq"],
+                    lowcut_hz=highpass_prefilter,
+                    engine=current_engine,
                 )
         self._highpass_prefilter = highpass_prefilter
 
@@ -386,13 +419,17 @@ class Gedai:
             n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,
-            engine=engine,
+            engine=current_engine,
         )
 
     @fill_doc
     @verbose
     def transform_epochs(
-        self, epochs: BaseEpochs, n_jobs: int = None, verbose: str | None = None
+        self,
+        epochs: BaseEpochs,
+        n_jobs: int = None,
+        verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Transform epochs data using the fitted model.
 
@@ -402,6 +439,9 @@ class Gedai:
             The epochs to transform.
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -433,24 +473,39 @@ class Gedai:
         threshold = self._fit["threshold"]
         cleaned_epochs_data = np.zeros_like(data)
 
-        resolved_engine = getattr(
-            self, "_resolved_engine", resolve_engine(getattr(self, "engine", "auto"))
-        )
+        resolved_engine = ensure_engine(engine) if engine is not None else self.engine
+        T1 = self._fit.get("T1")
+        percentile = self._fit.get("percentile", self._percentile)
         if resolved_engine == "torch":
             cleaned_epochs_data, _ = clean_epochs_batched_torch(
-                data, reference_cov, threshold
+                data,
+                reference_cov,
+                threshold=threshold,
+                T1=T1,
+                percentile=percentile,
             )
         elif n_jobs == 1:
             for e, epoch_data in enumerate(data):
                 cleaned_epochs_data[e] = _process_single_epoch(
-                    epoch_data, reference_cov, threshold
+                    epoch_data,
+                    reference_cov,
+                    threshold=threshold,
+                    T1=T1,
+                    percentile=percentile,
                 )
         else:
             parallel, p_fun, _ = parallel_func(
                 _process_single_epoch, n_jobs, total=len(data), verbose=verbose
             )
             cleaned_epochs_list = parallel(
-                p_fun(epoch_data, reference_cov, threshold) for epoch_data in data
+                p_fun(
+                    epoch_data,
+                    reference_cov,
+                    threshold=threshold,
+                    T1=T1,
+                    percentile=percentile,
+                )
+                for epoch_data in data
             )
             cleaned_epochs_data = np.array(cleaned_epochs_list)
 
@@ -487,6 +542,7 @@ class Gedai:
         overlap: float = 0.5,
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Transform raw data using the fitted model.
 
@@ -497,6 +553,9 @@ class Gedai:
         %(overlap)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -506,6 +565,7 @@ class Gedai:
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
 
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
@@ -525,6 +585,7 @@ class Gedai:
                     raw_transform._data,
                     raw_transform.info["sfreq"],
                     lowcut_hz=self._highpass_prefilter,
+                    engine=current_engine,
                 )
 
         raw_data = raw_transform.get_data(verbose=False)
@@ -532,6 +593,8 @@ class Gedai:
         threshold = self._fit["threshold"]
 
         # Fast dual-stream continuous broadband cleaning
+        T1 = self._fit.get("T1")
+        percentile = self._fit.get("percentile", self._percentile)
         clean_data, _ = _clean_continuous_dual_stream(
             raw_data,
             sfreq=sfreq,
@@ -540,7 +603,9 @@ class Gedai:
             if hasattr(self, "_duration") and self._duration > 0
             else 1.0,
             threshold=threshold,
-            engine=getattr(self, "_resolved_engine", getattr(self, "engine", "auto")),
+            engine=current_engine,
+            T1=T1,
+            percentile=percentile,
         )
 
         raw_transform.get_data(verbose=False).copy()
@@ -612,8 +677,9 @@ class Gedai:
         self._check_fit()
         return self._reference_cov.ch_names
 
-    def fit_summary(self) -> str:
-        """Print and return a formatted summary table of the model fitting metrics.
+    @property
+    def summary(self) -> str:
+        """Formatted ASCII summary table of the model fitting metrics.
 
         Returns
         -------
@@ -624,7 +690,15 @@ class Gedai:
         table_str = _format_summary_table(self)
         return table_str
 
-    summary = fit_summary
+    def fit_summary(self) -> str:
+        """Compatibility wrapper for the fitted-model summary.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
+        return self.summary
 
     def plot_sensai(
         self,
@@ -692,7 +766,13 @@ class Gedai:
         return f"<{self.__class__.__name__} ({status}{metrics_info})>"
 
 
-def _process_single_epoch(epoch_data, reference_cov, threshold):
+def _process_single_epoch(
+    epoch_data,
+    reference_cov,
+    threshold=None,
+    T1=None,
+    percentile=None,
+):
     """Process a single epoch for cleaning using direct reference covariance projection.
 
     Parameters
@@ -711,6 +791,18 @@ def _process_single_epoch(epoch_data, reference_cov, threshold):
     """
     covariance = np.cov(epoch_data)
     eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+
+    if T1 is not None and percentile is not None:
+        pos = np.abs(eigenvalues)
+        pos = pos[pos > 0]
+        if len(pos) > 0:
+            log_evals = np.log(pos) + 100.0
+            chunk_prctile = float(np.percentile(log_evals, percentile))
+            threshold = float(np.exp(T1 * chunk_prctile - 100.0))
+        else:
+            threshold = threshold if threshold is not None else 1.0
+    elif threshold is None:
+        raise ValueError("Either (T1, percentile) or threshold must be provided.")
 
     eigvecs_filtered = eigenvectors.copy()
     signal_mask = np.abs(eigenvalues) < threshold
@@ -731,8 +823,10 @@ def _clean_continuous_dual_stream(
     sfreq: float,
     reference_cov: np.ndarray,
     epoch_duration: float,
-    threshold: float,
+    threshold: float | None = None,
     engine: str = "numpy",
+    T1: float | None = None,
+    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
 
@@ -756,7 +850,7 @@ def _clean_continuous_dual_stream(
     clean : np.ndarray, shape (n_channels, n_times)
     noise : np.ndarray, shape (n_channels, n_times)
     """
-    resolved_engine = resolve_engine(engine)
+    resolved_engine = ensure_engine(engine)
     n_ch, orig_len = data.shape
     epoch_samples = max(2, int(round(epoch_duration * sfreq)))
     if epoch_samples % 2 != 0:
@@ -796,13 +890,34 @@ def _clean_continuous_dual_stream(
 
     def _process_stream(stream):
         if resolved_engine == "torch":
-            return clean_continuous_stream_torch(stream, reference_cov, threshold, cw)
+            return clean_continuous_stream_torch(
+                stream,
+                reference_cov,
+                threshold=threshold,
+                cosine_weights=cw,
+                T1=T1,
+                percentile=percentile,
+            )
         n_ep = len(stream)
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
         noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
+
         for i in range(n_ep):
             ep = stream[i].astype(np.float64)
-            c = _process_single_epoch(ep, reference_cov, threshold)
+            if T1 is not None and percentile is not None:
+                c_ep = np.cov(ep)
+                evs = eigh(c_ep, reference_cov, eigvals_only=True, check_finite=True)
+                pos = np.abs(evs)
+                pos = pos[pos > 0]
+                if len(pos) > 0:
+                    log_evals = np.log(pos) + 100.0
+                    chunk_prctile = float(np.percentile(log_evals, percentile))
+                    eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
+                else:
+                    eff_thresh = threshold if threshold is not None else 1.0
+            else:
+                eff_thresh = threshold
+            c = _process_single_epoch(ep, reference_cov, eff_thresh)
             n = ep - c
             if i == 0:
                 c[:, half:] *= cw[half:]

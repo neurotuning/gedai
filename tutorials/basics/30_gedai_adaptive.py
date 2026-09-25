@@ -153,7 +153,7 @@ adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
 # Model Summary Table
 # -------------------
 # We can inspect the model fitting parameters and subband thresholds:
-adaptive_multiband_gedai.fit_summary()
+print(adaptive_multiband_gedai.summary)
 
 # %%
 # Quality Evaluation: Explained Noise Variance (ENOVA)

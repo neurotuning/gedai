@@ -1,9 +1,10 @@
-"""PyTorch CPU backend acceleration for pyGEDAI linear algebra operations."""
+"""PyTorch CPU backend acceleration for GEDAI linear algebra operations."""
 
 from __future__ import annotations
 
 import numpy as np
 
+from ._checks import ensure_engine
 from ._imports import import_optional_dependency
 
 
@@ -12,40 +13,8 @@ def has_torch() -> bool:
     return import_optional_dependency("torch", raise_error=False) is not None
 
 
-def resolve_engine(engine: str = "numpy") -> str:
-    """Validate and resolve backend engine ('numpy', 'torch', 'auto').
-
-    Parameters
-    ----------
-    engine : str
-        The requested computation engine ('numpy', 'torch', or 'auto').
-
-    Returns
-    -------
-    resolved : str
-        The resolved engine ('numpy' or 'torch').
-    """
-    if not isinstance(engine, str):
-        raise TypeError(f"engine must be a string, got {type(engine).__name__}")
-
-    engine_lower = engine.lower()
-    if engine_lower not in ("numpy", "torch", "auto"):
-        raise ValueError(
-            f"Invalid engine '{engine}'. Expected one of 'numpy', 'torch', or 'auto'."
-        )
-
-    if engine_lower == "auto":
-        return "torch" if has_torch() else "numpy"
-
-    if engine_lower == "torch":
-        if not has_torch():
-            raise ImportError(
-                "Missing optional dependency 'torch'. Use 'pip install torch' "
-                "or 'pip install gedai[torch]' to run with the PyTorch engine."
-            )
-        return "torch"
-
-    return "numpy"
+# Compatibility alias
+resolve_engine = ensure_engine
 
 
 def robust_cholesky_gevd(
@@ -171,7 +140,11 @@ def precompute_gevd_torch(
 
 
 def clean_epochs_batched_torch(
-    epochs_data: np.ndarray, reference_cov: np.ndarray, threshold: float
+    epochs_data: np.ndarray,
+    reference_cov: np.ndarray,
+    threshold: float | None = None,
+    T1: float | None = None,
+    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Process all epochs in a single batched tensor pass on PyTorch CPU.
 
@@ -181,8 +154,12 @@ def clean_epochs_batched_torch(
         Multi-channel epoch data.
     reference_cov : np.ndarray, shape (n_channels, n_channels)
         Regularized reference covariance matrix.
-    threshold : float
-        Eigenvalue threshold for artifact rejection.
+    threshold : float | None
+        Eigenvalue threshold for artifact rejection (static fallback).
+    T1 : float | None
+        Dimensionless scale factor: (105 - sensai_threshold) / 100.
+    percentile : float | None
+        Percentile for dynamic thresholding (e.g. 98 for EEG, 99 for MEG).
 
     Returns
     -------
@@ -202,8 +179,34 @@ def clean_epochs_batched_torch(
     # Batched GEVD
     evals, evecs = robust_cholesky_gevd(covs, b)
 
-    # Filter artifact eigenvectors: signal_mask zeroes out columns where |eval| < thresh
-    signal_mask = torch.abs(evals) < threshold  # shape (n_epochs, n_channels)
+    # Dynamic Per-Chunk Percentile Thresholding (matching MATLAB clean_EEG.m)
+    if T1 is not None and percentile is not None:
+        mags = torch.abs(evals)
+        fallback_thresh = torch.tensor(
+            threshold if threshold is not None else 1.0,
+            dtype=evals.dtype,
+            device=evals.device,
+        )
+        q = float(percentile) / 100.0
+        chunk_thresh = torch.empty(
+            evals.shape[0],
+            dtype=evals.dtype,
+            device=evals.device,
+        )
+        for i in range(evals.shape[0]):
+            pos_mags = mags[i][mags[i] > 0]
+            if pos_mags.numel() > 0:
+                log_evals = torch.log(pos_mags) + 100.0
+                chunk_log_prctile = torch.quantile(log_evals, q)
+                chunk_thresh[i] = torch.exp(T1 * chunk_log_prctile - 100.0)
+            else:
+                chunk_thresh[i] = fallback_thresh
+        signal_mask = mags < chunk_thresh.unsqueeze(1)
+    elif threshold is not None:
+        signal_mask = torch.abs(evals) < threshold
+    else:
+        raise ValueError("Either (T1, percentile) or threshold must be provided.")
+
     evecs_filtered = torch.where(
         signal_mask.unsqueeze(1), torch.zeros_like(evecs), evecs
     )
@@ -222,8 +225,10 @@ def clean_epochs_batched_torch(
 def clean_continuous_stream_torch(
     stream: np.ndarray,
     reference_cov: np.ndarray,
-    threshold: float,
-    cosine_weights: np.ndarray,
+    threshold: float | None = None,
+    cosine_weights: np.ndarray | None = None,
+    T1: float | None = None,
+    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean segmented continuous stream in PyTorch with cosine windowing.
 
@@ -232,7 +237,7 @@ def clean_continuous_stream_torch(
     stream : np.ndarray, shape (n_epochs, n_channels, epoch_samples)
     reference_cov : np.ndarray, shape (n_channels, n_channels)
     threshold : float
-    cosine_weights : np.ndarray, shape (epoch_samples,)
+    cosine_weights : np.ndarray | None, shape (epoch_samples,)
 
     Returns
     -------
@@ -244,10 +249,15 @@ def clean_continuous_stream_torch(
     n_ep, n_ch, epoch_samples = stream.shape
     half = epoch_samples // 2
 
-    clean, noise = clean_epochs_batched_torch(stream, reference_cov, threshold)
+    clean, noise = clean_epochs_batched_torch(
+        stream, reference_cov, threshold=threshold, T1=T1, percentile=percentile
+    )
 
     clean_t = torch.from_numpy(clean).to(torch.float64)
     noise_t = torch.from_numpy(noise).to(torch.float64)
+    if cosine_weights is None:
+        u = np.arange(1, epoch_samples + 1, dtype=np.float64)
+        cosine_weights = 0.5 - 0.5 * np.cos(2 * u * np.pi / epoch_samples)
     cw = torch.from_numpy(cosine_weights).to(torch.float64)
 
     if n_ep == 1:

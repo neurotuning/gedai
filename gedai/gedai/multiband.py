@@ -25,9 +25,9 @@ from ..utils._checks import (
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_engine,
 )
 from ..utils._docs import fill_doc
-from ..utils._torch_backend import resolve_engine
 from ..utils.logs import logger, verbose
 from ..wavelet.transform import (
     _apply_wavelet_highpass_prefilter,
@@ -36,7 +36,7 @@ from ..wavelet.transform import (
     epochs_to_wavelet,
     get_modwt_band_limits,
 )
-from .gedai import Gedai, _clean_continuous_dual_stream
+from .gedai import Gedai, _clean_continuous_dual_stream, _get_channel_multiplier
 
 
 def compute_required_duration(wavelet_level, sfreq):
@@ -62,7 +62,9 @@ def compute_required_duration(wavelet_level, sfreq):
     return duration
 
 
-def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
+def compute_closest_valid_duration(
+    target_duration, wavelet_level, sfreq, n_channels=None, n_times=None
+):
     """Compute the closest valid duration for a given wavelet level.
 
     For SWT to work at a given level, the signal length must be divisible by 2^level.
@@ -76,6 +78,10 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
         The desired wavelet decomposition level.
     sfreq : float
         The sampling frequency in Hz.
+    n_channels : int | None
+        Number of channels (to enforce at least 2*C samples).
+    n_times : int | None
+        Total number of time samples available.
 
     Returns
     -------
@@ -86,7 +92,14 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     """
     if wavelet_level == 0:
         # No constraint for level 0
-        return target_duration, int(target_duration * sfreq)
+        samples = int(target_duration * sfreq)
+        if n_channels is not None:
+            k_mult = _get_channel_multiplier()
+            min_samples = int(np.ceil(k_mult * n_channels))
+            if n_times is not None:
+                min_samples = min(min_samples, n_times)
+            samples = max(samples, min_samples)
+        return samples / sfreq, samples
 
     # Convert target duration to samples
     target_samples = int(target_duration * sfreq)
@@ -104,6 +117,15 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
 
     # Ensure we meet minimum length requirement (2^(level+1))
     min_samples = 2 ** (wavelet_level + 1)
+    if n_channels is not None:
+        k_mult = _get_channel_multiplier()
+        min_ch_samples = int(np.ceil(k_mult * n_channels))
+        if n_times is not None:
+            min_ch_samples = min(min_ch_samples, n_times)
+        min_samples = max(min_samples, min_ch_samples)
+        if min_samples % divisor != 0:
+            min_samples = ((min_samples // divisor) + 1) * divisor
+
     if valid_samples < min_samples:
         valid_samples = min_samples
 
@@ -157,8 +179,7 @@ class MultibandGedai:
         self.wavelet_type = wavelet_type
         self._wavelet_level = wavelet_level
         self.broadband_pass = broadband_pass
-        self.engine = engine
-        self._resolved_engine = resolve_engine(engine)
+        self.engine = ensure_engine(engine)
 
         self.fitted = False
         self._wavelet_low_cutoff = None
@@ -221,6 +242,7 @@ class MultibandGedai:
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Fit the GEDAI model to the epochs data.
 
@@ -237,9 +259,13 @@ class MultibandGedai:
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
@@ -275,7 +301,7 @@ class MultibandGedai:
             signal_type = _detect_signal_type(epochs_fit.info)
             bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
             logger.info("Running broadband GEDAI pre-cleaning pass on epochs...")
-            broadband_model = Gedai(engine=self.engine)
+            broadband_model = Gedai(engine=current_engine)
             broadband_model.fit_epochs(
                 epochs_fit,
                 picks="all",
@@ -338,7 +364,7 @@ class MultibandGedai:
                     verbose=False,
                 )
 
-                model = Gedai(engine=self.engine)
+                model = Gedai(engine=current_engine)
                 model.fit_epochs(
                     wavelet_epochs,
                     picks="all",
@@ -402,6 +428,7 @@ class MultibandGedai:
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -421,10 +448,14 @@ class MultibandGedai:
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
         """
         self._check_unfitted()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(overlap, (float, int), "overlap")
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
@@ -462,7 +493,11 @@ class MultibandGedai:
         self._actual_wavelet_level = actual_wavelet_level
 
         valid_duration, valid_samples = compute_closest_valid_duration(
-            duration, actual_wavelet_level, sfreq
+            duration,
+            actual_wavelet_level,
+            sfreq,
+            n_channels=len(raw_fit.ch_names),
+            n_times=raw_fit.n_times,
         )
         if valid_duration != duration:
             logger.warning(
@@ -482,9 +517,12 @@ class MultibandGedai:
                 "broadband GEDAI pass..."
             )
             raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff, engine=self.engine
+                raw_fit._data,
+                sfreq,
+                lowcut_hz=wavelet_low_cutoff,
+                engine=current_engine,
             )
-            broadband_model = Gedai(engine=self.engine)
+            broadband_model = Gedai(engine=current_engine)
             broadband_model.fit_raw(
                 raw_fit,
                 picks="all",
@@ -532,6 +570,7 @@ class MultibandGedai:
                     noise_multiplier,
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
+                    engine=current_engine,
                 )
                 for item in items
             ]
@@ -551,6 +590,7 @@ class MultibandGedai:
                     noise_multiplier,
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
+                    engine=current_engine,
                 )
                 for item in items
             )
@@ -587,8 +627,10 @@ class MultibandGedai:
         noise_multiplier,
         sensai_tol=0.1,
         n_pc="auto",
+        engine=None,
     ):
         """Fit a single wavelet band model."""
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         w, (fmin, fmax) = item
         if fmax <= wavelet_low_cutoff:
             return {
@@ -604,7 +646,7 @@ class MultibandGedai:
             }
 
         band_data = _modwt_haar_single_band(
-            raw_data_fit.T, actual_wavelet_level, w, engine=self.engine
+            raw_data_fit.T, actual_wavelet_level, w, engine=current_engine
         )
         if n_ep > 0:
             band_epochs_data = (
@@ -629,7 +671,7 @@ class MultibandGedai:
         max_thresh = 8.0 if signal_type == "meg" else 12.0
         band_bounds = (min_thresh, max_thresh)
 
-        model = Gedai(engine=self.engine)
+        model = Gedai(engine=current_engine)
         model.fit_epochs(
             wavelet_epochs,
             picks="all",
@@ -661,7 +703,11 @@ class MultibandGedai:
     @fill_doc
     @verbose
     def transform_epochs(
-        self, epochs: BaseEpochs, n_jobs: int = None, verbose: str | None = None
+        self,
+        epochs: BaseEpochs,
+        n_jobs: int = None,
+        verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Transform epochs data using the fitted model.
 
@@ -671,6 +717,9 @@ class MultibandGedai:
             The epochs to transform.
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -684,9 +733,10 @@ class MultibandGedai:
         _check_fit_info(self, epochs)
         epochs_transform = _prepare_epochs_transform(epochs, self.ch_names)
 
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         if self.broadband_pass and self._broadband_model is not None:
             epochs_input = self._broadband_model.transform_epochs(
-                epochs_transform, n_jobs=n_jobs, verbose=False
+                epochs_transform, n_jobs=n_jobs, verbose=False, engine=current_engine
             )
         else:
             epochs_input = epochs_transform
@@ -728,6 +778,7 @@ class MultibandGedai:
                 wavelet_epochs,
                 n_jobs=n_jobs,
                 verbose=verbose,
+                engine=current_engine,
             )
             cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_wavelet_epochs.get_data(
                 verbose=False
@@ -765,6 +816,7 @@ class MultibandGedai:
         overlap: float = 0.5,
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Transform raw data using the fitted model.
 
@@ -775,6 +827,9 @@ class MultibandGedai:
         %(overlap)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -789,13 +844,14 @@ class MultibandGedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
         sfreq = raw_transform.info["sfreq"]
 
         # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
         raw_transform._data = _apply_wavelet_highpass_prefilter(
-            raw_transform._data, sfreq, lowcut_hz=0.1
+            raw_transform._data, sfreq, lowcut_hz=0.1, engine=current_engine
         )
 
         # Broadband pre-cleaning if model was fitted with broadband_pass
@@ -804,9 +860,14 @@ class MultibandGedai:
                 raw_transform._data,
                 sfreq,
                 lowcut_hz=self._wavelet_low_cutoff,
+                engine=current_engine,
             )
             raw_input = self._broadband_model.transform_raw(
-                raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False
+                raw_transform,
+                overlap=overlap,
+                n_jobs=n_jobs,
+                verbose=False,
+                engine=current_engine,
             )
         else:
             raw_input = raw_transform
@@ -819,12 +880,20 @@ class MultibandGedai:
 
         if n_jobs == 1 or len(self._wavelets_fits) <= 1:
             band_results = [
-                self._transform_wavelet_band(wf, raw_data, sfreq, actual_level)
+                self._transform_wavelet_band(
+                    wf,
+                    raw_data,
+                    sfreq,
+                    actual_level,
+                    engine=current_engine,
+                )
                 for wf in self._wavelets_fits
             ]
         else:
             band_results = Parallel(n_jobs=n_jobs, prefer="threads")(
-                delayed(self._transform_wavelet_band)(wf, raw_data, sfreq, actual_level)
+                delayed(self._transform_wavelet_band)(
+                    wf, raw_data, sfreq, actual_level, engine=current_engine
+                )
                 for wf in self._wavelets_fits
             )
 
@@ -841,8 +910,11 @@ class MultibandGedai:
 
         return raw_transform
 
-    def _transform_wavelet_band(self, wavelet_fit, raw_data, sfreq, actual_level):
+    def _transform_wavelet_band(
+        self, wavelet_fit, raw_data, sfreq, actual_level, engine=None
+    ):
         """Transform one wavelet band using continuous MODWT cleaning."""
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         band_idx = wavelet_fit["band_index"]
         ignore = wavelet_fit["ignore"]
 
@@ -850,7 +922,7 @@ class MultibandGedai:
             return np.zeros_like(raw_data), 0.0, 0.0
 
         band_data = _modwt_haar_single_band(
-            raw_data.T, actual_level, band_idx, engine=self.engine
+            raw_data.T, actual_level, band_idx, engine=current_engine
         )
         threshold = wavelet_fit["model"].threshold
         epoch_duration = wavelet_fit.get("duration", 1.0)
@@ -862,13 +934,26 @@ class MultibandGedai:
             if wavelet_fit["model"] is not None
             else self._reference_cov.data
         )
+        model = wavelet_fit.get("model")
+        T1 = (
+            model._fit.get("T1")
+            if model is not None and hasattr(model, "_fit")
+            else None
+        )
+        percentile = (
+            model._fit.get("percentile")
+            if model is not None and hasattr(model, "_fit")
+            else (99 if self._signal_type == "meg" else 98)
+        )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,
             sfreq=sfreq,
             reference_cov=band_ref_cov,
             epoch_duration=epoch_duration,
             threshold=threshold,
-            engine=getattr(self, "engine", "auto"),
+            engine=current_engine,
+            T1=T1,
+            percentile=percentile,
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(
@@ -912,8 +997,9 @@ class MultibandGedai:
         self._check_fit()
         return self._reference_cov.ch_names
 
-    def fit_summary(self) -> str:
-        """Print and return a formatted summary table of the model fitting metrics.
+    @property
+    def summary(self) -> str:
+        """Formatted ASCII summary table of the model fitting metrics.
 
         Returns
         -------
@@ -924,7 +1010,15 @@ class MultibandGedai:
         table_str = _format_summary_table(self)
         return table_str
 
-    summary = fit_summary
+    def fit_summary(self) -> str:
+        """Compatibility wrapper for the fitted-model summary.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
+        return self.summary
 
     def plot_sensai(
         self,

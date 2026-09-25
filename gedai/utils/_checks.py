@@ -359,3 +359,43 @@ def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
 
 
 _parse_noise_multiplier = _ensure_noise_multiplier
+
+
+def ensure_engine(engine: str = "numpy") -> str:
+    """Validate and resolve backend engine ('numpy', 'torch', 'auto').
+
+    Parameters
+    ----------
+    engine : str
+        The requested computation engine ('numpy', 'torch', or 'auto').
+
+    Returns
+    -------
+    resolved : str
+        The resolved engine ('numpy' or 'torch').
+    """
+    from ._imports import import_optional_dependency
+
+    if not isinstance(engine, str):
+        raise TypeError(f"engine must be a string, got {type(engine).__name__}")
+
+    engine_lower = engine.lower()
+    if engine_lower not in ("numpy", "torch", "auto"):
+        raise ValueError(
+            f"Invalid engine '{engine}'. Expected one of 'numpy', 'torch', or 'auto'."
+        )
+
+    has_torch = import_optional_dependency("torch", raise_error=False) is not None
+    if engine_lower == "auto":
+        return "torch" if has_torch else "numpy"
+
+    if engine_lower == "torch":
+        if not has_torch:
+            raise ImportError(
+                "Missing optional dependency 'torch'. Use 'pip install torch' "
+                "or 'pip install gedai[torch]' to run with the PyTorch engine."
+            )
+        return "torch"
+
+    return "numpy"
+

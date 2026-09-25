@@ -4,6 +4,7 @@ import mne
 import numpy as np
 import pytest
 
+import gedai.gedai.adaptive as adaptive_module
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.gedai.adaptive import AdaptiveMultibandGedai
 
@@ -63,7 +64,8 @@ def test_gedai_multiband_adaptive_auto_level_and_metrics():
     assert model._actual_wavelet_level >= 6
     assert model.fit_metrics_ is not None
     assert "sensai_score" in model.fit_metrics_
-    assert isinstance(model.fit_summary(), str)
+    assert isinstance(model.summary, str)
+    assert model.fit_summary() == model.summary
 
     transformed_raw = model.transform_raw(raw_eeg, n_jobs=1)
     assert transformed_raw.get_data().shape[0] == 6
@@ -105,3 +107,29 @@ def test_adaptive_fit_transform_cache_compatibility():
     np.testing.assert_allclose(
         clean_cached.get_data(), clean_uncached.get_data(), rtol=1e-10, atol=1e-10
     )
+
+
+def test_adaptive_fit_raw_engine_override_reaches_prefilter(monkeypatch):
+    """Explicit fit-time engine overrides should reach adaptive preprocessing."""
+    calls = []
+    original = adaptive_module._apply_wavelet_highpass_prefilter
+
+    def spy(data, sfreq, lowcut_hz=0.5, engine="auto"):
+        calls.append(engine)
+        return original(data, sfreq, lowcut_hz=lowcut_hz, engine=engine)
+
+    monkeypatch.setattr(adaptive_module, "_apply_wavelet_highpass_prefilter", spy)
+
+    model = AdaptiveMultibandGedai(
+        wavelet_type="haar", wavelet_level=1, broadband_pass=True
+    )
+    model.fit_raw(
+        raw_eeg.copy().pick(raw_eeg.ch_names[:4]),
+        picks="all",
+        n_jobs=1,
+        verbose=False,
+        engine="numpy",
+    )
+
+    assert calls
+    assert all(engine == "numpy" for engine in calls)
