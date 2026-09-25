@@ -470,7 +470,7 @@ class Gedai:
 
         resolved_engine = ensure_engine(engine) if engine is not None else self.engine
         T1 = self._fit.get("T1")
-        percentile = self._percentile
+        percentile = self._fit.get("percentile", self._percentile)
         if resolved_engine == "torch":
             cleaned_epochs_data, _ = clean_epochs_batched_torch(
                 data,
@@ -576,7 +576,7 @@ class Gedai:
 
         # Fast dual-stream continuous broadband cleaning
         T1 = self._fit.get("T1")
-        percentile = self._percentile
+        percentile = self._fit.get("percentile", self._percentile)
         clean_data, _ = _clean_continuous_dual_stream(
             raw_data,
             sfreq=sfreq,

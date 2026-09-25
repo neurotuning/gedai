@@ -925,8 +925,8 @@ class MultibandGedai:
             else None
         )
         percentile = (
-            model._percentile
-            if model is not None and hasattr(model, "_percentile")
+            model._fit.get("percentile")
+            if model is not None and hasattr(model, "_fit")
             else (99 if self._signal_type == "meg" else 98)
         )
         clean_band, noise_band = _clean_continuous_dual_stream(

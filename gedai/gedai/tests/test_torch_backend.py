@@ -356,6 +356,7 @@ def test_engine_per_call_and_transform_override():
     )
     raw = mne.io.RawArray(rng.standard_normal((n_ch, n_times)), info)
     custom_cov = mne.Covariance(np.eye(n_ch), raw.ch_names, [], [], 0)
+    epochs = mne.make_fixed_length_epochs(raw.copy(), duration=1.0, preload=True)
 
     # Calling fit_raw with engine='torch' should NOT mutate g.engine
     g.fit_raw(
@@ -371,3 +372,18 @@ def test_engine_per_call_and_transform_override():
     transformed = g.transform_raw(raw.copy(), engine="torch", verbose=False)
     assert g.engine == "numpy"
     assert transformed.get_data().shape == raw.get_data().shape
+
+    g_epochs = Gedai(engine="numpy")
+    g_epochs.fit_epochs(
+        epochs.copy(),
+        reference_cov=custom_cov,
+        engine="torch",
+        verbose=False,
+    )
+    transformed_epochs = g_epochs.transform_epochs(
+        epochs.copy(),
+        engine="torch",
+        verbose=False,
+    )
+    assert g_epochs.engine == "numpy"
+    assert transformed_epochs.get_data().shape == epochs.get_data().shape

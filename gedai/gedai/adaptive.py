@@ -512,7 +512,6 @@ class AdaptiveMultibandGedai:
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         n_jobs = _check_n_jobs(n_jobs)
 
-        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_fit_info(self, raw)
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
         sfreq = raw_transform.info["sfreq"]
@@ -627,8 +626,8 @@ class AdaptiveMultibandGedai:
             else None
         )
         percentile = (
-            model._percentile
-            if model is not None and hasattr(model, "_percentile")
+            model._fit.get("percentile")
+            if model is not None and hasattr(model, "_fit")
             else (99 if self._signal_type == "meg" else 98)
         )
         clean_band, noise_band = _clean_continuous_dual_stream(
