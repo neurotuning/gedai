@@ -360,6 +360,7 @@ def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
 
 _parse_noise_multiplier = _ensure_noise_multiplier
 
+
 def ensure_engine(engine: str = "numpy") -> str:
     """Validate and resolve backend engine ('numpy', 'torch', 'auto').
 
