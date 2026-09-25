@@ -769,6 +769,7 @@ class MultibandGedai:
                 wavelet_epochs,
                 n_jobs=n_jobs,
                 verbose=verbose,
+                engine=current_engine,
             )
             cleaned_epochs_wavelet[:, :, band_idx, :] = cleaned_wavelet_epochs.get_data(
                 verbose=False
@@ -847,6 +848,7 @@ class MultibandGedai:
                 raw_transform._data,
                 sfreq,
                 lowcut_hz=self._wavelet_low_cutoff,
+                engine=current_engine,
             )
             raw_input = self._broadband_model.transform_raw(
                 raw_transform,
@@ -877,7 +879,9 @@ class MultibandGedai:
             ]
         else:
             band_results = Parallel(n_jobs=n_jobs, prefer="threads")(
-                delayed(self._transform_wavelet_band)(wf, raw_data, sfreq, actual_level)
+                delayed(self._transform_wavelet_band)(
+                    wf, raw_data, sfreq, actual_level, engine=current_engine
+                )
                 for wf in self._wavelets_fits
             )
 

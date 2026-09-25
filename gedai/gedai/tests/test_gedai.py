@@ -1,9 +1,11 @@
 """Test Gedai."""
 
 import mne
+import numpy as np
 import pytest
 from mne import make_fixed_length_epochs
 
+import gedai.gedai.gedai as gedai_module
 from gedai import Gedai, MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.gedai.gedai import _get_channel_multiplier
@@ -119,8 +121,6 @@ def test_multiband_broadband_pass_forwards_n_pc():
 
 def test_gedai_average_reference_not_reapplied():
     """Ensure data already average-referenced is not modified again."""
-    import numpy as np
-
     from gedai.gedai._utils import (
         _check_average_reference,
         _prepare_epochs_fit,
@@ -139,3 +139,73 @@ def test_gedai_average_reference_not_reapplied():
 
     epochs_fit = _prepare_epochs_fit(epochs, picks="eeg")
     assert np.allclose(epochs.get_data(), epochs_fit.get_data(), atol=1e-12)
+
+
+def test_gedai_raw_engine_override_reaches_prefilter(monkeypatch):
+    """Explicit raw engine overrides should be forwarded to the prefilter."""
+    rng = np.random.RandomState(0)
+    ch_names = [f"EEG{i:03d}" for i in range(4)]
+    info = mne.create_info(ch_names=ch_names, sfreq=100.0, ch_types="eeg")
+    raw = mne.io.RawArray(rng.randn(4, 400), info, verbose=False)
+    cov = mne.Covariance(np.eye(4), ch_names, [], [], 0)
+    calls = []
+    original = gedai_module._apply_wavelet_highpass_prefilter
+
+    def spy(data, sfreq, lowcut_hz=0.5, engine="auto"):
+        calls.append(engine)
+        return original(data, sfreq, lowcut_hz=lowcut_hz, engine=engine)
+
+    monkeypatch.setattr(gedai_module, "_apply_wavelet_highpass_prefilter", spy)
+
+    model = Gedai()
+    model.fit_raw(
+        raw.copy(),
+        duration=1.0,
+        reference_cov=cov,
+        sensai_method="optimize",
+        verbose=False,
+        engine="numpy",
+    )
+    model.transform_raw(raw.copy(), verbose=False, engine="numpy")
+
+    assert calls
+    assert all(engine == "numpy" for engine in calls)
+
+
+def test_gedai_transform_epochs_forwards_dynamic_threshold_parameters(monkeypatch):
+    """NumPy epoch cleaning should receive fitted dynamic-threshold parameters."""
+    rng = np.random.RandomState(0)
+    data = rng.randn(3, 4, 100)
+    ch_names = [f"EEG{i:03d}" for i in range(4)]
+    info = mne.create_info(ch_names=ch_names, sfreq=100.0, ch_types="eeg")
+    epochs = mne.EpochsArray(data, info, verbose=False)
+    cov = mne.Covariance(np.eye(4), ch_names, [], [], 0)
+    calls = []
+    original = gedai_module._process_single_epoch
+
+    def spy(epoch_data, reference_cov, threshold=None, T1=None, percentile=None):
+        calls.append((T1, percentile))
+        return original(
+            epoch_data,
+            reference_cov,
+            threshold=threshold,
+            T1=T1,
+            percentile=percentile,
+        )
+
+    model = Gedai(engine="numpy")
+    model.fit_epochs(
+        epochs.copy(),
+        reference_cov=cov,
+        sensai_method="optimize",
+        verbose=False,
+    )
+    model._fit["T1"] = 1.02
+    model._fit["percentile"] = 97
+    model._percentile = 97
+
+    monkeypatch.setattr(gedai_module, "_process_single_epoch", spy)
+
+    model.transform_epochs(epochs.copy(), n_jobs=1, verbose=False, engine="numpy")
+
+    assert calls == [(1.02, 97)] * len(data)

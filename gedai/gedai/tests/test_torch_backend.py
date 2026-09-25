@@ -10,6 +10,7 @@ from gedai.gedai.multiband import MultibandGedai
 from gedai.sensai.sensai import _precompute_gevd
 from gedai.utils._torch_backend import (
     batched_gevd_cholesky,
+    clean_continuous_stream_torch,
     gevd_torch,
     has_torch,
     resolve_engine,
@@ -139,6 +140,31 @@ def test_precompute_gevd_torch_parity():
     eval_pt, _ = _precompute_gevd(epochs_data, ref_cov, engine="torch")
 
     np.testing.assert_allclose(eval_pt, eval_np, atol=1e-12)
+
+
+def test_clean_continuous_stream_torch_defaults_cosine_weights():
+    """Missing cosine weights should fall back to the default cosine window."""
+    rng = np.random.RandomState(42)
+    stream = rng.randn(3, 4, 10)
+    reference_cov = np.cov(rng.randn(4, 80)) + 0.1 * np.eye(4)
+    threshold = 1.2
+    u = np.arange(1, stream.shape[-1] + 1, dtype=np.float64)
+    cosine_weights = 0.5 - 0.5 * np.cos(2 * u * np.pi / stream.shape[-1])
+
+    clean_default, noise_default = clean_continuous_stream_torch(
+        stream,
+        reference_cov,
+        threshold=threshold,
+    )
+    clean_explicit, noise_explicit = clean_continuous_stream_torch(
+        stream,
+        reference_cov,
+        threshold=threshold,
+        cosine_weights=cosine_weights,
+    )
+
+    np.testing.assert_allclose(clean_default, clean_explicit, atol=1e-12)
+    np.testing.assert_allclose(noise_default, noise_explicit, atol=1e-12)
 
 
 def test_gedai_fit_transform_epochs_torch_parity():

@@ -152,3 +152,45 @@ def test_multiband_broadband_pass():
 
     transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
     assert transformed.get_data().shape[1] == len(picks)
+
+
+def test_multiband_engine_override_reaches_band_transforms(monkeypatch):
+    """Explicit engine overrides should reach per-band epoch and raw transforms."""
+    picks = epochs_eeg.ch_names[:4]
+    model = MultibandGedai(wavelet_type="haar", wavelet_level=1)
+    model.fit_epochs(epochs_eeg, picks=picks, n_jobs=1, verbose=False)
+
+    epoch_calls = []
+    for wavelet_fit in model._wavelets_fits:
+        if wavelet_fit["ignore"] or wavelet_fit["model"] is None:
+            continue
+        original = wavelet_fit["model"].transform_epochs
+
+        def spy(*args, _original=original, engine=None, **kwargs):
+            epoch_calls.append(engine)
+            return _original(*args, engine=engine, **kwargs)
+
+        wavelet_fit["model"].transform_epochs = spy
+
+    transformed_epochs = model.transform_epochs(
+        epochs_eeg, n_jobs=1, verbose=False, engine="numpy"
+    )
+    assert transformed_epochs.get_data().shape[1] == len(picks)
+    assert epoch_calls
+    assert all(engine == "numpy" for engine in epoch_calls)
+
+    raw_calls = []
+    original_band = model._transform_wavelet_band
+
+    def raw_spy(*args, engine=None, **kwargs):
+        raw_calls.append(engine)
+        return original_band(*args, engine=engine, **kwargs)
+
+    monkeypatch.setattr(model, "_transform_wavelet_band", raw_spy)
+
+    transformed_raw = model.transform_raw(
+        raw_eeg.copy().pick(picks), n_jobs=2, verbose=False, engine="numpy"
+    )
+    assert transformed_raw.get_data().shape[0] == len(picks)
+    assert raw_calls
+    assert all(engine == "numpy" for engine in raw_calls)

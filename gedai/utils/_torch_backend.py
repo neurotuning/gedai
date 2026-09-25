@@ -237,7 +237,7 @@ def clean_continuous_stream_torch(
     stream : np.ndarray, shape (n_epochs, n_channels, epoch_samples)
     reference_cov : np.ndarray, shape (n_channels, n_channels)
     threshold : float
-    cosine_weights : np.ndarray, shape (epoch_samples,)
+    cosine_weights : np.ndarray | None, shape (epoch_samples,)
 
     Returns
     -------
@@ -255,6 +255,9 @@ def clean_continuous_stream_torch(
 
     clean_t = torch.from_numpy(clean).to(torch.float64)
     noise_t = torch.from_numpy(noise).to(torch.float64)
+    if cosine_weights is None:
+        u = np.arange(1, epoch_samples + 1, dtype=np.float64)
+        cosine_weights = 0.5 - 0.5 * np.cos(2 * u * np.pi / epoch_samples)
     cw = torch.from_numpy(cosine_weights).to(torch.float64)
 
     if n_ep == 1:

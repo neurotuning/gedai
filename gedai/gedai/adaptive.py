@@ -244,7 +244,7 @@ class AdaptiveMultibandGedai:
 
         # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
         raw_fit._data = _apply_wavelet_highpass_prefilter(
-            raw_fit._data, sfreq, lowcut_hz=0.1
+            raw_fit._data, sfreq, lowcut_hz=0.1, engine=current_engine
         )
 
         cov = _pick_cov(reference_cov, raw_fit.info)

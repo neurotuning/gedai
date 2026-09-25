@@ -392,7 +392,10 @@ class Gedai:
                 or raw_fit.info["highpass"] < highpass_prefilter
             ):
                 raw_fit._data = _apply_wavelet_highpass_prefilter(
-                    raw_fit._data, raw_fit.info["sfreq"], lowcut_hz=highpass_prefilter
+                    raw_fit._data,
+                    raw_fit.info["sfreq"],
+                    lowcut_hz=highpass_prefilter,
+                    engine=current_engine,
                 )
         self._highpass_prefilter = highpass_prefilter
 
@@ -484,14 +487,25 @@ class Gedai:
         elif n_jobs == 1:
             for e, epoch_data in enumerate(data):
                 cleaned_epochs_data[e] = _process_single_epoch(
-                    epoch_data, reference_cov, threshold
+                    epoch_data,
+                    reference_cov,
+                    threshold=threshold,
+                    T1=T1,
+                    percentile=percentile,
                 )
         else:
             parallel, p_fun, _ = parallel_func(
                 _process_single_epoch, n_jobs, total=len(data), verbose=verbose
             )
             cleaned_epochs_list = parallel(
-                p_fun(epoch_data, reference_cov, threshold) for epoch_data in data
+                p_fun(
+                    epoch_data,
+                    reference_cov,
+                    threshold=threshold,
+                    T1=T1,
+                    percentile=percentile,
+                )
+                for epoch_data in data
             )
             cleaned_epochs_data = np.array(cleaned_epochs_list)
 
@@ -551,6 +565,7 @@ class Gedai:
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
         n_jobs = _check_n_jobs(n_jobs)
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
 
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
@@ -570,6 +585,7 @@ class Gedai:
                     raw_transform._data,
                     raw_transform.info["sfreq"],
                     lowcut_hz=self._highpass_prefilter,
+                    engine=current_engine,
                 )
 
         raw_data = raw_transform.get_data(verbose=False)
@@ -587,7 +603,7 @@ class Gedai:
             if hasattr(self, "_duration") and self._duration > 0
             else 1.0,
             threshold=threshold,
-            engine=ensure_engine(engine) if engine is not None else self.engine,
+            engine=current_engine,
             T1=T1,
             percentile=percentile,
         )
@@ -744,7 +760,13 @@ class Gedai:
         return f"<{self.__class__.__name__} ({status}{metrics_info})>"
 
 
-def _process_single_epoch(epoch_data, reference_cov, threshold):
+def _process_single_epoch(
+    epoch_data,
+    reference_cov,
+    threshold=None,
+    T1=None,
+    percentile=None,
+):
     """Process a single epoch for cleaning using direct reference covariance projection.
 
     Parameters
@@ -763,6 +785,18 @@ def _process_single_epoch(epoch_data, reference_cov, threshold):
     """
     covariance = np.cov(epoch_data)
     eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+
+    if T1 is not None and percentile is not None:
+        pos = np.abs(eigenvalues)
+        pos = pos[pos > 0]
+        if len(pos) > 0:
+            log_evals = np.log(pos) + 100.0
+            chunk_prctile = float(np.percentile(log_evals, percentile))
+            threshold = float(np.exp(T1 * chunk_prctile - 100.0))
+        else:
+            threshold = threshold if threshold is not None else 1.0
+    elif threshold is None:
+        raise ValueError("Either (T1, percentile) or threshold must be provided.")
 
     eigvecs_filtered = eigenvectors.copy()
     signal_mask = np.abs(eigenvalues) < threshold
