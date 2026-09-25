@@ -42,4 +42,4 @@ Authors
 -------
 
 * `Tomas Ros`_
-* `Victor FAcrat`_
+* `Victor Férat`_
