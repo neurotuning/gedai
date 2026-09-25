@@ -75,7 +75,7 @@ def _get_channel_multiplier() -> float:
 class Gedai:
     """Generalized Eigenvalue De-Artifacting Instrument.
 
-    See :footcite:`deCheveigne2018`.
+    See :footcite:`Ros2025`.
 
     Parameters
     ----------
