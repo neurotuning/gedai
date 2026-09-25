@@ -64,11 +64,11 @@ def _check_sensai_method(sensai_method):
 
 
 def _get_channel_multiplier() -> float:
-    """Return the channel sample constraint multiplier (default 2.0)."""
+    """Return the channel sample constraint multiplier (default 1.0)."""
     try:
-        return float(os.environ.get("PYGEDAI_CHANNEL_MULTIPLIER", "2.0"))
+        return float(os.environ.get("PYGEDAI_CHANNEL_MULTIPLIER", "1.0"))
     except (ValueError, TypeError):
-        return 2.0
+        return 1.0
 
 
 @fill_doc
