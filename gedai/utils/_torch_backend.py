@@ -1,4 +1,4 @@
-"""PyTorch CPU backend acceleration for pyGEDAI linear algebra operations."""
+"""PyTorch CPU backend acceleration for GEDAI linear algebra operations."""
 
 from __future__ import annotations
 

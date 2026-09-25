@@ -22,7 +22,7 @@ Enhancements
 
 - Implement dynamic per-chunk percentile thresholding in continuous dual-stream deartifacting (matching MATLAB ``clean_EEG.m``), computing eigenvalue thresholds dynamically per epoch via ``exp(T1 * prctile(log(|lambda|), percentile) - 100)`` in both NumPy and PyTorch backends (`Tomas Ros`_).
 - Add configurable channel sample constraint multiplier (default ``k = 1.0``) enforcing minimum chunk sample duration ``min_samples = max(2^J, k * n_channels)`` to guarantee full rank of sample covariance matrices on high-density channel arrays (`Tomas Ros`_).
-- Support ``PYGEDAI_CHANNEL_MULTIPLIER`` environment variable to tune or disable channel multiplier constraints on demand (`Tomas Ros`_).
+- Support ``GEDAI_CHANNEL_MULTIPLIER`` environment variable to tune or disable channel multiplier constraints on demand (`Tomas Ros`_).
 - Optimize adaptive MEG Gradiometer artifact subspace projection with restored artifact spectrum prescan, selecting optimal spatial component dimensionality (`Tomas Ros`_).
 - Improve ENOVA calculation robustness across channels by computing temporal variance per channel before averaging, providing invariance to inter-channel DC sensor offsets (`Tomas Ros`_).
 - Add decimal precision formatting for SENSAI and ENOVA metrics in :func:`~gedai.viz.sensai_viz.plot_sensai_visualization` (`Tomas Ros`_).
