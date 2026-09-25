@@ -22,10 +22,10 @@ from ..metrics.enova import (
     compute_enova_per_epoch,
 )
 from ..utils._checks import (
-    ensure_engine,
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_engine,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
@@ -511,7 +511,10 @@ class MultibandGedai:
                 "broadband GEDAI pass..."
             )
             raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data, sfreq, lowcut_hz=wavelet_low_cutoff, engine=current_engine
+                raw_fit._data,
+                sfreq,
+                lowcut_hz=wavelet_low_cutoff,
+                engine=current_engine,
             )
             broadband_model = Gedai(engine=current_engine)
             broadband_model.fit_raw(
@@ -846,7 +849,11 @@ class MultibandGedai:
                 lowcut_hz=self._wavelet_low_cutoff,
             )
             raw_input = self._broadband_model.transform_raw(
-                raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False, engine=current_engine
+                raw_transform,
+                overlap=overlap,
+                n_jobs=n_jobs,
+                verbose=False,
+                engine=current_engine,
             )
         else:
             raw_input = raw_transform
@@ -859,7 +866,13 @@ class MultibandGedai:
 
         if n_jobs == 1 or len(self._wavelets_fits) <= 1:
             band_results = [
-                self._transform_wavelet_band(wf, raw_data, sfreq, actual_level, engine=current_engine)
+                self._transform_wavelet_band(
+                    wf,
+                    raw_data,
+                    sfreq,
+                    actual_level,
+                    engine=current_engine,
+                )
                 for wf in self._wavelets_fits
             ]
         else:
@@ -881,7 +894,9 @@ class MultibandGedai:
 
         return raw_transform
 
-    def _transform_wavelet_band(self, wavelet_fit, raw_data, sfreq, actual_level, engine=None):
+    def _transform_wavelet_band(
+        self, wavelet_fit, raw_data, sfreq, actual_level, engine=None
+    ):
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         """Transform one wavelet band using continuous MODWT cleaning."""
         band_idx = wavelet_fit["band_index"]
@@ -904,7 +919,11 @@ class MultibandGedai:
             else self._reference_cov.data
         )
         model = wavelet_fit.get("model")
-        T1 = model._fit.get("T1") if model is not None and hasattr(model, "_fit") else None
+        T1 = (
+            model._fit.get("T1")
+            if model is not None and hasattr(model, "_fit")
+            else None
+        )
         percentile = (
             model._percentile
             if model is not None and hasattr(model, "_percentile")

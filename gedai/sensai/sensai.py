@@ -2,8 +2,7 @@ import numpy as np
 from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
 
-from ..utils._checks import ensure_int
-from ..utils._checks import ensure_engine
+from ..utils._checks import ensure_engine, ensure_int
 from ..utils._torch_backend import precompute_gevd_torch
 
 

@@ -61,6 +61,6 @@ def test_enova_dc_offset_invariance():
 
     enova_dc = compute_enova_per_epoch(clean, noise_with_dc, epoch_samples)
 
-    # ENOVA should be virtually identical because temporal variance ignores static channel means
+    # ENOVA should be virtually identical because temporal variance
+    # ignores static channel means.
     np.testing.assert_allclose(enova_dc, enova_baseline, rtol=1e-5)
-

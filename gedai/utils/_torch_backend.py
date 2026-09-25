@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
+from ._checks import ensure_engine
 from ._imports import import_optional_dependency
 
 
@@ -11,8 +12,6 @@ def has_torch() -> bool:
     """Check if PyTorch is installed and importable."""
     return import_optional_dependency("torch", raise_error=False) is not None
 
-
-from ._checks import ensure_engine
 
 # Compatibility alias
 resolve_engine = ensure_engine

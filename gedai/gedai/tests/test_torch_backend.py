@@ -8,7 +8,6 @@ from gedai.gedai.decompose import _clean_epochs
 from gedai.gedai.gedai import Gedai
 from gedai.gedai.multiband import MultibandGedai
 from gedai.sensai.sensai import _precompute_gevd
-from gedai.utils._checks import ensure_engine
 from gedai.utils._torch_backend import (
     batched_gevd_cholesky,
     gevd_torch,
@@ -341,24 +340,34 @@ def test_sensai_tol_parameter():
     with pytest.raises(ValueError, match="sensai_tol must be > 0"):
         g.fit_raw(raw.copy(), reference_cov=cov, sensai_tol=-0.5)
 
+
 def test_engine_per_call_and_transform_override():
-    """Verify engine parameter overrides current call without mutating estimator state."""
+    """Verify per-call engine overrides do not mutate estimator state."""
     g = Gedai(engine="numpy")
     assert g.engine == "numpy"
 
     rng = np.random.default_rng(42)
     n_ch, n_times = 4, 800
     sfreq = 100.0
-    info = mne.create_info([f"EEG{i:03d}" for i in range(n_ch)], sfreq=sfreq, ch_types="eeg")
+    info = mne.create_info(
+        [f"EEG{i:03d}" for i in range(n_ch)],
+        sfreq=sfreq,
+        ch_types="eeg",
+    )
     raw = mne.io.RawArray(rng.standard_normal((n_ch, n_times)), info)
     custom_cov = mne.Covariance(np.eye(n_ch), raw.ch_names, [], [], 0)
 
     # Calling fit_raw with engine='torch' should NOT mutate g.engine
-    g.fit_raw(raw.copy(), reference_cov=custom_cov, duration=1.0, engine="torch", verbose=False)
+    g.fit_raw(
+        raw.copy(),
+        reference_cov=custom_cov,
+        duration=1.0,
+        engine="torch",
+        verbose=False,
+    )
     assert g.engine == "numpy"
 
     # Calling transform_raw with engine='torch' should run cleanly and preserve g.engine
     transformed = g.transform_raw(raw.copy(), engine="torch", verbose=False)
     assert g.engine == "numpy"
     assert transformed.get_data().shape == raw.get_data().shape
-

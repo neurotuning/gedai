@@ -1,4 +1,5 @@
 import os
+
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
@@ -32,10 +33,10 @@ from ..sensai.sensai import (
     _sensai_to_eigen,
 )
 from ..utils._checks import (
-    ensure_engine,
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_engine,
     ensure_int,
 )
 from ..utils._docs import fill_doc
@@ -376,7 +377,8 @@ class Gedai:
 
         raw_fit = _prepare_raw_fit(raw, picks)
 
-        # Enforce at least k*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
+        # Enforce at least k*C samples to avoid rank deficiency and
+        # ill-conditioning in high-density arrays
         k_mult = _get_channel_multiplier()
         min_samples = min(int(np.ceil(k_mult * len(raw_fit.ch_names))), raw_fit.n_times)
         if duration * raw_fit.info["sfreq"] < min_samples:

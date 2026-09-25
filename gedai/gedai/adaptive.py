@@ -15,10 +15,10 @@ from gedai.gedai._utils import (
 from ..covariance.covariance import _ensure_cov, _pick_cov
 from ..metrics.enova import compute_enova_per_epoch
 from ..utils._checks import (
-    ensure_engine,
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
+    ensure_engine,
 )
 from ..utils._docs import fill_doc
 from ..utils.logs import logger, verbose
@@ -58,7 +58,8 @@ def _compute_wavelet_parameters(
         target_duration = 1.0 / max(lower_freq, 0.01) * cycles_per_wavelet
         n_samples = max(2, int(round(target_duration * sfreq)))
 
-        # Ensure at least k*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
+        # Ensure at least k*C samples to avoid rank deficiency and
+        # ill-conditioning in high-density arrays
         if n_channels is not None:
             k_mult = _get_channel_multiplier()
             min_samples = int(np.ceil(k_mult * n_channels))
@@ -540,7 +541,11 @@ class AdaptiveMultibandGedai:
                     engine=current_engine,
                 )
                 raw_input = self._broadband_model.transform_raw(
-                    raw_transform, overlap=overlap, n_jobs=n_jobs, verbose=False, engine=current_engine
+                    raw_transform,
+                    overlap=overlap,
+                    n_jobs=n_jobs,
+                    verbose=False,
+                    engine=current_engine,
                 )
             else:
                 raw_input = raw_transform
@@ -554,14 +559,24 @@ class AdaptiveMultibandGedai:
         if n_jobs == 1 or len(self._wavelets_fits) <= 1:
             band_results = [
                 self._transform_wavelet_band(
-                    wf, raw_data, sfreq, actual_level, is_same_raw=is_same_raw, engine=current_engine
+                    wf,
+                    raw_data,
+                    sfreq,
+                    actual_level,
+                    is_same_raw=is_same_raw,
+                    engine=current_engine,
                 )
                 for wf in self._wavelets_fits
             ]
         else:
             band_results = Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(self._transform_wavelet_band)(
-                    wf, raw_data, sfreq, actual_level, is_same_raw=is_same_raw, engine=current_engine
+                    wf,
+                    raw_data,
+                    sfreq,
+                    actual_level,
+                    is_same_raw=is_same_raw,
+                    engine=current_engine,
                 )
                 for wf in self._wavelets_fits
             )
@@ -606,7 +621,11 @@ class AdaptiveMultibandGedai:
             else self._reference_cov.data
         )
         model = wavelet_fit.get("model")
-        T1 = model._fit.get("T1") if model is not None and hasattr(model, "_fit") else None
+        T1 = (
+            model._fit.get("T1")
+            if model is not None and hasattr(model, "_fit")
+            else None
+        )
         percentile = (
             model._percentile
             if model is not None and hasattr(model, "_percentile")
