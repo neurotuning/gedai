@@ -30,7 +30,9 @@ from ..wavelet.transform import (
 from .gedai import Gedai, _clean_continuous_dual_stream
 
 
-def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
+def _compute_wavelet_parameters(
+    sfreq, level, cycles_per_wavelet, n_channels=None, n_times=None
+):
     """Compute wavelet band metadata matching MODWT ordering."""
     _check_type(cycles_per_wavelet, (float, int), "cycles_per_wavelet")
     if cycles_per_wavelet <= 0:
@@ -55,6 +57,15 @@ def _compute_wavelet_parameters(sfreq, level, cycles_per_wavelet):
 
         target_duration = 1.0 / max(lower_freq, 0.01) * cycles_per_wavelet
         n_samples = max(2, int(round(target_duration * sfreq)))
+
+        # Ensure at least 2*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
+        if n_channels is not None:
+            min_samples = int(np.ceil(2.0 * n_channels))
+            if n_times is not None:
+                min_samples = min(min_samples, n_times)
+            n_samples = max(n_samples, min_samples)
+            target_duration = n_samples / sfreq
+
         wavelet_parameters.append(
             {
                 "band_index": band_index,
@@ -254,6 +265,8 @@ class AdaptiveMultibandGedai:
             sfreq,
             actual_wavelet_level,
             cycles_per_wavelet=self.cycles_per_wavelet,
+            n_channels=len(raw_fit.ch_names),
+            n_times=raw_fit.n_times,
         )
 
         # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
@@ -271,11 +284,16 @@ class AdaptiveMultibandGedai:
                 lowcut_hz=wavelet_low_cutoff,
                 engine=self.engine,
             )
+            broadband_duration = 1.0
+            min_bb_samples = min(
+                int(np.ceil(2.0 * len(raw_fit.ch_names))), raw_fit.n_times
+            )
+            broadband_duration = max(broadband_duration, min_bb_samples / sfreq)
             broadband_model = Gedai(engine=self.engine)
             broadband_model.fit_raw(
                 raw_fit,
                 picks="all",
-                duration=1.0,
+                duration=broadband_duration,
                 overlap=overlap,
                 reject_by_annotation=reject_by_annotation,
                 reference_cov=cov.copy(),

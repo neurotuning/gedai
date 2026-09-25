@@ -356,6 +356,11 @@ class Gedai:
 
         raw_fit = _prepare_raw_fit(raw, picks)
 
+        # Enforce at least 2*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
+        min_samples = min(int(np.ceil(2.0 * len(raw_fit.ch_names))), raw_fit.n_times)
+        if duration * raw_fit.info["sfreq"] < min_samples:
+            duration = min_samples / raw_fit.info["sfreq"]
+
         if highpass_prefilter is not None and highpass_prefilter > 0:
             if (
                 raw_fit.info["highpass"] is None

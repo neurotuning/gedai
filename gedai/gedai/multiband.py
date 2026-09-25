@@ -62,7 +62,9 @@ def compute_required_duration(wavelet_level, sfreq):
     return duration
 
 
-def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
+def compute_closest_valid_duration(
+    target_duration, wavelet_level, sfreq, n_channels=None, n_times=None
+):
     """Compute the closest valid duration for a given wavelet level.
 
     For SWT to work at a given level, the signal length must be divisible by 2^level.
@@ -76,6 +78,10 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
         The desired wavelet decomposition level.
     sfreq : float
         The sampling frequency in Hz.
+    n_channels : int | None
+        Number of channels (to enforce at least 2*C samples).
+    n_times : int | None
+        Total number of time samples available.
 
     Returns
     -------
@@ -86,7 +92,13 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
     """
     if wavelet_level == 0:
         # No constraint for level 0
-        return target_duration, int(target_duration * sfreq)
+        samples = int(target_duration * sfreq)
+        if n_channels is not None:
+            min_samples = int(np.ceil(2.0 * n_channels))
+            if n_times is not None:
+                min_samples = min(min_samples, n_times)
+            samples = max(samples, min_samples)
+        return samples / sfreq, samples
 
     # Convert target duration to samples
     target_samples = int(target_duration * sfreq)
@@ -104,6 +116,14 @@ def compute_closest_valid_duration(target_duration, wavelet_level, sfreq):
 
     # Ensure we meet minimum length requirement (2^(level+1))
     min_samples = 2 ** (wavelet_level + 1)
+    if n_channels is not None:
+        min_ch_samples = int(np.ceil(2.0 * n_channels))
+        if n_times is not None:
+            min_ch_samples = min(min_ch_samples, n_times)
+        min_samples = max(min_samples, min_ch_samples)
+        if min_samples % divisor != 0:
+            min_samples = ((min_samples // divisor) + 1) * divisor
+
     if valid_samples < min_samples:
         valid_samples = min_samples
 
@@ -462,7 +482,11 @@ class MultibandGedai:
         self._actual_wavelet_level = actual_wavelet_level
 
         valid_duration, valid_samples = compute_closest_valid_duration(
-            duration, actual_wavelet_level, sfreq
+            duration,
+            actual_wavelet_level,
+            sfreq,
+            n_channels=len(raw_fit.ch_names),
+            n_times=raw_fit.n_times,
         )
         if valid_duration != duration:
             logger.warning(
