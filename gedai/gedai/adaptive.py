@@ -288,7 +288,7 @@ class AdaptiveMultibandGedai:
                 raw_fit._data,
                 sfreq,
                 lowcut_hz=wavelet_low_cutoff,
-                engine=self.engine,
+                engine=current_engine,
             )
             broadband_duration = 1.0
             k_mult = _get_channel_multiplier()
