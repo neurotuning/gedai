@@ -32,6 +32,7 @@ from ..sensai.sensai import (
     _sensai_to_eigen,
 )
 from ..utils._checks import (
+    ensure_engine,
     _check_n_jobs,
     _check_type,
     _ensure_noise_multiplier,
@@ -41,7 +42,6 @@ from ..utils._docs import fill_doc
 from ..utils._torch_backend import (
     clean_continuous_stream_torch,
     clean_epochs_batched_torch,
-    resolve_engine,
 )
 from ..utils.logs import verbose
 from ..wavelet.transform import _apply_wavelet_highpass_prefilter
@@ -90,8 +90,7 @@ class Gedai:
         self,
         engine: str = "auto",
     ):
-        self.engine = engine
-        self._resolved_engine = resolve_engine(engine)
+        self.engine = ensure_engine(engine)
         self.fitted = False
         self._fit = None
         self._info = None
@@ -165,9 +164,7 @@ class Gedai:
             engine specified at initialization.
         """
         self._check_unfitted()
-        if engine is not None:
-            self.engine = engine
-            self._resolved_engine = resolve_engine(engine)
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_sensai_method(sensai_method)
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
@@ -207,7 +204,7 @@ class Gedai:
         cov.update(data=reference_cov)
 
         all_eval, all_evec = _precompute_gevd(
-            data, reference_cov, engine=self._resolved_engine
+            data, reference_cov, engine=current_engine
         )
         epochs_eigenvalues = all_eval
         percentile = 99 if signal_type == "meg" else 98
@@ -254,7 +251,7 @@ class Gedai:
                 all_eval=all_eval,
                 all_evec=all_evec,
                 signal_type=signal_type,
-                engine=self._resolved_engine,
+                engine=current_engine,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -269,7 +266,7 @@ class Gedai:
                 all_evec=all_evec,
                 percentile=percentile,
                 signal_type=signal_type,
-                engine=self._resolved_engine,
+                engine=current_engine,
                 sensai_tol=sensai_tol,
             )
         else:
@@ -363,6 +360,7 @@ class Gedai:
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
+        current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(overlap, (float, int), "overlap")
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
@@ -414,13 +412,17 @@ class Gedai:
             n_pc=n_pc,
             n_jobs=n_jobs,
             verbose=verbose,
-            engine=engine,
+            engine=current_engine,
         )
 
     @fill_doc
     @verbose
     def transform_epochs(
-        self, epochs: BaseEpochs, n_jobs: int = None, verbose: str | None = None
+        self,
+        epochs: BaseEpochs,
+        n_jobs: int = None,
+        verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Transform epochs data using the fitted model.
 
@@ -430,6 +432,9 @@ class Gedai:
             The epochs to transform.
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -461,9 +466,7 @@ class Gedai:
         threshold = self._fit["threshold"]
         cleaned_epochs_data = np.zeros_like(data)
 
-        resolved_engine = getattr(
-            self, "_resolved_engine", resolve_engine(getattr(self, "engine", "auto"))
-        )
+        resolved_engine = ensure_engine(engine) if engine is not None else self.engine
         T1 = self._fit.get("T1")
         percentile = self._percentile
         if resolved_engine == "torch":
@@ -521,6 +524,7 @@ class Gedai:
         overlap: float = 0.5,
         n_jobs: int = None,
         verbose: str | None = None,
+        engine: str | None = None,
     ):
         """Transform raw data using the fitted model.
 
@@ -531,6 +535,9 @@ class Gedai:
         %(overlap)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -576,7 +583,7 @@ class Gedai:
             if hasattr(self, "_duration") and self._duration > 0
             else 1.0,
             threshold=threshold,
-            engine=getattr(self, "_resolved_engine", getattr(self, "engine", "auto")),
+            engine=ensure_engine(engine) if engine is not None else self.engine,
             T1=T1,
             percentile=percentile,
         )
@@ -650,8 +657,9 @@ class Gedai:
         self._check_fit()
         return self._reference_cov.ch_names
 
-    def fit_summary(self) -> str:
-        """Print and return a formatted summary table of the model fitting metrics.
+    @property
+    def summary(self) -> str:
+        """Formatted ASCII summary table of the model fitting metrics.
 
         Returns
         -------
@@ -661,8 +669,6 @@ class Gedai:
         self._check_fit()
         table_str = _format_summary_table(self)
         return table_str
-
-    summary = fit_summary
 
     def plot_sensai(
         self,
@@ -796,7 +802,7 @@ def _clean_continuous_dual_stream(
     clean : np.ndarray, shape (n_channels, n_times)
     noise : np.ndarray, shape (n_channels, n_times)
     """
-    resolved_engine = resolve_engine(engine)
+    resolved_engine = ensure_engine(engine)
     n_ch, orig_len = data.shape
     epoch_samples = max(2, int(round(epoch_duration * sfreq)))
     if epoch_samples % 2 != 0:

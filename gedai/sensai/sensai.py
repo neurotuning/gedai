@@ -3,7 +3,8 @@ from scipy.linalg import eigh
 from scipy.optimize import minimize_scalar
 
 from ..utils._checks import ensure_int
-from ..utils._torch_backend import precompute_gevd_torch, resolve_engine
+from ..utils._checks import ensure_engine
+from ..utils._torch_backend import precompute_gevd_torch
 
 
 def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
@@ -186,7 +187,7 @@ def _precompute_gevd(
     all_eval : np.ndarray, shape (n_epochs, n_channels)
     all_evec : np.ndarray, shape (n_epochs, n_channels, n_channels)
     """
-    resolved = resolve_engine(engine)
+    resolved = ensure_engine(engine)
     if resolved == "torch":
         return precompute_gevd_torch(epochs_data, reference_cov)
 
@@ -560,7 +561,7 @@ def _sensai_gridsearch(
     if all_eval is None or all_evec is None:
         all_eval, all_evec = _precompute_gevd(epochs_data, reference_cov, engine=engine)
 
-    resolved = resolve_engine(engine)
+    resolved = ensure_engine(engine)
 
     # Precompute template and all_VR once for all scoring evaluations
     template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
@@ -662,7 +663,7 @@ def _sensai_optimize(
             f"got {n_pc!r}."
         )
 
-    resolved = resolve_engine(engine)
+    resolved = ensure_engine(engine)
 
     if hasattr(epochs, "get_data"):
         epochs_data = epochs.get_data(verbose=False)

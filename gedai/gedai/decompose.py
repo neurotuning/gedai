@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.linalg import eigh
 
+from ..utils._checks import ensure_engine
 from ..utils._torch_backend import (
     batched_gevd_cholesky,
     clean_epochs_batched_torch,
-    resolve_engine,
     robust_cholesky_gevd,
 )
 
@@ -23,7 +23,7 @@ def _clean_epochs(
     T1=None,
     percentile=None,
 ):
-    resolved = resolve_engine(engine)
+    resolved = ensure_engine(engine)
     if resolved == "torch":
         return clean_epochs_batched_torch(
             epochs_data,

@@ -63,7 +63,7 @@ def test_gedai_multiband_adaptive_auto_level_and_metrics():
     assert model._actual_wavelet_level >= 6
     assert model.fit_metrics_ is not None
     assert "sensai_score" in model.fit_metrics_
-    assert isinstance(model.fit_summary(), str)
+    assert isinstance(model.summary, str)
 
     transformed_raw = model.transform_raw(raw_eeg, n_jobs=1)
     assert transformed_raw.get_data().shape[0] == 6

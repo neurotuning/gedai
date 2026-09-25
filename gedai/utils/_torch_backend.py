@@ -12,40 +12,10 @@ def has_torch() -> bool:
     return import_optional_dependency("torch", raise_error=False) is not None
 
 
-def resolve_engine(engine: str = "numpy") -> str:
-    """Validate and resolve backend engine ('numpy', 'torch', 'auto').
+from ._checks import ensure_engine
 
-    Parameters
-    ----------
-    engine : str
-        The requested computation engine ('numpy', 'torch', or 'auto').
-
-    Returns
-    -------
-    resolved : str
-        The resolved engine ('numpy' or 'torch').
-    """
-    if not isinstance(engine, str):
-        raise TypeError(f"engine must be a string, got {type(engine).__name__}")
-
-    engine_lower = engine.lower()
-    if engine_lower not in ("numpy", "torch", "auto"):
-        raise ValueError(
-            f"Invalid engine '{engine}'. Expected one of 'numpy', 'torch', or 'auto'."
-        )
-
-    if engine_lower == "auto":
-        return "torch" if has_torch() else "numpy"
-
-    if engine_lower == "torch":
-        if not has_torch():
-            raise ImportError(
-                "Missing optional dependency 'torch'. Use 'pip install torch' "
-                "or 'pip install gedai[torch]' to run with the PyTorch engine."
-            )
-        return "torch"
-
-    return "numpy"
+# Compatibility alias
+resolve_engine = ensure_engine
 
 
 def robust_cholesky_gevd(
