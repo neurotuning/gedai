@@ -1,0 +1,42 @@
+.. NOTE: we use cross-references to highlight new functions and classes.
+   Please follow the examples below, so the changelog page will have a link to
+   the function/class documentation.
+
+.. NOTE: there are 3 separate sections for changes, based on type:
+   - "Enhancements" for new features
+   - "Bugs" for bug fixes
+   - "API changes" for backward-incompatible changes
+
+.. NOTE: You can use the :pr:`xx` and :issue:`xx` role to x-ref to a GitHub PR
+   or issue from this project.
+
+.. include:: ./names.inc
+
+.. _changes_0_4_2:
+
+Version 0.4.2
+=============
+
+Enhancements
+------------
+
+- Add native 3D PyVista scraper support in Sphinx-Gallery for headless 3D sensor coregistration and cortical source plots (:pr:`157` by `Tomas Ros`_).
+- Introduce comprehensive Optically Pumped Magnetometer (OPM) preprocessing tutorial comparing the standard MNE-Python workflow to single-step GEDAI (:pr:`157` by `Tomas Ros`_).
+- Automatically pre-fetch UCL OPM auditory dataset in documentation CI workflow to ensure reliable builds (:pr:`157` by `Tomas Ros`_).
+- Add Seymour et al. (2022) citation on OPM MEG movement and speech to the bibliography (:pr:`157` by `Tomas Ros`_).
+
+Bugs
+----
+
+- Fix ``n_pc`` propagation in :meth:`~gedai.gedai.MultibandGedai.fit_epochs` so user-specified component counts are forwarded to both broadband and per-band models (:pr:`157` by `Tomas Ros`_).
+- Validate ``n_pc`` before scoring in :class:`~gedai.gedai.Gedai` and ``compute_composite_sensai`` to reject non-positive or over-channel component counts (:pr:`157` by `Tomas Ros`_).
+- Treat ``ref_meg`` channels as MEG in ``_detect_signal_type`` for correct signal classification (:pr:`157` by `Tomas Ros`_).
+- Widen ``reference_cov`` type annotations in :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` to support :class:`mne.Covariance` and :class:`mne.Forward` (:pr:`157` by `Tomas Ros`_).
+- Align primary auditory cortex (Heschl's gyrus / STG) dipole peak latency and time courses in OPM tutorial to target N100m latency (:pr:`157` by `Tomas Ros`_).
+- Fix typo in multiband and adaptive tutorial callouts (:pr:`157` by `Tomas Ros`_).
+
+Authors
+-------
+
+* `Tomas Ros`_
+* `Victor Férat`_
