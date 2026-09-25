@@ -145,6 +145,8 @@ def _compute_default_n_pc(
     """
     n_ch = reference_cov.shape[0]
     if signal_type == "meg":
+        if data is not None:
+            return _prescan_meg_artifact_spectrum(data, reference_cov)
         return min(2, n_ch)
     return min(3, n_ch)
 
