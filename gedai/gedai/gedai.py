@@ -691,7 +691,13 @@ class Gedai:
         return table_str
 
     def fit_summary(self) -> str:
-        """Compatibility wrapper for the fitted-model summary."""
+        """Compatibility wrapper for the fitted-model summary.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
         return self.summary
 
     def plot_sensai(

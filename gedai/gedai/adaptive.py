@@ -223,6 +223,9 @@ class AdaptiveMultibandGedai:
         %(n_pc)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
         """
         self._check_unfitted()
         _check_type(raw, (BaseRaw,), "raw")
@@ -498,6 +501,9 @@ class AdaptiveMultibandGedai:
         %(overlap)s
         %(n_jobs)s
         %(verbose)s
+        engine : str | None
+            Computation engine ('numpy', 'torch', or 'auto'). If None, uses
+            the engine specified at initialization.
 
         Returns
         -------
@@ -713,7 +719,13 @@ class AdaptiveMultibandGedai:
         return table_str
 
     def fit_summary(self) -> str:
-        """Compatibility wrapper for the fitted-model summary."""
+        """Compatibility wrapper for the fitted-model summary.
+
+        Returns
+        -------
+        summary_str : str
+            Formatted ASCII summary table.
+        """
         return self.summary
 
     def plot_sensai(

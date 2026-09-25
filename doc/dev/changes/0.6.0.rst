@@ -25,13 +25,13 @@ Enhancements
 - Support ``GEDAI_CHANNEL_MULTIPLIER`` environment variable to tune or disable channel multiplier constraints on demand (`Tomas Ros`_).
 - Optimize adaptive MEG Gradiometer artifact subspace projection with restored artifact spectrum prescan, selecting optimal spatial component dimensionality (`Tomas Ros`_).
 - Improve ENOVA calculation robustness across channels by computing temporal variance per channel before averaging, providing invariance to inter-channel DC sensor offsets (`Tomas Ros`_).
-- Add decimal precision formatting for SENSAI and ENOVA metrics in :func:`~gedai.viz.sensai_viz.plot_sensai_visualization` (`Tomas Ros`_).
+- Add decimal precision formatting for SENSAI and ENOVA metrics in ``gedai.viz.sensai_viz.plot_sensai_visualization`` (`Tomas Ros`_).
 
 Bugs
 ----
 
 - Fix rank deficiency and underconstrained sample covariance in continuous deartifacting for high-density EEG (64+ ch) and MEG sensor arrays (`Tomas Ros`_).
-- Fix sensor DC offset sensitivity in :func:`~gedai.metrics.enova.compute_enova_per_epoch` (`Tomas Ros`_).
+- Fix sensor DC offset sensitivity in ``gedai.metrics.enova.compute_enova_per_epoch`` (`Tomas Ros`_).
 
 API and behavior changes
 ------------------------
