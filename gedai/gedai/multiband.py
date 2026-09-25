@@ -36,7 +36,7 @@ from ..wavelet.transform import (
     epochs_to_wavelet,
     get_modwt_band_limits,
 )
-from .gedai import Gedai, _clean_continuous_dual_stream
+from .gedai import Gedai, _clean_continuous_dual_stream, _get_channel_multiplier
 
 
 def compute_required_duration(wavelet_level, sfreq):
@@ -94,7 +94,8 @@ def compute_closest_valid_duration(
         # No constraint for level 0
         samples = int(target_duration * sfreq)
         if n_channels is not None:
-            min_samples = int(np.ceil(2.0 * n_channels))
+            k_mult = _get_channel_multiplier()
+            min_samples = int(np.ceil(k_mult * n_channels))
             if n_times is not None:
                 min_samples = min(min_samples, n_times)
             samples = max(samples, min_samples)
@@ -117,7 +118,8 @@ def compute_closest_valid_duration(
     # Ensure we meet minimum length requirement (2^(level+1))
     min_samples = 2 ** (wavelet_level + 1)
     if n_channels is not None:
-        min_ch_samples = int(np.ceil(2.0 * n_channels))
+        k_mult = _get_channel_multiplier()
+        min_ch_samples = int(np.ceil(k_mult * n_channels))
         if n_times is not None:
             min_ch_samples = min(min_ch_samples, n_times)
         min_samples = max(min_samples, min_ch_samples)
@@ -886,6 +888,13 @@ class MultibandGedai:
             if wavelet_fit["model"] is not None
             else self._reference_cov.data
         )
+        model = wavelet_fit.get("model")
+        T1 = model._fit.get("T1") if model is not None and hasattr(model, "_fit") else None
+        percentile = (
+            model._percentile
+            if model is not None and hasattr(model, "_percentile")
+            else (99 if self._signal_type == "meg" else 98)
+        )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,
             sfreq=sfreq,
@@ -893,6 +902,8 @@ class MultibandGedai:
             epoch_duration=epoch_duration,
             threshold=threshold,
             engine=getattr(self, "engine", "auto"),
+            T1=T1,
+            percentile=percentile,
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(

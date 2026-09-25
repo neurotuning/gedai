@@ -27,7 +27,7 @@ from ..wavelet.transform import (
     _modwt_haar_single_band,
     compute_wavelet_level,
 )
-from .gedai import Gedai, _clean_continuous_dual_stream
+from .gedai import Gedai, _clean_continuous_dual_stream, _get_channel_multiplier
 
 
 def _compute_wavelet_parameters(
@@ -58,9 +58,10 @@ def _compute_wavelet_parameters(
         target_duration = 1.0 / max(lower_freq, 0.01) * cycles_per_wavelet
         n_samples = max(2, int(round(target_duration * sfreq)))
 
-        # Ensure at least 2*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
+        # Ensure at least k*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
         if n_channels is not None:
-            min_samples = int(np.ceil(2.0 * n_channels))
+            k_mult = _get_channel_multiplier()
+            min_samples = int(np.ceil(k_mult * n_channels))
             if n_times is not None:
                 min_samples = min(min_samples, n_times)
             n_samples = max(n_samples, min_samples)
@@ -285,8 +286,9 @@ class AdaptiveMultibandGedai:
                 engine=self.engine,
             )
             broadband_duration = 1.0
+            k_mult = _get_channel_multiplier()
             min_bb_samples = min(
-                int(np.ceil(2.0 * len(raw_fit.ch_names))), raw_fit.n_times
+                int(np.ceil(k_mult * len(raw_fit.ch_names))), raw_fit.n_times
             )
             broadband_duration = max(broadband_duration, min_bb_samples / sfreq)
             broadband_model = Gedai(engine=self.engine)
@@ -596,6 +598,13 @@ class AdaptiveMultibandGedai:
             if wavelet_fit["model"] is not None
             else self._reference_cov.data
         )
+        model = wavelet_fit.get("model")
+        T1 = model._fit.get("T1") if model is not None and hasattr(model, "_fit") else None
+        percentile = (
+            model._percentile
+            if model is not None and hasattr(model, "_percentile")
+            else (99 if self._signal_type == "meg" else 98)
+        )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,
             sfreq=sfreq,
@@ -603,6 +612,8 @@ class AdaptiveMultibandGedai:
             epoch_duration=epoch_duration,
             threshold=threshold,
             engine=getattr(self, "engine", "auto"),
+            T1=T1,
+            percentile=percentile,
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(

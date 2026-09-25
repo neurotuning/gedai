@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import mne
 import numpy as np
@@ -60,6 +61,14 @@ def _check_sensai_method(sensai_method):
             "sensai_method must be either 'gridsearch' or 'optimize', "
             f"got {sensai_method}"
         )
+
+
+def _get_channel_multiplier() -> float:
+    """Return the channel sample constraint multiplier (default 2.0)."""
+    try:
+        return float(os.environ.get("PYGEDAI_CHANNEL_MULTIPLIER", "2.0"))
+    except (ValueError, TypeError):
+        return 2.0
 
 
 @fill_doc
@@ -269,12 +278,20 @@ class Gedai:
                 f"got '{sensai_method}' instead."
             )
 
+        # Compute dimensionless scale factor T1 matching MATLAB clean_EEG.m
+        sensai_value = _eigen_to_sensai(
+            threshold, epochs_eigenvalues, percentile=percentile
+        )
+        T1 = float((105.0 - sensai_value) / 100.0)
+
         best_run = max(runs, key=lambda x: x[1]) if runs else None
         self.fit_metrics_ = {
             "sensai_score": best_run[1] if best_run else 0.0,
             "signal_similarity": best_run[2] if best_run else 0.0,
             "noise_similarity": best_run[3] if best_run else 0.0,
             "threshold": threshold,
+            "sensai_value": sensai_value,
+            "T1": T1,
         }
 
         self._fit = {
@@ -282,7 +299,12 @@ class Gedai:
             "epochs_eigenvalues": epochs_eigenvalues,
             "sensai_runs": runs,
             "sensai_bounds": (min_sensai_threshold, max_sensai_threshold),
+            "sensai_value": sensai_value,
+            "T1": T1,
+            "percentile": percentile,
         }
+        self.T1_ = T1
+        self.percentile_ = percentile
 
         self.fitted = True
         self._info = epochs_fit.info.copy()
@@ -356,8 +378,9 @@ class Gedai:
 
         raw_fit = _prepare_raw_fit(raw, picks)
 
-        # Enforce at least 2*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
-        min_samples = min(int(np.ceil(2.0 * len(raw_fit.ch_names))), raw_fit.n_times)
+        # Enforce at least k*C samples to avoid rank deficiency and ill-conditioning in high-density arrays
+        k_mult = _get_channel_multiplier()
+        min_samples = min(int(np.ceil(k_mult * len(raw_fit.ch_names))), raw_fit.n_times)
         if duration * raw_fit.info["sfreq"] < min_samples:
             duration = min_samples / raw_fit.info["sfreq"]
 
@@ -441,9 +464,15 @@ class Gedai:
         resolved_engine = getattr(
             self, "_resolved_engine", resolve_engine(getattr(self, "engine", "auto"))
         )
+        T1 = self._fit.get("T1")
+        percentile = self._percentile
         if resolved_engine == "torch":
             cleaned_epochs_data, _ = clean_epochs_batched_torch(
-                data, reference_cov, threshold
+                data,
+                reference_cov,
+                threshold=threshold,
+                T1=T1,
+                percentile=percentile,
             )
         elif n_jobs == 1:
             for e, epoch_data in enumerate(data):
@@ -537,6 +566,8 @@ class Gedai:
         threshold = self._fit["threshold"]
 
         # Fast dual-stream continuous broadband cleaning
+        T1 = self._fit.get("T1")
+        percentile = self._percentile
         clean_data, _ = _clean_continuous_dual_stream(
             raw_data,
             sfreq=sfreq,
@@ -546,6 +577,8 @@ class Gedai:
             else 1.0,
             threshold=threshold,
             engine=getattr(self, "_resolved_engine", getattr(self, "engine", "auto")),
+            T1=T1,
+            percentile=percentile,
         )
 
         raw_transform.get_data(verbose=False).copy()
@@ -736,8 +769,10 @@ def _clean_continuous_dual_stream(
     sfreq: float,
     reference_cov: np.ndarray,
     epoch_duration: float,
-    threshold: float,
+    threshold: float | None = None,
     engine: str = "numpy",
+    T1: float | None = None,
+    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
 
@@ -801,13 +836,38 @@ def _clean_continuous_dual_stream(
 
     def _process_stream(stream):
         if resolved_engine == "torch":
-            return clean_continuous_stream_torch(stream, reference_cov, threshold, cw)
+            return clean_continuous_stream_torch(
+                stream,
+                reference_cov,
+                threshold=threshold,
+                cosine_weights=cw,
+                T1=T1,
+                percentile=percentile,
+            )
         n_ep = len(stream)
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
         noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
+
+        if T1 is not None and percentile is not None:
+            all_evals = []
+            for ep in stream:
+                c_ep = np.cov(ep.astype(np.float64))
+                evs = eigh(c_ep, reference_cov, eigvals_only=True, check_finite=True)
+                all_evals.append(evs)
+            all_diags = np.abs(np.concatenate(all_evals))
+            pos = all_diags[all_diags > 0]
+            if len(pos) > 0:
+                log_evals = np.log(pos) + 100.0
+                chunk_prctile = float(np.percentile(log_evals, percentile))
+                eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
+            else:
+                eff_thresh = threshold if threshold is not None else 1.0
+        else:
+            eff_thresh = threshold
+
         for i in range(n_ep):
             ep = stream[i].astype(np.float64)
-            c = _process_single_epoch(ep, reference_cov, threshold)
+            c = _process_single_epoch(ep, reference_cov, eff_thresh)
             n = ep - c
             if i == 0:
                 c[:, half:] *= cw[half:]
