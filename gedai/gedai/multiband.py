@@ -994,6 +994,10 @@ class MultibandGedai:
         table_str = _format_summary_table(self)
         return table_str
 
+    def fit_summary(self) -> str:
+        """Compatibility wrapper for the fitted-model summary."""
+        return self.summary
+
     def plot_sensai(
         self,
         raw_before: BaseRaw,

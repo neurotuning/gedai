@@ -27,6 +27,7 @@ def test_gedai_fit_transform_raw():
     """Test Gedai transform on raw data."""
     model = Gedai()
     model.fit_raw(raw_eeg)
+    assert model.fit_summary() == model.summary
     transformed_raw = model.transform_raw(raw_eeg)
     assert transformed_raw.info["ch_names"] == raw_eeg.info["ch_names"]
     assert transformed_raw.info["sfreq"] == raw_eeg.info["sfreq"]

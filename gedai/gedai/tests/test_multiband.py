@@ -135,6 +135,7 @@ def test_multiband_auto_wavelet_level_and_metrics():
     assert model.fit_metrics_ is not None
     assert "sensai_score" in model.fit_metrics_
     assert isinstance(model.summary, str)
+    assert model.fit_summary() == model.summary
 
     epochs_transformed = model.transform_epochs(epochs_eeg, n_jobs=1)
     assert epochs_transformed.get_data().shape == epochs_eeg.get_data().shape
