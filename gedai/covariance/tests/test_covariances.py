@@ -32,7 +32,7 @@ def sample_info():
         "O2",
     ]
     info = mne.create_info(ch_names, sfreq=250.0, ch_types="eeg")
-    montage = mne.channels.make_standard_montage("standard_1020")
+    montage = mne.channels.make_standard_montage("colin27_1020")
     info.set_montage(montage)
     return info
 
