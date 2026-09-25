@@ -241,7 +241,7 @@ class Gedai:
                 )
                 for sensai_value in sensai_thresholds
             ]
-            threshold, runs = _sensai_gridsearch(
+            threshold, sensai_value, runs = _sensai_gridsearch(
                 fit_epochs,
                 reference_cov,
                 n_pc=resolved_n_pc,
@@ -256,7 +256,7 @@ class Gedai:
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
-            threshold, runs = _sensai_optimize(
+            threshold, sensai_value, runs = _sensai_optimize(
                 fit_epochs,
                 reference_cov,
                 n_pc=resolved_n_pc,
@@ -277,9 +277,6 @@ class Gedai:
             )
 
         # Compute dimensionless scale factor T1 matching MATLAB clean_EEG.m
-        sensai_value = _eigen_to_sensai(
-            threshold, epochs_eigenvalues, percentile=percentile
-        )
         T1 = float((105.0 - sensai_value) / 100.0)
 
         best_run = max(runs, key=lambda x: x[1]) if runs else None

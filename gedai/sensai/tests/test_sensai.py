@@ -103,7 +103,7 @@ def test_sensai_gridsearch_and_optimize():
     all_eval, all_evec = _precompute_gevd(epochs_data, ref_cov)
     eigen_thresholds = [0.5, 1.0, 2.0, 3.0, 5.0]
 
-    best_thresh, runs = _sensai_gridsearch(
+    best_thresh, best_sensai_thresh, runs = _sensai_gridsearch(
         epochs_data,
         reference_cov=ref_cov,
         n_pc=2,
@@ -113,9 +113,10 @@ def test_sensai_gridsearch_and_optimize():
         all_evec=all_evec,
     )
     assert best_thresh in eigen_thresholds
+    assert isinstance(best_sensai_thresh, float)
     assert len(runs) == len(eigen_thresholds)
 
-    opt_thresh, opt_runs = _sensai_optimize(
+    opt_thresh, opt_sensai_thresh, opt_runs = _sensai_optimize(
         epochs_data,
         reference_cov=ref_cov,
         n_pc=2,
@@ -126,6 +127,7 @@ def test_sensai_gridsearch_and_optimize():
         all_evec=all_evec,
     )
     assert isinstance(opt_thresh, float)
+    assert isinstance(opt_sensai_thresh, float)
     assert len(opt_runs) > 0
 
 
@@ -166,7 +168,7 @@ def test_sensai_numpy_torch_parity():
 
     all_eval, all_evec = _precompute_gevd(epochs_data, ref_cov, engine="torch")
 
-    opt_thresh_np, runs_np = _sensai_optimize(
+    opt_thresh_np, opt_sensai_np, runs_np = _sensai_optimize(
         epochs_data,
         reference_cov=ref_cov,
         n_pc=3,
@@ -179,7 +181,7 @@ def test_sensai_numpy_torch_parity():
         sensai_tol=0.1,
     )
 
-    opt_thresh_torch, runs_torch = _sensai_optimize(
+    opt_thresh_torch, opt_sensai_torch, runs_torch = _sensai_optimize(
         epochs_data,
         reference_cov=ref_cov,
         n_pc=3,
@@ -193,6 +195,7 @@ def test_sensai_numpy_torch_parity():
     )
 
     assert abs(opt_thresh_np - opt_thresh_torch) < 1e-3
+    assert abs(opt_sensai_np - opt_sensai_torch) < 1e-3
 
     # Verify score parity across fixed thresholds
     import torch

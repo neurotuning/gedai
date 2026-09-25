@@ -182,19 +182,26 @@ def clean_epochs_batched_torch(
     # Dynamic Per-Chunk Percentile Thresholding (matching MATLAB clean_EEG.m)
     if T1 is not None and percentile is not None:
         mags = torch.abs(evals)
-        pos_mags = mags[mags > 0]
-        if pos_mags.numel() > 0:
-            log_evals = torch.log(pos_mags) + 100.0
-            q = float(percentile) / 100.0
-            chunk_log_prctile = torch.quantile(log_evals, q)
-            chunk_thresh = torch.exp(T1 * chunk_log_prctile - 100.0)
-        else:
-            chunk_thresh = torch.tensor(
-                threshold if threshold is not None else 1.0,
-                dtype=evals.dtype,
-                device=evals.device,
-            )
-        signal_mask = torch.abs(evals) < chunk_thresh
+        fallback_thresh = torch.tensor(
+            threshold if threshold is not None else 1.0,
+            dtype=evals.dtype,
+            device=evals.device,
+        )
+        q = float(percentile) / 100.0
+        chunk_thresh = torch.empty(
+            evals.shape[0],
+            dtype=evals.dtype,
+            device=evals.device,
+        )
+        for i in range(evals.shape[0]):
+            pos_mags = mags[i][mags[i] > 0]
+            if pos_mags.numel() > 0:
+                log_evals = torch.log(pos_mags) + 100.0
+                chunk_log_prctile = torch.quantile(log_evals, q)
+                chunk_thresh[i] = torch.exp(T1 * chunk_log_prctile - 100.0)
+            else:
+                chunk_thresh[i] = fallback_thresh
+        signal_mask = mags < chunk_thresh.unsqueeze(1)
     elif threshold is not None:
         signal_mask = torch.abs(evals) < threshold
     else:

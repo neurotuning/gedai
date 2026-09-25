@@ -633,12 +633,17 @@ def _sensai_gridsearch(
                 best_idx = noise_changepoint_idx
 
     best_threshold = eigen_thresholds[best_idx]
+    best_sensai_threshold = (
+        sensai_thresholds[best_idx]
+        if sensai_thresholds is not None
+        else float(best_threshold)
+    )
 
     sensai_data = [
         [eigen_thresholds[r], runs[r][0], runs[r][1], runs[r][2]]
         for r in range(len(runs))
     ]
-    return best_threshold, sensai_data
+    return best_threshold, float(best_sensai_threshold), sensai_data
 
 
 def _sensai_optimize(
@@ -755,8 +760,8 @@ def _sensai_optimize(
     if not result.success:
         raise ValueError("Optimization failed: " + result.message)
 
-    sensai_threshold = result.x
+    sensai_threshold = float(result.x)
     T1_opt = (105 - sensai_threshold) / 100
     eigen_threshold = float(np.exp(T1_opt * p_val - 100))
     runs.sort(key=lambda x: x[0])
-    return eigen_threshold, runs
+    return eigen_threshold, sensai_threshold, runs
