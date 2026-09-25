@@ -66,10 +66,15 @@ def _check_sensai_method(sensai_method):
 
 def _get_channel_multiplier() -> float:
     """Return the channel sample constraint multiplier (default 1.0)."""
-    try:
-        return float(os.environ.get("GEDAI_CHANNEL_MULTIPLIER", "1.0"))
-    except (ValueError, TypeError):
+    value = os.environ.get("GEDAI_CHANNEL_MULTIPLIER")
+    if value is None:
         return 1.0
+    try:
+        return float(value)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(
+            f"GEDAI_CHANNEL_MULTIPLIER must be a parseable float, got {value!r}."
+        ) from exc
 
 
 @fill_doc

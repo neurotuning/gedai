@@ -6,6 +6,7 @@ from mne import make_fixed_length_epochs
 
 from gedai import Gedai, MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
+from gedai.gedai.gedai import _get_channel_multiplier
 
 raw_fname = get_contaminated_eeg_set_path()
 raw_eeg = mne.io.read_raw(raw_fname, preload=True)
@@ -95,6 +96,13 @@ def test_gedai_invalid_n_pc_raises():
 
     with pytest.raises(ValueError, match="n_pc must be an integer in the range"):
         Gedai().fit_epochs(epochs_eeg, n_pc=epochs_eeg.info["nchan"] + 1)
+
+
+def test_invalid_channel_multiplier_env_raises(monkeypatch):
+    """Invalid channel multiplier env vars should fail loudly."""
+    monkeypatch.setenv("GEDAI_CHANNEL_MULTIPLIER", "not-a-float")
+    with pytest.raises(ValueError, match="GEDAI_CHANNEL_MULTIPLIER"):
+        _get_channel_multiplier()
 
 
 def test_multiband_broadband_pass_forwards_n_pc():
