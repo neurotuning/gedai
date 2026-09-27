@@ -1,0 +1,41 @@
+.. NOTE: we use cross-references to highlight new functions and classes.
+   Please follow the examples below, so the changelog page will have a link to
+   the function/class documentation.
+
+.. NOTE: there are 3 separate sections for changes, based on type:
+   - "Enhancements" for new features
+   - "Bugs" for bug fixes
+   - "API changes" for backward-incompatible changes
+
+.. NOTE: You can use the :pr:`xx` and :issue:`xx` role to x-ref to a GitHub PR
+   or issue from this project.
+
+.. include:: ./names.inc
+
+.. _changes_0_2_0:
+
+Version 0.2.0
+=============
+
+Enhancements
+------------
+
+- Keep all metadata in transformed raw (:pr:`123` by `Dominik Welke`_ and `Victor Férat`_)
+
+Bugs
+----
+
+- xxx
+
+API and behavior changes
+------------------------
+
+- Add the :class:`~gedai.gedai.AdaptiveMultibandGedai` and :class:`~gedai.gedai.MultibandGedai` classes. Refactor and improve the codebase (:pr:`97` by `Victor Férat`_).
+
+
+Authors
+-------
+
+* `Victor Férat`_
+* `Dominik Welke`_
+
