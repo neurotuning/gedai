@@ -40,98 +40,61 @@ from .gedai import Gedai, _clean_continuous_dual_stream, _get_channel_multiplier
 
 
 def compute_required_duration(wavelet_level, sfreq):
-    """Compute the minimum epoch duration required for a given wavelet level.
+    """Compute minimum duration required for multiband processing.
 
     Parameters
     ----------
     wavelet_level : int
-        The desired wavelet decomposition level.
+        Wavelet decomposition level.
     sfreq : float
-        The sampling frequency in Hz.
+        Sampling frequency in Hz.
 
     Returns
     -------
     duration : float
-        Minimum duration in seconds required for the wavelet level.
+        Minimum duration in seconds (at least 2 samples).
     """
-    if wavelet_level == 0:
-        return 1.0  # Default for no decomposition
-    # For SWT, minimum length is 2^(level+1)
-    min_samples = 2 ** (wavelet_level + 1)
-    duration = min_samples / sfreq
-    return duration
+    return 2 / sfreq
 
 
 def compute_closest_valid_duration(
     target_duration, wavelet_level, sfreq, n_channels=None, n_times=None
 ):
-    """Compute the closest valid duration for a given wavelet level.
+    """Compute a valid duration for multiband processing.
 
-    For SWT to work at a given level, the signal length must be divisible by 2^level.
-    This function finds the closest valid duration to the target duration.
+    The Haar MODWT decomposition operates on arbitrary sample lengths without
+    dyadic length constraints. Duration is rounded to an even number of samples
+    for dual-stream processing and satisfies channel-count covariance requirements.
 
     Parameters
     ----------
     target_duration : float
         The desired duration in seconds.
     wavelet_level : int
-        The desired wavelet decomposition level.
+        Wavelet decomposition level.
     sfreq : float
-        The sampling frequency in Hz.
+        Sampling frequency in Hz.
     n_channels : int | None
-        Number of channels (to enforce at least 2*C samples).
+        Number of channels used with the configured channel sample multiplier.
     n_times : int | None
         Total number of time samples available.
 
     Returns
     -------
     valid_duration : float
-        The closest valid duration in seconds.
+        The valid duration in seconds.
     valid_samples : int
         The number of samples for the valid duration.
     """
-    if wavelet_level == 0:
-        # No constraint for level 0
-        samples = int(target_duration * sfreq)
-        if n_channels is not None:
-            k_mult = _get_channel_multiplier()
-            min_samples = int(np.ceil(k_mult * n_channels))
-            if n_times is not None:
-                min_samples = min(min_samples, n_times)
-            samples = max(samples, min_samples)
-        return samples / sfreq, samples
-
-    # Convert target duration to samples
-    target_samples = int(target_duration * sfreq)
-
-    # For SWT at level L, length must be divisible by 2^L
-    divisor = 2**wavelet_level
-
-    # Find the smallest valid number of samples >= target_samples.
-    # A valid number of samples must be a multiple of the divisor.
-    if target_samples % divisor == 0:
-        valid_samples = target_samples
-    else:
-        # If not a multiple, round up to the next multiple of the divisor.
-        valid_samples = ((target_samples // divisor) + 1) * divisor
-
-    # Ensure we meet minimum length requirement (2^(level+1))
-    min_samples = 2 ** (wavelet_level + 1)
+    samples = max(2, int(round(target_duration * sfreq)))
     if n_channels is not None:
         k_mult = _get_channel_multiplier()
-        min_ch_samples = int(np.ceil(k_mult * n_channels))
+        min_samples = int(np.ceil(k_mult * n_channels))
         if n_times is not None:
-            min_ch_samples = min(min_ch_samples, n_times)
-        min_samples = max(min_samples, min_ch_samples)
-        if min_samples % divisor != 0:
-            min_samples = ((min_samples // divisor) + 1) * divisor
-
-    if valid_samples < min_samples:
-        valid_samples = min_samples
-
-    valid_duration = valid_samples / sfreq
-
-    return valid_duration, valid_samples
+            min_samples = min(min_samples, n_times)
+        samples = max(samples, min_samples)
+    samples += samples % 2
+    return samples / sfreq, samples
 
 
 @fill_doc
@@ -262,6 +225,7 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
@@ -451,10 +415,18 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+
+        Notes
+        -----
+        The continuous raw-data path uses circular Haar MODWT.
+        Calibration durations use even-sample rounding and the configured
+        channel-based covariance minimum.
         """
         self._check_unfitted()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
+        if not np.isfinite(duration) or duration <= 0:
+            raise ValueError("duration must be finite and positive")
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(overlap, (float, int), "overlap")
         if not (0 <= overlap < 1):
@@ -502,8 +474,8 @@ class MultibandGedai:
         if valid_duration != duration:
             logger.warning(
                 f"Requested duration {duration:.3f}s adjusted to {valid_duration:.3f}s "
-                f"({valid_samples} samples) to satisfy wavelet level "
-                f"{actual_wavelet_level} requirements."
+                f"({valid_samples} samples) to satisfy sample-count and "
+                "covariance requirements."
             )
         duration = valid_duration
 
@@ -548,9 +520,7 @@ class MultibandGedai:
         # Continuous single-band MODWT decomposition & band fitting
         band_limits = get_modwt_band_limits(sfreq, actual_wavelet_level + 1)
         raw_data_fit = raw_for_multiband.get_data(verbose=False)
-        epoch_samples = max(2, int(round(duration * sfreq)))
-        if epoch_samples % 2 != 0:
-            epoch_samples += 1
+        epoch_samples = valid_samples
         n_ep = raw_data_fit.shape[1] // epoch_samples
 
         items = list(enumerate(band_limits))
