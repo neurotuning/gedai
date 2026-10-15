@@ -1,6 +1,7 @@
 """Tests for multiband GEDAI."""
 
 import mne
+import numpy as np
 import pytest
 from mne import make_fixed_length_epochs
 
@@ -117,13 +118,90 @@ def test_multiband_low_cutoff_marks_ignored_bands():
 
 
 def test_wavelet_duration_helpers():
-    """Duration helpers should return values consistent with wavelet constraints."""
+    """Duration helpers should return values consistent with Haar constraints."""
     sfreq = 128.0
-    assert compute_required_duration(0, sfreq) == 1.0
+    assert compute_required_duration(0, sfreq) == 2 / sfreq
     duration_val, samples = compute_closest_valid_duration(1.03, 4, sfreq)
-    assert duration_val >= 1.03
-    assert samples % (2**4) == 0
-    assert samples >= 2 ** (4 + 1)
+    assert duration_val == samples / sfreq
+    assert samples % 2 == 0
+
+
+@pytest.mark.parametrize("level", [0, 4, 9])
+def test_circular_haar_duration_keeps_requested_samples(level):
+    """Keep raw Haar epochs independent of dyadic wavelet lengths."""
+    duration_val, samples = compute_closest_valid_duration(
+        2.0, level, 200.0, n_channels=27, n_times=12000,
+        
+    )
+    assert duration_val == 2.0
+    assert samples == 400
+    assert compute_required_duration(level, 200.0) == 2 / 200.0
+
+
+def test_circular_haar_duration_preserves_covariance_minimum(monkeypatch):
+    """Retain the configured channel minimum and available-data cap."""
+    monkeypatch.setenv("GEDAI_CHANNEL_MULTIPLIER", "2")
+    duration_val, samples = compute_closest_valid_duration(
+        0.1, 9, 200.0, n_channels=27, n_times=12000,
+        
+    )
+    assert samples == 54
+    assert duration_val == 54 / 200
+    _, capped_samples = compute_closest_valid_duration(
+        0.1, 9, 200.0, n_channels=27, n_times=40,
+        
+    )
+    assert capped_samples == 40
+
+
+def test_circular_haar_duration_rounds_to_even_sample_count():
+    """Keep duration metadata consistent with dual-stream sample rounding."""
+    duration_val, samples = compute_closest_valid_duration(
+        2.005, 9, 200.0,
+    )
+    assert samples == 402
+    assert duration_val == 402 / 200
+
+
+@pytest.mark.parametrize("duration", [0.0, -1.0, np.nan, np.inf])
+def test_multiband_raw_rejects_invalid_duration(duration):
+    """Reject invalid durations rather than promoting them to a minimum."""
+    model = MultibandGedai()
+    with pytest.raises(ValueError, match="duration must be finite and positive"):
+        model.fit_raw(raw_eeg, duration=duration)
+
+
+@pytest.mark.parametrize("engine", ["numpy", "torch"])
+@pytest.mark.parametrize("broadband_pass", [False, True])
+def test_multiband_raw_two_second_epochs_at_level_nine(engine, broadband_pass):
+    """Fit and apply two-second epochs with either backend and broadband mode."""
+    if engine == "torch":
+        pytest.importorskip("torch")
+    names = raw_eeg.ch_names[:6]
+    rng = np.random.default_rng(42)
+    data = rng.standard_normal((len(names), 2400)) * 1e-6
+    raw = mne.io.RawArray(
+        data.copy(), mne.create_info(names, 200.0, "eeg"), verbose=False
+    )
+    cov = mne.Covariance(np.eye(len(names)) * 1e-12, names, [], [], nfree=1)
+    model = MultibandGedai(
+        wavelet_level=9, broadband_pass=broadband_pass, engine=engine,
+    )
+    model.fit_raw(raw, duration=2.0, reference_cov=cov, n_jobs=1, verbose=False)
+    assert model.wavelet_level == 9
+    for band in model._wavelets_fits:
+        if band["ignore"]:
+            continue
+        assert band["duration"] == 2.0
+        assert band["n_samples"] == 400
+        assert band["model"]._n_samples == 400
+    if broadband_pass:
+        assert model._broadband_model._n_samples == 400
+    live = mne.io.RawArray(data[:, :400].copy(), raw.info, verbose=False)
+    corrected = model.transform_raw(live, n_jobs=1, verbose=False)
+    assert corrected.get_data().shape == (len(names), 400)
+    assert np.isfinite(corrected.get_data()).all()
+    np.testing.assert_array_equal(raw.get_data(), data)
 
 
 def test_multiband_auto_wavelet_level_and_metrics():
