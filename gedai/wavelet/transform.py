@@ -26,11 +26,17 @@ def _process_epoch_wavelet(epoch_data, wavelet, level):
     n_channels, n_times = epoch_data.shape
     transformed_epoch = np.zeros((n_channels, level + 1, n_times))
 
-    for c, ch_data in enumerate(epoch_data):
-        coeffs = modwt(ch_data, wavelet, level)
-        modwtmra_data = modwtmra(coeffs, wavelet)
-        modwtmra_data = np.squeeze(modwtmra_data, axis=-1)
-        transformed_epoch[c, :, :] = modwtmra_data
+    if wavelet == "haar":
+        for b in range(level + 1):
+            transformed_epoch[:, b, :] = _modwt_haar_single_band(
+                epoch_data.T, level, b, engine="numpy"
+            )
+    else:
+        for c, ch_data in enumerate(epoch_data):
+            coeffs = modwt(ch_data, wavelet, level)
+            modwtmra_data = modwtmra(coeffs, wavelet)
+            modwtmra_data = np.squeeze(modwtmra_data, axis=-1)
+            transformed_epoch[c, :, :] = modwtmra_data
 
     return transformed_epoch
 

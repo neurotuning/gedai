@@ -147,6 +147,7 @@ class AdaptiveMultibandGedai:
         self._actual_wavelet_level = None
         self._broadband_model = None
         self.metrics_ = None
+        self._fitted_raw_ref = None
         self._fitted_raw_id = None
         self._fitted_raw_shape = None
         self._fitted_raw_ch_names = None
@@ -366,6 +367,7 @@ class AdaptiveMultibandGedai:
 
         # Cache reference and intermediate data for fast transform_raw on the
         # fitted signal
+        self._fitted_raw_ref = raw
         self._fitted_raw_id = id(raw)
         self._fitted_raw_shape = raw._data.shape if hasattr(raw, "_data") else None
         self._fitted_raw_ch_names = list(raw.ch_names)
@@ -522,11 +524,9 @@ class AdaptiveMultibandGedai:
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
         sfreq = raw_transform.info["sfreq"]
 
-        # Check if transforming the exact same raw data that was just fitted
-        is_same_raw = getattr(self, "_fitted_raw_id", None) == id(raw) or (
-            hasattr(raw, "_data")
-            and getattr(self, "_fitted_raw_shape", None) == raw._data.shape
-            and getattr(self, "_fitted_raw_ch_names", None) == raw.ch_names
+        # Check if transforming the exact same raw instance that was just fitted
+        is_same_raw = (
+            getattr(self, "_fitted_raw_ref", None) is raw
             and getattr(self, "_cached_broadband_data", None) is not None
         )
 
@@ -643,8 +643,6 @@ class AdaptiveMultibandGedai:
             epoch_duration=epoch_duration,
             threshold=threshold,
             engine=current_engine,
-            T1=T1,
-            percentile=percentile,
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(
