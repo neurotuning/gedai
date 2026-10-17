@@ -143,8 +143,6 @@ def clean_epochs_batched_torch(
     epochs_data: np.ndarray,
     reference_cov: np.ndarray,
     threshold: float | None = None,
-    T1: float | None = None,
-    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Process all epochs in a single batched tensor pass on PyTorch CPU.
 
@@ -155,11 +153,7 @@ def clean_epochs_batched_torch(
     reference_cov : np.ndarray, shape (n_channels, n_channels)
         Regularized reference covariance matrix.
     threshold : float | None
-        Eigenvalue threshold for artifact rejection (static fallback).
-    T1 : float | None
-        Dimensionless scale factor: (105 - sensai_threshold) / 100.
-    percentile : float | None
-        Percentile for dynamic thresholding (e.g. 98 for EEG, 99 for MEG).
+        Eigenvalue threshold for artifact rejection.
 
     Returns
     -------
@@ -177,34 +171,11 @@ def clean_epochs_batched_torch(
     covs = torch.bmm(x_centered, x_centered.mT) / max(1, n_times - 1)
 
     # Batched GEVD
-    evals, evecs = robust_cholesky_gevd(covs, b)
+    if threshold is None:
+        raise ValueError("threshold must be provided for deartifacting.")
 
-    if threshold is not None:
-        signal_mask = torch.abs(evals) < threshold
-    elif T1 is not None and percentile is not None:
-        mags = torch.abs(evals)
-        fallback_thresh = torch.tensor(
-            1.0,
-            dtype=evals.dtype,
-            device=evals.device,
-        )
-        q = float(percentile) / 100.0
-        chunk_thresh = torch.empty(
-            evals.shape[0],
-            dtype=evals.dtype,
-            device=evals.device,
-        )
-        for i in range(evals.shape[0]):
-            pos_mags = mags[i][mags[i] > 0]
-            if pos_mags.numel() > 0:
-                log_evals = torch.log(pos_mags) + 100.0
-                chunk_log_prctile = torch.quantile(log_evals, q)
-                chunk_thresh[i] = torch.exp(T1 * chunk_log_prctile - 100.0)
-            else:
-                chunk_thresh[i] = fallback_thresh
-        signal_mask = mags < chunk_thresh.unsqueeze(1)
-    else:
-        raise ValueError("Either (T1, percentile) or threshold must be provided.")
+    evals, evecs = robust_cholesky_gevd(covs, b)
+    signal_mask = torch.abs(evals) < threshold
 
     evecs_filtered = torch.where(
         signal_mask.unsqueeze(1), torch.zeros_like(evecs), evecs
@@ -226,8 +197,6 @@ def clean_continuous_stream_torch(
     reference_cov: np.ndarray,
     threshold: float | None = None,
     cosine_weights: np.ndarray | None = None,
-    T1: float | None = None,
-    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean segmented continuous stream in PyTorch with cosine windowing.
 
@@ -249,7 +218,7 @@ def clean_continuous_stream_torch(
     half = epoch_samples // 2
 
     clean, noise = clean_epochs_batched_torch(
-        stream, reference_cov, threshold=threshold, T1=T1, percentile=percentile
+        stream, reference_cov, threshold=threshold
     )
 
     clean_t = torch.from_numpy(clean).to(torch.float64)

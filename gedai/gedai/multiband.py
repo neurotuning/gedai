@@ -906,17 +906,6 @@ class MultibandGedai:
             if wavelet_fit["model"] is not None
             else self._reference_cov.data
         )
-        model = wavelet_fit.get("model")
-        T1 = (
-            model._fit.get("T1")
-            if model is not None and hasattr(model, "_fit")
-            else None
-        )
-        percentile = (
-            model._fit.get("percentile")
-            if model is not None and hasattr(model, "_fit")
-            else (99 if self._signal_type == "meg" else 98)
-        )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,
             sfreq=sfreq,
@@ -924,8 +913,6 @@ class MultibandGedai:
             epoch_duration=epoch_duration,
             threshold=threshold,
             engine=current_engine,
-            T1=T1,
-            percentile=percentile,
         )
         ep_samples_band = max(1, round(sfreq * 1.0))
         enova_band = float(

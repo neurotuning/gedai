@@ -476,15 +476,11 @@ class Gedai:
         cleaned_epochs_data = np.zeros_like(data)
 
         resolved_engine = ensure_engine(engine) if engine is not None else self.engine
-        T1 = self._fit.get("T1")
-        percentile = self._fit.get("percentile", self._percentile)
         if resolved_engine == "torch":
             cleaned_epochs_data, _ = clean_epochs_batched_torch(
                 data,
                 reference_cov,
                 threshold=threshold,
-                T1=T1,
-                percentile=percentile,
             )
         elif n_jobs == 1:
             for e, epoch_data in enumerate(data):
@@ -492,8 +488,6 @@ class Gedai:
                     epoch_data,
                     reference_cov,
                     threshold=threshold,
-                    T1=T1,
-                    percentile=percentile,
                 )
         else:
             parallel, p_fun, _ = parallel_func(
@@ -504,8 +498,6 @@ class Gedai:
                     epoch_data,
                     reference_cov,
                     threshold=threshold,
-                    T1=T1,
-                    percentile=percentile,
                 )
                 for epoch_data in data
             )
@@ -595,8 +587,6 @@ class Gedai:
         threshold = self._fit["threshold"]
 
         # Fast dual-stream continuous broadband cleaning
-        T1 = self._fit.get("T1")
-        percentile = self._fit.get("percentile", self._percentile)
         clean_data, _ = _clean_continuous_dual_stream(
             raw_data,
             sfreq=sfreq,
@@ -606,8 +596,6 @@ class Gedai:
             else 1.0,
             threshold=threshold,
             engine=current_engine,
-            T1=T1,
-            percentile=percentile,
         )
 
         raw_transform.get_data(verbose=False).copy()
@@ -772,8 +760,6 @@ def _process_single_epoch(
     epoch_data,
     reference_cov,
     threshold=None,
-    T1=None,
-    percentile=None,
 ):
     """Process a single epoch for cleaning using direct reference covariance projection.
 
@@ -791,21 +777,11 @@ def _process_single_epoch(
     cleaned_epoch : np.ndarray
         The cleaned epoch data.
     """
+    if threshold is None:
+        raise ValueError("threshold must be provided for deartifacting.")
+
     covariance = np.cov(epoch_data)
     eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
-
-    if threshold is None:
-        if T1 is not None and percentile is not None:
-            pos = np.abs(eigenvalues)
-            pos = pos[pos > 0]
-            if len(pos) > 0:
-                log_evals = np.log(pos) + 100.0
-                chunk_prctile = float(np.percentile(log_evals, percentile))
-                threshold = float(np.exp(T1 * chunk_prctile - 100.0))
-            else:
-                threshold = 1.0
-        else:
-            raise ValueError("Either (T1, percentile) or threshold must be provided.")
 
     eigvecs_filtered = eigenvectors.copy()
     signal_mask = np.abs(eigenvalues) < threshold
@@ -828,8 +804,6 @@ def _clean_continuous_dual_stream(
     epoch_duration: float,
     threshold: float | None = None,
     engine: str = "numpy",
-    T1: float | None = None,
-    percentile: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
 
@@ -853,6 +827,9 @@ def _clean_continuous_dual_stream(
     clean : np.ndarray, shape (n_channels, n_times)
     noise : np.ndarray, shape (n_channels, n_times)
     """
+    if threshold is None:
+        raise ValueError("threshold must be provided for continuous cleaning.")
+
     resolved_engine = ensure_engine(engine)
     n_ch, orig_len = data.shape
     epoch_samples = max(2, int(round(epoch_duration * sfreq)))
@@ -898,8 +875,6 @@ def _clean_continuous_dual_stream(
                 reference_cov,
                 threshold=threshold,
                 cosine_weights=cw,
-                T1=T1,
-                percentile=percentile,
             )
         n_ep = len(stream)
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
@@ -907,22 +882,7 @@ def _clean_continuous_dual_stream(
 
         for i in range(n_ep):
             ep = stream[i].astype(np.float64)
-            if threshold is not None:
-                eff_thresh = threshold
-            elif T1 is not None and percentile is not None:
-                c_ep = np.cov(ep)
-                evs = eigh(c_ep, reference_cov, eigvals_only=True, check_finite=True)
-                pos = np.abs(evs)
-                pos = pos[pos > 0]
-                if len(pos) > 0:
-                    log_evals = np.log(pos) + 100.0
-                    chunk_prctile = float(np.percentile(log_evals, percentile))
-                    eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
-                else:
-                    eff_thresh = 1.0
-            else:
-                eff_thresh = threshold
-            c = _process_single_epoch(ep, reference_cov, eff_thresh)
+            c = _process_single_epoch(ep, reference_cov, threshold)
             n = ep - c
             if i == 0:
                 c[:, half:] *= cw[half:]

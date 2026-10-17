@@ -20,8 +20,6 @@ def _clean_epochs(
     reference_cov,
     threshold=None,
     engine="auto",
-    T1=None,
-    percentile=None,
 ):
     resolved = ensure_engine(engine)
     if resolved == "torch":
@@ -29,9 +27,10 @@ def _clean_epochs(
             epochs_data,
             reference_cov,
             threshold=threshold,
-            T1=T1,
-            percentile=percentile,
         )
+
+    if threshold is None:
+        raise ValueError("threshold must be provided for deartifacting.")
 
     # Reconstruct data
     cleaned_epochs = np.zeros_like(epochs_data)
@@ -41,22 +40,8 @@ def _clean_epochs(
         covariance = np.cov(epoch_data)
         eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
-        if threshold is not None:
-            eff_thresh = threshold
-        elif T1 is not None and percentile is not None:
-            pos = np.abs(eigenvalues)
-            pos = pos[pos > 0]
-            if len(pos) > 0:
-                log_evals = np.log(pos) + 100.0
-                chunk_prctile = float(np.percentile(log_evals, percentile))
-                eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
-            else:
-                eff_thresh = 1.0
-        else:
-            eff_thresh = threshold
-
         eigvecs_filtered = eigenvectors.copy()
-        signal_mask = np.abs(eigenvalues) < eff_thresh
+        signal_mask = np.abs(eigenvalues) < threshold
         eigvecs_filtered[:, signal_mask] = 0
 
         # Direct Regularized Reference Covariance Projection:
