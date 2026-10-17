@@ -256,6 +256,7 @@ class Gedai:
                 verbose=verbose,
                 all_eval=all_eval,
                 all_evec=all_evec,
+                sensai_thresholds=sensai_thresholds,
                 signal_type=signal_type,
                 engine=current_engine,
             )
@@ -274,6 +275,7 @@ class Gedai:
                 signal_type=signal_type,
                 engine=current_engine,
                 sensai_tol=sensai_tol,
+                is_wavelet_band=getattr(self, "_is_wavelet_band", False),
             )
         else:
             raise ValueError(
@@ -284,7 +286,7 @@ class Gedai:
         # Compute dimensionless scale factor T1 matching MATLAB clean_EEG.m
         T1 = float((105.0 - sensai_value) / 100.0)
 
-        best_run = max(runs, key=lambda x: x[1]) if runs else None
+        best_run = min(runs, key=lambda x: abs(x[0] - threshold)) if runs else None
         self.fit_metrics_ = {
             "sensai_score": best_run[1] if best_run else 0.0,
             "signal_similarity": best_run[2] if best_run else 0.0,
@@ -792,17 +794,18 @@ def _process_single_epoch(
     covariance = np.cov(epoch_data)
     eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
-    if T1 is not None and percentile is not None:
-        pos = np.abs(eigenvalues)
-        pos = pos[pos > 0]
-        if len(pos) > 0:
-            log_evals = np.log(pos) + 100.0
-            chunk_prctile = float(np.percentile(log_evals, percentile))
-            threshold = float(np.exp(T1 * chunk_prctile - 100.0))
+    if threshold is None:
+        if T1 is not None and percentile is not None:
+            pos = np.abs(eigenvalues)
+            pos = pos[pos > 0]
+            if len(pos) > 0:
+                log_evals = np.log(pos) + 100.0
+                chunk_prctile = float(np.percentile(log_evals, percentile))
+                threshold = float(np.exp(T1 * chunk_prctile - 100.0))
+            else:
+                threshold = 1.0
         else:
-            threshold = threshold if threshold is not None else 1.0
-    elif threshold is None:
-        raise ValueError("Either (T1, percentile) or threshold must be provided.")
+            raise ValueError("Either (T1, percentile) or threshold must be provided.")
 
     eigvecs_filtered = eigenvectors.copy()
     signal_mask = np.abs(eigenvalues) < threshold
@@ -904,7 +907,9 @@ def _clean_continuous_dual_stream(
 
         for i in range(n_ep):
             ep = stream[i].astype(np.float64)
-            if T1 is not None and percentile is not None:
+            if threshold is not None:
+                eff_thresh = threshold
+            elif T1 is not None and percentile is not None:
                 c_ep = np.cov(ep)
                 evs = eigh(c_ep, reference_cov, eigvals_only=True, check_finite=True)
                 pos = np.abs(evs)
@@ -914,7 +919,7 @@ def _clean_continuous_dual_stream(
                     chunk_prctile = float(np.percentile(log_evals, percentile))
                     eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
                 else:
-                    eff_thresh = threshold if threshold is not None else 1.0
+                    eff_thresh = 1.0
             else:
                 eff_thresh = threshold
             c = _process_single_epoch(ep, reference_cov, eff_thresh)

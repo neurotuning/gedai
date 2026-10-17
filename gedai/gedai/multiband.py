@@ -329,6 +329,7 @@ class MultibandGedai:
                 )
 
                 model = Gedai(engine=current_engine)
+                model._is_wavelet_band = True
                 model.fit_epochs(
                     wavelet_epochs,
                     picks="all",
@@ -445,7 +446,7 @@ class MultibandGedai:
 
         # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
         raw_fit._data = _apply_wavelet_highpass_prefilter(
-            raw_fit._data, sfreq, lowcut_hz=0.1
+            raw_fit._data, sfreq, lowcut_hz=0.1, engine=current_engine
         )
 
         cov = _pick_cov(cov, raw_fit.info)
@@ -642,6 +643,7 @@ class MultibandGedai:
         band_bounds = (min_thresh, max_thresh)
 
         model = Gedai(engine=current_engine)
+        model._is_wavelet_band = True
         model.fit_epochs(
             wavelet_epochs,
             picks="all",

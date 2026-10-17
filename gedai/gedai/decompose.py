@@ -41,7 +41,9 @@ def _clean_epochs(
         covariance = np.cov(epoch_data)
         eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
 
-        if T1 is not None and percentile is not None:
+        if threshold is not None:
+            eff_thresh = threshold
+        elif T1 is not None and percentile is not None:
             pos = np.abs(eigenvalues)
             pos = pos[pos > 0]
             if len(pos) > 0:
@@ -49,7 +51,7 @@ def _clean_epochs(
                 chunk_prctile = float(np.percentile(log_evals, percentile))
                 eff_thresh = float(np.exp(T1 * chunk_prctile - 100.0))
             else:
-                eff_thresh = threshold if threshold is not None else 1.0
+                eff_thresh = 1.0
         else:
             eff_thresh = threshold
 

@@ -179,11 +179,12 @@ def clean_epochs_batched_torch(
     # Batched GEVD
     evals, evecs = robust_cholesky_gevd(covs, b)
 
-    # Dynamic Per-Chunk Percentile Thresholding (matching MATLAB clean_EEG.m)
-    if T1 is not None and percentile is not None:
+    if threshold is not None:
+        signal_mask = torch.abs(evals) < threshold
+    elif T1 is not None and percentile is not None:
         mags = torch.abs(evals)
         fallback_thresh = torch.tensor(
-            threshold if threshold is not None else 1.0,
+            1.0,
             dtype=evals.dtype,
             device=evals.device,
         )
@@ -202,8 +203,6 @@ def clean_epochs_batched_torch(
             else:
                 chunk_thresh[i] = fallback_thresh
         signal_mask = mags < chunk_thresh.unsqueeze(1)
-    elif threshold is not None:
-        signal_mask = torch.abs(evals) < threshold
     else:
         raise ValueError("Either (T1, percentile) or threshold must be provided.")
 

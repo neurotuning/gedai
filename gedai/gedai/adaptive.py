@@ -455,6 +455,7 @@ class AdaptiveMultibandGedai:
         band_bounds = (min_thresh, max_thresh)
 
         model = Gedai(engine=current_engine)
+        model._is_wavelet_band = True
         model.fit_epochs(
             wavelet_epochs,
             picks="all",
