@@ -225,7 +225,6 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
-
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
