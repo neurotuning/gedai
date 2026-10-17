@@ -455,6 +455,7 @@ class AdaptiveMultibandGedai:
         band_bounds = (min_thresh, max_thresh)
 
         model = Gedai(engine=current_engine)
+        model._is_wavelet_band = True
         model.fit_epochs(
             wavelet_epochs,
             picks="all",
@@ -624,17 +625,6 @@ class AdaptiveMultibandGedai:
             wavelet_fit["model"]._reference_cov.data
             if wavelet_fit["model"] is not None
             else self._reference_cov.data
-        )
-        model = wavelet_fit.get("model")
-        T1 = (
-            model._fit.get("T1")
-            if model is not None and hasattr(model, "_fit")
-            else None
-        )
-        percentile = (
-            model._fit.get("percentile")
-            if model is not None and hasattr(model, "_fit")
-            else (99 if self._signal_type == "meg" else 98)
         )
         clean_band, noise_band = _clean_continuous_dual_stream(
             band_data,

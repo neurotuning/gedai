@@ -172,8 +172,8 @@ def test_gedai_raw_engine_override_reaches_prefilter(monkeypatch):
     assert all(engine == "numpy" for engine in calls)
 
 
-def test_gedai_transform_epochs_forwards_dynamic_threshold_parameters(monkeypatch):
-    """NumPy epoch cleaning should receive fitted dynamic-threshold parameters."""
+def test_gedai_transform_epochs_forwards_threshold(monkeypatch):
+    """NumPy epoch cleaning should receive the fitted calibrated threshold."""
     rng = np.random.RandomState(0)
     data = rng.randn(3, 4, 100)
     ch_names = [f"EEG{i:03d}" for i in range(4)]
@@ -183,14 +183,12 @@ def test_gedai_transform_epochs_forwards_dynamic_threshold_parameters(monkeypatc
     calls = []
     original = gedai_module._process_single_epoch
 
-    def spy(epoch_data, reference_cov, threshold=None, T1=None, percentile=None):
-        calls.append((T1, percentile))
+    def spy(epoch_data, reference_cov, threshold=None):
+        calls.append(threshold)
         return original(
             epoch_data,
             reference_cov,
             threshold=threshold,
-            T1=T1,
-            percentile=percentile,
         )
 
     model = Gedai(engine="numpy")
@@ -200,12 +198,9 @@ def test_gedai_transform_epochs_forwards_dynamic_threshold_parameters(monkeypatc
         sensai_method="optimize",
         verbose=False,
     )
-    model._fit["T1"] = 1.02
-    model._fit["percentile"] = 97
-    model._percentile = 97
 
     monkeypatch.setattr(gedai_module, "_process_single_epoch", spy)
 
     model.transform_epochs(epochs.copy(), n_jobs=1, verbose=False, engine="numpy")
 
-    assert calls == [(1.02, 97)] * len(data)
+    assert calls == [model.threshold] * len(data)

@@ -646,6 +646,67 @@ def _sensai_gridsearch(
     return best_threshold, float(best_sensai_threshold), sensai_data
 
 
+def _select_sensai_threshold_from_curve(
+    svs: np.ndarray,
+    scores: np.ndarray,
+    is_wavelet_band: bool = False,
+) -> float:
+    """Select optimal SENSAI threshold with plateau-interior and shoulder stabilization.
+
+    Addresses two structural properties of the SENSAI objective curve:
+    1. Flat-top plateaus in the low-to-mid threshold range (sv <= 5.0), where standard
+       argmax or golden-section search can land on the left cliff edge with zero margin
+       for test epochs; selects the 75% upper interior of the flat plateau.
+    2. High-threshold over-rejection plateaus (sv > 5.0), where power-weighted noise
+       subspace projection masks newly rejected cortical eigenvectors behind dominant
+       artifact eigenvalues; selects the 98% (broadband) or 95% (wavelet band) shoulder
+       before cortical over-rejection occurs, and suppresses spurious rejection when a
+       wavelet sub-band has negligible score gain (< 2.5 points) over the zero-rejection
+       baseline.
+    """
+    if len(svs) == 0:
+        return 0.0
+    if len(svs) < 4:
+        return float(svs[int(np.argmax(scores))])
+
+    score_base = float(np.median(scores[: min(3, len(scores))]))
+    score_peak = float(np.max(scores))
+    gain = score_peak - score_base
+
+    near_peak = np.where(scores >= score_peak - 0.05)[0]
+    sv_peak_left = float(svs[near_peak[0]])
+    sv_peak_right = float(svs[near_peak[-1]])
+    if sv_peak_right <= 5.0 and (sv_peak_right - sv_peak_left) >= 0.4:
+        s_peak = 0.25 * sv_peak_left + 0.75 * sv_peak_right
+    else:
+        s_peak = float(svs[int(np.argmax(scores))])
+
+    shoulder_frac = 0.95 if is_wavelet_band else 0.98
+    peak_trig = 5.0 if is_wavelet_band else 5.5
+
+    if is_wavelet_band and gain < 2.5:
+        chosen_sv = float(svs[0])
+    elif (
+        s_peak > 7.2
+        and np.any(svs <= 4.5)
+        and (float(np.max(scores[svs <= 4.5])) - score_base) < 3.0
+        and score_base > 30.0
+    ):
+        chosen_sv = 3.5
+    elif s_peak > peak_trig and gain >= 2.5:
+        target = score_base + shoulder_frac * gain
+        cand = np.where((svs <= s_peak) & (scores >= target))[0]
+        if len(cand) > 0:
+            chosen_sv = max(4.8, s_peak - 1.2, float(svs[cand[0]]))
+        else:
+            chosen_sv = s_peak
+    else:
+        chosen_sv = s_peak
+
+    return float(chosen_sv)
+
+
+
 def _sensai_optimize(
     epochs,
     reference_cov,
@@ -659,6 +720,7 @@ def _sensai_optimize(
     signal_type="eeg",
     engine="auto",
     sensai_tol: float = 0.1,
+    is_wavelet_band: bool = False,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -706,37 +768,52 @@ def _sensai_optimize(
         all_VR_t = torch.from_numpy(all_VR)
         template_t = torch.from_numpy(template)
 
+    step = min(0.1, max(0.01, float(sensai_tol)))
+    sensai_thresholds = np.arange(float(bounds[0]), float(bounds[1]), step)
+    if len(sensai_thresholds) == 0:
+        sensai_thresholds = np.array([float(bounds[0]), float(bounds[1])])
+
     runs = []
+    scores_list = []
+    prev_mask = None
+    prev_vals = None
 
-    def objective_function(sensai_threshold):
-        T1 = (105 - sensai_threshold) / 100
-        eigen_threshold = float(np.exp(T1 * p_val - 100))
+    for sv in sensai_thresholds:
+        T1 = (105.0 - float(sv)) / 100.0
+        eigen_threshold = float(np.exp(T1 * p_val - 100.0))
 
-        if resolved == "torch":
-            sig_sims_t, noi_sims_t = _sensai_score_torch(
-                abs_evals_t,
-                all_VR_t,
-                template_t,
-                eigen_threshold,
-                n_pc=n_pc,
-                signal_type=signal_type,
-            )
-            sig_sim = float(sig_sims_t.mean().item() * 100.0)
-            noi_sim = float(noi_sims_t.mean().item() * 100.0)
+        cur_mask = abs_evals >= eigen_threshold
+        if prev_mask is not None and np.array_equal(cur_mask, prev_mask):
+            score, sig_sim, noi_sim = prev_vals
         else:
-            sig_sims, noi_sims = _sensai_score_loop(
-                abs_evals,
-                all_VR,
-                template,
-                eigen_threshold,
-                n_pc=n_pc,
-                signal_type=signal_type,
-            )
-            sig_sim = float(np.mean(sig_sims) * 100.0)
-            noi_sim = float(np.mean(noi_sims) * 100.0)
+            if resolved == "torch":
+                sig_sims_t, noi_sims_t = _sensai_score_torch(
+                    abs_evals_t,
+                    all_VR_t,
+                    template_t,
+                    eigen_threshold,
+                    n_pc=n_pc,
+                    signal_type=signal_type,
+                )
+                sig_sim = float(sig_sims_t.mean().item() * 100.0)
+                noi_sim = float(noi_sims_t.mean().item() * 100.0)
+            else:
+                sig_sims, noi_sims = _sensai_score_loop(
+                    abs_evals,
+                    all_VR,
+                    template,
+                    eigen_threshold,
+                    n_pc=n_pc,
+                    signal_type=signal_type,
+                )
+                sig_sim = float(np.mean(sig_sims) * 100.0)
+                noi_sim = float(np.mean(noi_sims) * 100.0)
 
-        score = float(sig_sim - (noise_multiplier * noi_sim))
+            score = float(sig_sim - (noise_multiplier * noi_sim))
+            prev_mask = cur_mask
+            prev_vals = (score, sig_sim, noi_sim)
 
+        scores_list.append(score)
         runs.append(
             [
                 eigen_threshold,
@@ -745,23 +822,19 @@ def _sensai_optimize(
                 noi_sim,
             ]
         )
-        return -score
 
-    result = minimize_scalar(
-        objective_function,
-        bounds=bounds,
-        method="bounded",
-        options={
-            "xatol": float(sensai_tol),
-            "maxiter": 500,
-        },
-    )
+    scores_arr = np.asarray(scores_list, dtype=np.float64)
+    if signal_type == "meg":
+        sensai_threshold = float(sensai_thresholds[int(np.argmax(scores_arr))])
+    else:
+        sensai_threshold = _select_sensai_threshold_from_curve(
+            sensai_thresholds,
+            scores_arr,
+            is_wavelet_band=is_wavelet_band,
+        )
 
-    if not result.success:
-        raise ValueError("Optimization failed: " + result.message)
-
-    sensai_threshold = float(result.x)
-    T1_opt = (105 - sensai_threshold) / 100
-    eigen_threshold = float(np.exp(T1_opt * p_val - 100))
+    T1_opt = (105.0 - sensai_threshold) / 100.0
+    eigen_threshold = float(np.exp(T1_opt * p_val - 100.0))
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, sensai_threshold, runs
+
