@@ -152,15 +152,23 @@ wavelet_level : int
     Wavelet decomposition level. Must be greater than ``0``.
     The default is ``4``."""
 docdict["wavelet_low_cutoff"] = """
-wavelet_low_cutoff : float | None
-    If a float is provided, zero out all wavelet levels whose upper frequency
-    bound is below this cutoff frequency in Hz. If ``None``, no frequency band
-    is zeroed out. If ``"auto"``, the cutoff is automatically determined based
-    on the info['highpass'] value (minimum 0.5 Hz). While reading data
-    from a file, info['highpass'] might be missing (i.e., equal to 0.0). If
-    you know that your data has been high-pass filtered, make sure to set
-    ``wavelet_low_cutoff`` to the high-pass cutoff frequency.
-    The default is ``0.5``."""
+wavelet_low_cutoff : float | str | None, default=0.1
+    Low-frequency cutoff in Hz for wavelet high-pass pre-filtering and subband
+    exclusion:
+
+    - ``0.1`` (default): Applies a 0.1 Hz Haar wavelet high-pass pre-filter before
+      broadband GED estimation while anchoring spectral MRA decomposition at 0.5 Hz
+      and retaining/spatially cleaning the 0.1-0.5 Hz scaling band. Recommended for
+      general-purpose EEG/MEG and standard ERP studies.
+    - ``0.0`` or ``None``: Disables wavelet high-pass pre-filtering completely
+      (applying only global channel mean centering) and retains all spectral bands
+      down to DC. Recommended for pre-stimulus baseline / anticipatory ERP analyses
+      (e.g., CNV, RP, LPP) or when data have already been causally high-pass filtered.
+    - ``>= 0.5`` (e.g., ``0.5``): Applies a sub-cutoff wavelet high-pass pre-filter
+      and zeroes out all spectral MRA bands with upper frequency bound ``<= wavelet_low_cutoff``.
+      Recommended for resting-state recordings with severe slow electrode drift.
+    - ``"auto"``: Automatically resolves to ``max(0.1, raw.info['highpass'])`` when
+      ``raw.info['highpass'] > 0``, else ``0.1`` Hz."""
 docdict["wavelet_type"] = """
 wavelet_type : str
     Wavelet to use for the decomposition. The default is ``'haar'``.

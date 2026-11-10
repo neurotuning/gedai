@@ -21,8 +21,8 @@ def _ensure_wavelet_low_cutoff(
     """Resolve wavelet low cutoff frequency from user parameter and filter highpass."""
     if wavelet_low_cutoff == "auto":
         if filter_highpass is not None and filter_highpass > 0:
-            return max(0.5, float(filter_highpass))
-        return 0.5
+            return max(0.1, float(filter_highpass))
+        return 0.1
     elif wavelet_low_cutoff is None:
         return 0.0
     return float(wavelet_low_cutoff)

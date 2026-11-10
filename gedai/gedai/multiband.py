@@ -201,7 +201,7 @@ class MultibandGedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_tol: float = 0.1,
-        wavelet_low_cutoff: float | str | None = 0.5,
+        wavelet_low_cutoff: float | str | None = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -294,7 +294,7 @@ class MultibandGedai:
 
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
-            if fmax < wavelet_low_cutoff:
+            if wavelet_low_cutoff >= 0.5 and fmax <= wavelet_low_cutoff:
                 logger.info(
                     f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
                     f"will be zeroed out during transformation because its upper "
@@ -315,7 +315,7 @@ class MultibandGedai:
                 signal_type = _detect_signal_type(epochs_fit.info)
                 center_freq = (fmin + fmax) / 2.0
                 lowcut = wavelet_low_cutoff
-                min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0
+                min_thresh = -6.0 if (min(lowcut, fmax / 2.0) <= center_freq <= 60.0) else 0.0
                 max_thresh = 8.0 if signal_type == "meg" else 12.0
                 band_bounds = (min_thresh, max_thresh)
 
@@ -388,7 +388,7 @@ class MultibandGedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_tol: float = 0.1,
-        wavelet_low_cutoff: float | str | None = 0.5,
+        wavelet_low_cutoff: float | str | None = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
@@ -443,16 +443,28 @@ class MultibandGedai:
         raw_fit = _prepare_raw_fit(raw, picks)
         sfreq = raw_fit.info["sfreq"]
 
-        # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
-        raw_fit._data = _apply_wavelet_highpass_prefilter(
-            raw_fit._data, sfreq, lowcut_hz=0.1, engine=current_engine
-        )
-
         cov = _pick_cov(cov, raw_fit.info)
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, filter_cutoff, duration
         )
+
+        # Single-stage pre-broadband wavelet high-pass pre-filter (or global
+        # channel mean centering when wavelet_low_cutoff <= 0)
+        if wavelet_low_cutoff > 0:
+            logger.info(
+                f"Applying wavelet HP pre-filter (sub-{wavelet_low_cutoff:.2f} Hz)..."
+            )
+            raw_fit._data = _apply_wavelet_highpass_prefilter(
+                raw_fit._data,
+                sfreq,
+                lowcut_hz=wavelet_low_cutoff,
+                engine=current_engine,
+            )
+        else:
+            raw_fit._data = raw_fit._data - np.mean(
+                raw_fit._data, axis=1, keepdims=True
+            )
 
         if self.wavelet_level == "auto":
             actual_wavelet_level = compute_wavelet_level(
@@ -479,21 +491,11 @@ class MultibandGedai:
             )
         duration = valid_duration
 
-        # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
+        # Broadband pre-cleaning pass if requested
         signal_type = _detect_signal_type(raw_fit.info)
         bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
         if self.broadband_pass:
-            logger.info(
-                "Applying wavelet HP pre-filter "
-                f"(sub-{wavelet_low_cutoff:.2f} Hz) and running "
-                "broadband GEDAI pass..."
-            )
-            raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data,
-                sfreq,
-                lowcut_hz=wavelet_low_cutoff,
-                engine=current_engine,
-            )
+            logger.info("Running broadband GEDAI pass...")
             broadband_model = Gedai(engine=current_engine)
             broadband_model.fit_raw(
                 raw_fit,
@@ -506,6 +508,7 @@ class MultibandGedai:
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
                 sensai_tol=sensai_tol,
+                highpass_prefilter=None,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -602,7 +605,7 @@ class MultibandGedai:
         """Fit a single wavelet band model."""
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         w, (fmin, fmax) = item
-        if fmax <= wavelet_low_cutoff:
+        if wavelet_low_cutoff >= 0.5 and fmax <= wavelet_low_cutoff:
             return {
                 "band_index": w,
                 "fmin": fmin,
@@ -637,7 +640,7 @@ class MultibandGedai:
         signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
         lowcut = wavelet_low_cutoff
-        min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0
+        min_thresh = -6.0 if (min(lowcut, fmax / 2.0) <= center_freq <= 60.0) else 0.0
         max_thresh = 8.0 if signal_type == "meg" else 12.0
         band_bounds = (min_thresh, max_thresh)
 
@@ -820,19 +823,22 @@ class MultibandGedai:
         raw_transform = _prepare_raw_transform(raw, self.ch_names)
         sfreq = raw_transform.info["sfreq"]
 
-        # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
-        raw_transform._data = _apply_wavelet_highpass_prefilter(
-            raw_transform._data, sfreq, lowcut_hz=0.1, engine=current_engine
-        )
-
-        # Broadband pre-cleaning if model was fitted with broadband_pass
-        if self.broadband_pass and self._broadband_model is not None:
+        # Mirror the single-stage high-pass pre-filtering (or mean centering)
+        # applied during fit_raw
+        if self._wavelet_low_cutoff is not None and self._wavelet_low_cutoff > 0:
             raw_transform._data = _apply_wavelet_highpass_prefilter(
                 raw_transform._data,
                 sfreq,
                 lowcut_hz=self._wavelet_low_cutoff,
                 engine=current_engine,
             )
+        else:
+            raw_transform._data = raw_transform._data - np.mean(
+                raw_transform._data, axis=1, keepdims=True
+            )
+
+        # Broadband pre-cleaning if model was fitted with broadband_pass
+        if self.broadband_pass and self._broadband_model is not None:
             raw_input = self._broadband_model.transform_raw(
                 raw_transform,
                 overlap=overlap,

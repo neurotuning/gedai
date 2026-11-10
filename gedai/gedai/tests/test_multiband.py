@@ -108,13 +108,27 @@ def test_multiband_raw_picks():
 
 
 def test_multiband_low_cutoff_marks_ignored_bands():
-    """Low cutoff should mark at least one low-frequency band as ignored."""
+    """Low cutoff >= 0.5 Hz should mark low-frequency bands as ignored, while 0.1 Hz and None retain all."""
     model = MultibandGedai(wavelet_type="haar", wavelet_level=wavelet_level)
 
     model.fit_epochs(epochs_eeg, wavelet_low_cutoff=5.0, n_jobs=1)
     ignored = [fit["ignore"] for fit in model._wavelets_fits]
     assert any(ignored)
     assert any(not flag for flag in ignored)
+
+    # Default 0.1 Hz retains all bands
+    model_default = MultibandGedai(wavelet_type="haar", wavelet_level=2, broadband_pass=False)
+    model_default.fit_epochs(epochs_eeg, picks=epochs_eeg.ch_names[:4], n_jobs=1)
+    assert model_default._wavelet_low_cutoff == 0.1
+    assert not any(fit["ignore"] for fit in model_default._wavelets_fits)
+
+    # None (0.0 Hz) retains all bands
+    model_none = MultibandGedai(wavelet_type="haar", wavelet_level=2, broadband_pass=False)
+    model_none.fit_epochs(
+        epochs_eeg, picks=epochs_eeg.ch_names[:4], wavelet_low_cutoff=None, n_jobs=1
+    )
+    assert model_none._wavelet_low_cutoff == 0.0
+    assert not any(fit["ignore"] for fit in model_none._wavelets_fits)
 
 
 def test_wavelet_duration_helpers():

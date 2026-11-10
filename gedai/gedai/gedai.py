@@ -399,6 +399,10 @@ class Gedai:
                     lowcut_hz=highpass_prefilter,
                     engine=current_engine,
                 )
+        elif highpass_prefilter is not None and highpass_prefilter <= 0:
+            raw_fit._data = raw_fit._data - np.mean(
+                raw_fit._data, axis=1, keepdims=True
+            )
         self._highpass_prefilter = highpass_prefilter
 
         overlap_seconds = duration * overlap
@@ -581,6 +585,13 @@ class Gedai:
                     lowcut_hz=self._highpass_prefilter,
                     engine=current_engine,
                 )
+        elif (
+            getattr(self, "_highpass_prefilter", None) is not None
+            and self._highpass_prefilter <= 0
+        ):
+            raw_transform._data = raw_transform._data - np.mean(
+                raw_transform._data, axis=1, keepdims=True
+            )
 
         raw_data = raw_transform.get_data(verbose=False)
         sfreq = raw_transform.info["sfreq"]
