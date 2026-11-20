@@ -39,6 +39,15 @@ del key
 # Override n_jobs to avoid fragile intersphinx resolution of joblib in some builds.
 # -- A ---------------------------------------------------------------------------------
 # -- B ---------------------------------------------------------------------------------
+docdict["bad_channel_threshold"] = """
+bad_channel_threshold : float | str | None, default=None
+    Threshold for automatic two-pass bad-channel detection and exclusion based
+    on per-channel Explained Noise Variance (ENOVA), matching MATLAB GEDAI.
+    If ``None`` (default) or ``np.inf``, automatic bad-channel detection is
+    disabled. If ``"auto"``, uses ``0.95``. If a positive float (typically in
+    ``(0, 1]``), performs a pre-pass to detect flat channels and a Pass 1
+    fit/transform to flag channels whose ENOVA exceeds the threshold, then
+    re-fits Pass 2 on the remaining good channels."""
 # -- C ---------------------------------------------------------------------------------
 docdict["cycles_per_wavelet"] = """
 cycles_per_wavelet : int
@@ -59,6 +68,13 @@ engine : "auto" | "torch" | "numpy", default="auto"
 # -- G ---------------------------------------------------------------------------------
 # -- H ---------------------------------------------------------------------------------
 # -- I ---------------------------------------------------------------------------------
+docdict["interpolate_bads"] = """
+interpolate_bads : bool, default=False
+    If ``True`` and bad channels were excluded during fitting (recorded in
+    ``self.bad_channels_``), reconstructs those channels in the output via
+    MNE spherical spline interpolation (``interpolate_bads``) and, for EEG,
+    re-applies an average reference across the restored montage. Requires
+    valid 3D channel locations on the input instance."""
 # -- J ---------------------------------------------------------------------------------
 # -- K ---------------------------------------------------------------------------------
 # -- L ---------------------------------------------------------------------------------
@@ -92,6 +108,17 @@ noise_multiplier : float | str
 
     Alternatively, a custom numerical float can be passed."""
 # -- O ---------------------------------------------------------------------------------
+docdict["on_bad_channel"] = """
+on_bad_channel : "exclude" | "ignore", default="exclude"
+    How to handle channels marked in ``inst.info['bads']`` when fitting:
+
+    - ``"exclude"`` (default): Drops channels listed in ``info['bads']`` from
+      the fit (even if explicitly named in ``picks``) and logs a warning.
+      At transform time, raises a ``ValueError`` if any fitted channel in
+      ``self.ch_names`` is marked bad on the input instance.
+    - ``"ignore"``: Clears ``info['bads']`` on an internal copy of the data
+      and logs a warning so all selected channels are average-referenced and
+      processed together during both fitting and transformation."""
 docdict["overlap"] = """
 overlap : float
     The overlap ratio between consecutive epochs, between ``0`` and ``1``.

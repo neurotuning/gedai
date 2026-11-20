@@ -4,16 +4,24 @@ from joblib import Parallel, delayed
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
+    _check_bad_channel_threshold,
     _check_fit_info,
+    _check_on_bad_channel,
     _detect_signal_type,
     _ensure_wavelet_low_cutoff,
     _format_summary_table,
+    _interpolate_bad_channels,
     _prepare_raw_fit,
     _prepare_raw_transform,
+    _run_two_pass_bad_channel_detection,
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..metrics.enova import compute_enova_per_epoch
+from ..metrics.enova import (
+    compute_composite_sensai,
+    compute_enova_per_channel,
+    compute_enova_per_epoch,
+)
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
@@ -153,7 +161,26 @@ class AdaptiveMultibandGedai:
         self._fitted_raw_id = None
         self._fitted_raw_shape = None
         self._fitted_raw_ch_names = None
+        self._fitted_raw_bads = None
         self._cached_broadband_data = None
+        self._cached_prefiltered_data = None
+        self._on_bad_channel = "exclude"
+        self._bad_channel_threshold = None
+        self.bad_channels_ = []
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
+
+    def _clone_unfitted(self):
+        """Return an unfitted clone with the same initialization settings."""
+        return AdaptiveMultibandGedai(
+            wavelet_type=self.wavelet_type,
+            wavelet_level=self._wavelet_level,
+            cycles_per_wavelet=self.cycles_per_wavelet,
+            broadband_pass=self.broadband_pass,
+            engine=self.engine,
+        )
 
     @property
     def wavelet_level(self):
@@ -208,6 +235,8 @@ class AdaptiveMultibandGedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        on_bad_channel: str = "exclude",
+        bad_channel_threshold: float | str | None = None,
     ):
         """Fit the model to raw data.
 
@@ -229,6 +258,8 @@ class AdaptiveMultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(on_bad_channel)s
+        %(bad_channel_threshold)s
         """
         self._check_unfitted()
         _check_type(raw, (BaseRaw,), "raw")
@@ -244,8 +275,42 @@ class AdaptiveMultibandGedai:
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
+        on_bad_channel = _check_on_bad_channel(on_bad_channel)
+        resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
 
-        raw_fit = _prepare_raw_fit(raw, picks)
+        if resolved_bad_thresh is not None:
+            _run_two_pass_bad_channel_detection(
+                self,
+                raw,
+                fit_method_name="fit_raw",
+                transform_method_name="transform_raw",
+                picks=picks,
+                on_bad_channel=on_bad_channel,
+                threshold=resolved_bad_thresh,
+                fit_kwargs=dict(
+                    overlap=overlap,
+                    reject_by_annotation=reject_by_annotation,
+                    reference_cov=reference_cov,
+                    sensai_method=sensai_method,
+                    noise_multiplier=noise_multiplier,
+                    sensai_tol=sensai_tol,
+                    wavelet_low_cutoff=wavelet_low_cutoff,
+                    n_pc=n_pc,
+                    n_jobs=n_jobs,
+                    verbose=verbose,
+                    engine=current_engine,
+                ),
+                transform_kwargs=dict(
+                    overlap=overlap,
+                    n_jobs=n_jobs,
+                    engine=current_engine,
+                ),
+            )
+            return
+
+        raw_fit, excluded_bads = _prepare_raw_fit(
+            raw, picks, on_bad_channel=on_bad_channel, return_bads=True
+        )
         sfreq = raw_fit.info["sfreq"]
 
         cov = _pick_cov(reference_cov, raw_fit.info)
@@ -269,6 +334,7 @@ class AdaptiveMultibandGedai:
             raw_fit._data = raw_fit._data - np.mean(
                 raw_fit._data, axis=1, keepdims=True
             )
+        prefiltered_data = raw_fit.get_data(verbose=False).copy()
 
         # Automatic wavelet level calculation adaptively matching low cutoff
         if self.wavelet_level == "auto":
@@ -376,7 +442,9 @@ class AdaptiveMultibandGedai:
         self._fitted_raw_id = id(raw)
         self._fitted_raw_shape = raw._data.shape if hasattr(raw, "_data") else None
         self._fitted_raw_ch_names = list(raw.ch_names)
+        self._fitted_raw_bads = tuple(raw.info["bads"])
         self._cached_broadband_data = raw_data_fit
+        self._cached_prefiltered_data = prefiltered_data
 
         sensai_scores = [
             wf["model"].fit_metrics_["sensai_score"]
@@ -387,6 +455,13 @@ class AdaptiveMultibandGedai:
             "sensai_score": float(np.mean(sensai_scores)) if sensai_scores else 0.0,
             "wavelets_fits": wavelets_fits,
         }
+        self._on_bad_channel = on_bad_channel
+        self._bad_channel_threshold = None
+        self.bad_channels_ = list(excluded_bads)
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
 
     def _fit_wavelet_band(
         self,
@@ -499,6 +574,7 @@ class AdaptiveMultibandGedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        interpolate_bads: bool = False,
     ) -> BaseRaw:
         """Apply the Adaptive Multiband GEDAI transform to raw data.
 
@@ -512,6 +588,7 @@ class AdaptiveMultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(interpolate_bads)s
 
         Returns
         -------
@@ -521,22 +598,31 @@ class AdaptiveMultibandGedai:
         self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
+        _check_type(interpolate_bads, (bool,), "interpolate_bads")
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         n_jobs = _check_n_jobs(n_jobs)
 
         _check_fit_info(self, raw)
-        raw_transform = _prepare_raw_transform(raw, self.ch_names)
+        raw_transform = _prepare_raw_transform(
+            raw,
+            self.ch_names,
+            on_bad_channel=self._on_bad_channel,
+            excluded_bads=self.bad_channels_,
+        )
         sfreq = raw_transform.info["sfreq"]
 
         # Check if transforming the exact same raw instance that was just fitted
         is_same_raw = (
             getattr(self, "_fitted_raw_ref", None) is raw
             and getattr(self, "_cached_broadband_data", None) is not None
+            and getattr(self, "_cached_prefiltered_data", None) is not None
+            and getattr(self, "_fitted_raw_bads", None) == tuple(raw.info["bads"])
         )
 
-        if is_same_raw and getattr(self, "_cached_broadband_data", None) is not None:
+        if is_same_raw:
+            orig_data = self._cached_prefiltered_data
             raw_data = self._cached_broadband_data
         else:
             # Mirror the single-stage high-pass pre-filtering (or mean centering)
@@ -552,6 +638,8 @@ class AdaptiveMultibandGedai:
                 raw_transform._data = raw_transform._data - np.mean(
                     raw_transform._data, axis=1, keepdims=True
                 )
+
+            orig_data = raw_transform.get_data(verbose=False).copy()
 
             if self.broadband_pass and self._broadband_model is not None:
                 raw_input = self._broadband_model.transform_raw(
@@ -599,6 +687,28 @@ class AdaptiveMultibandGedai:
         for _i, (clean_band, _enova_band, _sensai_band) in enumerate(band_results):
             raw_transformed_data += clean_band
 
+        noise_data = orig_data - raw_transformed_data
+        ep_samples = max(1, round(sfreq * 1.0))
+        enova_ep = compute_enova_per_epoch(
+            raw_transformed_data, noise_data, ep_samples
+        )
+        enova_ch = compute_enova_per_channel(
+            raw_transformed_data, noise_data, ep_samples
+        )
+        sensai_val = compute_composite_sensai(
+            raw_transformed_data,
+            noise_data,
+            sfreq,
+            self._reference_cov.data,
+            n_pc=min(3, orig_data.shape[0]),
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
+
         raw_transform._data = raw_transformed_data
 
         if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
@@ -606,6 +716,10 @@ class AdaptiveMultibandGedai:
         ):
             pass
 
+        if interpolate_bads and self.bad_channels_:
+            return _interpolate_bad_channels(
+                raw, raw_transform, self.bad_channels_
+            )
         return raw_transform
 
     def _transform_wavelet_band(
@@ -661,7 +775,9 @@ class AdaptiveMultibandGedai:
         self._fitted_raw_id = None
         self._fitted_raw_shape = None
         self._fitted_raw_ch_names = None
+        self._fitted_raw_bads = None
         self._cached_broadband_data = None
+        self._cached_prefiltered_data = None
         if self._wavelets_fits is not None:
             for wf in self._wavelets_fits:
                 if "band_data" in wf:

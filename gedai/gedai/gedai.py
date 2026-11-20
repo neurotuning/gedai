@@ -9,13 +9,17 @@ from mne.parallel import parallel_func
 from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
+    _check_bad_channel_threshold,
     _check_fit_info,
+    _check_on_bad_channel,
     _detect_signal_type,
     _format_summary_table,
+    _interpolate_bad_channels,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
     _prepare_raw_fit,
     _prepare_raw_transform,
+    _run_two_pass_bad_channel_detection,
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
@@ -108,6 +112,17 @@ class Gedai:
         self._n_pc = None
         self._percentile = None
         self.fit_metrics_ = None
+        self._on_bad_channel = "exclude"
+        self._bad_channel_threshold = None
+        self.bad_channels_ = []
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
+
+    def _clone_unfitted(self):
+        """Return an unfitted clone with the same initialization settings."""
+        return Gedai(engine=self.engine)
 
     def _check_fit(self):
         """Check if the Gedai is fitted."""
@@ -148,6 +163,8 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        on_bad_channel: str = "exclude",
+        bad_channel_threshold: float | str | None = None,
     ):
         """Fit the GEDAI model to the epochs.
 
@@ -168,6 +185,8 @@ class Gedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             engine specified at initialization.
+        %(on_bad_channel)s
+        %(bad_channel_threshold)s
         """
         self._check_unfitted()
         current_engine = ensure_engine(engine) if engine is not None else self.engine
@@ -179,11 +198,43 @@ class Gedai:
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
+        on_bad_channel = _check_on_bad_channel(on_bad_channel)
+        resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
+        ensured_cov = _ensure_cov(reference_cov)
 
-        epochs_fit = _prepare_epochs_fit(epochs, picks)
+        if resolved_bad_thresh is not None:
+            _run_two_pass_bad_channel_detection(
+                self,
+                epochs,
+                fit_method_name="fit_epochs",
+                transform_method_name="transform_epochs",
+                picks=picks,
+                on_bad_channel=on_bad_channel,
+                threshold=resolved_bad_thresh,
+                fit_kwargs=dict(
+                    reference_cov=ensured_cov,
+                    sensai_method=sensai_method,
+                    noise_multiplier=noise_multiplier,
+                    sensai_bounds=sensai_bounds,
+                    sensai_tol=sensai_tol,
+                    n_pc=n_pc,
+                    n_jobs=n_jobs,
+                    verbose=verbose,
+                    engine=current_engine,
+                ),
+                transform_kwargs=dict(
+                    n_jobs=n_jobs,
+                    engine=current_engine,
+                ),
+            )
+            return
+
+        epochs_fit, excluded_bads = _prepare_epochs_fit(
+            epochs, picks, on_bad_channel=on_bad_channel, return_bads=True
+        )
         data = epochs_fit.get_data()
 
-        cov = _ensure_cov(reference_cov).copy()
+        cov = ensured_cov.copy()
         cov = _pick_cov(cov, epochs_fit.info)
         reference_cov = cov.data.copy()
 
@@ -317,8 +368,14 @@ class Gedai:
 
         self._n_samples = data.shape[-1]
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
+        self._on_bad_channel = on_bad_channel
+        self._bad_channel_threshold = None
+        self.bad_channels_ = list(excluded_bads)
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
 
-    @fill_doc
     @fill_doc
     @verbose
     def fit_raw(
@@ -338,6 +395,8 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        on_bad_channel: str = "exclude",
+        bad_channel_threshold: float | str | None = None,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -362,6 +421,8 @@ class Gedai:
         %(verbose)s
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto').
+        %(on_bad_channel)s
+        %(bad_channel_threshold)s
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
@@ -378,8 +439,45 @@ class Gedai:
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
+        on_bad_channel = _check_on_bad_channel(on_bad_channel)
+        resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
+        self._check_unfitted()
 
-        raw_fit = _prepare_raw_fit(raw, picks)
+        if resolved_bad_thresh is not None:
+            _run_two_pass_bad_channel_detection(
+                self,
+                raw,
+                fit_method_name="fit_raw",
+                transform_method_name="transform_raw",
+                picks=picks,
+                on_bad_channel=on_bad_channel,
+                threshold=resolved_bad_thresh,
+                fit_kwargs=dict(
+                    duration=duration,
+                    overlap=overlap,
+                    reject_by_annotation=reject_by_annotation,
+                    reference_cov=reference_cov,
+                    sensai_method=sensai_method,
+                    noise_multiplier=noise_multiplier,
+                    sensai_bounds=sensai_bounds,
+                    sensai_tol=sensai_tol,
+                    highpass_prefilter=highpass_prefilter,
+                    n_pc=n_pc,
+                    n_jobs=n_jobs,
+                    verbose=verbose,
+                    engine=current_engine,
+                ),
+                transform_kwargs=dict(
+                    overlap=overlap,
+                    n_jobs=n_jobs,
+                    engine=current_engine,
+                ),
+            )
+            return
+
+        raw_fit, excluded_bads = _prepare_raw_fit(
+            raw, picks, on_bad_channel=on_bad_channel, return_bads=True
+        )
 
         # Enforce at least k*C samples to avoid rank deficiency and
         # ill-conditioning in high-density arrays
@@ -426,7 +524,16 @@ class Gedai:
             n_jobs=n_jobs,
             verbose=verbose,
             engine=current_engine,
+            on_bad_channel="ignore",
+            bad_channel_threshold=None,
         )
+        self._on_bad_channel = on_bad_channel
+        self._bad_channel_threshold = None
+        self.bad_channels_ = list(excluded_bads)
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
 
     @fill_doc
     @verbose
@@ -436,6 +543,7 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        interpolate_bads: bool = False,
     ):
         """Transform epochs data using the fitted model.
 
@@ -448,6 +556,7 @@ class Gedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(interpolate_bads)s
 
         Returns
         -------
@@ -456,6 +565,7 @@ class Gedai:
         """
         self._check_fit()
         _check_type(epochs, (BaseEpochs,), "epochs")
+        _check_type(interpolate_bads, (bool,), "interpolate_bads")
         n_jobs = _check_n_jobs(n_jobs)
 
         if epochs.get_data(verbose=False).shape[-1] != self._n_samples:
@@ -471,7 +581,12 @@ class Gedai:
             )
 
         _check_fit_info(self, epochs)
-        epochs_transform = _prepare_epochs_transform(epochs, self.ch_names)
+        epochs_transform = _prepare_epochs_transform(
+            epochs,
+            self.ch_names,
+            on_bad_channel=self._on_bad_channel,
+            excluded_bads=self.bad_channels_,
+        )
 
         data = epochs_transform.get_data()
 
@@ -517,12 +632,13 @@ class Gedai:
         ep_samples = data.shape[-1]
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
         enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
+        n_pc = min(3 if self._n_pc is None else self._n_pc, clean_2d.shape[0])
         sensai_val = compute_composite_sensai(
             clean_2d,
             noise_2d,
             epochs_transform.info["sfreq"],
             reference_cov,
-            n_pc=(3 if self._n_pc is None else self._n_pc),
+            n_pc=n_pc,
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,
@@ -530,6 +646,10 @@ class Gedai:
             "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
             "sensai_score": sensai_val,
         }
+        if interpolate_bads and self.bad_channels_:
+            return _interpolate_bad_channels(
+                epochs, epochs_transform, self.bad_channels_
+            )
         return epochs_transform
 
     @fill_doc
@@ -541,6 +661,7 @@ class Gedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        interpolate_bads: bool = False,
     ):
         """Transform raw data using the fitted model.
 
@@ -554,14 +675,17 @@ class Gedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(interpolate_bads)s
 
         Returns
         -------
         raw_transformed : mne.io.BaseRaw
             The transformed raw data.
         """
+        self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
+        _check_type(interpolate_bads, (bool,), "interpolate_bads")
         n_jobs = _check_n_jobs(n_jobs)
         current_engine = ensure_engine(engine) if engine is not None else self.engine
 
@@ -569,7 +693,12 @@ class Gedai:
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
 
         _check_fit_info(self, raw)
-        raw_transform = _prepare_raw_transform(raw, self.ch_names)
+        raw_transform = _prepare_raw_transform(
+            raw,
+            self.ch_names,
+            on_bad_channel=self._on_bad_channel,
+            excluded_bads=self.bad_channels_,
+        )
 
         if (
             getattr(self, "_highpass_prefilter", None) is not None
@@ -609,7 +738,25 @@ class Gedai:
             engine=current_engine,
         )
 
-        raw_transform.get_data(verbose=False).copy()
+        noise_data = raw_data - clean_data
+        ep_samples = max(1, round(sfreq * 1.0))
+        enova_ep = compute_enova_per_epoch(clean_data, noise_data, ep_samples)
+        enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
+        n_pc = min(3 if self._n_pc is None else self._n_pc, clean_data.shape[0])
+        sensai_val = compute_composite_sensai(
+            clean_data,
+            noise_data,
+            sfreq,
+            self._reference_cov.data,
+            n_pc=n_pc,
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
+
         raw_transform._data = clean_data
 
         if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
@@ -617,6 +764,10 @@ class Gedai:
         ):
             pass
 
+        if interpolate_bads and self.bad_channels_:
+            return _interpolate_bad_channels(
+                raw, raw_transform, self.bad_channels_
+            )
         return raw_transform
 
     def plot_fit(self):
