@@ -101,6 +101,14 @@ class Gedai:
         ``"sensai_score"``, ``"mean_enova"``, ``"enova_per_epoch"``,
         and ``"enova_per_channel"``), or ``None`` before transforming.
 
+    Notes
+    -----
+    Following MNE-Python conventions, inputs are expected in standard SI units
+    (Volts for EEG; Tesla or Tesla/m for MEG). Internally, the reference
+    covariance is trace-matched to the data covariance so fitted thresholds and
+    cleaned outputs are invariant to uniform input amplitude rescaling
+    (e.g., Volts versus microvolts).
+
     References
     ----------
     .. footbibliography::
@@ -251,17 +259,17 @@ class Gedai:
 
         signal_type = _detect_signal_type(epochs_fit.info)
 
-        # Scale reference_cov to match data scale for MEG
-        # (calibrated leadfield in physical units)
-        if signal_type == "meg":
-            centered = data - data.mean(axis=-1, keepdims=True)
-            denom = max(1, data.shape[-1] - 1)
-            data_cov_trace = float(
-                np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
-            )
-            ref_cov_trace = float(np.trace(reference_cov))
-            if ref_cov_trace > 0 and data_cov_trace > 0:
-                reference_cov *= data_cov_trace / ref_cov_trace
+        # Scale reference_cov to match data covariance trace so GEVD
+        # eigenvalues and SENSAI thresholds are invariant to input units
+        # (e.g., Volts vs microvolts) and reference covariance scaling.
+        centered = data - data.mean(axis=-1, keepdims=True)
+        denom = max(1, data.shape[-1] - 1)
+        data_cov_trace = float(
+            np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
+        )
+        ref_cov_trace = float(np.trace(reference_cov))
+        if ref_cov_trace > 0 and data_cov_trace > 0:
+            reference_cov *= data_cov_trace / ref_cov_trace
 
         avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
         regularization_lambda = 0.05

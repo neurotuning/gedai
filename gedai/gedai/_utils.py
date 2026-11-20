@@ -107,7 +107,10 @@ def _check_average_reference(inst):
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
 
-    return bool(np.allclose(mean_across_channels, 0, atol=1e-6))
+    scale = float(np.sqrt(np.mean(data**2)))
+    if scale == 0.0:
+        return True
+    return bool(np.allclose(mean_across_channels, 0.0, atol=1e-6 * scale))
 
 
 def _check_reference_channel(inst):
@@ -116,11 +119,15 @@ def _check_reference_channel(inst):
         flat_mask = []
     elif isinstance(inst, BaseRaw):
         data = inst.get_data(picks=good_idx)
-        flat_mask = [np.allclose(ch, 0, atol=1e-8) for ch in data]
+        scale = float(np.sqrt(np.mean(data**2)))
+        atol = 1e-8 * scale if scale > 0.0 else 1e-8
+        flat_mask = [np.allclose(ch, 0, atol=atol) for ch in data]
     elif isinstance(inst, BaseEpochs):
         data = inst.get_data(picks=good_idx)
+        scale = float(np.sqrt(np.mean(data**2)))
+        atol = 1e-8 * scale if scale > 0.0 else 1e-8
         flat_mask = [
-            np.allclose(data[:, c, :], 0, atol=1e-8) for c in range(data.shape[1])
+            np.allclose(data[:, c, :], 0, atol=atol) for c in range(data.shape[1])
         ]
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")

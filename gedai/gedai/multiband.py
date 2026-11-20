@@ -137,6 +137,14 @@ class MultibandGedai:
         ``"sensai_score"``, ``"mean_enova"``, ``"enova_per_epoch"``,
         and ``"enova_per_channel"``), or ``None`` before transforming.
 
+    Notes
+    -----
+    Following MNE-Python conventions, inputs are expected in standard SI units
+    (Volts for EEG; Tesla or Tesla/m for MEG). Internally, the reference
+    covariance is trace-matched to the data covariance so fitted thresholds and
+    cleaned outputs are invariant to uniform input amplitude rescaling
+    (e.g., Volts versus microvolts).
+
     References
     ----------
     .. footbibliography::

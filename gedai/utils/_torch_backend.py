@@ -65,9 +65,9 @@ def robust_cholesky_gevd(
     l_factor, info = torch.linalg.cholesky_ex(b)
     if bool((info != 0).any()):
         eye = torch.eye(n_ch, dtype=b.dtype, device=b.device)
-        diag_mean = float(
-            torch.diagonal(b, dim1=-2, dim2=-1).abs().mean().clamp_min(1e-12)
-        )
+        diag_mean = float(torch.diagonal(b, dim1=-2, dim2=-1).abs().mean())
+        if diag_mean <= 0.0:
+            diag_mean = 1e-12
         current_jitter = eps_jitter * diag_mean
         for _ in range(4):
             b_jittered = b + current_jitter * eye

@@ -162,27 +162,30 @@ def compute_composite_sensai(
     sig_sims = np.zeros(n_epochs, dtype=np.float64)
     noi_sims = np.zeros(n_epochs, dtype=np.float64)
 
+    def _epoch_subspace_sim(ep_data: np.ndarray, var_tol: float) -> float:
+        if ep_data.shape[1] < 2 or float(np.var(ep_data)) <= var_tol:
+            return 0.0
+        cov_ep = np.cov(ep_data)
+        cov_ep = (cov_ep + cov_ep.T) * 0.5
+        eigvals, eigvecs = eigh(cov_ep)
+        max_eig = float(eigvals[-1])
+        if max_eig <= 0.0 or int(np.sum(eigvals > 1e-12 * max_eig)) < n_pc:
+            return 0.0
+        basis = eigvecs[:, ::-1][:, :n_pc]
+        angles = subspace_angles(basis, ref_evecs)
+        return float(np.prod(np.cos(angles)))
+
     for i in range(n_epochs):
         s = i * epoch_samples
         e = s + epoch_samples
         c_ep = clean[:, s:e]
         n_ep = noise[:, s:e]
-
-        if np.var(c_ep) > 0:
-            cov_sig = np.cov(c_ep)
-            cov_sig = (cov_sig + cov_sig.T) * 0.5
-            _, eigvecs_sig = eigh(cov_sig)
-            basis_sig = eigvecs_sig[:, ::-1][:, :n_pc]
-            angles_sig = subspace_angles(basis_sig, ref_evecs)
-            sig_sims[i] = float(np.prod(np.cos(angles_sig)))
-
-        if np.var(n_ep) > 0:
-            cov_noi = np.cov(n_ep)
-            cov_noi = (cov_noi + cov_noi.T) * 0.5
-            _, eigvecs_noi = eigh(cov_noi)
-            basis_noi = eigvecs_noi[:, ::-1][:, :n_pc]
-            angles_noi = subspace_angles(basis_noi, ref_evecs)
-            noi_sims[i] = float(np.prod(np.cos(angles_noi)))
+        orig_var = float(np.var(c_ep + n_ep))
+        if orig_var <= 0.0:
+            continue
+        var_tol = 1e-12 * orig_var
+        sig_sims[i] = _epoch_subspace_sim(c_ep, var_tol)
+        noi_sims[i] = _epoch_subspace_sim(n_ep, var_tol)
 
     signal_sim = 100.0 * float(np.mean(sig_sims))
     noise_sim = 100.0 * float(np.mean(noi_sims))
