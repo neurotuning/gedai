@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.linalg import eigh
 
+from ..sensai.sensai import _scale_invariant_eigh
 from ..utils._checks import ensure_engine
 from ..utils._torch_backend import (
     batched_gevd_cholesky,
@@ -38,7 +38,9 @@ def _clean_epochs(
 
     for e, epoch_data in enumerate(epochs_data):
         covariance = np.cov(epoch_data)
-        eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+        eigenvalues, eigenvectors = _scale_invariant_eigh(
+            covariance, reference_cov, check_finite=True
+        )
 
         eigvecs_filtered = eigenvectors.copy()
         signal_mask = np.abs(eigenvalues) < threshold

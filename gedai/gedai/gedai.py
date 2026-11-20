@@ -6,7 +6,6 @@ import numpy as np
 from mne import BaseEpochs
 from mne.io import BaseRaw
 from mne.parallel import parallel_func
-from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
     _check_bad_channel_threshold,
@@ -32,6 +31,7 @@ from ..sensai.sensai import (
     _compute_default_n_pc,
     _eigen_to_sensai,
     _precompute_gevd,
+    _scale_invariant_eigh,
     _sensai_gridsearch,
     _sensai_optimize,
     _sensai_to_eigen,
@@ -962,7 +962,9 @@ def _process_single_epoch(
         raise ValueError("threshold must be provided for deartifacting.")
 
     covariance = np.cov(epoch_data)
-    eigenvalues, eigenvectors = eigh(covariance, reference_cov, check_finite=True)
+    eigenvalues, eigenvectors = _scale_invariant_eigh(
+        covariance, reference_cov, check_finite=True
+    )
 
     eigvecs_filtered = eigenvectors.copy()
     signal_mask = np.abs(eigenvalues) < threshold

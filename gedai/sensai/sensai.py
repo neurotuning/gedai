@@ -5,6 +5,16 @@ from ..utils._checks import ensure_engine, ensure_int
 from ..utils._torch_backend import precompute_gevd_torch
 
 
+def _scale_invariant_eigh(a, b, **kwargs):
+    """Solve a generalized eigenvalue problem after scaling its covariance pair."""
+    scale = np.max(np.abs(b))
+    if not np.isfinite(scale) or scale == 0:
+        return eigh(a, b, **kwargs)
+
+    evals, evecs = eigh(a / scale, b / scale, **kwargs)
+    return evals, evecs / np.sqrt(scale)
+
+
 def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
     """Calculate the principal angles (in radians) between two subspaces.
 
@@ -106,7 +116,9 @@ def _prescan_meg_artifact_spectrum(data: np.ndarray, reference_cov: np.ndarray) 
         data_2d = data
     cov_prescan = np.cov(data_2d)
     cov_prescan = (cov_prescan + cov_prescan.T) * 0.5
-    evals_prescan, _ = eigh(cov_prescan, reference_cov, check_finite=False)
+    evals_prescan, _ = _scale_invariant_eigh(
+        cov_prescan, reference_cov, check_finite=False
+    )
     evals_desc = np.sort(np.abs(evals_prescan))[::-1]
     med_val = np.median(evals_desc)
     norm_evals = evals_desc / med_val if med_val > 0 else evals_desc
@@ -203,7 +215,9 @@ def _precompute_gevd(
     all_covs = np.einsum("eij,ekj->eik", centered, centered)
     all_covs *= 1.0 / (n_times - 1)
     for i in range(n_ep):
-        evals, evecs = eigh(all_covs[i], reference_cov, check_finite=False)
+        evals, evecs = _scale_invariant_eigh(
+            all_covs[i], reference_cov, check_finite=False
+        )
         all_eval[i] = evals
         all_evec[i] = evecs
 
@@ -764,4 +778,3 @@ def _sensai_optimize(
     eigen_threshold = float(np.exp(T1_opt * p_val - 100.0))
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, sensai_threshold, runs
-
