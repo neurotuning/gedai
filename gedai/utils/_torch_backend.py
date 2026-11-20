@@ -175,7 +175,9 @@ def clean_epochs_batched_torch(
         raise ValueError("threshold must be provided for deartifacting.")
 
     evals, evecs = robust_cholesky_gevd(covs, b)
-    signal_mask = torch.abs(evals) < threshold
+    abs_evals = torch.abs(evals)
+    at_threshold = torch.abs(abs_evals - threshold) <= abs(threshold) * 1e-12
+    signal_mask = ~((abs_evals >= threshold) | at_threshold)
 
     evecs_filtered = torch.where(
         signal_mask.unsqueeze(1), torch.zeros_like(evecs), evecs

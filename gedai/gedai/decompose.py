@@ -15,6 +15,12 @@ __all__ = [
 ]
 
 
+def _artifact_mask(eigenvalues, threshold):
+    abs_eigenvalues = np.abs(eigenvalues)
+    at_threshold = np.isclose(abs_eigenvalues, threshold, rtol=1e-12, atol=0.0)
+    return (abs_eigenvalues >= threshold) | at_threshold
+
+
 def _clean_epochs(
     epochs_data,
     reference_cov,
@@ -43,7 +49,7 @@ def _clean_epochs(
         )
 
         eigvecs_filtered = eigenvectors.copy()
-        signal_mask = np.abs(eigenvalues) < threshold
+        signal_mask = ~_artifact_mask(eigenvalues, threshold)
         eigvecs_filtered[:, signal_mask] = 0
 
         # Direct Regularized Reference Covariance Projection:

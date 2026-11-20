@@ -8,6 +8,7 @@ from mne import make_fixed_length_epochs
 import gedai.gedai.gedai as gedai_module
 from gedai import AdaptiveMultibandGedai, Gedai, MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
+from gedai.gedai.decompose import _artifact_mask
 from gedai.gedai.gedai import _get_channel_multiplier
 
 raw_fname = get_contaminated_eeg_set_path()
@@ -371,6 +372,14 @@ def test_gedai_epochs_scale_invariance(sensai_method, scale):
     )
 
 
+def test_artifact_mask_is_stable_near_threshold():
+    """Eigenvalues near the cutoff use consistent classification."""
+    threshold = 1.0
+    eigenvalues = np.array([threshold * (1 - 5e-13), threshold * (1 + 5e-13)])
+
+    np.testing.assert_array_equal(_artifact_mask(eigenvalues, threshold), [True, True])
+
+
 def test_multiband_and_adaptive_scale_invariance():
     """Gedai raw, MultibandGedai, and AdaptiveMultibandGedai are scale-invariant."""
     scale = 1e6
@@ -455,5 +464,3 @@ def test_check_average_reference_scale_invariance():
     raw_uv.set_eeg_reference("average", projection=False, verbose=False)
     assert _check_average_reference(raw_v) is True
     assert _check_average_reference(raw_uv) is True
-
-

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.linalg import eigh
 
+from ..gedai.decompose import _artifact_mask
 from ..utils._checks import ensure_engine, ensure_int
 from ..utils._torch_backend import precompute_gevd_torch
 
@@ -253,7 +254,7 @@ def _sensai_score_loop(
         max_eval = float(np.max(evals_e)) if len(evals_e) > 0 else 0.0
         valid_mask = evals_e > (1e-12 * max_eval)
 
-        bad_mask = (evals_e >= threshold) & valid_mask
+        bad_mask = _artifact_mask(evals_e, threshold) & valid_mask
         num_bad = int(np.sum(bad_mask))
 
         # --- Artifact noise subspace ---
@@ -266,7 +267,7 @@ def _sensai_score_loop(
             noi_sims[e] = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
 
         # --- Clean signal subspace ---
-        good_mask = (evals_e < threshold) & valid_mask
+        good_mask = ~_artifact_mask(evals_e, threshold) & valid_mask
         num_good = int(np.sum(good_mask))
         if num_good >= n_pc:
             sig_sims[e] = _two_step_qr_det(VR_e[:, good_mask], evals_e[good_mask])
@@ -290,7 +291,9 @@ def _sensai_score_torch(
     valid_mask = abs_evals_t > (1e-12 * max_eval)
 
     # --- Clean signal subspace ---
-    good_mask = (abs_evals_t < threshold) & valid_mask
+    at_threshold = torch.abs(abs_evals_t - threshold) <= abs(threshold) * 1e-12
+    bad_mask = ((abs_evals_t >= threshold) | at_threshold) & valid_mask
+    good_mask = ~bad_mask & valid_mask
     w_good = torch.where(good_mask, abs_evals_t, 0.0).unsqueeze(-1)
     num_good = good_mask.sum(dim=1)
     Y1_s = torch.bmm(
@@ -304,7 +307,6 @@ def _sensai_score_torch(
     sig_sims = torch.where(num_good >= n_pc, sig_sims, 0.0)
 
     # --- Artifact noise subspace ---
-    bad_mask = (abs_evals_t >= threshold) & valid_mask
     if signal_type == "meg":
         noi_sims = torch.zeros(n_ep, dtype=template_t.dtype, device=template_t.device)
         for e in range(n_ep):
@@ -723,7 +725,9 @@ def _sensai_optimize(
         T1 = (105.0 - float(sv)) / 100.0
         eigen_threshold = float(np.exp(T1 * p_val - 100.0))
 
-        cur_mask = abs_evals >= eigen_threshold
+        cur_mask = _artifact_mask(abs_evals, eigen_threshold) & (
+            abs_evals > (1e-12 * np.max(abs_evals, axis=1, keepdims=True))
+        )
         if prev_mask is not None and np.array_equal(cur_mask, prev_mask):
             score, sig_sim, noi_sim = prev_vals
         else:
