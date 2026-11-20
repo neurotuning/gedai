@@ -192,8 +192,9 @@ wavelet_low_cutoff : float | str | None, default=0.1
       down to DC. Recommended for pre-stimulus baseline / anticipatory ERP analyses
       (e.g., CNV, RP, LPP) or when data have already been causally high-pass filtered.
     - ``>= 0.5`` (e.g., ``0.5``): Applies a sub-cutoff wavelet high-pass pre-filter
-      and zeroes out all spectral MRA bands with upper frequency bound ``<= wavelet_low_cutoff``.
-      Recommended for resting-state recordings with severe slow electrode drift.
+      and zeroes out all spectral MRA bands with upper frequency bound
+      ``<= wavelet_low_cutoff``. Recommended for resting-state recordings with
+      severe slow electrode drift.
     - ``"auto"``: Automatically resolves to ``max(0.1, raw.info['highpass'])`` when
       ``raw.info['highpass'] > 0``, else ``0.1`` Hz."""
 docdict["wavelet_type"] = """

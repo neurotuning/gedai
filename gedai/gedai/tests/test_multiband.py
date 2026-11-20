@@ -108,7 +108,7 @@ def test_multiband_raw_picks():
 
 
 def test_multiband_low_cutoff_marks_ignored_bands():
-    """Low cutoff >= 0.5 Hz should mark low-frequency bands as ignored, while 0.1 Hz and None retain all."""
+    """Check low-cutoff band ignoring for >= 0.5 Hz, 0.1 Hz, and None."""
     model = MultibandGedai(wavelet_type="haar", wavelet_level=wavelet_level)
 
     model.fit_epochs(epochs_eeg, wavelet_low_cutoff=5.0, n_jobs=1)
@@ -117,13 +117,17 @@ def test_multiband_low_cutoff_marks_ignored_bands():
     assert any(not flag for flag in ignored)
 
     # Default 0.1 Hz retains all bands
-    model_default = MultibandGedai(wavelet_type="haar", wavelet_level=2, broadband_pass=False)
+    model_default = MultibandGedai(
+        wavelet_type="haar", wavelet_level=2, broadband_pass=False
+    )
     model_default.fit_epochs(epochs_eeg, picks=epochs_eeg.ch_names[:4], n_jobs=1)
     assert model_default._wavelet_low_cutoff == 0.1
     assert not any(fit["ignore"] for fit in model_default._wavelets_fits)
 
     # None (0.0 Hz) retains all bands
-    model_none = MultibandGedai(wavelet_type="haar", wavelet_level=2, broadband_pass=False)
+    model_none = MultibandGedai(
+        wavelet_type="haar", wavelet_level=2, broadband_pass=False
+    )
     model_none.fit_epochs(
         epochs_eeg, picks=epochs_eeg.ch_names[:4], wavelet_low_cutoff=None, n_jobs=1
     )
@@ -144,8 +148,11 @@ def test_wavelet_duration_helpers():
 def test_circular_haar_duration_keeps_requested_samples(level):
     """Keep raw Haar epochs independent of dyadic wavelet lengths."""
     duration_val, samples = compute_closest_valid_duration(
-        2.0, level, 200.0, n_channels=27, n_times=12000,
-        
+        2.0,
+        level,
+        200.0,
+        n_channels=27,
+        n_times=12000,
     )
     assert duration_val == 2.0
     assert samples == 400
@@ -156,14 +163,20 @@ def test_circular_haar_duration_preserves_covariance_minimum(monkeypatch):
     """Retain the configured channel minimum and available-data cap."""
     monkeypatch.setenv("GEDAI_CHANNEL_MULTIPLIER", "2")
     duration_val, samples = compute_closest_valid_duration(
-        0.1, 9, 200.0, n_channels=27, n_times=12000,
-        
+        0.1,
+        9,
+        200.0,
+        n_channels=27,
+        n_times=12000,
     )
     assert samples == 54
     assert duration_val == 54 / 200
     _, capped_samples = compute_closest_valid_duration(
-        0.1, 9, 200.0, n_channels=27, n_times=40,
-        
+        0.1,
+        9,
+        200.0,
+        n_channels=27,
+        n_times=40,
     )
     assert capped_samples == 40
 
