@@ -91,6 +91,16 @@ class Gedai:
     ----------
     %(engine)s
 
+    Attributes
+    ----------
+    fit_metrics_ : dict | None
+        Optimization metrics populated after fitting (for example,
+        ``"sensai_score"``), or ``None`` before fitting.
+    metrics_ : dict | None
+        Cleaning metrics populated after transforming (including
+        ``"sensai_score"``, ``"mean_enova"``, ``"enova_per_epoch"``,
+        and ``"enova_per_channel"``), or ``None`` before transforming.
+
     References
     ----------
     .. footbibliography::
@@ -112,6 +122,7 @@ class Gedai:
         self._n_pc = None
         self._percentile = None
         self.fit_metrics_ = None
+        self.metrics_ = None
         self._on_bad_channel = "exclude"
         self._bad_channel_threshold = None
         self.bad_channels_ = []

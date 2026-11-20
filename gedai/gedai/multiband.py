@@ -127,6 +127,16 @@ class MultibandGedai:
         wavelet decomposition.
     %(engine)s
 
+    Attributes
+    ----------
+    fit_metrics_ : dict | None
+        Optimization metrics populated after fitting (for example,
+        ``"sensai_score"``), or ``None`` before fitting.
+    metrics_ : dict | None
+        Cleaning metrics populated after transforming (including
+        ``"sensai_score"``, ``"mean_enova"``, ``"enova_per_epoch"``,
+        and ``"enova_per_channel"``), or ``None`` before transforming.
+
     References
     ----------
     .. footbibliography::
@@ -149,12 +159,14 @@ class MultibandGedai:
         self.engine = ensure_engine(engine)
 
         self.fitted = False
+        self._info = None
         self._wavelet_low_cutoff = None
         self._wavelets_fits = None
         self._reference_cov = None
         self._levels = None
         self._actual_wavelet_level = None
         self._broadband_model = None
+        self.fit_metrics_ = None
         self.metrics_ = None
         self._on_bad_channel = "exclude"
         self._bad_channel_threshold = None

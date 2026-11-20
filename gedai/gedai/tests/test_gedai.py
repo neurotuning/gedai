@@ -6,7 +6,7 @@ import pytest
 from mne import make_fixed_length_epochs
 
 import gedai.gedai.gedai as gedai_module
-from gedai import Gedai, MultibandGedai
+from gedai import AdaptiveMultibandGedai, Gedai, MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.gedai.gedai import _get_channel_multiplier
 
@@ -204,3 +204,100 @@ def test_gedai_transform_epochs_forwards_threshold(monkeypatch):
     model.transform_epochs(epochs.copy(), n_jobs=1, verbose=False, engine="numpy")
 
     assert calls == [model.threshold] * len(data)
+
+
+@pytest.mark.parametrize(
+    ("model_factory", "fit_kwargs"),
+    [
+        (lambda: Gedai(engine="numpy"), {"duration": 1.0}),
+        (
+            lambda: MultibandGedai(
+                wavelet_level=2, broadband_pass=False, engine="numpy"
+            ),
+            {"duration": 1.0, "n_jobs": 1},
+        ),
+        (
+            lambda: AdaptiveMultibandGedai(
+                wavelet_level=2, broadband_pass=False, engine="numpy"
+            ),
+            {"n_jobs": 1},
+        ),
+    ],
+)
+def test_estimator_metrics_attributes_parity(model_factory, fit_kwargs):
+    """All estimators initialize fit_metrics_ and metrics_ consistently."""
+    raw_sub = raw_eeg.copy().pick(raw_eeg.ch_names[:6])
+    model = model_factory()
+
+    assert model.fit_metrics_ is None
+    assert model.metrics_ is None
+    assert model._info is None
+    assert "unfitted" in repr(model)
+
+    model.fit_raw(raw_sub, verbose=False, **fit_kwargs)
+    assert isinstance(model.fit_metrics_, dict)
+    assert "sensai_score" in model.fit_metrics_
+    assert model.metrics_ is None
+    assert "fitted" in repr(model)
+
+    model.transform_raw(raw_sub, verbose=False)
+    assert isinstance(model.metrics_, dict)
+    for key in (
+        "sensai_score",
+        "mean_enova",
+        "enova_per_epoch",
+        "enova_per_channel",
+    ):
+        assert key in model.metrics_
+    assert "SENSAI=" in repr(model)
+    assert "Mean ENOVA=" in repr(model)
+
+
+@pytest.mark.parametrize(
+    ("model_factory", "fit_kwargs"),
+    [
+        (lambda: Gedai(engine="numpy"), {"duration": 1.0}),
+        (
+            lambda: MultibandGedai(
+                wavelet_level=2, broadband_pass=False, engine="numpy"
+            ),
+            {"duration": 1.0, "n_jobs": 1},
+        ),
+        (
+            lambda: AdaptiveMultibandGedai(
+                wavelet_level=2, broadband_pass=False, engine="numpy"
+            ),
+            {"n_jobs": 1},
+        ),
+    ],
+)
+def test_plot_sensai_without_prior_transform_and_auto_transform(
+    model_factory, fit_kwargs
+):
+    """plot_sensai works both before transform_raw and with raw_after=None."""
+    import matplotlib.figure
+
+    raw_sub = raw_eeg.copy().pick(raw_eeg.ch_names[:6])
+    rng = np.random.default_rng(0)
+    raw_after_custom = raw_sub.copy()
+    raw_after_custom._data = raw_after_custom.get_data() + (
+        rng.standard_normal(raw_after_custom._data.shape) * 1e-6
+    )
+
+    model = model_factory()
+    model.fit_raw(raw_sub, verbose=False, **fit_kwargs)
+    assert model.metrics_ is None
+
+    fig, plot_metrics = model.plot_sensai(
+        raw_sub, raw_after=raw_after_custom, show=False
+    )
+    assert isinstance(fig, matplotlib.figure.Figure)
+    assert isinstance(plot_metrics, dict)
+    assert model.metrics_ is None
+
+    fig2, plot_metrics2 = model.plot_sensai(raw_sub, raw_after=None, show=False)
+    assert isinstance(fig2, matplotlib.figure.Figure)
+    assert isinstance(plot_metrics2, dict)
+    assert model.metrics_ is not None
+    assert "sensai_score" in model.metrics_
+
