@@ -110,7 +110,7 @@ def epochs_to_wavelet(data, sfreq, wavelet, level, n_jobs=None, verbose=None):
 
 def compute_wavelet_level(
     sfreq: float,
-    lowcut_hz: float = 0.5,
+    lowcut_hz: float = 0.1,
     n_times: int | None = None,
     wavelet_low_cutoff: float | None = None,
     cycles_per_wavelet: int | None = None,
@@ -122,7 +122,9 @@ def compute_wavelet_level(
     sfreq : float
         Sampling frequency in Hz.
     lowcut_hz : float
-        Low cutoff frequency in Hz (default 0.5 Hz).
+        Low cutoff frequency in Hz (default 0.1 Hz). When ``lowcut_hz <= 0.5`` Hz,
+        the spectral MRA decomposition level is anchored at 0.5 Hz so the smooth
+        scaling band covers 0-0.5 Hz without requiring >190 s calibration windows.
     n_times : int | None
         Number of time samples in data (optional, used to bound max levels).
     wavelet_low_cutoff : float | None
@@ -137,8 +139,8 @@ def compute_wavelet_level(
     """
     if wavelet_low_cutoff is not None:
         lowcut_hz = wavelet_low_cutoff
-    lowcut_hz = max(float(lowcut_hz), 0.01)
-    ideal = int(np.ceil(np.log2(sfreq / lowcut_hz)))
+    spectral_split_hz = max(float(lowcut_hz), 0.5)
+    ideal = max(1, int(np.ceil(np.log2(sfreq / spectral_split_hz))) - 1)
     if n_times is not None:
         if cycles_per_wavelet is not None and cycles_per_wavelet > 0:
             max_possible = max(
@@ -394,14 +396,14 @@ def _modwt_haar_single_band(
 
 
 def _apply_wavelet_highpass_prefilter(
-    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.5, engine: str = "auto"
+    data: np.ndarray, sfreq: float, lowcut_hz: float = 0.1, engine: str = "auto"
 ) -> np.ndarray:
     """Remove sub-lowcut_hz slow drift using continuous Haar MODWT decomposition.
 
     Decomposes the continuous multichannel signal into Haar wavelet bands and
     subtracts all sub-lowcut_hz bands before broadband GED covariance estimation,
     preventing slow drift and DC offsets from biasing broadband covariance.
-    Matches MATLAB GEDAI.m lines 520-603.
+    Matches MATLAB GEDAI.m.
 
     Parameters
     ----------
@@ -410,7 +412,7 @@ def _apply_wavelet_highpass_prefilter(
     sfreq : float
         Sampling frequency in Hz.
     lowcut_hz : float
-        Highpass cutoff frequency (default 0.5 Hz).
+        Highpass cutoff frequency (default 0.1 Hz).
     engine : str
         Computation engine ('auto', 'torch', or 'numpy').
 

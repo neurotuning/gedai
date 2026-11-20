@@ -69,7 +69,15 @@ def _pick_cov(cov, ch_names, info=None):
         )
     cov = cov.copy().pick_channels(picks_cov)
     # Update the channel names in the covariance to match those in the instance
-    cov.update(names=ch_names)
+    if info is not None:
+        ch_set = set(ch_names)
+        remaining_bads = [b for b in info["bads"] if b in ch_set]
+    else:
+        cov_to_inst = dict(zip(picks_cov, ch_names, strict=False))
+        remaining_bads = [
+            cov_to_inst[b] for b in cov.get("bads", []) if b in cov_to_inst
+        ]
+    cov.update(names=ch_names, bads=remaining_bads)
     return cov
 
 

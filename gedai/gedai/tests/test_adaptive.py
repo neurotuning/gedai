@@ -133,3 +133,60 @@ def test_adaptive_fit_raw_engine_override_reaches_prefilter(monkeypatch):
 
     assert calls
     assert all(engine == "numpy" for engine in calls)
+
+
+def test_adaptive_wavelet_low_cutoff_modes(monkeypatch):
+    """Test 0.1 Hz default, 0.0 Hz (None) zero-leak mode, and 0.5 Hz drift mode."""
+    calls = []
+    original = adaptive_module._apply_wavelet_highpass_prefilter
+
+    def spy(data, sfreq, lowcut_hz=0.1, engine="auto"):
+        calls.append(lowcut_hz)
+        return original(data, sfreq, lowcut_hz=lowcut_hz, engine=engine)
+
+    monkeypatch.setattr(adaptive_module, "_apply_wavelet_highpass_prefilter", spy)
+
+    names = raw_eeg.ch_names[:4]
+    rng = np.random.default_rng(42)
+    data = rng.standard_normal((len(names), 1200)) * 1e-6
+    raw_small = mne.io.RawArray(
+        data.copy(), mne.create_info(names, 200.0, "eeg"), verbose=False
+    )
+    cov = mne.Covariance(np.eye(len(names)) * 1e-12, names, [], [], nfree=1)
+
+    # 1. Default 0.1 Hz: single pre-filter call at 0.1 Hz, all spectral bands retained
+    calls.clear()
+    model_01 = AdaptiveMultibandGedai(wavelet_level=4, broadband_pass=True)
+    model_01.fit_raw(raw_small, reference_cov=cov, n_jobs=1, verbose=False)
+    assert model_01._wavelet_low_cutoff == 0.1
+    assert calls == [0.1]
+    assert not any(wf["ignore"] for wf in model_01._wavelets_fits)
+
+    # 2. 0.0 Hz / None: zero pre-filter calls, all spectral bands retained
+    calls.clear()
+    model_00 = AdaptiveMultibandGedai(wavelet_level=4, broadband_pass=True)
+    model_00.fit_raw(
+        raw_small,
+        reference_cov=cov,
+        wavelet_low_cutoff=None,
+        n_jobs=1,
+        verbose=False,
+    )
+    assert model_00._wavelet_low_cutoff == 0.0
+    assert calls == []
+    assert not any(wf["ignore"] for wf in model_00._wavelets_fits)
+
+    # 3. >= 0.5 Hz: single pre-filter call at 0.5 Hz, lowest band (0-0.39 Hz) ignored
+    calls.clear()
+    model_05 = AdaptiveMultibandGedai(wavelet_level=8, broadband_pass=True)
+    model_05.fit_raw(
+        raw_small,
+        reference_cov=cov,
+        wavelet_low_cutoff=0.5,
+        n_jobs=1,
+        verbose=False,
+    )
+    assert model_05._wavelet_low_cutoff == 0.5
+    assert calls == [0.5]
+    assert any(wf["ignore"] for wf in model_05._wavelets_fits)
+

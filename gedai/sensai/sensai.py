@@ -1,9 +1,24 @@
 import numpy as np
 from scipy.linalg import eigh
-from scipy.optimize import minimize_scalar
 
 from ..utils._checks import ensure_engine, ensure_int
 from ..utils._torch_backend import precompute_gevd_torch
+
+
+def _artifact_mask(eigenvalues, threshold):
+    abs_eigenvalues = np.abs(eigenvalues)
+    at_threshold = np.isclose(abs_eigenvalues, threshold, rtol=1e-12, atol=0.0)
+    return (abs_eigenvalues >= threshold) | at_threshold
+
+
+def _scale_invariant_eigh(a, b, **kwargs):
+    """Solve a generalized eigenvalue problem after scaling its covariance pair."""
+    scale = np.max(np.abs(b))
+    if not np.isfinite(scale) or scale == 0:
+        return eigh(a, b, **kwargs)
+
+    evals, evecs = eigh(a / scale, b / scale, **kwargs)
+    return evals, evecs / np.sqrt(scale)
 
 
 def subspace_angles(A: np.ndarray, B: np.ndarray) -> np.ndarray:
@@ -107,7 +122,9 @@ def _prescan_meg_artifact_spectrum(data: np.ndarray, reference_cov: np.ndarray) 
         data_2d = data
     cov_prescan = np.cov(data_2d)
     cov_prescan = (cov_prescan + cov_prescan.T) * 0.5
-    evals_prescan, _ = eigh(cov_prescan, reference_cov, check_finite=False)
+    evals_prescan, _ = _scale_invariant_eigh(
+        cov_prescan, reference_cov, check_finite=False
+    )
     evals_desc = np.sort(np.abs(evals_prescan))[::-1]
     med_val = np.median(evals_desc)
     norm_evals = evals_desc / med_val if med_val > 0 else evals_desc
@@ -204,7 +221,9 @@ def _precompute_gevd(
     all_covs = np.einsum("eij,ekj->eik", centered, centered)
     all_covs *= 1.0 / (n_times - 1)
     for i in range(n_ep):
-        evals, evecs = eigh(all_covs[i], reference_cov, check_finite=False)
+        evals, evecs = _scale_invariant_eigh(
+            all_covs[i], reference_cov, check_finite=False
+        )
         all_eval[i] = evals
         all_evec[i] = evecs
 
@@ -222,76 +241,41 @@ def _sensai_score_loop(
     reference_cov: np.ndarray | None = None,
 ):
     """NumPy optimized loop for fast power-weighted SENSAI optimization scoring."""
-    n_ep, n_ch = abs_evals.shape
+    n_ep, _ = abs_evals.shape
     sig_sims = np.zeros(n_ep, dtype=np.float64)
     noi_sims = np.zeros(n_ep, dtype=np.float64)
-    eye_n_pc = np.eye(n_ch)[:, :n_pc]
-    empty_noi_sim = abs(float(np.linalg.det(eye_n_pc.T @ template)))
+
+    def _two_step_qr_det(VR_sub: np.ndarray, d_sub: np.ndarray) -> float:
+        d_col = d_sub[:, None]
+        Y1 = VR_sub @ (d_col * (VR_sub.T @ template))
+        Q1, _ = np.linalg.qr(Y1)
+        Y2 = VR_sub @ (d_col * (VR_sub.T @ Q1))
+        basis, _ = np.linalg.qr(Y2)
+        return abs(float(np.linalg.det(basis[:, :n_pc].T @ template)))
 
     for e in range(n_ep):
         evals_e = abs_evals[e]
         VR_e = all_VR[e]
-        bad_mask = evals_e >= threshold
+        max_eval = float(np.max(evals_e)) if len(evals_e) > 0 else 0.0
+        valid_mask = evals_e > (1e-12 * max_eval)
+
+        bad_mask = _artifact_mask(evals_e, threshold) & valid_mask
         num_bad = int(np.sum(bad_mask))
 
         # --- Artifact noise subspace ---
         if signal_type == "meg":
             if num_bad > 0:
-                P_bad = VR_e[:, bad_mask]
-                Q_bad, _ = np.linalg.qr(P_bad)
+                Q_bad, _ = np.linalg.qr(VR_e[:, bad_mask])
                 s = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
                 noi_sims[e] = float(np.sum(s**6))
-            else:
-                noi_sims[e] = 0.0
-        else:
-            if num_bad >= n_pc:
-                VR_bad = VR_e[:, bad_mask]
-                d_bad = evals_e[bad_mask, None]
-                Y1_n = VR_bad @ (d_bad * (VR_bad.T @ template))
-                Q1_n, _ = np.linalg.qr(Y1_n)
-                Y2_n = VR_bad @ (d_bad * (VR_bad.T @ Q1_n))
-                basis_n, _ = np.linalg.qr(Y2_n)
-                noi_sims[e] = abs(float(np.linalg.det(basis_n[:, :n_pc].T @ template)))
-            elif num_bad > 0:
-                VR_bad = VR_e[:, bad_mask]
-                d_bad = evals_e[bad_mask]
-                cov_noise = (VR_bad * d_bad) @ VR_bad.T
-                cov_noise = (cov_noise + cov_noise.T) * 0.5
-                if np.max(np.abs(cov_noise)) < 1e-12:
-                    Y1_n = eye_n_pc
-                else:
-                    Y1_n = cov_noise @ template
-                Q1_n, _ = np.linalg.qr(Y1_n)
-                basis_n, _ = np.linalg.qr(cov_noise @ Q1_n)
-                noi_sims[e] = abs(float(np.linalg.det(basis_n[:, :n_pc].T @ template)))
-            else:
-                noi_sims[e] = empty_noi_sim
+        elif num_bad >= n_pc:
+            noi_sims[e] = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
 
         # --- Clean signal subspace ---
-        good_mask = ~bad_mask
+        good_mask = ~_artifact_mask(evals_e, threshold) & valid_mask
         num_good = int(np.sum(good_mask))
         if num_good >= n_pc:
-            VR_good = VR_e[:, good_mask]
-            d_good = evals_e[good_mask, None]
-            Y1_s = VR_good @ (d_good * (VR_good.T @ template))
-            Q1_s, _ = np.linalg.qr(Y1_s)
-            Y2_s = VR_good @ (d_good * (VR_good.T @ Q1_s))
-            basis_s, _ = np.linalg.qr(Y2_s)
-            sig_sims[e] = abs(float(np.linalg.det(basis_s[:, :n_pc].T @ template)))
-        elif num_good > 0:
-            VR_good = VR_e[:, good_mask]
-            d_good = evals_e[good_mask]
-            cov_signal = (VR_good * d_good) @ VR_good.T
-            cov_signal = (cov_signal + cov_signal.T) * 0.5
-            if np.max(np.abs(cov_signal)) < 1e-12:
-                Y1_s = eye_n_pc
-            else:
-                Y1_s = cov_signal @ template
-            Q1_s, _ = np.linalg.qr(Y1_s)
-            basis_s, _ = np.linalg.qr(cov_signal @ Q1_s)
-            sig_sims[e] = abs(float(np.linalg.det(basis_s[:, :n_pc].T @ template)))
-        else:
-            sig_sims[e] = empty_noi_sim
+            sig_sims[e] = _two_step_qr_det(VR_e[:, good_mask], evals_e[good_mask])
 
     return sig_sims, noi_sims
 
@@ -307,15 +291,16 @@ def _sensai_score_torch(
     """Batched PyTorch implementation for fast power-weighted SENSAI scoring."""
     import torch
 
-    n_ep, n_ch = abs_evals_t.shape
-    eye_n_pc = torch.eye(n_ch, dtype=template_t.dtype, device=template_t.device)[
-        :, :n_pc
-    ]
-    empty_noi_sim = float(torch.abs(torch.linalg.det(eye_n_pc.T @ template_t)))
+    n_ep, _ = abs_evals_t.shape
+    max_eval = abs_evals_t.max(dim=1, keepdim=True).values
+    valid_mask = abs_evals_t > (1e-12 * max_eval)
 
     # --- Clean signal subspace ---
-    w_good = torch.where(abs_evals_t < threshold, abs_evals_t, 0.0).unsqueeze(-1)
-    num_good = (abs_evals_t < threshold).sum(dim=1)
+    at_threshold = torch.abs(abs_evals_t - threshold) <= abs(threshold) * 1e-12
+    bad_mask = ((abs_evals_t >= threshold) | at_threshold) & valid_mask
+    good_mask = ~bad_mask & valid_mask
+    w_good = torch.where(good_mask, abs_evals_t, 0.0).unsqueeze(-1)
+    num_good = good_mask.sum(dim=1)
     Y1_s = torch.bmm(
         all_VR_t, w_good * torch.matmul(all_VR_t.transpose(1, 2), template_t)
     )
@@ -324,30 +309,11 @@ def _sensai_score_torch(
     basis_s = torch.linalg.qr(Y2_s).Q
     overlap_s = torch.matmul(basis_s[:, :, :n_pc].transpose(1, 2), template_t)
     sig_sims = torch.abs(torch.linalg.det(overlap_s))
-    sig_sims = torch.where(num_good > 0, sig_sims, empty_noi_sim)
-
-    fallback_good = (num_good > 0) & (num_good < n_pc)
-    if fallback_good.any():
-        for e in torch.where(fallback_good)[0]:
-            mask_e = abs_evals_t[e] < threshold
-            VR_good = all_VR_t[e, :, mask_e]
-            d_good = abs_evals_t[e, mask_e]
-            cov_s = (VR_good * d_good) @ VR_good.T
-            cov_s = (cov_s + cov_s.T) * 0.5
-            if torch.max(torch.abs(cov_s)) < 1e-12:
-                Y1_s_e = eye_n_pc
-            else:
-                Y1_s_e = cov_s @ template_t
-            Q1_s_e = torch.linalg.qr(Y1_s_e).Q
-            basis_s_e = torch.linalg.qr(cov_s @ Q1_s_e).Q
-            sig_sims[e] = torch.abs(
-                torch.linalg.det(basis_s_e[:, :n_pc].T @ template_t)
-            )
+    sig_sims = torch.where(num_good >= n_pc, sig_sims, 0.0)
 
     # --- Artifact noise subspace ---
     if signal_type == "meg":
         noi_sims = torch.zeros(n_ep, dtype=template_t.dtype, device=template_t.device)
-        bad_mask = abs_evals_t >= threshold
         for e in range(n_ep):
             mask_e = bad_mask[e]
             if mask_e.any():
@@ -356,8 +322,8 @@ def _sensai_score_torch(
                 s = torch.linalg.svdvals(Q_bad.T @ template_t)
                 noi_sims[e] = torch.sum(s**6)
     else:
-        w_bad = torch.where(abs_evals_t >= threshold, abs_evals_t, 0.0).unsqueeze(-1)
-        num_bad = (abs_evals_t >= threshold).sum(dim=1)
+        w_bad = torch.where(bad_mask, abs_evals_t, 0.0).unsqueeze(-1)
+        num_bad = bad_mask.sum(dim=1)
         Y1_n = torch.bmm(
             all_VR_t, w_bad * torch.matmul(all_VR_t.transpose(1, 2), template_t)
         )
@@ -366,25 +332,7 @@ def _sensai_score_torch(
         basis_n = torch.linalg.qr(Y2_n).Q
         overlap_n = torch.matmul(basis_n[:, :, :n_pc].transpose(1, 2), template_t)
         noi_sims = torch.abs(torch.linalg.det(overlap_n))
-        noi_sims = torch.where(num_bad > 0, noi_sims, empty_noi_sim)
-
-        fallback_bad = (num_bad > 0) & (num_bad < n_pc)
-        if fallback_bad.any():
-            for e in torch.where(fallback_bad)[0]:
-                mask_e = abs_evals_t[e] >= threshold
-                VR_bad = all_VR_t[e, :, mask_e]
-                d_bad = abs_evals_t[e, mask_e]
-                cov_n = (VR_bad * d_bad) @ VR_bad.T
-                cov_n = (cov_n + cov_n.T) * 0.5
-                if torch.max(torch.abs(cov_n)) < 1e-12:
-                    Y1_n_e = eye_n_pc
-                else:
-                    Y1_n_e = cov_n @ template_t
-                Q1_n_e = torch.linalg.qr(Y1_n_e).Q
-                basis_n_e = torch.linalg.qr(cov_n @ Q1_n_e).Q
-                noi_sims[e] = torch.abs(
-                    torch.linalg.det(basis_n_e[:, :n_pc].T @ template_t)
-                )
+        noi_sims = torch.where(num_bad >= n_pc, noi_sims, 0.0)
 
     return sig_sims, noi_sims
 
@@ -782,7 +730,9 @@ def _sensai_optimize(
         T1 = (105.0 - float(sv)) / 100.0
         eigen_threshold = float(np.exp(T1 * p_val - 100.0))
 
-        cur_mask = abs_evals >= eigen_threshold
+        cur_mask = _artifact_mask(abs_evals, eigen_threshold) & (
+            abs_evals > (1e-12 * np.max(abs_evals, axis=1, keepdims=True))
+        )
         if prev_mask is not None and np.array_equal(cur_mask, prev_mask):
             score, sig_sim, noi_sim = prev_vals
         else:
@@ -837,4 +787,3 @@ def _sensai_optimize(
     eigen_threshold = float(np.exp(T1_opt * p_val - 100.0))
     runs.sort(key=lambda x: x[0])
     return eigen_threshold, sensai_threshold, runs
-

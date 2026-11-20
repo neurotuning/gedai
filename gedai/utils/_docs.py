@@ -39,6 +39,15 @@ del key
 # Override n_jobs to avoid fragile intersphinx resolution of joblib in some builds.
 # -- A ---------------------------------------------------------------------------------
 # -- B ---------------------------------------------------------------------------------
+docdict["bad_channel_threshold"] = """
+bad_channel_threshold : float | str | None, default=None
+    Threshold for automatic two-pass bad-channel detection and exclusion based
+    on per-channel Explained Noise Variance (ENOVA), matching MATLAB GEDAI.
+    If ``None`` (default) or ``np.inf``, automatic bad-channel detection is
+    disabled. If ``"auto"``, uses ``0.95``. If a positive float (typically in
+    ``(0, 1]``), performs a pre-pass to detect flat channels and a Pass 1
+    fit/transform to flag channels whose ENOVA exceeds the threshold, then
+    re-fits Pass 2 on the remaining good channels."""
 # -- C ---------------------------------------------------------------------------------
 docdict["cycles_per_wavelet"] = """
 cycles_per_wavelet : int
@@ -59,6 +68,13 @@ engine : "auto" | "torch" | "numpy", default="auto"
 # -- G ---------------------------------------------------------------------------------
 # -- H ---------------------------------------------------------------------------------
 # -- I ---------------------------------------------------------------------------------
+docdict["interpolate_bads"] = """
+interpolate_bads : bool, default=False
+    If ``True`` and bad channels were excluded during fitting (recorded in
+    ``self.bad_channels_``), reconstructs those channels in the output via
+    MNE spherical spline interpolation (``interpolate_bads``) and, for EEG,
+    re-applies an average reference across the restored montage. Requires
+    valid 3D channel locations on the input instance."""
 # -- J ---------------------------------------------------------------------------------
 # -- K ---------------------------------------------------------------------------------
 # -- L ---------------------------------------------------------------------------------
@@ -92,6 +108,17 @@ noise_multiplier : float | str
 
     Alternatively, a custom numerical float can be passed."""
 # -- O ---------------------------------------------------------------------------------
+docdict["on_bad_channel"] = """
+on_bad_channel : "exclude" | "ignore", default="exclude"
+    How to handle channels marked in ``inst.info['bads']`` when fitting:
+
+    - ``"exclude"`` (default): Drops channels listed in ``info['bads']`` from
+      the fit (even if explicitly named in ``picks``) and logs a warning.
+      At transform time, raises a ``ValueError`` if any fitted channel in
+      ``self.ch_names`` is marked bad on the input instance.
+    - ``"ignore"``: Clears ``info['bads']`` on an internal copy of the data
+      and logs a warning so all selected channels are average-referenced and
+      processed together during both fitting and transformation."""
 docdict["overlap"] = """
 overlap : float
     The overlap ratio between consecutive epochs, between ``0`` and ``1``.
@@ -152,15 +179,28 @@ wavelet_level : int
     Wavelet decomposition level. Must be greater than ``0``.
     The default is ``4``."""
 docdict["wavelet_low_cutoff"] = """
-wavelet_low_cutoff : float | None
-    If a float is provided, zero out all wavelet levels whose upper frequency
-    bound is below this cutoff frequency in Hz. If ``None``, no frequency band
-    is zeroed out. If ``"auto"``, the cutoff is automatically determined based
-    on the info['highpass'] value (minimum 0.5 Hz). While reading data
-    from a file, info['highpass'] might be missing (i.e., equal to 0.0). If
-    you know that your data has been high-pass filtered, make sure to set
-    ``wavelet_low_cutoff`` to the high-pass cutoff frequency.
-    The default is ``0.5``."""
+wavelet_low_cutoff : float | str | None, default=0.1
+    Low-frequency cutoff in Hz for wavelet high-pass pre-filtering and subband
+    exclusion. Pre-filtering and global channel mean centering apply only to
+    Raw inputs. Epochs inputs use this parameter for decomposition-level
+    selection and subband exclusion, but receive neither preprocessing step;
+    at ``0.1`` Hz, all epoch bands are retained and sub-0.1 Hz drift is not
+    removed before broadband fitting. The modes below describe Raw behavior:
+
+    - ``0.1`` (default): Applies a 0.1 Hz Haar wavelet high-pass pre-filter before
+      broadband GED estimation while anchoring spectral MRA decomposition at 0.5 Hz
+      and retaining/spatially cleaning the 0.1-0.5 Hz scaling band. Recommended for
+      general-purpose EEG/MEG and standard ERP studies.
+    - ``0.0`` or ``None``: Disables wavelet high-pass pre-filtering completely
+      (applying only global channel mean centering) and retains all spectral bands
+      down to DC. Recommended for pre-stimulus baseline / anticipatory ERP analyses
+      (e.g., CNV, RP, LPP) or when data have already been causally high-pass filtered.
+    - ``>= 0.5`` (e.g., ``0.5``): Applies a sub-cutoff wavelet high-pass pre-filter
+      and zeroes out all spectral MRA bands with upper frequency bound
+      ``<= wavelet_low_cutoff``. Recommended for resting-state recordings with
+      severe slow electrode drift.
+    - ``"auto"``: Automatically resolves to ``max(0.1, raw.info['highpass'])`` when
+      ``raw.info['highpass'] > 0``, else ``0.1`` Hz."""
 docdict["wavelet_type"] = """
 wavelet_type : str
     Wavelet to use for the decomposition. The default is ``'haar'``.

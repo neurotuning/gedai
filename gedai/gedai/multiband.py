@@ -5,14 +5,18 @@ from mne import BaseEpochs
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
+    _check_bad_channel_threshold,
     _check_fit_info,
+    _check_on_bad_channel,
     _detect_signal_type,
     _ensure_wavelet_low_cutoff,
     _format_summary_table,
+    _interpolate_bad_channels,
     _prepare_epochs_fit,
     _prepare_epochs_transform,
     _prepare_raw_fit,
     _prepare_raw_transform,
+    _run_two_pass_bad_channel_detection,
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
@@ -123,6 +127,24 @@ class MultibandGedai:
         wavelet decomposition.
     %(engine)s
 
+    Attributes
+    ----------
+    fit_metrics_ : dict | None
+        Optimization metrics populated after fitting (for example,
+        ``"sensai_score"``), or ``None`` before fitting.
+    metrics_ : dict | None
+        Cleaning metrics populated after transforming (including
+        ``"sensai_score"``, ``"mean_enova"``, ``"enova_per_epoch"``,
+        and ``"enova_per_channel"``), or ``None`` before transforming.
+
+    Notes
+    -----
+    Following MNE-Python conventions, inputs are expected in standard SI units
+    (Volts for EEG; Tesla or Tesla/m for MEG). Internally, the reference
+    covariance is trace-matched to the data covariance so fitted thresholds and
+    cleaned outputs are invariant to uniform input amplitude rescaling
+    (e.g., Volts versus microvolts).
+
     References
     ----------
     .. footbibliography::
@@ -145,13 +167,31 @@ class MultibandGedai:
         self.engine = ensure_engine(engine)
 
         self.fitted = False
+        self._info = None
         self._wavelet_low_cutoff = None
         self._wavelets_fits = None
         self._reference_cov = None
         self._levels = None
         self._actual_wavelet_level = None
         self._broadband_model = None
+        self.fit_metrics_ = None
         self.metrics_ = None
+        self._on_bad_channel = "exclude"
+        self._bad_channel_threshold = None
+        self.bad_channels_ = []
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
+
+    def _clone_unfitted(self):
+        """Return an unfitted clone with the same initialization settings."""
+        return MultibandGedai(
+            wavelet_type=self.wavelet_type,
+            wavelet_level=self._wavelet_level,
+            broadband_pass=self.broadband_pass,
+            engine=self.engine,
+        )
 
     @property
     def wavelet_level(self):
@@ -201,11 +241,13 @@ class MultibandGedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_tol: float = 0.1,
-        wavelet_low_cutoff: float | str | None = 0.5,
+        wavelet_low_cutoff: float | str | None = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        on_bad_channel: str = "exclude",
+        bad_channel_threshold: float | str | None = None,
     ):
         """Fit the GEDAI model to the epochs data.
 
@@ -225,23 +267,55 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(on_bad_channel)s
+        %(bad_channel_threshold)s
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
         current_engine = ensure_engine(engine) if engine is not None else self.engine
-        _ensure_cov(reference_cov)
+        ensured_cov = _ensure_cov(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
         noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
+        on_bad_channel = _check_on_bad_channel(on_bad_channel)
+        resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
 
-        epochs_fit = _prepare_epochs_fit(epochs, picks)
+        if resolved_bad_thresh is not None:
+            _run_two_pass_bad_channel_detection(
+                self,
+                epochs,
+                fit_method_name="fit_epochs",
+                transform_method_name="transform_epochs",
+                picks=picks,
+                on_bad_channel=on_bad_channel,
+                threshold=resolved_bad_thresh,
+                fit_kwargs=dict(
+                    reference_cov=ensured_cov,
+                    sensai_method=sensai_method,
+                    noise_multiplier=noise_multiplier,
+                    sensai_tol=sensai_tol,
+                    wavelet_low_cutoff=wavelet_low_cutoff,
+                    n_pc=n_pc,
+                    n_jobs=n_jobs,
+                    verbose=verbose,
+                    engine=current_engine,
+                ),
+                transform_kwargs=dict(
+                    n_jobs=n_jobs,
+                    engine=current_engine,
+                ),
+            )
+            return
+
+        epochs_fit, excluded_bads = _prepare_epochs_fit(
+            epochs, picks, on_bad_channel=on_bad_channel, return_bads=True
+        )
         data = epochs_fit.get_data()
 
-        cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, epochs_fit.info)
+        cov = _pick_cov(ensured_cov, epochs_fit.info)
 
         epoch_duration = epochs_fit.tmax - epochs_fit.tmin
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
@@ -294,7 +368,7 @@ class MultibandGedai:
 
         wavelets_fits = []
         for w, (fmin, fmax) in enumerate(freq_bands):
-            if fmax < wavelet_low_cutoff:
+            if wavelet_low_cutoff >= 0.5 and fmax <= wavelet_low_cutoff:
                 logger.info(
                     f"Wavelet index {w} ({fmin:.2f}-{fmax:.2f} Hz) "
                     f"will be zeroed out during transformation because its upper "
@@ -315,7 +389,9 @@ class MultibandGedai:
                 signal_type = _detect_signal_type(epochs_fit.info)
                 center_freq = (fmin + fmax) / 2.0
                 lowcut = wavelet_low_cutoff
-                min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0
+                min_thresh = (
+                    -6.0 if (min(lowcut, fmax / 2.0) <= center_freq <= 60.0) else 0.0
+                )
                 max_thresh = 8.0 if signal_type == "meg" else 12.0
                 band_bounds = (min_thresh, max_thresh)
 
@@ -374,6 +450,13 @@ class MultibandGedai:
             "sensai_score": float(np.mean(sensai_scores)) if sensai_scores else 0.0,
             "wavelets_fits": wavelets_fits,
         }
+        self._on_bad_channel = on_bad_channel
+        self._bad_channel_threshold = None
+        self.bad_channels_ = list(excluded_bads)
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
 
     @fill_doc
     @verbose
@@ -388,11 +471,13 @@ class MultibandGedai:
         sensai_method: str = "optimize",
         noise_multiplier: float | str = "auto",
         sensai_tol: float = 0.1,
-        wavelet_low_cutoff: float | str | None = 0.5,
+        wavelet_low_cutoff: float | str | None = 0.1,
         n_pc: int | str = "auto",
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        on_bad_channel: str = "exclude",
+        bad_channel_threshold: float | str | None = None,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -415,6 +500,8 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(on_bad_channel)s
+        %(bad_channel_threshold)s
 
         Notes
         -----
@@ -439,20 +526,67 @@ class MultibandGedai:
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
         n_jobs = _check_n_jobs(n_jobs)
+        on_bad_channel = _check_on_bad_channel(on_bad_channel)
+        resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
 
-        raw_fit = _prepare_raw_fit(raw, picks)
-        sfreq = raw_fit.info["sfreq"]
+        if resolved_bad_thresh is not None:
+            _run_two_pass_bad_channel_detection(
+                self,
+                raw,
+                fit_method_name="fit_raw",
+                transform_method_name="transform_raw",
+                picks=picks,
+                on_bad_channel=on_bad_channel,
+                threshold=resolved_bad_thresh,
+                fit_kwargs=dict(
+                    duration=duration,
+                    overlap=overlap,
+                    reject_by_annotation=reject_by_annotation,
+                    reference_cov=cov,
+                    sensai_method=sensai_method,
+                    noise_multiplier=noise_multiplier,
+                    sensai_tol=sensai_tol,
+                    wavelet_low_cutoff=wavelet_low_cutoff,
+                    n_pc=n_pc,
+                    n_jobs=n_jobs,
+                    verbose=verbose,
+                    engine=current_engine,
+                ),
+                transform_kwargs=dict(
+                    overlap=overlap,
+                    n_jobs=n_jobs,
+                    engine=current_engine,
+                ),
+            )
+            return
 
-        # Obligatory 0.1 Hz wavelet high-pass pre-filter on input data
-        raw_fit._data = _apply_wavelet_highpass_prefilter(
-            raw_fit._data, sfreq, lowcut_hz=0.1, engine=current_engine
+        raw_fit, excluded_bads = _prepare_raw_fit(
+            raw, picks, on_bad_channel=on_bad_channel, return_bads=True
         )
+        sfreq = raw_fit.info["sfreq"]
 
         cov = _pick_cov(cov, raw_fit.info)
         filter_cutoff = raw_fit.info["highpass"]
         wavelet_low_cutoff = _ensure_wavelet_low_cutoff(
             wavelet_low_cutoff, filter_cutoff, duration
         )
+
+        # Single-stage pre-broadband wavelet high-pass pre-filter (or global
+        # channel mean centering when wavelet_low_cutoff <= 0)
+        if wavelet_low_cutoff > 0:
+            logger.info(
+                f"Applying wavelet HP pre-filter (sub-{wavelet_low_cutoff:.2f} Hz)..."
+            )
+            raw_fit._data = _apply_wavelet_highpass_prefilter(
+                raw_fit._data,
+                sfreq,
+                lowcut_hz=wavelet_low_cutoff,
+                engine=current_engine,
+            )
+        else:
+            raw_fit._data = raw_fit._data - np.mean(
+                raw_fit._data, axis=1, keepdims=True
+            )
 
         if self.wavelet_level == "auto":
             actual_wavelet_level = compute_wavelet_level(
@@ -479,21 +613,11 @@ class MultibandGedai:
             )
         duration = valid_duration
 
-        # Broadband pre-cleaning pass with wavelet HP pre-filter if requested
+        # Broadband pre-cleaning pass if requested
         signal_type = _detect_signal_type(raw_fit.info)
         bb_bounds = (-4.0, 8.0) if signal_type == "meg" else (-4.0, 12.0)
         if self.broadband_pass:
-            logger.info(
-                "Applying wavelet HP pre-filter "
-                f"(sub-{wavelet_low_cutoff:.2f} Hz) and running "
-                "broadband GEDAI pass..."
-            )
-            raw_fit._data = _apply_wavelet_highpass_prefilter(
-                raw_fit._data,
-                sfreq,
-                lowcut_hz=wavelet_low_cutoff,
-                engine=current_engine,
-            )
+            logger.info("Running broadband GEDAI pass...")
             broadband_model = Gedai(engine=current_engine)
             broadband_model.fit_raw(
                 raw_fit,
@@ -506,6 +630,7 @@ class MultibandGedai:
                 noise_multiplier=noise_multiplier,
                 sensai_bounds=bb_bounds,
                 sensai_tol=sensai_tol,
+                highpass_prefilter=None,
                 n_pc=n_pc,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -581,6 +706,13 @@ class MultibandGedai:
             "sensai_score": float(np.mean(sensai_scores)) if sensai_scores else 0.0,
             "wavelets_fits": wavelets_fits,
         }
+        self._on_bad_channel = on_bad_channel
+        self._bad_channel_threshold = None
+        self.bad_channels_ = list(excluded_bads)
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
 
     def _fit_wavelet_band(
         self,
@@ -602,7 +734,7 @@ class MultibandGedai:
         """Fit a single wavelet band model."""
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         w, (fmin, fmax) = item
-        if fmax <= wavelet_low_cutoff:
+        if wavelet_low_cutoff >= 0.5 and fmax <= wavelet_low_cutoff:
             return {
                 "band_index": w,
                 "fmin": fmin,
@@ -637,7 +769,7 @@ class MultibandGedai:
         signal_type = _detect_signal_type(raw_fit_info)
         center_freq = (fmin + fmax) / 2.0
         lowcut = wavelet_low_cutoff
-        min_thresh = -6.0 if (lowcut <= center_freq <= 60.0) else 0.0
+        min_thresh = -6.0 if (min(lowcut, fmax / 2.0) <= center_freq <= 60.0) else 0.0
         max_thresh = 8.0 if signal_type == "meg" else 12.0
         band_bounds = (min_thresh, max_thresh)
 
@@ -679,6 +811,7 @@ class MultibandGedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        interpolate_bads: bool = False,
     ):
         """Transform epochs data using the fitted model.
 
@@ -691,6 +824,7 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(interpolate_bads)s
 
         Returns
         -------
@@ -699,10 +833,17 @@ class MultibandGedai:
         """
         self._check_fit()
         _check_type(epochs, (BaseEpochs,), "epochs")
+        _check_type(interpolate_bads, (bool,), "interpolate_bads")
         n_jobs = _check_n_jobs(n_jobs)
 
         _check_fit_info(self, epochs)
-        epochs_transform = _prepare_epochs_transform(epochs, self.ch_names)
+        epochs_transform = _prepare_epochs_transform(
+            epochs,
+            self.ch_names,
+            on_bad_channel=self._on_bad_channel,
+            excluded_bads=self.bad_channels_,
+        )
+        orig_data = epochs_transform.get_data().copy()
 
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         if self.broadband_pass and self._broadband_model is not None:
@@ -758,7 +899,6 @@ class MultibandGedai:
         cleaned_epochs_data = np.sum(cleaned_epochs_wavelet, axis=2)
         epochs_transform._data = cleaned_epochs_data
 
-        orig_data = epochs_transform.get_data()
         orig_2d = orig_data.transpose(1, 0, 2).reshape(orig_data.shape[1], -1)
         clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(
             cleaned_epochs_data.shape[1], -1
@@ -768,7 +908,11 @@ class MultibandGedai:
         enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
         enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
         sensai_val = compute_composite_sensai(
-            clean_2d, noise_2d, epochs_transform.info["sfreq"], self._reference_cov.data
+            clean_2d,
+            noise_2d,
+            epochs_transform.info["sfreq"],
+            self._reference_cov.data,
+            n_pc=min(3, orig_data.shape[1]),
         )
         self.metrics_ = {
             "enova_per_epoch": enova_ep,
@@ -777,6 +921,10 @@ class MultibandGedai:
             "sensai_score": sensai_val,
         }
 
+        if interpolate_bads and self.bad_channels_:
+            return _interpolate_bad_channels(
+                epochs, epochs_transform, self.bad_channels_
+            )
         return epochs_transform
 
     @fill_doc
@@ -788,6 +936,7 @@ class MultibandGedai:
         n_jobs: int = None,
         verbose: str | None = None,
         engine: str | None = None,
+        interpolate_bads: bool = False,
     ):
         """Transform raw data using the fitted model.
 
@@ -801,6 +950,7 @@ class MultibandGedai:
         engine : str | None
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
+        %(interpolate_bads)s
 
         Returns
         -------
@@ -810,6 +960,7 @@ class MultibandGedai:
         self._check_fit()
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
+        _check_type(interpolate_bads, (bool,), "interpolate_bads")
         n_jobs = _check_n_jobs(n_jobs)
 
         if not (0 <= overlap < 1):
@@ -817,22 +968,32 @@ class MultibandGedai:
 
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_fit_info(self, raw)
-        raw_transform = _prepare_raw_transform(raw, self.ch_names)
+        raw_transform = _prepare_raw_transform(
+            raw,
+            self.ch_names,
+            on_bad_channel=self._on_bad_channel,
+            excluded_bads=self.bad_channels_,
+        )
         sfreq = raw_transform.info["sfreq"]
 
-        # Mirror the 0.1 Hz high-pass pre-filtering applied during fit_raw
-        raw_transform._data = _apply_wavelet_highpass_prefilter(
-            raw_transform._data, sfreq, lowcut_hz=0.1, engine=current_engine
-        )
-
-        # Broadband pre-cleaning if model was fitted with broadband_pass
-        if self.broadband_pass and self._broadband_model is not None:
+        # Mirror the single-stage high-pass pre-filtering (or mean centering)
+        # applied during fit_raw
+        if self._wavelet_low_cutoff is not None and self._wavelet_low_cutoff > 0:
             raw_transform._data = _apply_wavelet_highpass_prefilter(
                 raw_transform._data,
                 sfreq,
                 lowcut_hz=self._wavelet_low_cutoff,
                 engine=current_engine,
             )
+        else:
+            raw_transform._data = raw_transform._data - np.mean(
+                raw_transform._data, axis=1, keepdims=True
+            )
+
+        orig_data = raw_transform.get_data(verbose=False).copy()
+
+        # Broadband pre-cleaning if model was fitted with broadband_pass
+        if self.broadband_pass and self._broadband_model is not None:
             raw_input = self._broadband_model.transform_raw(
                 raw_transform,
                 overlap=overlap,
@@ -872,6 +1033,28 @@ class MultibandGedai:
         for _i, (clean_band, _enova_band, _sensai_band) in enumerate(band_results):
             raw_transformed_data += clean_band
 
+        noise_data = orig_data - raw_transformed_data
+        ep_samples = max(1, round(sfreq * 1.0))
+        enova_ep = compute_enova_per_epoch(
+            raw_transformed_data, noise_data, ep_samples
+        )
+        enova_ch = compute_enova_per_channel(
+            raw_transformed_data, noise_data, ep_samples
+        )
+        sensai_val = compute_composite_sensai(
+            raw_transformed_data,
+            noise_data,
+            sfreq,
+            self._reference_cov.data,
+            n_pc=min(3, orig_data.shape[0]),
+        )
+        self.metrics_ = {
+            "enova_per_epoch": enova_ep,
+            "enova_per_channel": enova_ch,
+            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+            "sensai_score": sensai_val,
+        }
+
         raw_transform._data = raw_transformed_data
 
         if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
@@ -879,6 +1062,10 @@ class MultibandGedai:
         ):
             pass
 
+        if interpolate_bads and self.bad_channels_:
+            return _interpolate_bad_channels(
+                raw, raw_transform, self.bad_channels_
+            )
         return raw_transform
 
     def _transform_wavelet_band(

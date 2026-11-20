@@ -131,7 +131,13 @@ def test_meg_grad_fit_transform_epochs(meg_grad_epochs, meg_fwd):
 
     clean_epochs = gedai.transform_epochs(meg_grad_epochs)
     clean_data = clean_epochs.get_data()
-    assert clean_data.shape == meg_grad_epochs.get_data().shape
+    expected_n_ch = len(meg_grad_epochs.ch_names) - len(meg_grad_epochs.info["bads"])
+    assert gedai.bad_channels_ == meg_grad_epochs.info["bads"]
+    assert clean_data.shape == (
+        len(meg_grad_epochs),
+        expected_n_ch,
+        meg_grad_epochs.get_data().shape[-1],
+    )
     assert not np.any(np.isnan(clean_data))
 
 
