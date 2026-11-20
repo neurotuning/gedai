@@ -181,7 +181,11 @@ wavelet_level : int
 docdict["wavelet_low_cutoff"] = """
 wavelet_low_cutoff : float | str | None, default=0.1
     Low-frequency cutoff in Hz for wavelet high-pass pre-filtering and subband
-    exclusion:
+    exclusion. Pre-filtering and global channel mean centering apply only to
+    Raw inputs. Epochs inputs use this parameter for decomposition-level
+    selection and subband exclusion, but receive neither preprocessing step;
+    at ``0.1`` Hz, all epoch bands are retained and sub-0.1 Hz drift is not
+    removed before broadband fitting. The modes below describe Raw behavior:
 
     - ``0.1`` (default): Applies a 0.1 Hz Haar wavelet high-pass pre-filter before
       broadband GED estimation while anchoring spectral MRA decomposition at 0.5 Hz
