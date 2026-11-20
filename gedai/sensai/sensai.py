@@ -1,9 +1,14 @@
 import numpy as np
 from scipy.linalg import eigh
 
-from ..gedai.decompose import _artifact_mask
 from ..utils._checks import ensure_engine, ensure_int
 from ..utils._torch_backend import precompute_gevd_torch
+
+
+def _artifact_mask(eigenvalues, threshold):
+    abs_eigenvalues = np.abs(eigenvalues)
+    at_threshold = np.isclose(abs_eigenvalues, threshold, rtol=1e-12, atol=0.0)
+    return (abs_eigenvalues >= threshold) | at_threshold
 
 
 def _scale_invariant_eigh(a, b, **kwargs):

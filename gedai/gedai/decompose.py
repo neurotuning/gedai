@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..sensai.sensai import _scale_invariant_eigh
+from ..sensai.sensai import _artifact_mask, _scale_invariant_eigh
 from ..utils._checks import ensure_engine
 from ..utils._torch_backend import (
     batched_gevd_cholesky,
@@ -13,12 +13,6 @@ __all__ = [
     "robust_cholesky_gevd",
     "batched_gevd_cholesky",
 ]
-
-
-def _artifact_mask(eigenvalues, threshold):
-    abs_eigenvalues = np.abs(eigenvalues)
-    at_threshold = np.isclose(abs_eigenvalues, threshold, rtol=1e-12, atol=0.0)
-    return (abs_eigenvalues >= threshold) | at_threshold
 
 
 def _clean_epochs(

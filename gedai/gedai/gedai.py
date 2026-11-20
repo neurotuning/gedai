@@ -22,13 +22,13 @@ from gedai.gedai._utils import (
 )
 
 from ..covariance.covariance import _ensure_cov, _pick_cov
-from ..decompose import _artifact_mask
 from ..metrics.enova import (
     compute_composite_sensai,
     compute_enova_per_channel,
     compute_enova_per_epoch,
 )
 from ..sensai.sensai import (
+    _artifact_mask,
     _compute_default_n_pc,
     _eigen_to_sensai,
     _precompute_gevd,

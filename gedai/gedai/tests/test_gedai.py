@@ -8,8 +8,8 @@ from mne import make_fixed_length_epochs
 import gedai.gedai.gedai as gedai_module
 from gedai import AdaptiveMultibandGedai, Gedai, MultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
-from gedai.gedai.decompose import _artifact_mask
 from gedai.gedai.gedai import _get_channel_multiplier
+from gedai.sensai.sensai import _artifact_mask
 
 raw_fname = get_contaminated_eeg_set_path()
 raw_eeg = mne.io.read_raw(raw_fname, preload=True)
