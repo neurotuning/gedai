@@ -48,6 +48,14 @@ bad_channel_threshold : float | str | None, default=None
     ``(0, 1]``), performs a pre-pass to detect flat channels and a Pass 1
     fit/transform to flag channels whose ENOVA exceeds the threshold, then
     re-fits Pass 2 on the remaining good channels."""
+docdict["bad_epoch_threshold"] = """
+bad_epoch_threshold : float | None, default=None
+    ENOVA threshold (e.g., ``0.85``) above which 1-second epochs are flagged
+    as severely corrupted. On ``transform_raw``, appends ``"BAD_gedai"``
+    annotations to the returned instance (without destructively removing samples)
+    and populates ``self.bad_epochs_``. On ``transform_epochs``, populates
+    boolean mask ``self.bad_epochs_``. When ``None`` (default), no bad-epoch
+    annotations are added."""
 # -- C ---------------------------------------------------------------------------------
 docdict["compute_metrics"] = """
 compute_metrics : bool, default=True
@@ -61,6 +69,14 @@ cycles_per_wavelet : int
     Lower-frequency bands use longer epochs to satisfy
     this target. The default is ``12``."""
 # -- D ---------------------------------------------------------------------------------
+docdict["dipolar_guardrail"] = """
+dipolar_guardrail : bool, default=False
+    Whether to include MATLAB GEDAI's rank-1/rank-2 dipolar rhythm guardrail
+    (``0.88 * nsi_det + 0.12 * sum(s_bad**6)``) in the EEG SENSAI noise penalty
+    so dominant dipolar brain rhythms are penalized even when fewer than ``n_pc``
+    components exceed threshold. Useful opt-in (especially paired with
+    ``noise_multiplier="auto_z3"``) when preserving strong alpha/mu rhythms or
+    using strictly reference-aligned EEG modes (e.g., ``"REST"``, ``"Cz"``)."""
 docdict["duration"] = """
 duration : float
     Duration of each epoch in seconds. The default is ``1.0``."""
@@ -111,6 +127,8 @@ noise_multiplier : float | str
     - ``"auto"`` : Standard balance (noise_multiplier = 3.0, default).
     - ``"auto+"`` : More aggressive denoising (noise_multiplier = 1.5).
     - ``"auto-"`` : More conservative denoising (noise_multiplier = 6.0).
+    - ``"auto_z3"`` / ``"auto_z3+"`` / ``"auto_z3-"`` : Adaptive closed-form
+      Z3 noise multiplier derived per window/band from GEVD spectral invariants.
 
     Alternatively, a custom numerical float can be passed."""
 # -- O ---------------------------------------------------------------------------------
@@ -141,14 +159,32 @@ picks : str | list | slice
     EEG channels."""
 # -- Q ---------------------------------------------------------------------------------
 # -- R ---------------------------------------------------------------------------------
+docdict["reference"] = """
+reference : str | None, default="average"
+    EEG reference convention applied consistently to both data and leadfield /
+    reference covariance (ignored for MEG):
+
+    - ``"average"`` (default): Average reference.
+    - ``"REST"``: Reference Electrode Standardization Technique (infinity reference;
+      requires a leadfield/Forward).
+    - ``"M1+M2"`` / ``"TP9+TP10"`` / ``"A1+A2"``: Linked mastoids / earlobes.
+    - ``"none"``: No re-referencing.
+    - Any channel label (e.g., ``"Cz"``): Re-reference to that channel (or adjust the
+      leadfield directly if it is an external 10-05 reference not in the montage).
+
+    When using strictly reference-aligned modes (``"REST"``, single-channel, or
+    linked-mastoid references) with multiband cleaning, pairing
+    ``noise_multiplier="auto_z3"`` with ``dipolar_guardrail=True`` is recommended
+    to prevent clean-band rank-1/rank-2 over-rejection."""
 docdict["reference_cov"] = """
-reference_cov : str | mne.Covariance
-    The reference covariance to use. If ``'leadfield'``, use a pre-computed covariance.
-    The precomputed covariance if computed from a leadfield made using 1005 EEG channels
-    layout and fsaverage head model.
-    If :class:`mne.Covariance`, use a pre-computed covariance.
-    See :func:`~gedai.covariance.compute_covariance_from_forward` for more
-    details on how to compute a covariance from a forward solution."""
+reference_cov : str | mne.Covariance | mne.Forward
+    The reference covariance to use. If ``'leadfield'``, uses the bundled 343-channel
+    OpenMEEG BEM covariance (with automatic 3D dipole-kernel projection fallback when
+    electrode labels are non-10-20 and 3D coordinates are present). If
+    ``'projection'``, always computes 3D dipole-kernel projection from channel
+    positions. Also accepts an :class:`mne.Covariance` or :class:`mne.Forward`.
+    See :func:`~gedai.covariance.compute_covariance_from_forward` and
+    :func:`~gedai.covariance.compute_covariance_from_dipole_projection`."""
 docdict["reject_by_annotation"] = """
 reject_by_annotation : bool
     Whether annotated bad segments should be rejected.
@@ -168,6 +204,12 @@ sensai_tol : float
     ``sensai_method='optimize'``. Defaults to ``0.1`` for fast convergence.
     Can be set to smaller values (e.g. ``0.01``) for finer search precision.
 """
+docdict["smoothing_window"] = """
+smoothing_window : float | None, default=None
+    Duration in seconds of overlapping calibration windows for non-stationary
+    sliding-window threshold adaptation during ``fit_raw``. Thresholds vary
+    smoothly across the recording via Akima (makima) interpolation. When
+    ``None`` or ``np.inf`` (default), fits a single stationary threshold."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------

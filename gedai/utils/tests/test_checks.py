@@ -120,7 +120,11 @@ def test_ensure_path():
 
 def test__ensure_noise_multiplier():
     """Test _ensure_noise_multiplier function and presets."""
-    from .._checks import _ensure_noise_multiplier, _parse_noise_multiplier
+    from .._checks import (
+        _ensure_noise_multiplier,
+        _parse_noise_multiplier,
+        _resolve_noise_multiplier_spec,
+    )
 
     assert _ensure_noise_multiplier("auto") == 3.0
     assert _ensure_noise_multiplier("default") == 3.0
@@ -129,9 +133,17 @@ def test__ensure_noise_multiplier():
     assert _ensure_noise_multiplier("aggressive") == 1.5
     assert _ensure_noise_multiplier("auto-") == 6.0
     assert _ensure_noise_multiplier("conservative") == 6.0
+    assert _ensure_noise_multiplier("AUTO_Z3") == "auto_z3"
+    assert _ensure_noise_multiplier("auto_z3+") == "auto_z3+"
+    assert _ensure_noise_multiplier("auto_z3-") == "auto_z3-"
     assert _ensure_noise_multiplier(2.5) == 2.5
     assert _ensure_noise_multiplier(4) == 4.0
     assert _parse_noise_multiplier("auto") == 3.0
+
+    assert _resolve_noise_multiplier_spec("auto") == (3.0, None)
+    assert _resolve_noise_multiplier_spec("auto_z3") == (None, 0.5)
+    assert _resolve_noise_multiplier_spec("auto_z3+") == (None, 1.0 / 3.0)
+    assert _resolve_noise_multiplier_spec("auto_z3-") == (None, 1.0)
 
     with pytest.raises(ValueError, match="noise_multiplier must be > 0"):
         _ensure_noise_multiplier(-1.0)

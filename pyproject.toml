@@ -169,6 +169,7 @@ include-package-data = true
 'gedai' = [
   'data/*.fif',
   'data/*.mat',
+  'data/*.npz',
   'data/*.set',
 ]
 

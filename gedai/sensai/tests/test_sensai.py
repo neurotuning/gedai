@@ -212,9 +212,82 @@ def test_sensai_numpy_torch_parity():
     template_t = torch.from_numpy(template)
 
     for th in [0.5, 1.0, 2.0, 5.0]:
-        sig_np, noi_np = _sensai_score_loop(abs_evals, all_VR, template, th, n_pc=3)
-        sig_t, noi_t = _sensai_score_torch(
-            abs_evals_t, all_VR_t, template_t, th, n_pc=3
+        for dg in (False, True):
+            sig_np, noi_np = _sensai_score_loop(
+                abs_evals, all_VR, template, th, n_pc=3, dipolar_guardrail=dg
+            )
+            sig_t, noi_t = _sensai_score_torch(
+                abs_evals_t, all_VR_t, template_t, th, n_pc=3, dipolar_guardrail=dg
+            )
+            assert abs(float(np.mean(sig_np)) - float(sig_t.mean().item())) < 1e-10
+            assert abs(float(np.mean(noi_np)) - float(noi_t.mean().item())) < 1e-10
+
+
+def test_dipolar_guardrail_rank1_and_z3_invariance():
+    """Dipolar guardrail detects rank-1 modes and Z3 multiplier is scale-invariant."""
+    from gedai.sensai.sensai import (
+        _sensai_score_loop,
+        _sensai_score_torch,
+        compute_z3_noise_multiplier,
+    )
+    from gedai.utils._torch_backend import has_torch
+
+    rng = np.random.default_rng(7)
+    n_ep, n_ch, n_times = 8, 12, 200
+    ref_cov = rng.standard_normal((n_ch, n_ch))
+    ref_cov = ref_cov @ ref_cov.T + 0.2 * np.eye(n_ch)
+    evals_ref, evecs_ref = np.linalg.eigh(ref_cov)
+    template = np.ascontiguousarray(evecs_ref[:, ::-1][:, :3])
+
+    # Inject a strong rank-1 dipolar rhythm aligned with top template mode
+    epochs_data = 0.2 * rng.standard_normal((n_ep, n_ch, n_times))
+    epochs_data += 3.0 * template[:, 0:1] * rng.standard_normal((n_ep, 1, n_times))
+
+    all_eval, all_evec = _precompute_gevd(epochs_data, ref_cov, engine="numpy")
+    all_vr = np.ascontiguousarray(np.einsum("ij,ejk->eik", ref_cov, all_evec))
+    abs_eval = np.ascontiguousarray(np.abs(all_eval))
+    # Pick threshold that isolates exactly 1 component (< n_pc=3) per epoch
+    th_rank1 = float(np.median(np.sort(abs_eval, axis=1)[:, -2]) + 1e-3)
+    th_rank1 = 0.5 * (
+        float(np.mean(np.sort(abs_eval, axis=1)[:, -1]))
+        + float(np.mean(np.sort(abs_eval, axis=1)[:, -2]))
+    )
+
+    _, noi_off = _sensai_score_loop(
+        abs_eval, all_vr, template, th_rank1, n_pc=3, dipolar_guardrail=False
+    )
+    _, noi_on = _sensai_score_loop(
+        abs_eval, all_vr, template, th_rank1, n_pc=3, dipolar_guardrail=True
+    )
+    assert np.all(noi_off == 0.0)
+    assert np.all(noi_on > 0.0)
+    assert np.all((0.0 <= noi_on) & (noi_on <= 1.0))
+
+    if has_torch():
+        import torch
+
+        _, noi_on_t = _sensai_score_torch(
+            torch.from_numpy(abs_eval),
+            torch.from_numpy(all_vr),
+            torch.from_numpy(template),
+            th_rank1,
+            n_pc=3,
+            dipolar_guardrail=True,
         )
-        assert abs(float(np.mean(sig_np)) - float(sig_t.mean().item())) < 0.02
-        assert abs(float(np.mean(noi_np)) - float(noi_t.mean().item())) < 0.02
+        np.testing.assert_allclose(noi_on_t.numpy(), noi_on, atol=1e-10)
+
+    m1, c1, pr1, br1 = compute_z3_noise_multiplier(
+        all_eval, all_evec, ref_cov, template, n_pc=3, epoch_samples=10000
+    )
+    # Scaling GEVD eigenvalues & ref_cov leaves Z3 invariant
+    m2, c2, pr2, br2 = compute_z3_noise_multiplier(
+        all_eval * 1e6,
+        all_evec * 1e-3,
+        ref_cov * 1e6,
+        template,
+        n_pc=3,
+        epoch_samples=10000,
+    )
+    assert np.isfinite(m1)
+    assert 0.5 <= m1 <= 10.0
+    np.testing.assert_allclose([m1, c1, pr1, br1], [m2, c2, pr2, br2], rtol=1e-12)

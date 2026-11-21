@@ -310,24 +310,26 @@ def _check_n_jobs(n_jobs):
     return n_jobs
 
 
-def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
+def _ensure_noise_multiplier(value: float | int | str = "auto") -> float | str:
     """Ensure a valid noise multiplier or preset string.
 
     Parameters
     ----------
     value : float | int | str
-        - 'auto' / 'default' / 'standard' : Standard balance
+        - ``'auto'`` / ``'default'`` / ``'standard'`` : Standard balance
           (noise_multiplier = 3.0)
-        - 'auto+' / 'aggressive' / 'more' : More aggressive denoising
+        - ``'auto+'`` / ``'aggressive'`` / ``'more'`` : More aggressive denoising
           (noise_multiplier = 1.5)
-        - 'auto-' / 'conservative' / 'less' : More conservative denoising
+        - ``'auto-'`` / ``'conservative'`` / ``'less'`` : More conservative denoising
           (noise_multiplier = 6.0)
+        - ``'auto_z3'`` / ``'auto_z3+'`` / ``'auto_z3-'`` : Adaptive closed-form
+          Z3 GEVD spectral noise multiplier (evaluated during fit).
         - float / int : Custom noise multiplier value > 0
 
     Returns
     -------
-    multiplier : float
-        Numerical noise multiplier.
+    multiplier : float | str
+        Numerical noise multiplier or canonical ``'auto_z3*'`` mode string.
     """
     if isinstance(value, str):
         val = value.strip().lower()
@@ -337,6 +339,8 @@ def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
             return 1.5
         elif val in ("auto-", "conservative", "less"):
             return 6.0
+        elif val in ("auto_z3", "auto_z3+", "auto_z3-"):
+            return val
         else:
             try:
                 val_float = float(val)
@@ -346,9 +350,10 @@ def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
             except ValueError:
                 raise ValueError(
                     f"Unknown noise_multiplier preset: '{value}'. "
-                    "Expected 'auto', 'auto+', 'auto-', or a numeric float > 0."
+                    "Expected 'auto', 'auto+', 'auto-', 'auto_z3', 'auto_z3+', "
+                    "'auto_z3-', or a numeric float > 0."
                 )
-    elif isinstance(value, (int, float)):
+    elif isinstance(value, (int, float)) and not isinstance(value, bool):
         if value <= 0:
             raise ValueError(f"noise_multiplier must be > 0, got {value}")
         return float(value)
@@ -356,6 +361,20 @@ def _ensure_noise_multiplier(value: float | int | str = "auto") -> float:
         raise TypeError(
             f"noise_multiplier must be float or str, got {type(value).__name__}"
         )
+
+
+def _resolve_noise_multiplier_spec(
+    value: float | int | str = "auto",
+) -> tuple[float | None, float | None]:
+    """Return ``(fixed_value, z3_scale)`` for static vs adaptive Z3 multipliers."""
+    resolved = _ensure_noise_multiplier(value)
+    if resolved == "auto_z3":
+        return None, 0.5
+    if resolved == "auto_z3+":
+        return None, 1.0 / 3.0
+    if resolved == "auto_z3-":
+        return None, 1.0
+    return float(resolved), None
 
 
 _parse_noise_multiplier = _ensure_noise_multiplier

@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.linalg import eigh
+from scipy.special import expit
 
 from ..utils._checks import ensure_engine, ensure_int
 from ..utils._torch_backend import precompute_gevd_torch
@@ -239,6 +240,7 @@ def _sensai_score_loop(
     signal_type: str = "eeg",
     all_evec: np.ndarray | None = None,
     reference_cov: np.ndarray | None = None,
+    dipolar_guardrail: bool = False,
 ):
     """NumPy optimized loop for fast power-weighted SENSAI optimization scoring."""
     n_ep, _ = abs_evals.shape
@@ -268,6 +270,16 @@ def _sensai_score_loop(
                 Q_bad, _ = np.linalg.qr(VR_e[:, bad_mask])
                 s = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
                 noi_sims[e] = float(np.sum(s**6))
+        elif dipolar_guardrail:
+            if num_bad > 0:
+                Q_bad, _ = np.linalg.qr(VR_e[:, bad_mask])
+                s_bad = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
+                guard = 0.12 * min(1.0, float(np.sum(s_bad**6)))
+                if num_bad >= n_pc:
+                    nsi_det = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
+                    noi_sims[e] = 0.88 * nsi_det + guard
+                else:
+                    noi_sims[e] = guard
         elif num_bad >= n_pc:
             noi_sims[e] = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
 
@@ -287,11 +299,12 @@ def _sensai_score_torch(
     threshold: float,
     n_pc: int = 3,
     signal_type: str = "eeg",
+    dipolar_guardrail: bool = False,
 ):
     """Batched PyTorch implementation for fast power-weighted SENSAI scoring."""
     import torch
 
-    n_ep, _ = abs_evals_t.shape
+    n_ep, n_ch = abs_evals_t.shape
     max_eval = abs_evals_t.max(dim=1, keepdim=True).values
     valid_mask = abs_evals_t > (1e-12 * max_eval)
 
@@ -331,8 +344,43 @@ def _sensai_score_torch(
         Y2_n = torch.bmm(all_VR_t, w_bad * torch.bmm(all_VR_t.transpose(1, 2), Q1_n))
         basis_n = torch.linalg.qr(Y2_n).Q
         overlap_n = torch.matmul(basis_n[:, :, :n_pc].transpose(1, 2), template_t)
-        noi_sims = torch.abs(torch.linalg.det(overlap_n))
-        noi_sims = torch.where(num_bad >= n_pc, noi_sims, 0.0)
+        nsi_det = torch.abs(torch.linalg.det(overlap_n))
+        nsi_det = torch.where(num_bad >= n_pc, nsi_det, 0.0)
+
+        if dipolar_guardrail:
+            active = num_bad > 0
+            guard = torch.zeros_like(nsi_det)
+            if active.any():
+                num_bad_act = num_bad[active]
+                k_max = int(num_bad_act.max().item())
+                order = torch.argsort(
+                    bad_mask[active].to(torch.int64), dim=1, descending=True
+                )[:, :k_max]
+                gather_idx = order.unsqueeze(1).expand(-1, n_ch, -1)
+                p_packed = torch.gather(all_VR_t[active], dim=2, index=gather_idx)
+                valid_col = (
+                    torch.arange(k_max, device=template_t.device).unsqueeze(0)
+                    < num_bad_act.unsqueeze(1)
+                )
+                p_packed = torch.where(valid_col.unsqueeze(1), p_packed, 0.0)
+                g_pp = torch.bmm(p_packed.transpose(1, 2), p_packed)
+                g_pp = 0.5 * (g_pp + g_pp.transpose(1, 2))
+                evals_p, v_p = torch.linalg.eigh(g_pp)
+                ev_thresh = 1e-12 * evals_p[:, -1:].clamp_min(1e-30)
+                inv_sqrt = torch.where(
+                    evals_p > ev_thresh,
+                    torch.rsqrt(evals_p.clamp_min(1e-30)),
+                    0.0,
+                )
+                pt_t = torch.matmul(p_packed.transpose(1, 2), template_t)
+                z = torch.bmm(v_p.transpose(1, 2), pt_t) * inv_sqrt.unsqueeze(-1)
+                m_mat = torch.bmm(z.transpose(1, 2), z)
+                m_mat = 0.5 * (m_mat + m_mat.transpose(1, 2))
+                s2 = torch.linalg.eigvalsh(m_mat).clamp(0.0, 1.0)
+                guard[active] = 0.12 * torch.clamp(torch.sum(s2**3, dim=1), max=1.0)
+            noi_sims = torch.where(num_bad >= n_pc, 0.88 * nsi_det + guard, guard)
+        else:
+            noi_sims = nsi_det
 
     return sig_sims, noi_sims
 
@@ -346,6 +394,7 @@ def _sensai_score_from_gevd(
     n_pc: int = 3,
     noise_multiplier: float = 3.0,
     signal_type: str = "eeg",
+    dipolar_guardrail: bool = False,
 ) -> tuple[float, float, float]:
     """Fast SENSAI score using cached GEVD and power-weighted 2-step QR subspace."""
     template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
@@ -363,6 +412,7 @@ def _sensai_score_from_gevd(
         signal_type=signal_type,
         all_evec=all_eigenvectors,
         reference_cov=reference_cov,
+        dipolar_guardrail=dipolar_guardrail,
     )
 
     sig_sim = float(np.mean(sig_sims) * 100.0)
@@ -406,6 +456,126 @@ def _find_changepoint(y: np.ndarray, smooth_window: int = 6) -> int | None:
     return best_idx + 1
 
 
+def compute_z3_noise_multiplier(
+    all_eval: np.ndarray,
+    all_evec: np.ndarray,
+    reference_cov: np.ndarray,
+    template: np.ndarray,
+    n_pc: int,
+    min_threshold: float = 0.0,
+    epoch_samples: int | None = None,
+) -> tuple[float, float, float, float]:
+    """Compute closed-form adaptive Z3 noise multiplier from GEVD spectral invariants.
+
+    Ports MATLAB ``GEDAI_compute_z3_noise_multiplier.m`` strictly in scale-invariant
+    float64 arithmetic.
+
+    Returns
+    -------
+    m_eff : float
+        Adaptive base noise multiplier (multiply by 0.5 / 0.333 / 1.0 preset scale).
+    c1 : float
+        Mean top-eigenvector dipolarity cosine in [0.15, 0.95].
+    pr : float
+        Mean participation ratio across top-half peak epochs.
+    burst_ratio : float
+        90th-percentile-to-median peak eigenvalue ratio.
+    """
+    n_ep, n_ch = all_eval.shape
+    m_int = max(1, int(n_pc))
+    m_d = float(m_int)
+    c1_default = max(0.15, (m_d - 1.0) / max(m_d, 1.0))
+    if n_ch <= 2 or n_ep < 1:
+        return m_d, c1_default, m_d, 1.0
+    if epoch_samples is None:
+        epoch_samples = (m_int**3) * n_ch
+
+    tiny = np.finfo(np.float64).tiny
+    ref_d = np.asarray(reference_cov, dtype=np.float64)
+    template_d = np.asarray(template[:, :m_int], dtype=np.float64)
+
+    all_evals_mat = np.zeros((n_ep, n_ch), dtype=np.float64)
+    part_ratios = np.zeros(n_ep, dtype=np.float64)
+    top1_cos = np.zeros(n_ep, dtype=np.float64)
+
+    for epo in range(n_ep):
+        ev_raw = np.abs(np.asarray(all_eval[epo], dtype=np.float64))
+        ord_idx = np.argsort(ev_raw, kind="mergesort")
+        ev = ev_raw[ord_idx]
+        all_evals_mat[epo] = ev
+        ev_act = ev[1:]
+        part_ratios[epo] = (np.sum(ev_act) ** 2) / max(float(np.sum(ev_act**2)), tiny)
+
+        v_top1 = np.asarray(all_evec[epo, :, ord_idx[-1]], dtype=np.float64)
+        p_top1 = ref_d @ v_top1
+        p_norm = max(float(np.linalg.norm(p_top1)), tiny)
+        top1_cos[epo] = float(np.linalg.norm(template_d.T @ (p_top1 / p_norm)))
+
+    peak_ev = all_evals_mat[:, -1]
+    med_peak = float(np.median(peak_ev))
+    burst_ratio = float(np.percentile(peak_ev, 90)) / max(med_peak, tiny)
+    topq_mask = peak_ev >= med_peak
+    if not np.any(topq_mask):
+        topq_mask = np.ones(n_ep, dtype=bool)
+
+    m_min = m_d / max(m_d - 1.0, 1.0)
+    r_sub = (m_d**3) / max(float(n_ch - 1), 1.0)
+    w_ch_dof = float(expit((r_sub - 0.85) / 0.08))
+    w_ep_dof = float(
+        expit(-(float(epoch_samples) / max(float(n_ch), 1.0) - (m_d + 1.25)) / 0.25)
+    )
+    w_dof = w_ch_dof * w_ep_dof
+    n_dof = max(
+        1,
+        int(
+            round(
+                w_ch_dof * min(float(m_int**3), np.floor(epoch_samples / (m_d + 1.0)))
+                + (1.0 - w_ch_dof) * float(m_int**3)
+            )
+        ),
+    )
+    k_start = max(1, n_ch - n_dof)
+    active_evals = all_evals_mat[topq_mask, k_start:]
+    ev_floor = 1e-6 * float(np.median(peak_ev[topq_mask]))
+    valid_vals = active_evals[active_evals > ev_floor]
+    if valid_vals.size >= 2:
+        pos_log = np.log(valid_vals)
+        q75, q25 = np.percentile(pos_log, [75, 25])
+        iqr_log = max(0.5, float(q75 - q25))
+    else:
+        iqr_log = 1.0
+
+    pr = float(np.mean(part_ratios[topq_mask]))
+    c1 = max(0.15, min(0.95, float(np.mean(top1_cos[topq_mask]))))
+
+    if min_threshold == -4:
+        scale_factor = float(n_ch) / (m_d**2)
+        excess_iqr = max(1.0, iqr_log / max(m_d - 1.0, 1.0))
+        m_raw = (scale_factor * pr) / ((iqr_log**2) * c1 * (excess_iqr**2))
+        m_floor = max(m_min, (m_d - 1.0) / (excess_iqr**3))
+        m_eff = max(m_floor, min(1.5 * m_d, m_raw))
+    else:
+        c1_floor = (m_d - 1.0) / max(m_d, 1.0)
+        w_nondip = min(
+            1.0,
+            max(0.0, (c1_floor - c1) / max(1.0 - c1_floor, 1e-12))
+            * (min(1.0, m_d / max(pr, 1e-12)) ** w_dof),
+        )
+        iqr_ref = m_d - w_nondip
+        excess_iqr = 1.0 + max(0.0, iqr_log - iqr_ref) / max(m_d - 1.0, 1.0)
+        iso_boost = 1.0 + w_dof * max(0.0, (pr / m_d) ** 2 - 1.0)
+        m_raw = (m_d * pr * iso_boost) / (
+            (iqr_log**2) * max(c1, c1_floor) * (excess_iqr**2)
+        )
+        m_floor = max(
+            m_min, (m_d - w_dof * (m_d - m_min) * w_nondip) / (excess_iqr**3)
+        )
+        m_ceil = (1.5 * m_d) * ((m_d / 1.5) ** w_dof)
+        m_eff = max(m_floor, min(m_ceil, m_raw))
+
+    return float(m_eff), float(c1), float(pr), float(burst_ratio)
+
+
 def _sensai_score(
     epochs,
     threshold,
@@ -413,6 +583,7 @@ def _sensai_score(
     n_pc=3,
     noise_multiplier=3.0,
     engine="auto",
+    dipolar_guardrail: bool = False,
 ):
     """Compute the SENSAI score for given threshold.
 
@@ -430,6 +601,8 @@ def _sensai_score(
         Noise multiplier.
     engine : str
         Computation engine ('numpy', 'torch', or 'auto').
+    dipolar_guardrail : bool, default=True
+        Whether to enable the rank-1/rank-2 dipolar rhythm guardrail for EEG.
 
     Returns
     -------
@@ -463,6 +636,7 @@ def _sensai_score(
         threshold,
         n_pc,
         noise_multiplier,
+        dipolar_guardrail=dipolar_guardrail,
     )
 
 
@@ -479,6 +653,7 @@ def _sensai_gridsearch(
     sensai_thresholds=None,
     signal_type="eeg",
     engine="auto",
+    dipolar_guardrail: bool = False,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -532,6 +707,7 @@ def _sensai_gridsearch(
                 threshold,
                 n_pc=n_pc,
                 signal_type=signal_type,
+                dipolar_guardrail=dipolar_guardrail,
             )
             sig_sim = float(sig_sims_t.mean().item() * 100.0)
             noi_sim = float(noi_sims_t.mean().item() * 100.0)
@@ -543,6 +719,7 @@ def _sensai_gridsearch(
                 threshold,
                 n_pc=n_pc,
                 signal_type=signal_type,
+                dipolar_guardrail=dipolar_guardrail,
             )
             sig_sim = float(np.mean(sig_sims) * 100.0)
             noi_sim = float(np.mean(noi_sims) * 100.0)
@@ -669,6 +846,7 @@ def _sensai_optimize(
     engine="auto",
     sensai_tol: float = 0.1,
     is_wavelet_band: bool = False,
+    dipolar_guardrail: bool = False,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -744,6 +922,7 @@ def _sensai_optimize(
                     eigen_threshold,
                     n_pc=n_pc,
                     signal_type=signal_type,
+                    dipolar_guardrail=dipolar_guardrail,
                 )
                 sig_sim = float(sig_sims_t.mean().item() * 100.0)
                 noi_sim = float(noi_sims_t.mean().item() * 100.0)
@@ -755,6 +934,7 @@ def _sensai_optimize(
                     eigen_threshold,
                     n_pc=n_pc,
                     signal_type=signal_type,
+                    dipolar_guardrail=dipolar_guardrail,
                 )
                 sig_sim = float(np.mean(sig_sims) * 100.0)
                 noi_sim = float(np.mean(noi_sims) * 100.0)

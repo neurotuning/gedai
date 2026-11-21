@@ -12,6 +12,11 @@ def get_leadfield_cov_path() -> Path:
     return get_data_path("fsavLEADFIELD_4_GEDAI-cov.fif")
 
 
+def get_leadfield_npz_path() -> Path:
+    """Return the path to the bundled 343-channel BEM leadfield archive."""
+    return get_data_path("fsavLEADFIELD_4_GEDAI.npz")
+
+
 def get_simulated_clean_eeg_set_path() -> Path:
     """Return the path to the bundled clean EEG sample dataset (.set)."""
     return get_data_path("simulated_clean_EEG_2.set")
@@ -29,5 +34,6 @@ __all__ = [
     "get_contaminated_eeg_set_path",
     "get_data_path",
     "get_leadfield_cov_path",
+    "get_leadfield_npz_path",
     "get_simulated_clean_eeg_set_path",
 ]
