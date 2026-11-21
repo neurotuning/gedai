@@ -125,7 +125,7 @@ except Exception as exc:
 # ------------------------------------------------------------
 # Because candidate priors do not require changing the cleaning algorithm, we run
 # identical :class:`~gedai.gedai.AdaptiveMultibandGedai` settings
-# (``noise_multiplier="auto"``) across all four
+# (``strength="auto"``) across all four
 # priors and inspect how well the cleaned vs. rejected data match each prior via
 # **SENSAI goodness-of-fit**:
 #
@@ -138,7 +138,7 @@ except Exception as exc:
 #   noise clusters in SENSAI manifold space.
 
 common_fit = dict(
-    noise_multiplier="auto",
+    strength="auto",
     wavelet_low_cutoff=0.5,
     on_bad_channel="exclude",
     bad_channel_threshold="auto",

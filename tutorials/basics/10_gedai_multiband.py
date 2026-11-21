@@ -72,7 +72,7 @@ multiband_gedai = MultibandGedai(
 multiband_gedai.fit_raw(
     raw,
     duration=2.0,
-    noise_multiplier="auto",
+    strength="auto",
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
     n_jobs=n_jobs,
@@ -88,9 +88,10 @@ print(multiband_gedai.summary)
 #       requiring power-of-two window lengths. Setting ``wavelet_low_cutoff`` to
 #       ``"auto"`` or to your high-pass cutoff skips subbands below the signal
 #       bandwidth. ``MultibandGedai`` also supports ``reference`` (``"average"``,
-#       ``"REST"``, ``"M1+M2"``, ``"Cz"``), adaptive Z3 ``noise_multiplier``
-#       presets (``"auto"``, ``"auto+"``, ``"auto-"``), non-stationary
-#       ``smoothing_window``, and ``bad_epoch_threshold`` (``"BAD_gedai"``).
+#       ``"REST"``, ``"M1+M2"``, ``"Cz"``), adaptive Z3 ``strength`` presets
+#       (``"auto"`` = ``7``, ``"auto+"`` = ``8``, ``"auto-"`` = ``6``, or
+#       ``0``-``10``), ``smoothing_window``, and ``bad_epoch_threshold``
+#       (``"BAD_gedai"``).
 
 # %%
 
@@ -129,7 +130,7 @@ broadband_gedai = Gedai()
 broadband_gedai.fit_raw(
     raw,
     duration=2.0,
-    noise_multiplier="auto",
+    strength="auto",
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
     n_jobs=n_jobs,

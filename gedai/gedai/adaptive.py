@@ -27,7 +27,7 @@ from ..metrics.enova import (
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
-    _ensure_noise_multiplier,
+    _ensure_strength,
     ensure_engine,
 )
 from ..utils._docs import fill_doc
@@ -263,7 +263,7 @@ class AdaptiveMultibandGedai:
         reject_by_annotation: bool | None = False,
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
-        noise_multiplier: float | str = "auto",
+        strength: float | str = "auto",
         sensai_tol: float = 0.1,
         wavelet_low_cutoff: str | float | None = 0.1,
         n_pc: int | str = "auto",
@@ -286,7 +286,7 @@ class AdaptiveMultibandGedai:
         %(reject_by_annotation)s
         %(reference_cov)s
         %(sensai_method)s
-        %(noise_multiplier)s
+        %(strength)s
         %(sensai_tol)s
         %(wavelet_low_cutoff)s
         %(n_pc)s
@@ -309,7 +309,7 @@ class AdaptiveMultibandGedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         _validate_reference_cov_arg(reference_cov)
         _check_type(sensai_method, (str,), "sensai_method")
-        noise_multiplier_spec = _ensure_noise_multiplier(noise_multiplier)
+        resolved_strength = _ensure_strength(strength)
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
@@ -332,7 +332,7 @@ class AdaptiveMultibandGedai:
                     reject_by_annotation=reject_by_annotation,
                     reference_cov=reference_cov,
                     sensai_method=sensai_method,
-                    noise_multiplier=noise_multiplier_spec,
+                    strength=resolved_strength,
                     sensai_tol=sensai_tol,
                     wavelet_low_cutoff=wavelet_low_cutoff,
                     n_pc=n_pc,
@@ -430,7 +430,7 @@ class AdaptiveMultibandGedai:
                 reject_by_annotation=reject_by_annotation,
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
-                noise_multiplier=noise_multiplier_spec,
+                strength=resolved_strength,
                 sensai_bounds=bb_bounds,
                 sensai_tol=sensai_tol,
                 highpass_prefilter=None,
@@ -461,7 +461,7 @@ class AdaptiveMultibandGedai:
                     wavelet_low_cutoff,
                     cov,
                     sensai_method,
-                    noise_multiplier_spec,
+                    resolved_strength,
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     smoothing_window=resolved_smooth,
@@ -480,7 +480,7 @@ class AdaptiveMultibandGedai:
                     wavelet_low_cutoff,
                     cov,
                     sensai_method,
-                    noise_multiplier_spec,
+                    resolved_strength,
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     smoothing_window=resolved_smooth,
@@ -542,7 +542,7 @@ class AdaptiveMultibandGedai:
         wavelet_low_cutoff,
         cov,
         sensai_method,
-        noise_multiplier,
+        strength,
         sensai_tol=0.1,
         n_pc="auto",
         engine=None,
@@ -596,7 +596,7 @@ class AdaptiveMultibandGedai:
                 cov=cov,
                 duration=duration,
                 sensai_method=sensai_method,
-                noise_multiplier=noise_multiplier,
+                strength=strength,
                 sensai_bounds=band_bounds,
                 sensai_tol=sensai_tol,
                 n_pc=n_pc,
@@ -626,7 +626,7 @@ class AdaptiveMultibandGedai:
                 picks="all",
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
-                noise_multiplier=noise_multiplier,
+                strength=strength,
                 sensai_bounds=band_bounds,
                 sensai_tol=sensai_tol,
                 n_pc=n_pc,
@@ -981,7 +981,8 @@ class AdaptiveMultibandGedai:
 
         Replicates MATLAB's SENSAI_visualization.m with side-by-side
         Before/After subspace projections, LDA decision boundary shading,
-        and marginal KDE distributions.
+        marginal KDE distributions, ENOVA-weighted Welch PSD, and per-channel
+        ENOVA topoplot.
 
         Parameters
         ----------
@@ -1021,6 +1022,9 @@ class AdaptiveMultibandGedai:
             else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
         )
         mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+        enova_per_ch = self.metrics_.get("enova_per_channel") if self.metrics_ else None
+        if enova_per_ch is not None and len(enova_per_ch) != len(ch_names):
+            enova_per_ch = None
 
         return plot_sensai_visualization(
             raw_before=raw_before_eval,
@@ -1030,6 +1034,7 @@ class AdaptiveMultibandGedai:
             n_pc=n_pc,
             sensai_score=score,
             mean_enova=mean_enova,
+            enova_per_channel=enova_per_ch,
             title_suffix=f"{self.__class__.__name__}",
             show=show,
         )

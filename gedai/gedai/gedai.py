@@ -46,10 +46,10 @@ from ..sensai.sensai import (
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
-    _ensure_noise_multiplier,
-    _resolve_noise_multiplier_spec,
+    _ensure_strength,
     ensure_engine,
     ensure_int,
+    strength_to_z3_scale,
 )
 from ..utils._docs import fill_doc
 from ..utils._torch_backend import (
@@ -294,7 +294,7 @@ class Gedai:
         picks: list | str = "eeg",
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
-        noise_multiplier: float | str = "auto",
+        strength: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         sensai_tol: float = 0.1,
         n_pc: int | str = "auto",
@@ -314,7 +314,7 @@ class Gedai:
         %(picks)s
         %(reference_cov)s
         %(sensai_method)s
-        %(noise_multiplier)s
+        %(strength)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(sensai_tol)s
@@ -332,7 +332,7 @@ class Gedai:
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_sensai_method(sensai_method)
-        noise_multiplier_spec = _ensure_noise_multiplier(noise_multiplier)
+        resolved_strength = _ensure_strength(strength)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
@@ -354,7 +354,7 @@ class Gedai:
                 fit_kwargs=dict(
                     reference_cov=reference_cov,
                     sensai_method=sensai_method,
-                    noise_multiplier=noise_multiplier_spec,
+                    strength=resolved_strength,
                     sensai_bounds=sensai_bounds,
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
@@ -434,22 +434,19 @@ class Gedai:
             float(sensai_bounds[0]),
             float(sensai_bounds[1]),
         )
-        fixed_nm, z3_scale = _resolve_noise_multiplier_spec(noise_multiplier_spec)
-        if fixed_nm is None:
-            _, ref_evecs = eigh(reference_cov_arr)
-            template = ref_evecs[:, ::-1][:, :resolved_n_pc]
-            m_eff, *_ = compute_z3_noise_multiplier(
-                all_eval,
-                all_evec,
-                reference_cov_arr,
-                template,
-                resolved_n_pc,
-                min_threshold=min_sensai_threshold,
-                epoch_samples=data.shape[-1],
-            )
-            resolved_noise_multiplier = float(z3_scale * m_eff)
-        else:
-            resolved_noise_multiplier = fixed_nm
+        z3_scale = strength_to_z3_scale(resolved_strength)
+        _, ref_evecs = eigh(reference_cov_arr)
+        template = ref_evecs[:, ::-1][:, :resolved_n_pc]
+        m_eff, *_ = compute_z3_noise_multiplier(
+            all_eval,
+            all_evec,
+            reference_cov_arr,
+            template,
+            resolved_n_pc,
+            min_threshold=min_sensai_threshold,
+            epoch_samples=data.shape[-1],
+        )
+        resolved_noise_multiplier = float(z3_scale * m_eff)
 
         fit_epochs = mne.EpochsArray(
             data, epochs_fit.info, tmin=epochs.tmin, verbose=False
@@ -514,7 +511,7 @@ class Gedai:
             "threshold": threshold,
             "sensai_value": sensai_value,
             "T1": T1,
-            "noise_multiplier": float(resolved_noise_multiplier),
+            "strength": float(resolved_strength),
         }
 
         self._fit = {
@@ -567,7 +564,7 @@ class Gedai:
         reject_by_annotation: bool | None = False,
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
-        noise_multiplier: float | str = "auto",
+        strength: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         sensai_tol: float = 0.1,
         highpass_prefilter: float | None = 0.1,
@@ -592,7 +589,7 @@ class Gedai:
         %(reject_by_annotation)s
         %(reference_cov)s
         %(sensai_method)s
-        %(noise_multiplier)s
+        %(strength)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(sensai_tol)s
@@ -617,7 +614,7 @@ class Gedai:
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
         _validate_reference_cov_arg(reference_cov)
         _check_sensai_method(sensai_method)
-        noise_multiplier_spec = _ensure_noise_multiplier(noise_multiplier)
+        resolved_strength = _ensure_strength(strength)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
@@ -643,7 +640,7 @@ class Gedai:
                     reject_by_annotation=reject_by_annotation,
                     reference_cov=reference_cov,
                     sensai_method=sensai_method,
-                    noise_multiplier=noise_multiplier_spec,
+                    strength=resolved_strength,
                     sensai_bounds=sensai_bounds,
                     sensai_tol=sensai_tol,
                     highpass_prefilter=highpass_prefilter,
@@ -712,7 +709,7 @@ class Gedai:
                 reference_cov_arg=reference_cov,
                 duration=duration,
                 sensai_method=sensai_method,
-                noise_multiplier_spec=noise_multiplier_spec,
+                resolved_strength=resolved_strength,
                 sensai_bounds=sensai_bounds,
                 sensai_tol=sensai_tol,
                 n_pc=n_pc,
@@ -738,7 +735,7 @@ class Gedai:
             picks=raw_fit.ch_names,
             reference_cov=cov,
             sensai_method=sensai_method,
-            noise_multiplier=noise_multiplier_spec,
+            strength=resolved_strength,
             sensai_bounds=sensai_bounds,
             sensai_tol=sensai_tol,
             n_pc=n_pc,
@@ -774,7 +771,7 @@ class Gedai:
         cov: mne.Covariance,
         duration: float,
         sensai_method: str = "optimize",
-        noise_multiplier: float | str = "auto",
+        strength: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         sensai_tol: float = 0.1,
         n_pc: int | str = "auto",
@@ -784,7 +781,7 @@ class Gedai:
     ) -> None:
         """Fit an already-referenced continuous sub-band array (used by multiband)."""
         self._check_unfitted()
-        noise_multiplier_spec = _ensure_noise_multiplier(noise_multiplier)
+        resolved_strength = _ensure_strength(strength)
         ref_spec = {
             "mode": "none",
             "label": "none",
@@ -818,7 +815,7 @@ class Gedai:
                 picks="all",
                 reference_cov=cov.copy(),
                 sensai_method=sensai_method,
-                noise_multiplier=noise_multiplier_spec,
+                strength=resolved_strength,
                 sensai_bounds=sensai_bounds,
                 sensai_tol=sensai_tol,
                 n_pc=n_pc,
@@ -837,7 +834,7 @@ class Gedai:
             reference_cov_arg="leadfield",
             duration=duration,
             sensai_method=sensai_method,
-            noise_multiplier_spec=noise_multiplier_spec,
+            resolved_strength=resolved_strength,
             sensai_bounds=sensai_bounds,
             sensai_tol=sensai_tol,
             n_pc=n_pc,
@@ -857,7 +854,7 @@ class Gedai:
         reference_cov_arg,
         duration: float,
         sensai_method: str,
-        noise_multiplier_spec: float | str,
+        resolved_strength: float,
         sensai_bounds: tuple[float, float],
         sensai_tol: float,
         n_pc: int | str,
@@ -904,7 +901,7 @@ class Gedai:
 
         _, ref_evecs = eigh(ref_arr)
         template = np.ascontiguousarray(ref_evecs[:, ::-1][:, :resolved_n_pc])
-        fixed_nm, z3_scale = _resolve_noise_multiplier_spec(noise_multiplier_spec)
+        z3_scale = strength_to_z3_scale(resolved_strength)
 
         min_b, max_b = float(sensai_bounds[0]), float(sensai_bounds[1])
         epoch_dur = epoch_samples / sfreq
@@ -946,19 +943,16 @@ class Gedai:
             all_evec_full[idx_start:idx_end] = evec_sub
             computed_mask[idx_start:idx_end] = True
 
-            if fixed_nm is None:
-                m_eff, *_ = compute_z3_noise_multiplier(
-                    eval_sub,
-                    evec_sub,
-                    ref_arr,
-                    template,
-                    resolved_n_pc,
-                    min_threshold=min_b,
-                    epoch_samples=epoch_samples,
-                )
-                nm_w = float(z3_scale * m_eff)
-            else:
-                nm_w = fixed_nm
+            m_eff, *_ = compute_z3_noise_multiplier(
+                eval_sub,
+                evec_sub,
+                ref_arr,
+                template,
+                resolved_n_pc,
+                min_threshold=min_b,
+                epoch_samples=epoch_samples,
+            )
+            nm_w = float(z3_scale * m_eff)
             nm_values.append(nm_w)
 
             mags_w = np.abs(eval_sub.ravel())
@@ -1061,7 +1055,7 @@ class Gedai:
             "threshold": scalar_thresh,
             "sensai_value": scalar_sv,
             "T1": t1_val,
-            "noise_multiplier": mean_nm,
+            "strength": float(resolved_strength),
         }
         self._fit = {
             "threshold": scalar_thresh,
@@ -1504,7 +1498,8 @@ class Gedai:
 
         Replicates MATLAB's SENSAI_visualization.m with side-by-side
         Before/After subspace projections, LDA decision boundary shading,
-        and marginal KDE distributions.
+        marginal KDE distributions, ENOVA-weighted Welch PSD, and per-channel
+        ENOVA topoplot.
 
         Parameters
         ----------
@@ -1544,6 +1539,9 @@ class Gedai:
             else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
         )
         mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+        enova_per_ch = self.metrics_.get("enova_per_channel") if self.metrics_ else None
+        if enova_per_ch is not None and len(enova_per_ch) != len(ch_names):
+            enova_per_ch = None
 
         return plot_sensai_visualization(
             raw_before=raw_before_eval,
@@ -1553,6 +1551,7 @@ class Gedai:
             n_pc=n_pc,
             sensai_score=score,
             mean_enova=mean_enova,
+            enova_per_channel=enova_per_ch,
             title_suffix=f"{self.__class__.__name__}",
             show=show,
         )

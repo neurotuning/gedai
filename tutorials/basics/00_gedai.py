@@ -100,13 +100,14 @@ reference_cov = "leadfield"
 # cleaned data and the reference covariance while minimizing the similarity
 # between removed components and the reference covariance.
 #
-# The ``noise_multiplier`` parameter controls the trade-off between artifact
-# rejection and signal preservation. Supported presets include ``"auto"``
-# (default), ``"auto+"`` (more aggressive), and ``"auto-"`` (more
-# conservative), each computed automatically in closed form from GEVD spectral
-# invariants via Z3 weighting (or pass any positive float such as ``3.0``).
+# The ``strength`` parameter (``0`` to ``10``, higher = stronger cleaning)
+# controls the trade-off between artifact rejection and signal preservation.
+# Supported presets include ``"auto"`` (``7.0``, default), ``"auto+"``
+# (``8.0``, more aggressive), and ``"auto-"`` (``6.0``, more conservative),
+# or any continuous number in ``[0, 10]`` computed automatically via closed-form
+# adaptive Z3 spectral weighting.
 
-noise_multiplier = "auto"
+strength = "auto"
 
 # %%
 # The optimal threshold can be determined either using continuous bounded scalar
@@ -125,7 +126,7 @@ gedai.fit_raw(
     reject_by_annotation=reject_by_annotation,
     reference_cov=reference_cov,
     sensai_method=sensai_method,
-    noise_multiplier=noise_multiplier,
+    strength=strength,
     on_bad_channel=on_bad_channel,
     bad_channel_threshold=bad_channel_threshold,
     reference=reference,

@@ -186,7 +186,7 @@ def test_auto_scale_invariance_and_bad_epoch_annotation():
     g_v.fit_raw(
         raw,
         duration=1.0,
-        noise_multiplier="auto",
+        strength="auto",
         verbose=False,
     )
     out_v = g_v.transform_raw(raw, verbose=False).get_data()
@@ -197,7 +197,7 @@ def test_auto_scale_invariance_and_bad_epoch_annotation():
     g_s.fit_raw(
         raw_s,
         duration=1.0,
-        noise_multiplier="auto",
+        strength="auto",
         verbose=False,
     )
     out_s = g_s.transform_raw(raw_s, verbose=False).get_data() / 1e4
@@ -261,3 +261,176 @@ def test_plot_sensai_with_excluded_and_interpolated_bad_channel():
     assert metrics["ssi_before_mean"] > 0.1
     assert metrics["ssi_after_mean"] > 0.1
     assert np.isfinite(metrics["ssi_noise_mean"])
+
+
+def test_perceptual_strength_equivalence_and_monotonicity():
+    """Strength (0-10) matches auto/auto+/auto- and increases cleaning monotonically."""
+    raw = _sample_raw(n_channels=8, duration_s=6.0)
+    epochs = mne.make_fixed_length_epochs(
+        raw, duration=1.0, preload=True, verbose=False
+    )
+
+    # 1. Gedai epochs & raw: strength=7.0 and int 7 match "auto"
+    g_auto = Gedai(engine="numpy")
+    g_auto.fit_epochs(epochs, strength="auto", verbose=False)
+    out_auto = g_auto.transform_epochs(epochs, verbose=False).get_data()
+
+    g_str = Gedai(engine="numpy")
+    g_str.fit_epochs(epochs, strength=7.0, verbose=False)
+    out_str = g_str.transform_epochs(epochs, verbose=False).get_data()
+    np.testing.assert_allclose(out_str, out_auto, rtol=1e-12, atol=1e-15)
+    assert g_str.fit_metrics_["strength"] == pytest.approx(7.0)
+    assert "noise_multiplier" not in g_str.fit_metrics_
+
+    g_str_int = Gedai(engine="numpy")
+    g_str_int.fit_raw(raw, duration=1.0, strength=7, verbose=False)
+    g_raw_auto = Gedai(engine="numpy")
+    g_raw_auto.fit_raw(raw, duration=1.0, strength="auto", verbose=False)
+    np.testing.assert_allclose(
+        g_str_int.transform_raw(raw, verbose=False).get_data(),
+        g_raw_auto.transform_raw(raw, verbose=False).get_data(),
+        rtol=1e-12,
+        atol=1e-15,
+    )
+
+    # 2. MultibandGedai & AdaptiveMultibandGedai: strength=8 matches "auto+"
+    # and strength=6 matches "auto-"
+    mb_plus = MultibandGedai(wavelet_level=2, broadband_pass=False, engine="numpy")
+    mb_plus.fit_raw(raw, duration=1.0, strength="auto+", verbose=False)
+    mb_s8 = MultibandGedai(wavelet_level=2, broadband_pass=False, engine="numpy")
+    mb_s8.fit_raw(raw, duration=1.0, strength=8.0, verbose=False)
+    np.testing.assert_allclose(
+        mb_s8.transform_raw(raw, verbose=False).get_data(),
+        mb_plus.transform_raw(raw, verbose=False).get_data(),
+        rtol=1e-12,
+        atol=1e-15,
+    )
+
+    amb_s6 = AdaptiveMultibandGedai(
+        wavelet_level=2, broadband_pass=True, engine="numpy"
+    )
+    amb_s6.fit_raw(
+        raw, strength=6.0, bad_channel_threshold="auto", n_jobs=1, verbose=False
+    )
+    amb_minus_ref = AdaptiveMultibandGedai(
+        wavelet_level=2, broadband_pass=True, engine="numpy"
+    )
+    amb_minus_ref.fit_raw(
+        raw,
+        strength="auto-",
+        bad_channel_threshold="auto",
+        n_jobs=1,
+        verbose=False,
+    )
+    np.testing.assert_allclose(
+        amb_s6.transform_raw(raw, n_jobs=1, verbose=False).get_data(),
+        amb_minus_ref.transform_raw(raw, n_jobs=1, verbose=False).get_data(),
+        rtol=1e-12,
+        atol=1e-15,
+    )
+
+    # 3. Monotonicity: higher strength -> stronger cleaning (>= mean ENOVA)
+    g_lo = Gedai(engine="numpy")
+    g_lo.fit_raw(raw, duration=1.0, strength=3.0, verbose=False)
+    _ = g_lo.transform_raw(raw, verbose=False)
+    g_hi = Gedai(engine="numpy")
+    g_hi.fit_raw(raw, duration=1.0, strength=9.5, verbose=False)
+    _ = g_hi.transform_raw(raw, verbose=False)
+    assert g_hi.fit_metrics_["strength"] == pytest.approx(9.5)
+    assert g_hi.metrics_["mean_enova"] >= g_lo.metrics_["mean_enova"] - 1e-12
+
+    # 4. Out-of-range strength raises ValueError
+    amb_err = AdaptiveMultibandGedai(wavelet_level=2, engine="numpy")
+    with pytest.raises(ValueError, match="strength must be finite"):
+        amb_err.fit_raw(raw, strength=12.0, verbose=False)
+
+
+def test_sensai_viz_psd_topoplot_and_fallbacks():
+    """3-column SENSAI dashboard renders ENOVA-weighted PSD, topoplot, and fallbacks."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from gedai.viz import plot_sensai_visualization
+
+    # 1. Standard 10-20 recording with valid 3D coords -> topoplot path
+    raw = _sample_raw(n_channels=10, duration_s=6.0)
+    raw.set_eeg_reference("average", projection=False, verbose=False)
+    g = Gedai(engine="numpy")
+    g.fit_raw(raw, duration=1.0, verbose=False)
+    clean = g.transform_raw(raw, verbose=False)
+
+    fig, metrics = g.plot_sensai(raw_before=raw, raw_after=clean, show=False)
+    try:
+        for key in (
+            "enova_per_channel",
+            "psd_before_db",
+            "psd_after_db",
+            "psd_noise_db",
+            "psd_freqs",
+            "enova_weights",
+        ):
+            assert key in metrics
+            assert np.all(np.isfinite(metrics[key]))
+
+        assert metrics["enova_per_channel"].shape == (len(g.ch_names),)
+        assert metrics["enova_weights"].sum() == pytest.approx(1.0, abs=1e-12)
+        assert float(np.diff(metrics["psd_freqs"])[0]) == pytest.approx(0.5, abs=1e-6)
+        assert metrics["psd_before_db"].shape == metrics["psd_freqs"].shape
+        assert metrics["psd_after_db"].shape == metrics["psd_freqs"].shape
+        assert metrics["psd_noise_db"].shape == metrics["psd_freqs"].shape
+        # Both SSI colorbar and ENOVA topoplot colorbar remain visible
+        assert fig.axes[-1].get_visible()
+    finally:
+        plt.close(fig)
+
+    # 2. 10-20 + legacy names (T3/T4) with missing coords resolve via 10-05 template
+    ch_legacy = ["Fp1", "Fp2", "C3", "C4", "T3", "T4", "O1", "O2"]
+    sfreq = 250.0
+    rng = np.random.default_rng(7)
+    info_1020 = mne.create_info(ch_legacy, sfreq=sfreq, ch_types="eeg")
+    data_b = rng.standard_normal((len(ch_legacy), int(4 * sfreq))) * 20e-6
+    data_a = data_b * 0.6
+    raw_b = mne.io.RawArray(data_b, info_1020, verbose=False)
+    raw_a = mne.io.RawArray(data_a, info_1020, verbose=False)
+    ref_cov = np.eye(len(ch_legacy))
+    fig_1020, _ = plot_sensai_visualization(
+        raw_b, raw_a, reference_cov=ref_cov, show=False
+    )
+    try:
+        assert fig_1020.axes[-1].get_visible()
+    finally:
+        plt.close(fig_1020)
+
+    # 3. Arbitrary names with missing coords -> bar-chart fallback + short recording
+    ch_arb = [f"CH{i}" for i in range(len(ch_legacy))]
+    info_arb = mne.create_info(ch_arb, sfreq=sfreq, ch_types="eeg")
+    raw_arb_b = mne.io.RawArray(data_b[:, : int(1.0 * sfreq)], info_arb, verbose=False)
+    raw_arb_a = mne.io.RawArray(data_a[:, : int(1.0 * sfreq)], info_arb, verbose=False)
+    custom_enova = np.array([np.inf, np.nan, 0.2, 0.5, 0.8, 1.0, 0.1, 0.3])
+    fig_bar, met_bar = plot_sensai_visualization(
+        raw_arb_b,
+        raw_arb_a,
+        reference_cov=ref_cov,
+        epoch_duration_sec=0.5,
+        enova_per_channel=custom_enova,
+        show=False,
+    )
+    try:
+        assert not fig_bar.axes[-1].get_visible()
+        assert met_bar["enova_weights"].sum() == pytest.approx(1.0, abs=1e-12)
+        assert float(np.diff(met_bar["psd_freqs"])[0]) == pytest.approx(0.5, abs=1e-6)
+    finally:
+        plt.close(fig_bar)
+
+    # 4. Length mismatch on explicit enova_per_channel raises ValueError
+    with pytest.raises(ValueError, match="enova_per_channel has length"):
+        plot_sensai_visualization(
+            raw_arb_b,
+            raw_arb_a,
+            reference_cov=ref_cov,
+            epoch_duration_sec=0.5,
+            enova_per_channel=np.array([0.1, 0.2]),
+            show=False,
+        )

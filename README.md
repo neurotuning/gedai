@@ -39,6 +39,8 @@ pip install "gedai[torch]"
 
 Detailed documentation can be found on [GEDAI website](https://neurotuning.github.io/gedai).
 
+- **Choosing parameters for your recording?** See the [FAQ & Hyperparameter Guide](https://neurotuning.github.io/gedai/latest/faq.html) for experiment-specific recipes (ERPs, sleep/epilepsy, custom montages, EEG references, and streaming).
+
 ### Low-Cutoff Frequency Guidance (`wavelet_low_cutoff`)
 - **`wavelet_low_cutoff=0.1` (Default):** Recommended for general-purpose EEG/MEG and standard ERP studies. Removes ultra-slow drift (`<= 0.1` Hz) before broadband GED while retaining and spatially cleaning the `0.1-0.5` Hz scaling band without inflating calibration epoch length.
 - **`wavelet_low_cutoff=0.0` (or `None`):** Recommended for pre-stimulus baseline / anticipatory ERP analyses (e.g., CNV, Readiness Potential, LPP) or when your pipeline applies its own causal high-pass filter beforehand. Disables internal wavelet high-pass filtering (applying only global channel mean centering) to guarantee zero acausal pre-stimulus baseline leakage.

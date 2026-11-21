@@ -310,69 +310,129 @@ def _check_n_jobs(n_jobs):
     return n_jobs
 
 
-def _ensure_noise_multiplier(value: float | int | str = "auto") -> float | str:
-    """Ensure a valid noise multiplier or preset string.
+_STRENGTH_KNOTS = np.array([0.1, 6.0, 7.0, 8.0, 10.0], dtype=np.float64)
+_LOG10_SC_KNOTS = np.array(
+    [1.0, 0.0, -np.log10(2.0), -np.log10(3.0), -1.0], dtype=np.float64
+)
+
+
+def strength_to_z3_scale(strength: float) -> float:
+    """Convert perceptual denoising strength in ``[0, 10]`` to a Z3 scale factor.
+
+    Uses the MATLAB GEDAI ``GEDAI_strength_to_sc`` piecewise log-linear mapping
+    where ``6.0 -> 1.0`` (``"auto-"``), ``7.0 -> 0.5`` (``"auto"``),
+    ``8.0 -> 1/3`` (``"auto+"``), and ``10.0 -> 0.1``.
+
+    Parameters
+    ----------
+    strength : float
+        Perceptual denoising strength in ``[0, 10]`` (higher = stronger).
+
+    Returns
+    -------
+    sc : float
+        Adaptive Z3 scale factor multiplying ``m_eff``.
+    """
+    if isinstance(strength, bool):
+        raise TypeError("strength must be a float in [0, 10], got bool.")
+    _check_type(strength, ("numeric",), "strength")
+    s_val = float(strength)
+    if not np.isfinite(s_val) or not (0.0 <= s_val <= 10.0):
+        raise ValueError(
+            f"strength must be finite and between 0 and 10, got {strength!r}."
+        )
+    if s_val < _STRENGTH_KNOTS[0]:
+        slope = (_LOG10_SC_KNOTS[1] - _LOG10_SC_KNOTS[0]) / (
+            _STRENGTH_KNOTS[1] - _STRENGTH_KNOTS[0]
+        )
+        log_sc = float(_LOG10_SC_KNOTS[0] + (s_val - _STRENGTH_KNOTS[0]) * slope)
+    else:
+        log_sc = float(np.interp(s_val, _STRENGTH_KNOTS, _LOG10_SC_KNOTS))
+    return float(10.0**log_sc)
+
+
+def z3_scale_to_strength(sc: float) -> float:
+    """Convert adaptive Z3 scale ``sc > 0`` to perceptual strength in ``[0, 10]``.
+
+    Inverse of :func:`strength_to_z3_scale` matching MATLAB ``GEDAI_sc_to_strength``.
+
+    Parameters
+    ----------
+    sc : float
+        Positive adaptive Z3 scale factor.
+
+    Returns
+    -------
+    strength : float
+        Corresponding perceptual denoising strength on the ``0``-``10`` scale.
+    """
+    if isinstance(sc, bool):
+        raise TypeError("sc must be a positive float, got bool.")
+    _check_type(sc, ("numeric",), "sc")
+    sc_val = float(sc)
+    if not np.isfinite(sc_val) or sc_val <= 0.0:
+        raise ValueError(f"sc must be finite and > 0, got {sc!r}.")
+    log_sc = float(np.log10(max(sc_val, 1e-12)))
+    log_sc_asc = _LOG10_SC_KNOTS[::-1]
+    s_asc = _STRENGTH_KNOTS[::-1]
+    if log_sc <= log_sc_asc[0]:
+        slope = (s_asc[1] - s_asc[0]) / (log_sc_asc[1] - log_sc_asc[0])
+        return float(s_asc[0] + (log_sc - log_sc_asc[0]) * slope)
+    if log_sc >= log_sc_asc[-1]:
+        slope = (s_asc[-1] - s_asc[-2]) / (log_sc_asc[-1] - log_sc_asc[-2])
+        return float(s_asc[-1] + (log_sc - log_sc_asc[-1]) * slope)
+    return float(np.interp(log_sc, log_sc_asc, s_asc))
+
+
+def _ensure_strength(value: float | int | str = "auto") -> float:
+    """Validate and resolve denoising ``strength`` on the ``[0, 10]`` scale.
 
     Parameters
     ----------
     value : float | int | str
-        - ``'auto'`` / ``'default'`` / ``'standard'`` : Closed-form adaptive Z3
-          GEVD spectral noise multiplier with standard scale ``0.5``.
-        - ``'auto+'`` / ``'aggressive'`` / ``'more'`` : More aggressive adaptive
-          Z3 denoising with scale ``1/3``.
-        - ``'auto-'`` / ``'conservative'`` / ``'less'`` : More conservative
-          adaptive Z3 denoising with scale ``1.0``.
-        - float / int : Custom fixed numerical noise multiplier > 0.
+        - ``'auto'`` / ``'default'`` / ``'standard'`` : ``7.0`` (standard balance).
+        - ``'auto+'`` / ``'aggressive'`` / ``'more'`` : ``8.0`` (stronger cleaning).
+        - ``'auto-'`` / ``'conservative'`` / ``'less'`` : ``6.0`` (gentler cleaning).
+        - float / int (or numeric string) in ``[0, 10]``: continuous perceptual
+          strength (higher = stronger cleaning).
 
     Returns
     -------
-    multiplier : float | str
-        Fixed numerical noise multiplier or canonical ``'auto'`` preset string.
+    strength : float
+        Validated perceptual denoising strength in ``[0.0, 10.0]``.
     """
+    if isinstance(value, bool):
+        raise TypeError("strength must be a float in [0, 10] or str, got bool.")
     if isinstance(value, str):
         val = value.strip().lower()
         if val in ("auto", "default", "standard"):
-            return "auto"
-        elif val in ("auto+", "aggressive", "more"):
-            return "auto+"
-        elif val in ("auto-", "conservative", "less"):
-            return "auto-"
-        else:
-            try:
-                val_float = float(val)
-                if val_float <= 0:
-                    raise ValueError(f"noise_multiplier must be > 0, got {value}")
-                return val_float
-            except ValueError:
-                raise ValueError(
-                    f"Unknown noise_multiplier preset: '{value}'. "
-                    "Expected 'auto', 'auto+', 'auto-', or a numeric float > 0."
-                )
-    elif isinstance(value, (int, float)) and not isinstance(value, bool):
-        if value <= 0:
-            raise ValueError(f"noise_multiplier must be > 0, got {value}")
-        return float(value)
-    else:
-        raise TypeError(
-            f"noise_multiplier must be float or str, got {type(value).__name__}"
-        )
-
-
-def _resolve_noise_multiplier_spec(
-    value: float | int | str = "auto",
-) -> tuple[float | None, float | None]:
-    """Return ``(fixed_value, z3_scale)`` for fixed vs adaptive Z3 multipliers."""
-    resolved = _ensure_noise_multiplier(value)
-    if resolved == "auto":
-        return None, 0.5
-    if resolved == "auto+":
-        return None, 1.0 / 3.0
-    if resolved == "auto-":
-        return None, 1.0
-    return float(resolved), None
-
-
-_parse_noise_multiplier = _ensure_noise_multiplier
+            return 7.0
+        if val in ("auto+", "aggressive", "more"):
+            return 8.0
+        if val in ("auto-", "conservative", "less"):
+            return 6.0
+        try:
+            s_val = float(val)
+        except ValueError:
+            raise ValueError(
+                f"Unknown strength preset: '{value}'. "
+                "Expected 'auto', 'auto+', 'auto-', or a number in [0, 10]."
+            )
+        if not np.isfinite(s_val) or not (0.0 <= s_val <= 10.0):
+            raise ValueError(
+                f"strength must be finite and between 0 and 10, got {value!r}."
+            )
+        return float(s_val)
+    if isinstance(value, (int, float)):
+        s_val = float(value)
+        if not np.isfinite(s_val) or not (0.0 <= s_val <= 10.0):
+            raise ValueError(
+                f"strength must be finite and between 0 and 10, got {value!r}."
+            )
+        return s_val
+    raise TypeError(
+        f"strength must be a float in [0, 10] or str, got {type(value).__name__}"
+    )
 
 
 def ensure_engine(engine: str = "numpy") -> str:

@@ -252,8 +252,9 @@ def project_leadfield_dipole(info: mne.Info, use_avgref: bool = True) -> np.ndar
 
     Returns
     -------
-    gain_proj : np.ndarray, shape (n_channels, 3630)
-        Projected EEG leadfield gain matrix matching channels in ``info``.
+    gain_proj : np.ndarray
+        Projected EEG leadfield gain matrix of shape ``(n_channels, 3630)``
+        matching channels in ``info``.
     """
     _check_type(info, (mne.Info,), "info")
     cache = _load_template_leadfield()
@@ -777,12 +778,12 @@ def compute_covariance_from_channel_positions(info):
 
     Parameters
     ----------
-    info : instance of mne.Info
+    info : mne.Info
         The info structure containing channel information.
 
     Returns
     -------
-    cov : instance of mne.Covariance
+    cov : mne.Covariance
         The computed covariance matrix.
     """
     ch_positions = [info["chs"][i]["loc"][:3] for i in range(info["nchan"])]

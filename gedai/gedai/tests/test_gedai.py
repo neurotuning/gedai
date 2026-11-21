@@ -319,7 +319,7 @@ def test_gedai_epochs_scale_invariance(sensai_method, scale):
             ep_base,
             reference_cov="leadfield",
             sensai_method=sensai_method,
-            noise_multiplier=3.0,
+            strength=7.0,
             verbose=False,
         )
         out_v = g_v.transform_epochs(ep_base, verbose=False).get_data()
@@ -329,7 +329,7 @@ def test_gedai_epochs_scale_invariance(sensai_method, scale):
             ep_scaled,
             reference_cov="leadfield",
             sensai_method=sensai_method,
-            noise_multiplier=3.0,
+            strength=7.0,
             verbose=False,
         )
         out_s = g_s.transform_epochs(ep_scaled, verbose=False).get_data() / scale

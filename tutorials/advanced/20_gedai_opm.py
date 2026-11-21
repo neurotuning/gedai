@@ -213,7 +213,7 @@ ad.fit_raw(
     picks="all",
     reference_cov=fwd,
     sensai_method="optimize",
-    noise_multiplier="auto",
+    strength="auto",
     on_bad_channel="exclude",
     n_jobs=1,
     verbose=False,

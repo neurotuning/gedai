@@ -55,11 +55,12 @@ ad = AdaptiveMultibandGedai(
 
 # Fit the model using continuous scalar optimization, closed-form adaptive Z3
 # weighting ("auto"), and automatic two-pass bad-channel exclusion. For long
-# non-stationary recordings, pass e.g. smoothing_window=30.0 (seconds) to track
-# slow regime shifts smoothly.
+# recordings with non-stationary background EEG signal (e.g., sleep, epilepsy,
+# fatigue), pass e.g. ``smoothing_window=30.0`` (seconds) to adapt thresholds
+# smoothly over time.
 ad.fit_raw(
     raw,
-    noise_multiplier="auto",
+    strength="auto",
     reference="average",
     # smoothing_window=30.0,
     on_bad_channel="exclude",

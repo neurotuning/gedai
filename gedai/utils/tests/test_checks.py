@@ -118,38 +118,56 @@ def test_ensure_path():
         _ensure_path(Foo(), must_exist=False)
 
 
-def test__ensure_noise_multiplier():
-    """Test _ensure_noise_multiplier function and presets."""
+def test_ensure_strength_and_z3_scale():
+    """Test _ensure_strength presets, 0-10 bounds, and Z3 scale mapping."""
     from .._checks import (
-        _ensure_noise_multiplier,
-        _parse_noise_multiplier,
-        _resolve_noise_multiplier_spec,
+        _ensure_strength,
+        strength_to_z3_scale,
+        z3_scale_to_strength,
     )
 
-    assert _ensure_noise_multiplier("auto") == "auto"
-    assert _ensure_noise_multiplier("default") == "auto"
-    assert _ensure_noise_multiplier("standard") == "auto"
-    assert _ensure_noise_multiplier("auto+") == "auto+"
-    assert _ensure_noise_multiplier("aggressive") == "auto+"
-    assert _ensure_noise_multiplier("auto-") == "auto-"
-    assert _ensure_noise_multiplier("conservative") == "auto-"
-    assert _ensure_noise_multiplier(2.5) == 2.5
-    assert _ensure_noise_multiplier(4) == 4.0
-    assert _parse_noise_multiplier("auto") == "auto"
+    assert _ensure_strength("auto") == 7.0
+    assert _ensure_strength("default") == 7.0
+    assert _ensure_strength("standard") == 7.0
+    assert _ensure_strength("auto+") == 8.0
+    assert _ensure_strength("aggressive") == 8.0
+    assert _ensure_strength("more") == 8.0
+    assert _ensure_strength("auto-") == 6.0
+    assert _ensure_strength("conservative") == 6.0
+    assert _ensure_strength("less") == 6.0
+    assert _ensure_strength("7.5") == 7.5
+    assert _ensure_strength(7) == 7.0
+    assert _ensure_strength(0) == 0.0
+    assert _ensure_strength(10) == 10.0
 
-    assert _resolve_noise_multiplier_spec("auto") == (None, 0.5)
-    assert _resolve_noise_multiplier_spec("auto+") == (None, 1.0 / 3.0)
-    assert _resolve_noise_multiplier_spec("auto-") == (None, 1.0)
-    assert _resolve_noise_multiplier_spec(2.5) == (2.5, None)
+    # Exact MATLAB GEDAI_strength_to_sc knot values
+    assert strength_to_z3_scale(0.1) == pytest.approx(10.0)
+    assert strength_to_z3_scale(6.0) == pytest.approx(1.0)
+    assert strength_to_z3_scale(7.0) == pytest.approx(0.5)
+    assert strength_to_z3_scale(8.0) == pytest.approx(1.0 / 3.0)
+    assert strength_to_z3_scale(10.0) == pytest.approx(0.1)
+    assert strength_to_z3_scale(7.5) == pytest.approx(1.0 / np.sqrt(6.0))
 
-    with pytest.raises(ValueError, match="Unknown noise_multiplier preset"):
-        _ensure_noise_multiplier("auto_z3")
+    # Inverse round-trip across [0, 10] including extrapolation below 0.1
+    for s_val in (0.0, 0.1, 3.0, 6.0, 7.0, 7.5, 8.0, 9.2, 10.0):
+        sc = strength_to_z3_scale(s_val)
+        assert z3_scale_to_strength(sc) == pytest.approx(s_val, abs=1e-9)
 
-    with pytest.raises(ValueError, match="noise_multiplier must be > 0"):
-        _ensure_noise_multiplier(-1.0)
+    for bad_str in ("auto_z3", "invalid_preset", "auto:7", "auto:abc"):
+        with pytest.raises(ValueError, match="Unknown strength preset"):
+            _ensure_strength(bad_str)
 
-    with pytest.raises(ValueError, match="Unknown noise_multiplier preset"):
-        _ensure_noise_multiplier("invalid_preset")
+    for bad_num in (-0.1, 10.5, np.nan, np.inf):
+        with pytest.raises(ValueError, match="strength must be finite"):
+            _ensure_strength(bad_num)
 
-    with pytest.raises(TypeError, match="noise_multiplier must be float or str"):
-        _ensure_noise_multiplier([3.0])
+    for bad_type in (True, [7.0]):
+        with pytest.raises(TypeError, match="strength must be"):
+            _ensure_strength(bad_type)
+
+    with pytest.raises(TypeError, match="strength must be"):
+        strength_to_z3_scale(True)
+
+    for bad_s in (-0.1, 10.5, np.nan, np.inf):
+        with pytest.raises(ValueError, match="strength must be finite"):
+            strength_to_z3_scale(bad_s)

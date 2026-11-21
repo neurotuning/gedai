@@ -111,17 +111,6 @@ n_pc : int | "auto", default="auto"
       ambient room noise harmonics versus localized bursts.
 
     If an :class:`int`, uses the specified number of principal components."""
-docdict["noise_multiplier"] = """
-noise_multiplier : float | str
-    The noise multiplier or string preset for artefact threshold rejection optimization.
-    Supported string presets (using closed-form adaptive Z3 weighting from GEVD
-    spectral invariants):
-
-    - ``"auto"`` : Standard balance (adaptive Z3 scale ``0.5``, default).
-    - ``"auto+"`` : More aggressive denoising (adaptive Z3 scale ``1/3``).
-    - ``"auto-"`` : More conservative denoising (adaptive Z3 scale ``1.0``).
-
-    Alternatively, a fixed positive numerical float (e.g., ``3.0``) can be passed."""
 # -- O ---------------------------------------------------------------------------------
 docdict["on_bad_channel"] = """
 on_bad_channel : "exclude" | "ignore", default="exclude"
@@ -192,10 +181,22 @@ sensai_tol : float
 """
 docdict["smoothing_window"] = """
 smoothing_window : float | None, default=None
-    Duration in seconds of overlapping calibration windows for non-stationary
-    sliding-window threshold adaptation during ``fit_raw``. Thresholds vary
-    smoothly across the recording via Akima (makima) interpolation. When
-    ``None`` or ``np.inf`` (default), fits a single stationary threshold."""
+    Duration in seconds of overlapping calibration windows for sliding-window
+    threshold adaptation during ``fit_raw``, intended for long recordings with
+    non-stationary background EEG signal (e.g., sleep, epilepsy, fatigue).
+    Thresholds vary smoothly across the recording via Akima (makima)
+    interpolation. When ``None`` or ``np.inf`` (default), fits a single
+    stationary threshold."""
+docdict["strength"] = """
+strength : float | str, default="auto"
+    Denoising strength balancing artifact suppression and neural preservation
+    via closed-form adaptive Z3 spectral weighting (higher = stronger cleaning):
+
+    - ``"auto"`` (default) : Standard balance (``7.0``).
+    - ``"auto+"`` : More aggressive denoising (``8.0``).
+    - ``"auto-"`` : More conservative denoising (``6.0``).
+    - ``float`` in ``[0, 10]``: Continuous perceptual strength (higher = stronger
+      cleaning, matching MATLAB GEDAI's log-linearized ``0``-``10`` scale)."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------

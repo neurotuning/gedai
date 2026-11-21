@@ -120,18 +120,19 @@ adaptive_multiband_gedai = AdaptiveMultibandGedai(
 # uses ``raw.info['highpass']`` to automatically exclude sub-cutoff levels.
 
 wavelet_low_cutoff = "auto"
-noise_multiplier = "auto"
+strength = "auto"
 
 # %%
-# Fit the model directly on raw data. Notice ``noise_multiplier="auto"`` computes
-# closed-form adaptive Z3 spectral weighting while protecting rank-1/rank-2
-# dipolar brain rhythms. For long non-stationary sessions, pass
-# ``smoothing_window=30.0`` (seconds) to adapt thresholds smoothly across time
-# via ``makima`` interpolation, and use ``reference`` to select ``"average"``,
-# ``"REST"``, linked mastoids, or a single electrode:
+# Fit the model directly on raw data. Notice ``strength="auto"`` (equivalent to
+# ``7.0`` on the ``0``-``10`` scale) computes closed-form adaptive Z3 spectral
+# weighting while protecting rank-1/rank-2 dipolar brain rhythms. For long
+# recordings with non-stationary background EEG signal (e.g., sleep, epilepsy,
+# fatigue), pass ``smoothing_window=30.0`` (seconds) to adapt thresholds
+# smoothly across time via ``makima`` interpolation, and use ``reference`` to
+# select ``"average"``, ``"REST"``, linked mastoids, or a single electrode:
 adaptive_multiband_gedai.fit_raw(
     raw,
-    noise_multiplier=noise_multiplier,
+    strength=strength,
     wavelet_low_cutoff=wavelet_low_cutoff,
     reference="average",
     on_bad_channel="exclude",

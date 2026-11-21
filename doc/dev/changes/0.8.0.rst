@@ -21,13 +21,15 @@ Enhancements
 ------------
 
 - Build the EEG rank-1/rank-2 dipolar guardrail directly into SENSAI scoring across both NumPy and PyTorch backends (matching MATLAB ``SENSAI.m``), removing ``dipolar_guardrail`` as an external hyperparameter (`Tomas Ros`_).
-- Map ``noise_multiplier="auto"``, ``"auto+"``, and ``"auto-"`` directly to scale-invariant closed-form adaptive Z3 noise-threshold weighting across :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` (`Tomas Ros`_).
+- Add perceptual ``strength`` thresholding (``0``-``10``, higher = stronger cleaning; ``"auto"`` = ``7.0``, ``"auto+"`` = ``8.0``, ``"auto-"`` = ``6.0``) backed by scale-invariant closed-form adaptive Z3 spectral weighting across :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` (`Tomas Ros`_).
 - Bundle the 343-channel ``fsaverage`` OpenMEEG BEM leadfield archive (``fsavLEADFIELD_4_GEDAI.npz``) with 3D cortical dipole-kernel projection (:func:`~gedai.covariance.project_leadfield_dipole`, :func:`~gedai.covariance.compute_covariance_from_dipole_projection`, ``reference_cov="projection"``, and automatic fallback from ``reference_cov="leadfield"`` for digitized non-10-20 montages) and :func:`~gedai.covariance.compute_covariance_from_channel_positions` (`Tomas Ros`_).
 - Add token-safe BIDS/EDF/BioSemi electrode-label matching (including legacy 10-20 aliases ``T3``/``T4``/``T5``/``T6``) during leadfield covariance resolution (`Tomas Ros`_).
 - Add unified EEG reference algebra (``reference="average"``, ``"REST"``, ``"none"``, single-channel e.g. ``"Cz"``, or multi-channel e.g. ``"M1+M2"``), preserving flat online recording references (``flat_reference_channels_``) and falling back to average reference when a specified reference channel is detected as noisy (`Tomas Ros`_).
-- Add non-stationary sliding-window threshold adaptation (``smoothing_window`` in seconds) across :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` with NumPy/PyTorch parity and amplitude-scale invariance (`Tomas Ros`_).
+- Add sliding-window threshold adaptation (``smoothing_window`` in seconds) for long recordings with non-stationary background EEG signal (e.g., sleep, epilepsy, fatigue) across :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` with NumPy/PyTorch parity and amplitude-scale invariance (`Tomas Ros`_).
 - Add ENOVA-based bad-epoch flagging (``bad_epoch_threshold``, ``bad_epochs_``) and automatic ``BAD_gedai`` annotations (``gedai.metrics.annotate_bad_epochs``), alongside composite SENSAI summary scoring (``gedai.metrics.compute_composite_sensai``) (`Tomas Ros`_).
 - Refresh all EEG tutorials (``00_gedai.py``, ``10_gedai_multiband.py``, ``30_gedai_adaptive.py``, ``00_gedai_offline_pipeline.py``) and update ``10_gedai_forward.py`` to benchmark an individual 60-channel non-10-20 MNE ``sample`` subject MRI BEM against a 4-shell sphere, automatic 3D dipole projection, and an isotropic Gaussian prior using SENSAI goodness-of-fit and ``plot_sensai`` (`Tomas Ros`_).
+- Upgrade ``plot_sensai`` and ``gedai.viz.plot_sensai_visualization`` to MATLAB's 3-column layout by adding an ENOVA-weighted Welch PSD panel (``Original``, ``Signal``, ``Noise`` at 0.5 Hz resolution) and a per-channel ENOVA scalp topoplot with automatic 10-05 coordinate lookup and bar-chart fallback (`Tomas Ros`_).
+- Add a standalone :ref:`Hyperparameter FAQ & Use-Case Guide <faq>` documenting experiment-specific recipes and practical guidance for every estimator and covariance parameter (`Tomas Ros`_).
 
 Bugs
 ----
@@ -39,7 +41,7 @@ Bugs
 API and behavior changes
 ------------------------
 
-- ``noise_multiplier="auto"`` (as well as ``"auto+"`` and ``"auto-"``) now resolves directly to closed-form adaptive Z3 thresholding (`Tomas Ros`_).
+- ``strength="auto"`` (default ``7.0``, along with ``"auto+"`` = ``8.0``, ``"auto-"`` = ``6.0``, or any value in ``0``-``10`` where higher = stronger cleaning) replaces the raw uninverted multiplier on all public estimator ``fit_raw`` / ``fit_epochs`` methods (`Tomas Ros`_).
 - :func:`~gedai.covariance.compute_covariance_from_forward` now defaults to ``reference="average"`` for EEG forward solutions; pass ``reference=None`` to obtain unreferenced ``G @ G.T`` (`Tomas Ros`_).
 - Source and wheel distributions now bundle ``gedai/data/fsavLEADFIELD_4_GEDAI.npz``.
 
