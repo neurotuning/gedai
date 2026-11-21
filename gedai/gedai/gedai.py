@@ -564,6 +564,7 @@ class Gedai:
         verbose: str | None = None,
         engine: str | None = None,
         interpolate_bads: bool = False,
+        compute_metrics: bool = True,
     ):
         """Transform epochs data using the fitted model.
 
@@ -577,6 +578,7 @@ class Gedai:
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
         %(interpolate_bads)s
+        %(compute_metrics)s
 
         Returns
         -------
@@ -586,6 +588,7 @@ class Gedai:
         self._check_fit()
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_type(interpolate_bads, (bool,), "interpolate_bads")
+        _check_type(compute_metrics, (bool,), "compute_metrics")
         n_jobs = _check_n_jobs(n_jobs)
 
         if epochs.get_data(verbose=False).shape[-1] != self._n_samples:
@@ -644,28 +647,29 @@ class Gedai:
 
         epochs_transform._data = cleaned_epochs_data
 
-        orig_2d = data.transpose(1, 0, 2).reshape(data.shape[1], -1)
-        clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(
-            cleaned_epochs_data.shape[1], -1
-        )
-        noise_2d = orig_2d - clean_2d
-        ep_samples = data.shape[-1]
-        enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
-        enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
-        n_pc = min(3 if self._n_pc is None else self._n_pc, clean_2d.shape[0])
-        sensai_val = compute_composite_sensai(
-            clean_2d,
-            noise_2d,
-            epochs_transform.info["sfreq"],
-            reference_cov,
-            n_pc=n_pc,
-        )
-        self.metrics_ = {
-            "enova_per_epoch": enova_ep,
-            "enova_per_channel": enova_ch,
-            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
-            "sensai_score": sensai_val,
-        }
+        if compute_metrics:
+            orig_2d = data.transpose(1, 0, 2).reshape(data.shape[1], -1)
+            clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(
+                cleaned_epochs_data.shape[1], -1
+            )
+            noise_2d = orig_2d - clean_2d
+            ep_samples = data.shape[-1]
+            enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
+            enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
+            n_pc = min(3 if self._n_pc is None else self._n_pc, clean_2d.shape[0])
+            sensai_val = compute_composite_sensai(
+                clean_2d,
+                noise_2d,
+                epochs_transform.info["sfreq"],
+                reference_cov,
+                n_pc=n_pc,
+            )
+            self.metrics_ = {
+                "enova_per_epoch": enova_ep,
+                "enova_per_channel": enova_ch,
+                "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+                "sensai_score": sensai_val,
+            }
         if interpolate_bads and self.bad_channels_:
             return _interpolate_bad_channels(
                 epochs, epochs_transform, self.bad_channels_
@@ -682,6 +686,7 @@ class Gedai:
         verbose: str | None = None,
         engine: str | None = None,
         interpolate_bads: bool = False,
+        compute_metrics: bool = True,
     ):
         """Transform raw data using the fitted model.
 
@@ -696,6 +701,7 @@ class Gedai:
             Computation engine ('numpy', 'torch', or 'auto'). If None, uses
             the engine specified at initialization.
         %(interpolate_bads)s
+        %(compute_metrics)s
 
         Returns
         -------
@@ -706,6 +712,7 @@ class Gedai:
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(overlap, (float, int), "overlap")
         _check_type(interpolate_bads, (bool,), "interpolate_bads")
+        _check_type(compute_metrics, (bool,), "compute_metrics")
         n_jobs = _check_n_jobs(n_jobs)
         current_engine = ensure_engine(engine) if engine is not None else self.engine
 
@@ -758,24 +765,25 @@ class Gedai:
             engine=current_engine,
         )
 
-        noise_data = raw_data - clean_data
-        ep_samples = max(1, round(sfreq * 1.0))
-        enova_ep = compute_enova_per_epoch(clean_data, noise_data, ep_samples)
-        enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
-        n_pc = min(3 if self._n_pc is None else self._n_pc, clean_data.shape[0])
-        sensai_val = compute_composite_sensai(
-            clean_data,
-            noise_data,
-            sfreq,
-            self._reference_cov.data,
-            n_pc=n_pc,
-        )
-        self.metrics_ = {
-            "enova_per_epoch": enova_ep,
-            "enova_per_channel": enova_ch,
-            "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
-            "sensai_score": sensai_val,
-        }
+        if compute_metrics:
+            noise_data = raw_data - clean_data
+            ep_samples = max(1, round(sfreq * 1.0))
+            enova_ep = compute_enova_per_epoch(clean_data, noise_data, ep_samples)
+            enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
+            n_pc = min(3 if self._n_pc is None else self._n_pc, clean_data.shape[0])
+            sensai_val = compute_composite_sensai(
+                clean_data,
+                noise_data,
+                sfreq,
+                self._reference_cov.data,
+                n_pc=n_pc,
+            )
+            self.metrics_ = {
+                "enova_per_epoch": enova_ep,
+                "enova_per_channel": enova_ch,
+                "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
+                "sensai_score": sensai_val,
+            }
 
         raw_transform._data = clean_data
 

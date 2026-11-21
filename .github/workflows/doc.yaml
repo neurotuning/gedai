@@ -50,12 +50,12 @@ jobs:
       - run: gedai sys-info --developer
       - name: Download data
         run: |
-          for attempt in 1 2 3; do
+          for attempt in 1 2 3 4 5; do
             python -c 'import mne; mne.datasets.fetch_fsaverage(); mne.datasets.ucl_opm_auditory.data_path()' && break
-            if [ "$attempt" -eq 3 ]; then
+            if [ "$attempt" -eq 5 ]; then
               exit 1
             fi
-            sleep 10
+            sleep "$((attempt * 10))"
           done
       - run: xvfb-run -a -s "-screen 0 1920x1080x24" env MPLBACKEND=Agg QT_API=pyqt5 MNE_3D_BACKEND=pyvistaqt make -C doc html
       - name: Prune sphinx environment

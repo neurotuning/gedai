@@ -464,3 +464,75 @@ def test_check_average_reference_scale_invariance():
     raw_uv.set_eeg_reference("average", projection=False, verbose=False)
     assert _check_average_reference(raw_v) is True
     assert _check_average_reference(raw_uv) is True
+
+
+def test_transform_compute_metrics_false():
+    """compute_metrics=False should skip metrics_ while matching output exactly."""
+    raw = raw_eeg.copy().pick(raw_eeg.ch_names[:6])
+    raw.crop(0, 6.0)
+    epochs = mne.make_fixed_length_epochs(
+        raw, duration=1.0, preload=True, verbose=False
+    )
+
+    # 1. Gedai (epochs + raw)
+    g = Gedai(engine="numpy")
+    g.fit_epochs(epochs, n_jobs=1, verbose=False)
+    with pytest.raises(TypeError, match="compute_metrics"):
+        g.transform_epochs(epochs, n_jobs=1, verbose=False, compute_metrics="no")
+    out_ep_fast = g.transform_epochs(
+        epochs, n_jobs=1, verbose=False, compute_metrics=False
+    )
+    assert g.metrics_ is None
+    out_ep_full = g.transform_epochs(
+        epochs, n_jobs=1, verbose=False, compute_metrics=True
+    )
+    assert g.metrics_ is not None
+    np.testing.assert_array_equal(out_ep_fast.get_data(), out_ep_full.get_data())
+
+    g_raw = Gedai(engine="numpy")
+    g_raw.fit_raw(raw, duration=1.0, n_jobs=1, verbose=False)
+    with pytest.raises(TypeError, match="compute_metrics"):
+        g_raw.transform_raw(raw, n_jobs=1, verbose=False, compute_metrics="no")
+    out_r_fast = g_raw.transform_raw(
+        raw, n_jobs=1, verbose=False, compute_metrics=False
+    )
+    assert g_raw.metrics_ is None
+    out_r_full = g_raw.transform_raw(raw, n_jobs=1, verbose=False, compute_metrics=True)
+    assert g_raw.metrics_ is not None
+    np.testing.assert_array_equal(out_r_fast.get_data(), out_r_full.get_data())
+
+    # 2. MultibandGedai (epochs + raw)
+    mb = MultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
+    mb.fit_epochs(epochs, n_jobs=1, verbose=False)
+    out_mb_ep_fast = mb.transform_epochs(
+        epochs, n_jobs=1, verbose=False, compute_metrics=False
+    )
+    assert mb.metrics_ is None
+    out_mb_ep_full = mb.transform_epochs(
+        epochs, n_jobs=1, verbose=False, compute_metrics=True
+    )
+    assert mb.metrics_ is not None
+    np.testing.assert_array_equal(out_mb_ep_fast.get_data(), out_mb_ep_full.get_data())
+
+    mb_raw = MultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
+    mb_raw.fit_raw(raw, duration=1.0, n_jobs=1, verbose=False)
+    out_mb_r_fast = mb_raw.transform_raw(
+        raw, n_jobs=1, verbose=False, compute_metrics=False
+    )
+    assert mb_raw.metrics_ is None
+    out_mb_r_full = mb_raw.transform_raw(
+        raw, n_jobs=1, verbose=False, compute_metrics=True
+    )
+    assert mb_raw.metrics_ is not None
+    np.testing.assert_array_equal(out_mb_r_fast.get_data(), out_mb_r_full.get_data())
+
+    # 3. AdaptiveMultibandGedai (raw)
+    ad = AdaptiveMultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
+    ad.fit_raw(raw, n_jobs=1, verbose=False)
+    with pytest.raises(TypeError, match="compute_metrics"):
+        ad.transform_raw(raw, n_jobs=1, verbose=False, compute_metrics=1)
+    out_ad_fast = ad.transform_raw(raw, n_jobs=1, verbose=False, compute_metrics=False)
+    assert ad.metrics_ is None
+    out_ad_full = ad.transform_raw(raw, n_jobs=1, verbose=False, compute_metrics=True)
+    assert ad.metrics_ is not None
+    np.testing.assert_array_equal(out_ad_fast.get_data(), out_ad_full.get_data())
