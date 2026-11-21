@@ -101,13 +101,17 @@ gedai_fwd = MultibandGedai(
     wavelet_type="haar", wavelet_level="auto", broadband_pass=True
 )
 gedai_fwd.fit_raw(raw, reference_cov=reference_cov, **common_fit_kwargs)
-clean_fwd = gedai_fwd.transform_raw(raw, n_jobs=1, verbose=False)
+clean_fwd = gedai_fwd.transform_raw(
+    raw, interpolate_bads=bool(gedai_fwd.bad_channels_), n_jobs=1, verbose=False
+)
 
 gedai_generic = MultibandGedai(
     wavelet_type="haar", wavelet_level="auto", broadband_pass=True
 )
 gedai_generic.fit_raw(raw, reference_cov="leadfield", **common_fit_kwargs)
-clean_generic = gedai_generic.transform_raw(raw, n_jobs=1, verbose=False)
+clean_generic = gedai_generic.transform_raw(
+    raw, interpolate_bads=bool(gedai_generic.bad_channels_), n_jobs=1, verbose=False
+)
 
 raw_bp = raw.copy().filter(1.0, 40.0, verbose=False).get_data()
 fwd_bp = clean_fwd.copy().filter(1.0, 40.0, verbose=False).get_data()
