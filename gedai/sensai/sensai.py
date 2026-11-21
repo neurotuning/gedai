@@ -240,7 +240,6 @@ def _sensai_score_loop(
     signal_type: str = "eeg",
     all_evec: np.ndarray | None = None,
     reference_cov: np.ndarray | None = None,
-    dipolar_guardrail: bool = False,
 ):
     """NumPy optimized loop for fast power-weighted SENSAI optimization scoring."""
     n_ep, _ = abs_evals.shape
@@ -270,18 +269,15 @@ def _sensai_score_loop(
                 Q_bad, _ = np.linalg.qr(VR_e[:, bad_mask])
                 s = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
                 noi_sims[e] = float(np.sum(s**6))
-        elif dipolar_guardrail:
-            if num_bad > 0:
-                Q_bad, _ = np.linalg.qr(VR_e[:, bad_mask])
-                s_bad = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
-                guard = 0.12 * min(1.0, float(np.sum(s_bad**6)))
-                if num_bad >= n_pc:
-                    nsi_det = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
-                    noi_sims[e] = 0.88 * nsi_det + guard
-                else:
-                    noi_sims[e] = guard
-        elif num_bad >= n_pc:
-            noi_sims[e] = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
+        elif num_bad > 0:
+            Q_bad, _ = np.linalg.qr(VR_e[:, bad_mask])
+            s_bad = np.linalg.svd(Q_bad.T @ template, compute_uv=False)
+            guard = 0.12 * min(1.0, float(np.sum(s_bad**6)))
+            if num_bad >= n_pc:
+                nsi_det = _two_step_qr_det(VR_e[:, bad_mask], evals_e[bad_mask])
+                noi_sims[e] = 0.88 * nsi_det + guard
+            else:
+                noi_sims[e] = guard
 
         # --- Clean signal subspace ---
         good_mask = ~_artifact_mask(evals_e, threshold) & valid_mask
@@ -299,7 +295,6 @@ def _sensai_score_torch(
     threshold: float,
     n_pc: int = 3,
     signal_type: str = "eeg",
-    dipolar_guardrail: bool = False,
 ):
     """Batched PyTorch implementation for fast power-weighted SENSAI scoring."""
     import torch
@@ -347,40 +342,37 @@ def _sensai_score_torch(
         nsi_det = torch.abs(torch.linalg.det(overlap_n))
         nsi_det = torch.where(num_bad >= n_pc, nsi_det, 0.0)
 
-        if dipolar_guardrail:
-            active = num_bad > 0
-            guard = torch.zeros_like(nsi_det)
-            if active.any():
-                num_bad_act = num_bad[active]
-                k_max = int(num_bad_act.max().item())
-                order = torch.argsort(
-                    bad_mask[active].to(torch.int64), dim=1, descending=True
-                )[:, :k_max]
-                gather_idx = order.unsqueeze(1).expand(-1, n_ch, -1)
-                p_packed = torch.gather(all_VR_t[active], dim=2, index=gather_idx)
-                valid_col = (
-                    torch.arange(k_max, device=template_t.device).unsqueeze(0)
-                    < num_bad_act.unsqueeze(1)
-                )
-                p_packed = torch.where(valid_col.unsqueeze(1), p_packed, 0.0)
-                g_pp = torch.bmm(p_packed.transpose(1, 2), p_packed)
-                g_pp = 0.5 * (g_pp + g_pp.transpose(1, 2))
-                evals_p, v_p = torch.linalg.eigh(g_pp)
-                ev_thresh = 1e-12 * evals_p[:, -1:].clamp_min(1e-30)
-                inv_sqrt = torch.where(
-                    evals_p > ev_thresh,
-                    torch.rsqrt(evals_p.clamp_min(1e-30)),
-                    0.0,
-                )
-                pt_t = torch.matmul(p_packed.transpose(1, 2), template_t)
-                z = torch.bmm(v_p.transpose(1, 2), pt_t) * inv_sqrt.unsqueeze(-1)
-                m_mat = torch.bmm(z.transpose(1, 2), z)
-                m_mat = 0.5 * (m_mat + m_mat.transpose(1, 2))
-                s2 = torch.linalg.eigvalsh(m_mat).clamp(0.0, 1.0)
-                guard[active] = 0.12 * torch.clamp(torch.sum(s2**3, dim=1), max=1.0)
-            noi_sims = torch.where(num_bad >= n_pc, 0.88 * nsi_det + guard, guard)
-        else:
-            noi_sims = nsi_det
+        active = num_bad > 0
+        guard = torch.zeros_like(nsi_det)
+        if active.any():
+            num_bad_act = num_bad[active]
+            k_max = int(num_bad_act.max().item())
+            order = torch.argsort(
+                bad_mask[active].to(torch.int64), dim=1, descending=True
+            )[:, :k_max]
+            gather_idx = order.unsqueeze(1).expand(-1, n_ch, -1)
+            p_packed = torch.gather(all_VR_t[active], dim=2, index=gather_idx)
+            valid_col = (
+                torch.arange(k_max, device=template_t.device).unsqueeze(0)
+                < num_bad_act.unsqueeze(1)
+            )
+            p_packed = torch.where(valid_col.unsqueeze(1), p_packed, 0.0)
+            g_pp = torch.bmm(p_packed.transpose(1, 2), p_packed)
+            g_pp = 0.5 * (g_pp + g_pp.transpose(1, 2))
+            evals_p, v_p = torch.linalg.eigh(g_pp)
+            ev_thresh = 1e-12 * evals_p[:, -1:].clamp_min(1e-30)
+            inv_sqrt = torch.where(
+                evals_p > ev_thresh,
+                torch.rsqrt(evals_p.clamp_min(1e-30)),
+                0.0,
+            )
+            pt_t = torch.matmul(p_packed.transpose(1, 2), template_t)
+            z = torch.bmm(v_p.transpose(1, 2), pt_t) * inv_sqrt.unsqueeze(-1)
+            m_mat = torch.bmm(z.transpose(1, 2), z)
+            m_mat = 0.5 * (m_mat + m_mat.transpose(1, 2))
+            s2 = torch.linalg.eigvalsh(m_mat).clamp(0.0, 1.0)
+            guard[active] = 0.12 * torch.clamp(torch.sum(s2**3, dim=1), max=1.0)
+        noi_sims = torch.where(num_bad >= n_pc, 0.88 * nsi_det + guard, guard)
 
     return sig_sims, noi_sims
 
@@ -394,7 +386,6 @@ def _sensai_score_from_gevd(
     n_pc: int = 3,
     noise_multiplier: float = 3.0,
     signal_type: str = "eeg",
-    dipolar_guardrail: bool = False,
 ) -> tuple[float, float, float]:
     """Fast SENSAI score using cached GEVD and power-weighted 2-step QR subspace."""
     template = np.ascontiguousarray(reference_eigenvectors[:, :n_pc])
@@ -412,7 +403,6 @@ def _sensai_score_from_gevd(
         signal_type=signal_type,
         all_evec=all_eigenvectors,
         reference_cov=reference_cov,
-        dipolar_guardrail=dipolar_guardrail,
     )
 
     sig_sim = float(np.mean(sig_sims) * 100.0)
@@ -583,7 +573,6 @@ def _sensai_score(
     n_pc=3,
     noise_multiplier=3.0,
     engine="auto",
-    dipolar_guardrail: bool = False,
 ):
     """Compute the SENSAI score for given threshold.
 
@@ -601,8 +590,6 @@ def _sensai_score(
         Noise multiplier.
     engine : str
         Computation engine ('numpy', 'torch', or 'auto').
-    dipolar_guardrail : bool, default=True
-        Whether to enable the rank-1/rank-2 dipolar rhythm guardrail for EEG.
 
     Returns
     -------
@@ -636,7 +623,6 @@ def _sensai_score(
         threshold,
         n_pc,
         noise_multiplier,
-        dipolar_guardrail=dipolar_guardrail,
     )
 
 
@@ -653,7 +639,6 @@ def _sensai_gridsearch(
     sensai_thresholds=None,
     signal_type="eeg",
     engine="auto",
-    dipolar_guardrail: bool = False,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -707,7 +692,6 @@ def _sensai_gridsearch(
                 threshold,
                 n_pc=n_pc,
                 signal_type=signal_type,
-                dipolar_guardrail=dipolar_guardrail,
             )
             sig_sim = float(sig_sims_t.mean().item() * 100.0)
             noi_sim = float(noi_sims_t.mean().item() * 100.0)
@@ -719,7 +703,6 @@ def _sensai_gridsearch(
                 threshold,
                 n_pc=n_pc,
                 signal_type=signal_type,
-                dipolar_guardrail=dipolar_guardrail,
             )
             sig_sim = float(np.mean(sig_sims) * 100.0)
             noi_sim = float(np.mean(noi_sims) * 100.0)
@@ -846,7 +829,6 @@ def _sensai_optimize(
     engine="auto",
     sensai_tol: float = 0.1,
     is_wavelet_band: bool = False,
-    dipolar_guardrail: bool = False,
 ):
     n_pc = ensure_int(n_pc, "n_pc")
     if not 1 <= n_pc <= reference_cov.shape[0]:
@@ -922,7 +904,6 @@ def _sensai_optimize(
                     eigen_threshold,
                     n_pc=n_pc,
                     signal_type=signal_type,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
                 sig_sim = float(sig_sims_t.mean().item() * 100.0)
                 noi_sim = float(noi_sims_t.mean().item() * 100.0)
@@ -934,7 +915,6 @@ def _sensai_optimize(
                     eigen_threshold,
                     n_pc=n_pc,
                     signal_type=signal_type,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
                 sig_sim = float(np.mean(sig_sims) * 100.0)
                 noi_sim = float(np.mean(noi_sims) * 100.0)

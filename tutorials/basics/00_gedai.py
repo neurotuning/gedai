@@ -34,13 +34,14 @@ raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 raw.crop(0, 30)
 
 # %%
-# GEDAI will automatically apply an average reference before fitting or
-# transforming the data.
-# If the data was referenced to a different reference during acquisition, it is
-# recommended to add the reference channel to the data before using GEDAI. This
-# way the rank of the data will be preserved, and you will be able to reference
-# the data to another reference after denoising if needed.
+# GEDAI applies a consistent EEG reference to both the data and the underlying
+# leadfield/reference covariance (default ``reference="average"``). It also
+# supports infinity ``"REST"``, linked mastoids/earlobes (``"M1+M2"``,
+# ``"TP9+TP10"``, ``"A1+A2"``), single-channel references (e.g., ``"Cz"``),
+# or ``"none"``. Flat online recording reference channels (e.g., ``Cz = 0 uV``)
+# are automatically retained during two-pass bad-channel cleaning.
 
+reference = "average"  # or "REST", "M1+M2", "Cz", "none"
 raw.set_eeg_reference("average", projection=False)
 
 # %%
@@ -82,35 +83,28 @@ on_bad_channel = "exclude"  # default
 bad_channel_threshold = "auto"
 
 # %%
-# The reference covariance defines what good data should look like.
-# The default ``"leadfield"`` option uses a covariance matrix
-# based on a generic head model and the standard 10-20 montage.
-# It is possible to use a custom reference covariance matrix instead,
-# for example, by using the :func:`~gedai.covariance.compute_covariance_from_forward`
-# function. This topic is covered in the ``advanced`` section of the tutorials.
+# The reference covariance defines what good brain topography should look like.
+# The default ``"leadfield"`` option uses GEDAI's bundled 343-channel
+# ``fsaverage`` OpenMEEG BEM model with token-safe clinical/BIDS label matching
+# (e.g., ``"EEG Fp1-REF"``, ``"C3-M2"``), and automatically falls back to **3D
+# dipole-kernel projection** when non-10-20 channels have valid 3D coordinates.
+# Pass ``reference_cov="projection"`` to always use 3D dipole projection, or pass
+# a custom :class:`mne.Forward` / :class:`mne.Covariance` (covered in the
+# ``advanced`` forward-model tutorial).
 
 reference_cov = "leadfield"
 
 # %%
-# .. note::
-#
-#     If your recording uses a non-10-20 or high-density montage, compute a
-#     matching head-model covariance with
-#     :func:`~gedai.covariance.compute_covariance_from_forward` (see the
-#     forward-model tutorial in the ``advanced`` section). Note that
-#     :meth:`mne.io.Raw.interpolate_bads` only interpolates flagged bad sensors
-#     within your existing montage.
-
-# %%
 # To determine the optimal threshold for separating signal and noise components,
-# ``GEDAI`` uses the ``SENSAI`` algorithm. ``SENSAI`` is an unsupervised method that
-# finds the optimal eigenvalue threshold that maximizes the similarity between
-# the cleaned data and the reference covariance while minimizing the similarity
-# between the removed data and the reference covariance.
-# The ``noise_multiplier`` parameter controls the weight given to noise
-# similarity compared to signal similarity. Leaving ``noise_multiplier="auto"``
-# selects the adaptive default automatically; passing a scalar float (such as
-# ``3.0``) manually emphasizes signal preservation.
+# ``GEDAI`` uses the ``SENSAI`` algorithm, maximizing the similarity between
+# cleaned data and the reference covariance while minimizing the similarity
+# between removed components and the reference covariance.
+#
+# The ``noise_multiplier`` parameter controls the trade-off between artifact
+# rejection and signal preservation. Supported presets include ``"auto"``
+# (default), ``"auto+"`` (more aggressive), and ``"auto-"`` (more
+# conservative), each computed automatically in closed form from GEVD spectral
+# invariants via Z3 weighting (or pass any positive float such as ``3.0``).
 
 noise_multiplier = "auto"
 
@@ -134,6 +128,7 @@ gedai.fit_raw(
     noise_multiplier=noise_multiplier,
     on_bad_channel=on_bad_channel,
     bad_channel_threshold=bad_channel_threshold,
+    reference=reference,
     verbose=True,
 )
 # %%
@@ -181,8 +176,8 @@ print(
 )
 
 # %%
-# We can visualize the difference between the original and denoised data using
-# an interactive plot. This allows you to inspect individual channels and see
-# how ``GEDAI`` has removed artifacts while preserving neural signals.
+# Finally, we can evaluate goodness-of-fit visually with the SENSAI manifold
+# plot (Subspace Similarity Index vs. epoch power) and inspect channel overlays.
 
+gedai.plot_sensai(raw_before=raw, raw_after=denoised_raw, show=True)
 plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)

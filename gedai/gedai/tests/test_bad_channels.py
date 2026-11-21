@@ -210,7 +210,11 @@ def test_multiband_and_adaptive_on_bad_channel():
     assert mb_ep.bad_channels_ == [bad_ch]
     clean_mb_ep = mb_ep.transform_epochs(epochs, n_jobs=1, verbose=False)
     assert clean_mb_ep.ch_names == mb_ep.ch_names
-    assert np.any(mb_ep.metrics_["enova_per_channel"] > 0)
+    assert len(mb_ep.metrics_["enova_per_channel"]) == len(mb_ep.ch_names)
+    assert np.all(
+        (mb_ep.metrics_["enova_per_channel"] >= 0.0)
+        & (mb_ep.metrics_["enova_per_channel"] <= 1.0)
+    )
 
     mb_raw = MultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
     mb_raw.fit_raw(raw, duration=1.0, on_bad_channel="exclude", n_jobs=1, verbose=False)

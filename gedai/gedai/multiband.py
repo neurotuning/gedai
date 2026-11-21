@@ -197,7 +197,6 @@ class MultibandGedai:
         self._reference = "average"
         self._ref_spec = None
         self._reference_cov_arg = "leadfield"
-        self._dipolar_guardrail = False
         self._smoothing_window = None
 
     def _clone_unfitted(self):
@@ -265,7 +264,6 @@ class MultibandGedai:
         on_bad_channel: str = "exclude",
         bad_channel_threshold: float | str | None = None,
         reference: str | None = "average",
-        dipolar_guardrail: bool = False,
     ):
         """Fit the GEDAI model to the epochs data.
 
@@ -288,7 +286,6 @@ class MultibandGedai:
         %(on_bad_channel)s
         %(bad_channel_threshold)s
         %(reference)s
-        %(dipolar_guardrail)s
         """
         self._check_unfitted()
         _check_type(epochs, (BaseEpochs,), "epochs")
@@ -299,7 +296,6 @@ class MultibandGedai:
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
-        _check_type(dipolar_guardrail, (bool,), "dipolar_guardrail")
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
         resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
@@ -324,7 +320,6 @@ class MultibandGedai:
                     verbose=verbose,
                     engine=current_engine,
                     reference=reference,
-                    dipolar_guardrail=dipolar_guardrail,
                 ),
                 transform_kwargs=dict(
                     n_jobs=n_jobs,
@@ -385,7 +380,6 @@ class MultibandGedai:
                 n_jobs=n_jobs,
                 verbose=verbose,
                 reference="none",
-                dipolar_guardrail=dipolar_guardrail,
             )
             epochs_precleaned = broadband_model.transform_epochs(
                 epochs_fit, n_jobs=n_jobs, verbose=False
@@ -453,7 +447,6 @@ class MultibandGedai:
                     n_jobs=n_jobs,
                     verbose=verbose,
                     reference="none",
-                    dipolar_guardrail=dipolar_guardrail,
                 )
 
                 wavelet_fit = {
@@ -497,7 +490,6 @@ class MultibandGedai:
             if isinstance(reference_cov, (str, mne.Forward))
             else "leadfield"
         )
-        self._dipolar_guardrail = dipolar_guardrail
         self._smoothing_window = None
         self.bad_channels_ = list(excluded_bads)
         self.detected_bad_channels_ = []
@@ -529,7 +521,6 @@ class MultibandGedai:
         bad_channel_threshold: float | str | None = None,
         reference: str | None = "average",
         smoothing_window: float | None = None,
-        dipolar_guardrail: bool = False,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -556,7 +547,6 @@ class MultibandGedai:
         %(bad_channel_threshold)s
         %(reference)s
         %(smoothing_window)s
-        %(dipolar_guardrail)s
 
         Notes
         -----
@@ -580,7 +570,6 @@ class MultibandGedai:
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
-        _check_type(dipolar_guardrail, (bool,), "dipolar_guardrail")
         resolved_smooth = _check_smoothing_window(smoothing_window)
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
@@ -610,7 +599,6 @@ class MultibandGedai:
                     engine=current_engine,
                     reference=reference,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 ),
                 transform_kwargs=dict(
                     overlap=overlap,
@@ -708,7 +696,6 @@ class MultibandGedai:
                 verbose=verbose,
                 reference="none",
                 smoothing_window=resolved_smooth,
-                dipolar_guardrail=dipolar_guardrail,
             )
             raw_for_multiband = broadband_model.transform_raw(
                 raw_fit, overlap=overlap, n_jobs=n_jobs, verbose=False
@@ -742,7 +729,6 @@ class MultibandGedai:
                     n_pc=n_pc,
                     engine=current_engine,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
                 for item in items
             ]
@@ -764,7 +750,6 @@ class MultibandGedai:
                     n_pc=n_pc,
                     engine=current_engine,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
                 for item in items
             )
@@ -794,7 +779,6 @@ class MultibandGedai:
             if isinstance(reference_cov, (str, mne.Forward))
             else "leadfield"
         )
-        self._dipolar_guardrail = dipolar_guardrail
         self._smoothing_window = resolved_smooth
         self.bad_channels_ = list(excluded_bads)
         self.detected_bad_channels_ = []
@@ -821,7 +805,6 @@ class MultibandGedai:
         n_pc="auto",
         engine=None,
         smoothing_window=None,
-        dipolar_guardrail=False,
     ):
         """Fit a single wavelet band model."""
         current_engine = ensure_engine(engine) if engine is not None else self.engine
@@ -865,7 +848,6 @@ class MultibandGedai:
                 engine=current_engine,
                 n_jobs=1,
                 smoothing_window=smoothing_window,
-                dipolar_guardrail=dipolar_guardrail,
             )
         else:
             if n_ep > 0:
@@ -895,7 +877,6 @@ class MultibandGedai:
                 n_jobs=1,
                 verbose=False,
                 reference="none",
-                dipolar_guardrail=dipolar_guardrail,
             )
 
         sensai_score = model.fit_metrics_["sensai_score"] if model.fit_metrics_ else 0.0
@@ -1382,13 +1363,23 @@ class MultibandGedai:
         if raw_after is None:
             raw_after = self.transform_raw(raw_before, verbose=False)
 
-        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        ch_names = list(self.ch_names)
+        raw_before_eval = raw_before.copy().pick(ch_names).reorder_channels(ch_names)
+        if getattr(self, "_ref_spec", None) is not None:
+            _apply_eeg_reference(raw_before_eval, self._ref_spec)
+        raw_after_eval = raw_after.copy().pick(ch_names).reorder_channels(ch_names)
+
+        score = (
+            self.metrics_.get("sensai_score")
+            if self.metrics_
+            else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
+        )
         mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
 
         return plot_sensai_visualization(
-            raw_before=raw_before,
-            raw_after=raw_after,
-            reference_cov=self._reference_cov.data,
+            raw_before=raw_before_eval,
+            raw_after=raw_after_eval,
+            reference_cov=self._reference_cov,
             epoch_duration_sec=epoch_duration_sec,
             n_pc=n_pc,
             sensai_score=score,

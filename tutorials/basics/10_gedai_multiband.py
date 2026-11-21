@@ -87,7 +87,10 @@ print(multiband_gedai.summary)
 #       there are enough samples per epoch for covariance estimation) without
 #       requiring power-of-two window lengths. Setting ``wavelet_low_cutoff`` to
 #       ``"auto"`` or to your high-pass cutoff skips subbands below the signal
-#       bandwidth.
+#       bandwidth. ``MultibandGedai`` also supports ``reference`` (``"average"``,
+#       ``"REST"``, ``"M1+M2"``, ``"Cz"``), adaptive Z3 ``noise_multiplier``
+#       presets (``"auto"``, ``"auto+"``, ``"auto-"``), non-stationary
+#       ``smoothing_window``, and ``bad_epoch_threshold`` (``"BAD_gedai"``).
 
 # %%
 

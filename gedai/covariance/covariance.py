@@ -725,13 +725,21 @@ def _resolve_reference_and_cov(
     return cov_picked, spec
 
 
-def compute_covariance_from_forward(forward):
+def compute_covariance_from_forward(forward, reference: str | None = "average"):
     """Compute covariance matrix from the leadfield of a forward solution.
+
+    For EEG forwards, applies the requested linear reference operator
+    (default ``"average"``) so the resulting covariance matches the EEG
+    reference space used during GEDAI denoising. MEG forwards and
+    ``reference="none"`` use the raw unreferenced leadfield ``G @ G.T``.
 
     Parameters
     ----------
     forward : mne.Forward
         The forward solution from which to compute the covariance matrix.
+    reference : str | None, default="average"
+        EEG reference mode applied to the forward gain matrix (ignored for MEG).
+        Use ``"none"`` to leave an EEG forward unreferenced.
 
     Returns
     -------
@@ -741,9 +749,22 @@ def compute_covariance_from_forward(forward):
     _check_type(forward, (mne.Forward,), "forward")
     if forward["coord_frame"] != mne._fiff.constants.FIFF.FIFFV_COORD_HEAD:
         raise ValueError("Forward solution must be in head coordinates.")
-    data = forward["sol"]["data"] @ forward["sol"]["data"].T
-    ch_names = forward["info"]["ch_names"]
-    bads = forward["info"]["bads"]
+    gain = np.asarray(forward["sol"]["data"], dtype=np.float64)
+    info = forward["info"]
+    if _is_meg_info(info) or _normalize_reference_mode(reference).lower() == "none":
+        data = gain @ gain.T
+    else:
+        spec = _create_reference_spec(info, reference=reference)
+        g_ref, _ = _apply_leadfield_reference(
+            gain,
+            spec,
+            forward_gain=gain,
+            forward_names=list(info["ch_names"]),
+        )
+        data = g_ref @ g_ref.T
+    data = np.real((data + data.T) * 0.5)
+    ch_names = info["ch_names"]
+    bads = info["bads"]
     nfree = len(ch_names)
     cov = mne.Covariance(
         data, names=ch_names, bads=bads, projs=[], nfree=nfree, verbose=None

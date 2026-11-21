@@ -11,7 +11,7 @@ from sklearn.metrics import silhouette_samples
 def plot_sensai_visualization(
     raw_before: mne.io.BaseRaw,
     raw_after: mne.io.BaseRaw,
-    reference_cov: np.ndarray | str = "leadfield",
+    reference_cov: np.ndarray | mne.Covariance | str = "leadfield",
     epoch_duration_sec: float = 1.0,
     n_pc: int = 3,
     sensai_score: float | None = None,
@@ -31,8 +31,9 @@ def plot_sensai_visualization(
         Original EEG recording before denoising.
     raw_after : mne.io.BaseRaw
         Cleaned EEG recording after denoising.
-    reference_cov : np.ndarray or str
-        Reference leadfield covariance matrix.
+    reference_cov : np.ndarray, mne.Covariance, or str
+        Reference leadfield covariance matrix, ``mne.Covariance``, or
+        ``"leadfield"`` / ``"projection"``.
     epoch_duration_sec : float
         Epoch length in seconds (default 1.0s).
     n_pc : int
@@ -53,12 +54,41 @@ def plot_sensai_visualization(
     metrics : dict
         Computed subspace similarity and LDA classification metrics.
     """
-    from ..covariance.covariance import _ensure_cov, _pick_cov
+    from ..covariance.covariance import _pick_cov, _resolve_reference_and_cov
 
-    # Extract common channels and data in microvolts (uV) for standard EEG dB scaling
-    ch_names = [ch for ch in raw_after.ch_names if ch in raw_before.ch_names]
-    data_before = raw_before.copy().pick(ch_names).get_data(verbose=False) * 1e6
-    data_after = raw_after.copy().pick(ch_names).get_data(verbose=False) * 1e6
+    # 1. Align common channels and resolve reference covariance
+    common_chs = [ch for ch in raw_after.ch_names if ch in raw_before.ch_names]
+    if isinstance(reference_cov, mne.Covariance):
+        ch_names = [ch for ch in reference_cov.ch_names if ch in common_chs]
+        ref_cov_data = _pick_cov(reference_cov, ch_names).data
+    elif isinstance(reference_cov, str):
+        ch_names = common_chs
+        info_sub = raw_after.copy().pick(ch_names).reorder_channels(ch_names).info
+        ref_cov_data = _resolve_reference_and_cov(reference_cov, info_sub)[0].data
+    else:
+        ch_names = common_chs
+        ref_cov_data = np.asarray(reference_cov, dtype=np.float64)
+        if ref_cov_data.shape != (len(ch_names), len(ch_names)):
+            raise ValueError(
+                f"reference_cov shape {ref_cov_data.shape} does not match the "
+                f"{len(ch_names)} common channels between raw_before and raw_after."
+            )
+
+    # Extract aligned channel data in microvolts (uV) for standard EEG dB scaling
+    data_before = (
+        raw_before.copy()
+        .pick(ch_names)
+        .reorder_channels(ch_names)
+        .get_data(verbose=False)
+        * 1e6
+    )
+    data_after = (
+        raw_after.copy()
+        .pick(ch_names)
+        .reorder_channels(ch_names)
+        .get_data(verbose=False)
+        * 1e6
+    )
     data_noise = data_before - data_after
 
     sfreq = raw_after.info["sfreq"]
@@ -73,15 +103,7 @@ def plot_sensai_visualization(
             f"{epoch_duration_sec}s."
         )
 
-    # 1. Prepare Reference Subspace
-    if isinstance(reference_cov, str):
-        cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, ch_names)
-        ref_cov_data = cov.data
-    else:
-        ref_cov_data = np.asarray(reference_cov)
-
-    # Regularize reference covariance
+    # Regularize reference covariance and extract top subspace basis
     trace_ref = np.trace(ref_cov_data) / ref_cov_data.shape[0]
     ref_cov_reg = 0.95 * ref_cov_data + 0.05 * trace_ref * np.eye(ref_cov_data.shape[0])
     _, Vref = eigh(ref_cov_reg)

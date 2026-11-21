@@ -1,0 +1,50 @@
+.. NOTE: we use cross-references to highlight new functions and classes.
+   Please follow the examples below, so the changelog page will have a link to
+   the function/class documentation.
+
+.. NOTE: there are 3 separate sections for changes, based on type:
+   - "Enhancements" for new features
+   - "Bugs" for bug fixes
+   - "API changes" for backward-incompatible changes
+
+.. NOTE: You can use the :pr:`xx` and :issue:`xx` role to x-ref to a GitHub PR
+   or issue from this project.
+
+.. include:: ./names.inc
+
+.. _changes_0_8_0:
+
+Version 0.8.0
+=============
+
+Enhancements
+------------
+
+- Build the EEG rank-1/rank-2 dipolar guardrail directly into SENSAI scoring across both NumPy and PyTorch backends (matching MATLAB ``SENSAI.m``), removing ``dipolar_guardrail`` as an external hyperparameter (`Tomas Ros`_).
+- Map ``noise_multiplier="auto"``, ``"auto+"``, and ``"auto-"`` directly to scale-invariant closed-form adaptive Z3 noise-threshold weighting across :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` (`Tomas Ros`_).
+- Bundle the 343-channel ``fsaverage`` OpenMEEG BEM leadfield archive (``fsavLEADFIELD_4_GEDAI.npz``) with 3D cortical dipole-kernel projection (:func:`~gedai.covariance.project_leadfield_dipole`, :func:`~gedai.covariance.compute_covariance_from_dipole_projection`, ``reference_cov="projection"``, and automatic fallback from ``reference_cov="leadfield"`` for digitized non-10-20 montages) and :func:`~gedai.covariance.compute_covariance_from_channel_positions` (`Tomas Ros`_).
+- Add token-safe BIDS/EDF/BioSemi electrode-label matching (including legacy 10-20 aliases ``T3``/``T4``/``T5``/``T6``) during leadfield covariance resolution (`Tomas Ros`_).
+- Add unified EEG reference algebra (``reference="average"``, ``"REST"``, ``"none"``, single-channel e.g. ``"Cz"``, or multi-channel e.g. ``"M1+M2"``), preserving flat online recording references (``flat_reference_channels_``) and falling back to average reference when a specified reference channel is detected as noisy (`Tomas Ros`_).
+- Add non-stationary sliding-window threshold adaptation (``smoothing_window`` in seconds) across :class:`~gedai.gedai.Gedai`, :class:`~gedai.gedai.MultibandGedai`, and :class:`~gedai.gedai.AdaptiveMultibandGedai` with NumPy/PyTorch parity and amplitude-scale invariance (`Tomas Ros`_).
+- Add ENOVA-based bad-epoch flagging (``bad_epoch_threshold``, ``bad_epochs_``) and automatic ``BAD_gedai`` annotations (``gedai.metrics.annotate_bad_epochs``), alongside composite SENSAI summary scoring (``gedai.metrics.compute_composite_sensai``) (`Tomas Ros`_).
+- Refresh all EEG tutorials (``00_gedai.py``, ``10_gedai_multiband.py``, ``30_gedai_adaptive.py``, ``00_gedai_offline_pipeline.py``) and update ``10_gedai_forward.py`` to benchmark an individual 60-channel non-10-20 MNE ``sample`` subject MRI BEM against a 4-shell sphere, automatic 3D dipole projection, and an isotropic Gaussian prior using SENSAI goodness-of-fit and ``plot_sensai`` (`Tomas Ros`_).
+
+Bugs
+----
+
+- Fix missing EEG average referencing in :func:`~gedai.covariance.compute_covariance_from_forward` (now defaulting to ``reference="average"`` for EEG forwards) so custom EEG forward covariances match average-referenced EEG data and SENSAI scoring (`Tomas Ros`_).
+- Fix channel-set and reference-mode alignment in ``plot_sensai`` and ``plot_sensai_visualization`` when bad channels are excluded during fitting and restored via ``interpolate_bads=True`` (`Tomas Ros`_).
+- Remove redundant average-reference projection when combining :func:`~gedai.covariance.project_leadfield_dipole` (``use_avgref=True``) with ``reference="average"`` (`Tomas Ros`_).
+
+API and behavior changes
+------------------------
+
+- ``noise_multiplier="auto"`` (as well as ``"auto+"`` and ``"auto-"``) now resolves directly to closed-form adaptive Z3 thresholding (`Tomas Ros`_).
+- :func:`~gedai.covariance.compute_covariance_from_forward` now defaults to ``reference="average"`` for EEG forward solutions; pass ``reference=None`` to obtain unreferenced ``G @ G.T`` (`Tomas Ros`_).
+- Source and wheel distributions now bundle ``gedai/data/fsavLEADFIELD_4_GEDAI.npz``.
+
+Authors
+-------
+
+* `Tomas Ros`_
+* `Victor Férat`_

@@ -26,13 +26,14 @@ from gedai.viz import plot_mne_style_overlay_interactive
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
 # %%
-# Preprocessing
-# GEDAI will automatically apply an average reference before fitting or
-# transforming the data. If your acquisition used a different reference,
-# consider adding the missing reference channel beforehand to preserve
-# the rank of your data. For example, if your data was recorded with a
-# ``Cz`` reference, you can add a virtual ``Cz`` channel as follows:
-# ``raw.add_reference_channels("Cz", copy=False)``.
+# Preprocessing & Reference Handling
+# GEDAI applies a consistent reference (default ``reference="average"``) across
+# both the EEG data and leadfield/reference covariance, and also supports
+# infinity ``"REST"``, linked mastoids/earlobes (``"M1+M2"``, ``"TP9+TP10"``,
+# ``"A1+A2"``), or any single channel (e.g., ``"Cz"``). Flat online recording
+# references (``0 uV``) are retained automatically during two-pass bad-channel
+# detection, clinical/BIDS labels (e.g., ``"EEG Fp1-REF"``) are matched safely,
+# and custom non-10-20 channels with 3D positions use 3D dipole projection.
 
 # %%
 # High-pass filtering before GEDAI usually improves covariance estimation by
@@ -52,27 +53,35 @@ ad = AdaptiveMultibandGedai(
     broadband_pass=True,
 )
 
-# Fit the model using continuous scalar optimization, adaptive noise weighting,
-# and automatic two-pass bad-channel exclusion. Pass a float for
-# ``noise_multiplier`` (e.g., ``3.0``) to override signal vs. noise weighting.
+# Fit the model using continuous scalar optimization, closed-form adaptive Z3
+# weighting ("auto"), and automatic two-pass bad-channel exclusion. For long
+# non-stationary recordings, pass e.g. smoothing_window=30.0 (seconds) to track
+# slow regime shifts smoothly.
 ad.fit_raw(
     raw,
     noise_multiplier="auto",
+    reference="average",
+    # smoothing_window=30.0,
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
 )
 
-# Denoise the data and interpolate any excluded bad channels if present
+# Denoise, interpolate any excluded bad channels, and annotate any residual
+# extreme-ENOVA 1 s windows with "BAD_gedai" (without deleting samples)
 denoised_raw = ad.transform_raw(
     raw,
     interpolate_bads=bool(ad.bad_channels_),
+    bad_epoch_threshold=0.85,
     verbose=False,
 )
 
-# Inspect bad-channel QC and denoising metrics
+n_bad_ep = int(ad.bad_epochs_.sum()) if ad.bad_epochs_ is not None else 0
+
+# Inspect bad-channel/bad-epoch QC and denoising metrics
 print(ad.summary)
 print(
     f"Excluded bad channels: {ad.bad_channels_} | "
+    f"Flagged BAD_gedai epochs: {n_bad_ep} | "
     f"Mean ENOVA: {ad.metrics_['mean_enova'] * 100:.1f} % | "
     f"SENSAI score: {ad.metrics_['sensai_score']:.3f}"
 )

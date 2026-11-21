@@ -123,11 +123,17 @@ wavelet_low_cutoff = "auto"
 noise_multiplier = "auto"
 
 # %%
-# Fit the model directly on raw data:
+# Fit the model directly on raw data. Notice ``noise_multiplier="auto"`` computes
+# closed-form adaptive Z3 spectral weighting while protecting rank-1/rank-2
+# dipolar brain rhythms. For long non-stationary sessions, pass
+# ``smoothing_window=30.0`` (seconds) to adapt thresholds smoothly across time
+# via ``makima`` interpolation, and use ``reference`` to select ``"average"``,
+# ``"REST"``, linked mastoids, or a single electrode:
 adaptive_multiband_gedai.fit_raw(
     raw,
     noise_multiplier=noise_multiplier,
     wavelet_low_cutoff=wavelet_low_cutoff,
+    reference="average",
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
     n_jobs=n_jobs,
@@ -152,10 +158,13 @@ plt.show()
 # Transform the Data (Denoising)
 # ------------------------------
 # Denoising is performed seamlessly using continuous dual-stream cosine overlap-add
-# blending across each band:
+# blending across each band. Passing ``bad_epoch_threshold=0.85`` non-destructively
+# flags any residual extreme-ENOVA 1-second windows with MNE ``"BAD_gedai"``
+# annotations and populates ``bad_epochs_``:
 adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
     raw,
     interpolate_bads=bool(adaptive_multiband_gedai.bad_channels_),
+    bad_epoch_threshold=0.85,
     n_jobs=n_jobs,
 )
 
@@ -186,6 +195,17 @@ print(
     f"{adaptive_multiband_gedai.metrics_['enova_per_channel'].max() * 100:.2f} %"
 )
 
+n_bad_epochs = (
+    int(adaptive_multiband_gedai.bad_epochs_.sum())
+    if adaptive_multiband_gedai.bad_epochs_ is not None
+    else 0
+)
+print(f"Flagged BAD_gedai epochs:  {n_bad_epochs}")
+
 # %%
-# Finally, we can visualize the before-and-after denoising overlay:
+# Next, inspect SENSAI goodness-of-fit manifold separation and the interactive
+# time-series overlay:
+adaptive_multiband_gedai.plot_sensai(
+    raw_before=raw, raw_after=adaptive_multiband_denoised_raw, show=True
+)
 plot_mne_style_overlay_interactive(raw, adaptive_multiband_denoised_raw, duration=15.0)

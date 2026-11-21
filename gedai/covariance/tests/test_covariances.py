@@ -6,6 +6,7 @@ import pytest
 from mne.datasets import testing
 
 from gedai.covariance import (
+    compute_covariance_from_channel_positions,
     compute_covariance_from_dipole_projection,
     compute_covariance_from_forward,
     project_leadfield_dipole,
@@ -16,7 +17,6 @@ from gedai.covariance.covariance import (
     _match_template_labels,
     _pick_cov,
     _resolve_reference_and_cov,
-    compute_covariance_from_channel_positions,
 )
 
 data_path = testing.data_path(download=False)
@@ -252,3 +252,22 @@ def test_unified_reference_algebra_and_rest():
             assert np.all(spec_m["required_indices"]) or len(
                 spec_m["required_indices"]
             ) in (1, 2)
+
+
+def test_compute_covariance_from_forward_eeg_reference(sample_info):
+    """compute_covariance_from_forward matches reference space of EEG forwards."""
+    sphere = mne.make_sphere_model(r0=(0.0, 0.0, 0.04), head_radius=0.095)
+    src = mne.setup_volume_source_space(
+        pos=35.0, sphere=(0.0, 0.0, 0.04, 0.075), verbose=False
+    )
+    fwd = mne.make_forward_solution(
+        sample_info, trans=None, src=src, bem=sphere, meg=False, eeg=True, verbose=False
+    )
+
+    cov_avg = compute_covariance_from_forward(fwd)
+    assert np.max(np.abs(cov_avg.data.sum(axis=1))) < 1e-12 * np.trace(cov_avg.data)
+
+    cov_none = compute_covariance_from_forward(fwd, reference="none")
+    raw_gram = fwd["sol"]["data"] @ fwd["sol"]["data"].T
+    np.testing.assert_allclose(cov_none.data, 0.5 * (raw_gram + raw_gram.T), rtol=1e-12)
+    assert not np.allclose(cov_avg.data, cov_none.data)

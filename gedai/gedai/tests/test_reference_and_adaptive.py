@@ -1,4 +1,4 @@
-"""Integration tests for MATLAB-ported Tier 1 & Tier 2 GEDAI features."""
+"""Integration tests for reference modes, dipole projection, and adaptive processing."""
 
 import mne
 import numpy as np
@@ -174,20 +174,19 @@ def test_sliding_window_adaptation_parity_and_scale_invariance():
     assert np.all(np.isfinite(out_mb))
 
 
-def test_auto_z3_scale_invariance_and_bad_epoch_annotation():
-    """auto_z3 is scale-invariant and bad_epoch_threshold marks BAD_gedai."""
+def test_auto_scale_invariance_and_bad_epoch_annotation():
+    """Adaptive Z3 'auto' is scale-invariant and bad_epoch_threshold marks BAD_gedai."""
     raw = _sample_raw(n_channels=8, duration_s=8.0)
     cache = _load_template_leadfield()
     idx = _match_template_labels(raw.ch_names, cache["elec_names"])
     assert all(j >= 0 for j in idx)
 
-    # Scale invariance for auto_z3 + dipolar_guardrail=True
+    # Scale invariance for adaptive Z3 "auto" with built-in EEG dipolar guardrail
     g_v = Gedai(engine="numpy")
     g_v.fit_raw(
         raw,
         duration=1.0,
-        noise_multiplier="auto_z3",
-        dipolar_guardrail=True,
+        noise_multiplier="auto",
         verbose=False,
     )
     out_v = g_v.transform_raw(raw, verbose=False).get_data()
@@ -198,8 +197,7 @@ def test_auto_z3_scale_invariance_and_bad_epoch_annotation():
     g_s.fit_raw(
         raw_s,
         duration=1.0,
-        noise_multiplier="auto_z3",
-        dipolar_guardrail=True,
+        noise_multiplier="auto",
         verbose=False,
     )
     out_s = g_s.transform_raw(raw_s, verbose=False).get_data() / 1e4
@@ -237,3 +235,29 @@ def test_auto_z3_scale_invariance_and_bad_epoch_annotation():
     assert g_ep.bad_epochs_ is not None
     assert g_ep.bad_epochs_.shape == (len(epochs),)
     assert np.any(g_ep.bad_epochs_[3:5])
+
+
+def test_plot_sensai_with_excluded_and_interpolated_bad_channel():
+    """plot_sensai aligns channels and reference when bads are interpolated."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    raw = _sample_raw(n_channels=10, duration_s=6.0)
+    rng = np.random.default_rng(99)
+    ch_std = float(np.median(np.std(raw.get_data(), axis=1)))
+    raw._data[0] += 20.0 * ch_std * rng.standard_normal(raw.n_times)
+
+    amb = AdaptiveMultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
+    amb.fit_raw(raw, bad_channel_threshold="auto", n_jobs=1, verbose=False)
+    assert raw.ch_names[0] in amb.bad_channels_
+
+    clean = amb.transform_raw(raw, interpolate_bads=True, n_jobs=1, verbose=False)
+    assert len(clean.ch_names) == len(raw.ch_names)
+
+    fig, metrics = amb.plot_sensai(raw_before=raw, raw_after=clean, show=False)
+    plt.close(fig)
+    assert metrics["ssi_before_mean"] > 0.1
+    assert metrics["ssi_after_mean"] > 0.1
+    assert np.isfinite(metrics["ssi_noise_mean"])

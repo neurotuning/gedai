@@ -256,7 +256,6 @@ class Gedai:
         self._reference = "average"
         self._ref_spec = None
         self._reference_cov_arg = "leadfield"
-        self._dipolar_guardrail = False
         self._smoothing_window = None
 
     def _clone_unfitted(self):
@@ -305,7 +304,6 @@ class Gedai:
         on_bad_channel: str = "exclude",
         bad_channel_threshold: float | str | None = None,
         reference: str | None = "average",
-        dipolar_guardrail: bool = False,
     ):
         """Fit the GEDAI model to the epochs.
 
@@ -329,7 +327,6 @@ class Gedai:
         %(on_bad_channel)s
         %(bad_channel_threshold)s
         %(reference)s
-        %(dipolar_guardrail)s
         """
         self._check_unfitted()
         current_engine = ensure_engine(engine) if engine is not None else self.engine
@@ -340,7 +337,6 @@ class Gedai:
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
-        _check_type(dipolar_guardrail, (bool,), "dipolar_guardrail")
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
         resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
@@ -366,7 +362,6 @@ class Gedai:
                     verbose=verbose,
                     engine=current_engine,
                     reference=reference,
-                    dipolar_guardrail=dipolar_guardrail,
                 ),
                 transform_kwargs=dict(
                     n_jobs=n_jobs,
@@ -484,7 +479,6 @@ class Gedai:
                 sensai_thresholds=sensai_thresholds,
                 signal_type=signal_type,
                 engine=current_engine,
-                dipolar_guardrail=dipolar_guardrail,
             )
         elif sensai_method == "optimize":
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
@@ -502,7 +496,6 @@ class Gedai:
                 engine=current_engine,
                 sensai_tol=sensai_tol,
                 is_wavelet_band=getattr(self, "_is_wavelet_band", False),
-                dipolar_guardrail=dipolar_guardrail,
             )
         else:
             raise ValueError(
@@ -554,7 +547,6 @@ class Gedai:
             if isinstance(reference_cov, (str, mne.Forward))
             else "leadfield"
         )
-        self._dipolar_guardrail = dipolar_guardrail
         self._smoothing_window = None
         self.bad_channels_ = list(excluded_bads)
         self.detected_bad_channels_ = []
@@ -587,7 +579,6 @@ class Gedai:
         bad_channel_threshold: float | str | None = None,
         reference: str | None = "average",
         smoothing_window: float | None = None,
-        dipolar_guardrail: bool = False,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -616,7 +607,6 @@ class Gedai:
         %(bad_channel_threshold)s
         %(reference)s
         %(smoothing_window)s
-        %(dipolar_guardrail)s
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
@@ -632,7 +622,6 @@ class Gedai:
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
-        _check_type(dipolar_guardrail, (bool,), "dipolar_guardrail")
         resolved_smooth = _check_smoothing_window(smoothing_window)
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
@@ -664,7 +653,6 @@ class Gedai:
                     engine=current_engine,
                     reference=reference,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 ),
                 transform_kwargs=dict(
                     overlap=overlap,
@@ -731,7 +719,6 @@ class Gedai:
                 n_jobs=n_jobs,
                 engine=current_engine,
                 smoothing_window=resolved_smooth,
-                dipolar_guardrail=dipolar_guardrail,
                 on_bad_channel=on_bad_channel,
                 excluded_bads=excluded_bads,
             )
@@ -761,7 +748,6 @@ class Gedai:
             on_bad_channel="ignore",
             bad_channel_threshold=None,
             reference="none",
-            dipolar_guardrail=dipolar_guardrail,
         )
         self._reference = ref_spec["mode"]
         self._ref_spec = ref_spec
@@ -770,7 +756,6 @@ class Gedai:
             if isinstance(reference_cov, (str, mne.Forward))
             else "leadfield"
         )
-        self._dipolar_guardrail = dipolar_guardrail
         self._smoothing_window = None
         self._on_bad_channel = on_bad_channel
         self._bad_channel_threshold = None
@@ -796,7 +781,6 @@ class Gedai:
         engine: str = "auto",
         n_jobs: int = 1,
         smoothing_window: float | None = None,
-        dipolar_guardrail: bool = False,
     ) -> None:
         """Fit an already-referenced continuous sub-band array (used by multiband)."""
         self._check_unfitted()
@@ -842,7 +826,6 @@ class Gedai:
                 verbose=False,
                 engine=engine,
                 reference="none",
-                dipolar_guardrail=dipolar_guardrail,
             )
             return
 
@@ -861,7 +844,6 @@ class Gedai:
             n_jobs=n_jobs,
             engine=engine,
             smoothing_window=resolved_smooth,
-            dipolar_guardrail=dipolar_guardrail,
             on_bad_channel="ignore",
             excluded_bads=[],
         )
@@ -882,7 +864,6 @@ class Gedai:
         n_jobs: int,
         engine: str,
         smoothing_window: float,
-        dipolar_guardrail: bool,
         on_bad_channel: str,
         excluded_bads: list[str],
     ) -> None:
@@ -1009,7 +990,6 @@ class Gedai:
                     sensai_thresholds=sv_grid,
                     signal_type=signal_type,
                     engine=engine,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
             else:
                 _, sv_w, last_runs = _sensai_optimize(
@@ -1026,7 +1006,6 @@ class Gedai:
                     engine=engine,
                     sensai_tol=sensai_tol,
                     is_wavelet_band=getattr(self, "_is_wavelet_band", False),
-                    dipolar_guardrail=dipolar_guardrail,
                 )
             opt_sv[w] = sv_w
 
@@ -1063,7 +1042,6 @@ class Gedai:
                 float(thresh_stream1[e]),
                 n_pc=resolved_n_pc,
                 signal_type=signal_type,
-                dipolar_guardrail=dipolar_guardrail,
             )
             sig_ep[e] = s_e[0]
             noi_ep[e] = n_e[0]
@@ -1118,7 +1096,6 @@ class Gedai:
             if isinstance(reference_cov_arg, (str, mne.Forward))
             else "leadfield"
         )
-        self._dipolar_guardrail = dipolar_guardrail
         self._smoothing_window = float(smoothing_window)
         self._on_bad_channel = on_bad_channel
         self._bad_channel_threshold = None
@@ -1555,13 +1532,23 @@ class Gedai:
         if raw_after is None:
             raw_after = self.transform_raw(raw_before, verbose=False)
 
-        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        ch_names = list(self.ch_names)
+        raw_before_eval = raw_before.copy().pick(ch_names).reorder_channels(ch_names)
+        if getattr(self, "_ref_spec", None) is not None:
+            _apply_eeg_reference(raw_before_eval, self._ref_spec)
+        raw_after_eval = raw_after.copy().pick(ch_names).reorder_channels(ch_names)
+
+        score = (
+            self.metrics_.get("sensai_score")
+            if self.metrics_
+            else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
+        )
         mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
 
         return plot_sensai_visualization(
-            raw_before=raw_before,
-            raw_after=raw_after,
-            reference_cov=self._reference_cov.data,
+            raw_before=raw_before_eval,
+            raw_after=raw_after_eval,
+            reference_cov=self._reference_cov,
             epoch_duration_sec=epoch_duration_sec,
             n_pc=n_pc,
             sensai_score=score,

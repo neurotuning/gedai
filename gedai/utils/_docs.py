@@ -69,14 +69,6 @@ cycles_per_wavelet : int
     Lower-frequency bands use longer epochs to satisfy
     this target. The default is ``12``."""
 # -- D ---------------------------------------------------------------------------------
-docdict["dipolar_guardrail"] = """
-dipolar_guardrail : bool, default=False
-    Whether to include MATLAB GEDAI's rank-1/rank-2 dipolar rhythm guardrail
-    (``0.88 * nsi_det + 0.12 * sum(s_bad**6)``) in the EEG SENSAI noise penalty
-    so dominant dipolar brain rhythms are penalized even when fewer than ``n_pc``
-    components exceed threshold. Useful opt-in (especially paired with
-    ``noise_multiplier="auto_z3"``) when preserving strong alpha/mu rhythms or
-    using strictly reference-aligned EEG modes (e.g., ``"REST"``, ``"Cz"``)."""
 docdict["duration"] = """
 duration : float
     Duration of each epoch in seconds. The default is ``1.0``."""
@@ -122,15 +114,14 @@ n_pc : int | "auto", default="auto"
 docdict["noise_multiplier"] = """
 noise_multiplier : float | str
     The noise multiplier or string preset for artefact threshold rejection optimization.
-    Supported string presets:
+    Supported string presets (using closed-form adaptive Z3 weighting from GEVD
+    spectral invariants):
 
-    - ``"auto"`` : Standard balance (noise_multiplier = 3.0, default).
-    - ``"auto+"`` : More aggressive denoising (noise_multiplier = 1.5).
-    - ``"auto-"`` : More conservative denoising (noise_multiplier = 6.0).
-    - ``"auto_z3"`` / ``"auto_z3+"`` / ``"auto_z3-"`` : Adaptive closed-form
-      Z3 noise multiplier derived per window/band from GEVD spectral invariants.
+    - ``"auto"`` : Standard balance (adaptive Z3 scale ``0.5``, default).
+    - ``"auto+"`` : More aggressive denoising (adaptive Z3 scale ``1/3``).
+    - ``"auto-"`` : More conservative denoising (adaptive Z3 scale ``1.0``).
 
-    Alternatively, a custom numerical float can be passed."""
+    Alternatively, a fixed positive numerical float (e.g., ``3.0``) can be passed."""
 # -- O ---------------------------------------------------------------------------------
 docdict["on_bad_channel"] = """
 on_bad_channel : "exclude" | "ignore", default="exclude"
@@ -170,12 +161,7 @@ reference : str | None, default="average"
     - ``"M1+M2"`` / ``"TP9+TP10"`` / ``"A1+A2"``: Linked mastoids / earlobes.
     - ``"none"``: No re-referencing.
     - Any channel label (e.g., ``"Cz"``): Re-reference to that channel (or adjust the
-      leadfield directly if it is an external 10-05 reference not in the montage).
-
-    When using strictly reference-aligned modes (``"REST"``, single-channel, or
-    linked-mastoid references) with multiband cleaning, pairing
-    ``noise_multiplier="auto_z3"`` with ``dipolar_guardrail=True`` is recommended
-    to prevent clean-band rank-1/rank-2 over-rejection."""
+      leadfield directly if it is an external 10-05 reference not in the montage)."""
 docdict["reference_cov"] = """
 reference_cov : str | mne.Covariance | mne.Forward
     The reference covariance to use. If ``'leadfield'``, uses the bundled 343-channel

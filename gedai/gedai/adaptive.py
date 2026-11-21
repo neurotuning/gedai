@@ -205,7 +205,6 @@ class AdaptiveMultibandGedai:
         self._reference = "average"
         self._ref_spec = None
         self._reference_cov_arg = "leadfield"
-        self._dipolar_guardrail = False
         self._smoothing_window = None
 
     def _clone_unfitted(self):
@@ -275,7 +274,6 @@ class AdaptiveMultibandGedai:
         bad_channel_threshold: float | str | None = None,
         reference: str | None = "average",
         smoothing_window: float | None = None,
-        dipolar_guardrail: bool = False,
     ):
         """Fit the model to raw data.
 
@@ -301,7 +299,6 @@ class AdaptiveMultibandGedai:
         %(bad_channel_threshold)s
         %(reference)s
         %(smoothing_window)s
-        %(dipolar_guardrail)s
         """
         self._check_unfitted()
         _check_type(raw, (BaseRaw,), "raw")
@@ -316,7 +313,6 @@ class AdaptiveMultibandGedai:
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
-        _check_type(dipolar_guardrail, (bool,), "dipolar_guardrail")
         resolved_smooth = _check_smoothing_window(smoothing_window)
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
@@ -345,7 +341,6 @@ class AdaptiveMultibandGedai:
                     engine=current_engine,
                     reference=reference,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 ),
                 transform_kwargs=dict(
                     overlap=overlap,
@@ -444,7 +439,6 @@ class AdaptiveMultibandGedai:
                 verbose=verbose,
                 reference="none",
                 smoothing_window=resolved_smooth,
-                dipolar_guardrail=dipolar_guardrail,
             )
             raw_for_multiband = broadband_model.transform_raw(
                 raw_fit, overlap=overlap, n_jobs=n_jobs, verbose=False
@@ -471,7 +465,6 @@ class AdaptiveMultibandGedai:
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
                 for p in wavelet_parameters
             ]
@@ -491,7 +484,6 @@ class AdaptiveMultibandGedai:
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     smoothing_window=resolved_smooth,
-                    dipolar_guardrail=dipolar_guardrail,
                 )
                 for p in wavelet_parameters
             )
@@ -530,7 +522,6 @@ class AdaptiveMultibandGedai:
             if isinstance(reference_cov, (str, mne.Forward))
             else "leadfield"
         )
-        self._dipolar_guardrail = dipolar_guardrail
         self._smoothing_window = resolved_smooth
         self.bad_channels_ = list(excluded_bads)
         self.detected_bad_channels_ = []
@@ -556,7 +547,6 @@ class AdaptiveMultibandGedai:
         n_pc="auto",
         engine=None,
         smoothing_window=None,
-        dipolar_guardrail=False,
     ):
         """Fit a single adaptive wavelet band model."""
         current_engine = ensure_engine(engine) if engine is not None else self.engine
@@ -613,7 +603,6 @@ class AdaptiveMultibandGedai:
                 engine=current_engine,
                 n_jobs=1,
                 smoothing_window=smoothing_window,
-                dipolar_guardrail=dipolar_guardrail,
             )
         else:
             if n_ep > 0:
@@ -644,7 +633,6 @@ class AdaptiveMultibandGedai:
                 n_jobs=1,
                 verbose=False,
                 reference="none",
-                dipolar_guardrail=dipolar_guardrail,
             )
 
         sensai_score = model.fit_metrics_["sensai_score"] if model.fit_metrics_ else 0.0
@@ -1021,13 +1009,23 @@ class AdaptiveMultibandGedai:
         if raw_after is None:
             raw_after = self.transform_raw(raw_before, verbose=False)
 
-        score = self.metrics_.get("sensai_score") if self.metrics_ else None
+        ch_names = list(self.ch_names)
+        raw_before_eval = raw_before.copy().pick(ch_names).reorder_channels(ch_names)
+        if getattr(self, "_ref_spec", None) is not None:
+            _apply_eeg_reference(raw_before_eval, self._ref_spec)
+        raw_after_eval = raw_after.copy().pick(ch_names).reorder_channels(ch_names)
+
+        score = (
+            self.metrics_.get("sensai_score")
+            if self.metrics_
+            else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
+        )
         mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
 
         return plot_sensai_visualization(
-            raw_before=raw_before,
-            raw_after=raw_after,
-            reference_cov=self._reference_cov.data,
+            raw_before=raw_before_eval,
+            raw_after=raw_after_eval,
+            reference_cov=self._reference_cov,
             epoch_duration_sec=epoch_duration_sec,
             n_pc=n_pc,
             sensai_score=score,

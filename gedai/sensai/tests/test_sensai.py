@@ -212,19 +212,16 @@ def test_sensai_numpy_torch_parity():
     template_t = torch.from_numpy(template)
 
     for th in [0.5, 1.0, 2.0, 5.0]:
-        for dg in (False, True):
-            sig_np, noi_np = _sensai_score_loop(
-                abs_evals, all_VR, template, th, n_pc=3, dipolar_guardrail=dg
-            )
-            sig_t, noi_t = _sensai_score_torch(
-                abs_evals_t, all_VR_t, template_t, th, n_pc=3, dipolar_guardrail=dg
-            )
-            assert abs(float(np.mean(sig_np)) - float(sig_t.mean().item())) < 1e-10
-            assert abs(float(np.mean(noi_np)) - float(noi_t.mean().item())) < 1e-10
+        sig_np, noi_np = _sensai_score_loop(abs_evals, all_VR, template, th, n_pc=3)
+        sig_t, noi_t = _sensai_score_torch(
+            abs_evals_t, all_VR_t, template_t, th, n_pc=3
+        )
+        assert abs(float(np.mean(sig_np)) - float(sig_t.mean().item())) < 1e-10
+        assert abs(float(np.mean(noi_np)) - float(noi_t.mean().item())) < 1e-10
 
 
 def test_dipolar_guardrail_rank1_and_z3_invariance():
-    """Dipolar guardrail detects rank-1 modes and Z3 multiplier is scale-invariant."""
+    """Built-in EEG dipolar guardrail detects rank-1 modes and Z3 is scale-invariant."""
     from gedai.sensai.sensai import (
         _sensai_score_loop,
         _sensai_score_torch,
@@ -247,21 +244,13 @@ def test_dipolar_guardrail_rank1_and_z3_invariance():
     all_vr = np.ascontiguousarray(np.einsum("ij,ejk->eik", ref_cov, all_evec))
     abs_eval = np.ascontiguousarray(np.abs(all_eval))
     # Pick threshold that isolates exactly 1 component (< n_pc=3) per epoch
-    th_rank1 = float(np.median(np.sort(abs_eval, axis=1)[:, -2]) + 1e-3)
     th_rank1 = 0.5 * (
         float(np.mean(np.sort(abs_eval, axis=1)[:, -1]))
         + float(np.mean(np.sort(abs_eval, axis=1)[:, -2]))
     )
 
-    _, noi_off = _sensai_score_loop(
-        abs_eval, all_vr, template, th_rank1, n_pc=3, dipolar_guardrail=False
-    )
-    _, noi_on = _sensai_score_loop(
-        abs_eval, all_vr, template, th_rank1, n_pc=3, dipolar_guardrail=True
-    )
-    assert np.all(noi_off == 0.0)
-    assert np.all(noi_on > 0.0)
-    assert np.all((0.0 <= noi_on) & (noi_on <= 1.0))
+    _, noi_on = _sensai_score_loop(abs_eval, all_vr, template, th_rank1, n_pc=3)
+    assert np.all((noi_on > 0.0) & (noi_on <= 1.0))
 
     if has_torch():
         import torch
@@ -272,7 +261,6 @@ def test_dipolar_guardrail_rank1_and_z3_invariance():
             torch.from_numpy(template),
             th_rank1,
             n_pc=3,
-            dipolar_guardrail=True,
         )
         np.testing.assert_allclose(noi_on_t.numpy(), noi_on, atol=1e-10)
 
