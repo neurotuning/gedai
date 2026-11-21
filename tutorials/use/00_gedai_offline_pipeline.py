@@ -16,6 +16,8 @@ parameter values for your own dataset.
 """
 
 # %%
+import matplotlib.pyplot as plt
+import numpy as np
 from mne.io import read_raw
 
 from gedai import AdaptiveMultibandGedai
@@ -88,6 +90,65 @@ print(
 )
 
 # %%
+# Plot per-epoch ENOVA (highlighting any ``BAD_gedai`` epochs above ``85%``)
+# alongside a zoomed 6-second comparison on frontal channel ``Fp1`` (bandpass
+# filtered to ``1-45 Hz`` for display).
+
+enova_ep = ad.metrics_["enova_per_epoch"] * 100.0
+t_ep = np.arange(len(enova_ep)) + 0.5
+bad_ep = (
+    np.asarray(ad.bad_epochs_, dtype=bool)
+    if ad.bad_epochs_ is not None
+    else np.zeros(len(enova_ep), dtype=bool)
+)
+
+raw_bp = raw.copy().filter(1.0, 45.0, verbose=False).get_data()
+den_bp = denoised_raw.copy().filter(1.0, 45.0, verbose=False).get_data()
+sfreq = float(raw.info["sfreq"])
+fp1 = raw.ch_names.index("Fp1")
+seg_len = int(round(6.0 * sfreq))
+pk = int(np.argmax(np.abs(raw_bp[fp1])))
+st = max(0, min(pk - seg_len // 3, raw_bp.shape[1] - seg_len))
+sl = slice(st, st + seg_len)
+t_seg = np.arange(st, st + seg_len) / sfreq
+
+fig_qc, axes_qc = plt.subplots(1, 2, figsize=(11.4, 4.3), constrained_layout=True)
+
+axes_qc[0].bar(
+    t_ep[~bad_ep],
+    enova_ep[~bad_ep],
+    width=0.8,
+    color="#4e79a7",
+    label="Normal",
+)
+if np.any(bad_ep):
+    axes_qc[0].bar(
+        t_ep[bad_ep],
+        enova_ep[bad_ep],
+        width=0.8,
+        color="#e15759",
+        label="BAD_gedai (> 85%)",
+    )
+axes_qc[0].axhline(85.0, color="#c62828", ls="--", lw=1.4, label="Threshold (85%)")
+axes_qc[0].set_title("A. Per-Epoch ENOVA & BAD_gedai Epochs")
+axes_qc[0].set_xlabel("Time (s)")
+axes_qc[0].set_ylabel("ENOVA (%)")
+axes_qc[0].set_ylim(0, 105)
+axes_qc[0].legend(loc="upper right", fontsize=8.2, frameon=True)
+axes_qc[0].grid(axis="y", alpha=0.25)
+
+axes_qc[1].plot(t_seg, raw_bp[fp1, sl] * 1e6, color="#b0b0b0", lw=1.1, label="Raw Fp1")
+axes_qc[1].plot(
+    t_seg, den_bp[fp1, sl] * 1e6, color="#1b9e77", lw=1.5, label="GEDAI Denoised"
+)
+axes_qc[1].set_title("B. Frontal Fp1 Zoom (1-45 Hz Display)")
+axes_qc[1].set_xlabel("Time (s)")
+axes_qc[1].set_ylabel("Amplitude (uV)")
+axes_qc[1].legend(loc="upper right", fontsize=8.2, frameon=True)
+axes_qc[1].grid(alpha=0.25)
+plt.show()
+
+# %%
 # Since GEDAI algorithm automatically set the reference to ``average``, you can
 # reset the reference to the original channel after denoising to preserve the
 # original reference scheme:
@@ -131,7 +192,7 @@ plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
 #   wide spread of data here, where epochs with high power and low SSI are clear
 #   indicators of prominent, non-brain artifacts (like blinks or gross muscle
 #   movement).
-# - **Right Panel (After Denoising)**: This illustrates the core separation
+# - **Middle Panel (After Denoising)**: This illustrates the core separation
 #   achieved by the algorithm, dividing the data into two distinct clusters
 #   (along with density distribution curves on the top and right borders):
 #
@@ -141,6 +202,14 @@ plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
 #   - **Red dots (Noise)**: These are the artifact components GEDAI removed.
 #     They generally exhibit lower similarity to the brain leadfield and are
 #     often scattered across a wider range of power levels.
+# - **Far-Right Upper Panel (ENOVA-weighted PSD over channels)**: Compares the
+#   0.5 Hz Welch spectrum of **Original**, **Signal**, and removed **Noise**
+#   weighted across channels by removed variance (confirming delta/blink or
+#   high-frequency EMG suppression while preserving physiological rhythms like
+#   occipital alpha).
+# - **Far-Right Lower Panel (ENOVA Scalp Topoplot)**: Maps the percentage of
+#   variance removed at each electrode (``0-100%``) so spatial hotspots (e.g.,
+#   frontal blinks or localized bad electrodes) stand out immediately.
 #
 # Sub-optimal Denoising Outcomes:
 #

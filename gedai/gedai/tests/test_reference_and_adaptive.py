@@ -424,7 +424,40 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
     finally:
         plt.close(fig_bar)
 
-    # 4. Length mismatch on explicit enova_per_channel raises ValueError
+    # 4. Proportion array with >1.5 outlier scales to %; explicit % stays intact
+    prop_with_outlier = np.array([0.2, 0.5, 0.9, 1.8, 0.3, 0.4, 0.6, 0.7])
+    fig_out, _ = plot_sensai_visualization(
+        raw_arb_b,
+        raw_arb_a,
+        reference_cov=ref_cov,
+        epoch_duration_sec=0.5,
+        enova_per_channel=prop_with_outlier,
+        show=False,
+    )
+    try:
+        heights = [patch.get_height() for patch in fig_out.axes[-2].patches]
+        np.testing.assert_allclose(
+            heights, [20.0, 50.0, 90.0, 100.0, 30.0, 40.0, 60.0, 70.0]
+        )
+    finally:
+        plt.close(fig_out)
+
+    pct_explicit = np.array([10.0, 40.0, 80.0, 20.0, 30.0, 50.0, 60.0, 90.0])
+    fig_pct, _ = plot_sensai_visualization(
+        raw_arb_b,
+        raw_arb_a,
+        reference_cov=ref_cov,
+        epoch_duration_sec=0.5,
+        enova_per_channel=pct_explicit,
+        show=False,
+    )
+    try:
+        heights_pct = [patch.get_height() for patch in fig_pct.axes[-2].patches]
+        np.testing.assert_allclose(heights_pct, pct_explicit)
+    finally:
+        plt.close(fig_pct)
+
+    # 5. Length mismatch on explicit enova_per_channel raises ValueError
     with pytest.raises(ValueError, match="enova_per_channel has length"):
         plot_sensai_visualization(
             raw_arb_b,

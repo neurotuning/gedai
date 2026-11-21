@@ -327,10 +327,12 @@ plt.show()
 # %%
 # 5. Inspect SENSAI Manifolds: Physics-Matched Prior vs. Mismatched Prior
 # ------------------------------------------------------------------------
-# Plotting the full SENSAI manifold via ``model.plot_sensai`` shows *why*
-# goodness-of-fit tracks anatomical realism. With the **Subject MRI BEM** prior,
-# cleaned epochs (green) concentrate near ``SSI ~ 0.92`` close to the theoretical
-# cortical subspace while removed artifacts (red) drop to ``NSSI ~ 0.22``.
+# Plotting the full 3-column SENSAI dashboard via ``model.plot_sensai`` shows
+# *why* goodness-of-fit tracks anatomical realism—across the SSI manifold,
+# ENOVA-weighted Welch PSD, and per-channel ENOVA topoplot. With the **Subject
+# MRI BEM** prior, cleaned epochs (green) concentrate near ``SSI ~ 0.92`` close
+# to the theoretical cortical subspace while removed artifacts (red) drop to
+# ``NSSI ~ 0.22``.
 
 fig_bem, met_bem = models["Subject MRI BEM"].plot_sensai(
     raw_before=raw,

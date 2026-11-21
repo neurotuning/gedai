@@ -104,6 +104,17 @@ MATLAB GEDAI's log-linearized adaptive Z3 spectral weighting curve:
   ``strength=9.0``): Continuously tunes rejection strength smoothly across
   ``0.0`` (gentlest cleaning) up to ``10.0`` (maximum cleaning).
 
+.. figure:: _static/img/faq_strength_curve.png
+   :align: center
+   :width: 92%
+   :alt: Mapping from perceptual strength to adaptive Z3 scale and effect on bundled EEG
+
+   Left: Perceptual ``strength`` (``0``-``10``) mapped to the internal
+   closed-form adaptive Z3 noise weighting scale, highlighting
+   ``"auto-"`` (``6``), ``"auto"`` (``7``, default), and ``"auto+"``
+   (``8``). Right: Monotonic effect on ``Mean ENOVA (%)`` and ``SENSAI``
+   score over 30 s of the bundled contaminated EEG.
+
 ``sensai_method`` (``"optimize"`` default) & ``sensai_tol`` (``0.1``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -186,6 +197,16 @@ and the leadfield/reference covariance so spatial subspaces stay consistent:
    channel (recorded in ``flat_reference_channels_``). Conversely, if a chosen
    reference electrode (e.g., ``M1`` in ``"M1+M2"``) is detected as noisy, GEDAI
    logs a warning and falls back safely to ``"average"``.
+
+.. figure:: _static/img/faq_reference_comparison.png
+   :align: center
+   :width: 92%
+   :alt: Comparison of average, REST, Cz, and Pz EEG referencing in GEDAI
+
+   Because GEDAI transforms both the EEG data and leadfield covariance with
+   identical linear reference algebra, frontal blink removal (left) and
+   overall SENSAI / ENOVA metrics (right) remain consistent across
+   ``"average"``, ``"REST"``, ``"Cz"``, and ``"Pz"`` schemes.
 
 Bad Channels & Bad Epochs
 -------------------------
@@ -302,6 +323,18 @@ ICU/neurofeedback sessions):
    later apply the model to a recording with a different epoch count, GEDAI logs
    a message and falls back cleanly to the median scalar threshold.
 
+.. figure:: _static/img/faq_nonstationary_smoothing.png
+   :align: center
+   :width: 92%
+   :alt: Sliding-window makima threshold adaptation and BAD_gedai flagging over 90 seconds
+
+   Top: Stationary scalar threshold (``smoothing_window=None``) vs.
+   time-varying modified Akima (``makima``) threshold curve
+   (``smoothing_window=20.0`` s) adapting across a heavy 30-60 s artifact
+   block (log scale). Bottom: Per-epoch ENOVA (%) with
+   ``bad_epoch_threshold=0.85`` non-destructively flagging extreme burst
+   windows as ``BAD_gedai`` epochs.
+
 Compute Performance, Units & Quality Diagnostics
 ------------------------------------------------
 
@@ -336,3 +369,13 @@ Amplitude Units & Interpreting Goodness-of-Fit Metrics
   while removed noise diverges from it (``NSSI`` / ``ssi_noise_mean``, low ->
   artifacts cleanly separated). Use ``plot_sensai`` whenever evaluating a
   custom head model or unusual montage.
+
+.. figure:: _static/img/faq_sensai_dashboard.png
+   :align: center
+   :width: 98%
+   :alt: Three-column SENSAI diagnostic dashboard with Welch PSD and ENOVA topoplot
+
+   Default 3-column output of ``plot_sensai`` on 30 s of contaminated EEG:
+   raw (left) and separated Signal/Noise (middle) in Subspace Similarity
+   Index (SSI) vs. Epoch Power space, ENOVA-weighted Welch PSD (top right),
+   and per-channel ENOVA scalp topography (bottom right).

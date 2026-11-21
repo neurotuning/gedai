@@ -301,7 +301,8 @@ def plot_sensai_visualization(
         x_lims = (x_min - 2.0, x_max + 5.0)
 
     # 4b. Compute Per-Channel ENOVA (%) and ENOVA-Weighted Welch PSD
-    if enova_per_channel is not None:
+    enova_computed_internally = enova_per_channel is None
+    if not enova_computed_internally:
         enova_ch = np.asarray(enova_per_channel, dtype=np.float64).ravel()
         if enova_ch.shape != (n_ch,):
             raise ValueError(
@@ -313,9 +314,17 @@ def plot_sensai_visualization(
         ).astype(np.float64)
 
     enova_plot_val = enova_ch.copy()
-    finite_mask = np.isfinite(enova_plot_val)
-    if np.any(finite_mask) and float(np.max(enova_plot_val[finite_mask])) <= 1.5:
+    if enova_computed_internally:
         enova_plot_val = enova_plot_val * 100.0
+    else:
+        finite_mask = np.isfinite(enova_plot_val)
+        if np.any(finite_mask):
+            med_val = float(np.median(enova_plot_val[finite_mask]))
+            mean_is_prop = (
+                mean_enova is not None and float(mean_enova) <= 1.5 and med_val <= 2.5
+            )
+            if med_val <= 1.5 or mean_is_prop:
+                enova_plot_val = enova_plot_val * 100.0
     enova_plot_val = np.where(
         np.isnan(enova_plot_val) | np.isneginf(enova_plot_val) | (enova_plot_val < 0.0),
         0.0,

@@ -11,7 +11,7 @@ Maximal Overlap Discrete Wavelet Transform (MODWT), fits an independent GEDAI
 threshold per subband, and reconstructs the cleaned signal.
 """
 
-# sphinx_gallery_thumbnail_number = 10
+# sphinx_gallery_thumbnail_number = 3
 
 # %%
 # .. note::
@@ -213,6 +213,15 @@ axes_cmp[1].set_ylabel("Power (dB uV^2/Hz)")
 axes_cmp[1].legend(loc="upper right", frameon=True)
 axes_cmp[1].grid(alpha=0.25)
 plt.show()
+
+# %%
+# SENSAI Manifold, ENOVA-Weighted PSD & Scalp Topography
+# -------------------------------------------------------
+# Calling ``plot_sensai`` displays Before/After epoch clustering against the
+# brain leadfield subspace alongside the ENOVA-weighted Welch PSD and the
+# spatial distribution of removed variance across channels.
+
+multiband_gedai.plot_sensai(raw_before=raw, raw_after=denoised_raw, show=True)
 
 # %%
 # Interactive Overlay

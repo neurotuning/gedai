@@ -245,6 +245,17 @@ axes[1].set(
 fig.suptitle("Figure 3b: Raw OPM After Preprocessing — MNE vs. GEDAI")
 plt.show()
 
+# %%
+# We can also inspect GEDAI's 3-column SENSAI dashboard comparing raw vs.
+# cleaned OPM signals against the subject's MRI forward model, showing how
+# ambient magnetic drift is isolated across spectra and individual sensors.
+
+ad.plot_sensai(
+    raw_before=raw_300.copy().pick("meg"),
+    raw_after=raw_gedai,
+    show=True,
+)
+
 psd_kwargs_300 = dict(fmax=20, n_fft=300, verbose=False)
 psd_pre_300 = raw_300.copy().pick("meg").compute_psd(**psd_kwargs_300)
 psd_post_gedai = raw_gedai.compute_psd(**psd_kwargs_300)
