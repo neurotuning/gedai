@@ -49,6 +49,12 @@ bad_channel_threshold : float | str | None, default=None
     fit/transform to flag channels whose ENOVA exceeds the threshold, then
     re-fits Pass 2 on the remaining good channels."""
 # -- C ---------------------------------------------------------------------------------
+docdict["compute_metrics"] = """
+compute_metrics : bool, default=True
+    If ``True`` (default), computes post-transform ENOVA and SENSAI quality
+    metrics and stores them in ``self.metrics_``. Set to ``False`` in
+    latency-critical real-time streaming loops to skip post-hoc metric
+    computation and leave ``self.metrics_`` unchanged."""
 docdict["cycles_per_wavelet"] = """
 cycles_per_wavelet : int
     Minimum number of cycles targeted per wavelet band.
