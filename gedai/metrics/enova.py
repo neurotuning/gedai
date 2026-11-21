@@ -180,7 +180,7 @@ def compute_composite_sensai(
         e = s + epoch_samples
         c_ep = clean[:, s:e]
         n_ep = noise[:, s:e]
-        orig_var = float(np.var(c_ep + n_ep))
+        orig_var = float(np.mean(np.var(c_ep + n_ep, axis=-1)))
         if orig_var <= 0.0:
             continue
         var_tol = 1e-12 * orig_var
