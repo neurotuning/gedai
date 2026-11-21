@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=90275d6c"></script>
+    <script src="../../../_static/documentation_options.js?v=059408dc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -409,7 +409,7 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -498,11 +498,12 @@ use <code class="docutils literal notranslate"><span class="pre">Adaptive</span>
 denoising workflow, please refer to the
 <a class="reference internal" href="../use/index.html#sphx-glr-generated-tutorials-use"><span class="std std-ref">Practical Pipelines</span></a> section.</p>
 </div>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="w">
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="nn">.</span><span class="nn">pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="w">
 </span><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.AdaptiveMultibandGedai"><span class="n">AdaptiveMultibandGedai</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span><span class="w">
-</span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_enova_per_epoch</span><span class="p">,</span> <span class="n">enova_summary</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">enova_summary</span><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_mne_style_overlay_interactive</span><span class="w">
 </span><span class="w">
 </span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a> <span class="o">=</span> <span class="mi">1</span><span class="w">
@@ -671,9 +672,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-1d79c570-2090-4838-9fb7-cd05860ae6d9"
+<tr class="mne-repr-section-header general-8a62766b-a2d9-4724-acf7-d4859effd9c1"
      title="Hide section"
-    onclick="toggleVisibility('general-1d79c570-2090-4838-9fb7-cd05860ae6d9')">
+    onclick="toggleVisibility('general-8a62766b-a2d9-4724-acf7-d4859effd9c1')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -685,7 +686,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-1d79c570-2090-4838-9fb7-cd05860ae6d9 ">
+<tr class="repr-element general-8a62766b-a2d9-4724-acf7-d4859effd9c1 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -696,26 +697,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-1d79c570-2090-4838-9fb7-cd05860ae6d9 ">
+<tr class="repr-element general-8a62766b-a2d9-4724-acf7-d4859effd9c1 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-1d79c570-2090-4838-9fb7-cd05860ae6d9 ">
+<tr class="repr-element general-8a62766b-a2d9-4724-acf7-d4859effd9c1 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-1d79c570-2090-4838-9fb7-cd05860ae6d9 ">
+<tr class="repr-element general-8a62766b-a2d9-4724-acf7-d4859effd9c1 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-1d79c570-2090-4838-9fb7-cd05860ae6d9 ">
+<tr class="repr-element general-8a62766b-a2d9-4724-acf7-d4859effd9c1 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -730,9 +731,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-241aa0cd-e848-498b-8715-1df18f36b509"
+<tr class="mne-repr-section-header acquisition-8b617aed-5110-48e0-b090-3fa753ffafc3"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-241aa0cd-e848-498b-8715-1df18f36b509')">
+    onclick="toggleVisibility('acquisition-8b617aed-5110-48e0-b090-3fa753ffafc3')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -744,7 +745,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-241aa0cd-e848-498b-8715-1df18f36b509 ">
+<tr class="repr-element acquisition-8b617aed-5110-48e0-b090-3fa753ffafc3 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:01:00 (HH:MM:SS)</td>
@@ -757,14 +758,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-241aa0cd-e848-498b-8715-1df18f36b509 ">
+<tr class="repr-element acquisition-8b617aed-5110-48e0-b090-3fa753ffafc3 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-241aa0cd-e848-498b-8715-1df18f36b509 ">
+<tr class="repr-element acquisition-8b617aed-5110-48e0-b090-3fa753ffafc3 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>12,000</td>
@@ -779,9 +780,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-09434c44-42e1-4aee-85eb-bd97f7218f69"
+<tr class="mne-repr-section-header channels-875212b8-1dc7-4e6d-bd34-04d16609ca4d"
      title="Hide section"
-    onclick="toggleVisibility('channels-09434c44-42e1-4aee-85eb-bd97f7218f69')">
+    onclick="toggleVisibility('channels-875212b8-1dc7-4e6d-bd34-04d16609ca4d')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -794,7 +795,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-09434c44-42e1-4aee-85eb-bd97f7218f69 ">
+<tr class="repr-element channels-875212b8-1dc7-4e6d-bd34-04d16609ca4d ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -807,7 +808,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-09434c44-42e1-4aee-85eb-bd97f7218f69 ">
+<tr class="repr-element channels-875212b8-1dc7-4e6d-bd34-04d16609ca4d ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -822,9 +823,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-38b43f9e-a3e3-4f63-af18-f2cc7472ce42"
+<tr class="mne-repr-section-header filters-26442225-056b-4f67-9082-3e7bc0b0d105"
      title="Hide section"
-    onclick="toggleVisibility('filters-38b43f9e-a3e3-4f63-af18-f2cc7472ce42')">
+    onclick="toggleVisibility('filters-26442225-056b-4f67-9082-3e7bc0b0d105')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -836,14 +837,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-38b43f9e-a3e3-4f63-af18-f2cc7472ce42 ">
+<tr class="repr-element filters-26442225-056b-4f67-9082-3e7bc0b0d105 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.50 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-38b43f9e-a3e3-4f63-af18-f2cc7472ce42 ">
+<tr class="repr-element filters-26442225-056b-4f67-9082-3e7bc0b0d105 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -1007,9 +1008,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b"
+<tr class="mne-repr-section-header general-ff8a2771-65fc-4308-88f5-f05d4b110a39"
      title="Hide section"
-    onclick="toggleVisibility('general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b')">
+    onclick="toggleVisibility('general-ff8a2771-65fc-4308-88f5-f05d4b110a39')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1021,7 +1022,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b ">
+<tr class="repr-element general-ff8a2771-65fc-4308-88f5-f05d4b110a39 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -1032,26 +1033,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b ">
+<tr class="repr-element general-ff8a2771-65fc-4308-88f5-f05d4b110a39 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b ">
+<tr class="repr-element general-ff8a2771-65fc-4308-88f5-f05d4b110a39 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b ">
+<tr class="repr-element general-ff8a2771-65fc-4308-88f5-f05d4b110a39 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-84a79c9e-7d71-466d-9dbe-1ad366c2b25b ">
+<tr class="repr-element general-ff8a2771-65fc-4308-88f5-f05d4b110a39 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -1066,9 +1067,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-7e3bbcab-4493-499c-b010-151d38d7a335"
+<tr class="mne-repr-section-header acquisition-abed1eab-71e7-43f1-9682-8771c1601dd6"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-7e3bbcab-4493-499c-b010-151d38d7a335')">
+    onclick="toggleVisibility('acquisition-abed1eab-71e7-43f1-9682-8771c1601dd6')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1080,7 +1081,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-7e3bbcab-4493-499c-b010-151d38d7a335 ">
+<tr class="repr-element acquisition-abed1eab-71e7-43f1-9682-8771c1601dd6 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -1093,14 +1094,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-7e3bbcab-4493-499c-b010-151d38d7a335 ">
+<tr class="repr-element acquisition-abed1eab-71e7-43f1-9682-8771c1601dd6 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-7e3bbcab-4493-499c-b010-151d38d7a335 ">
+<tr class="repr-element acquisition-abed1eab-71e7-43f1-9682-8771c1601dd6 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -1115,9 +1116,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-a6b52c25-0542-41c6-b6ca-555f89d54734"
+<tr class="mne-repr-section-header channels-f3520c5d-6421-4173-9f60-88d51ddeedbf"
      title="Hide section"
-    onclick="toggleVisibility('channels-a6b52c25-0542-41c6-b6ca-555f89d54734')">
+    onclick="toggleVisibility('channels-f3520c5d-6421-4173-9f60-88d51ddeedbf')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1130,7 +1131,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-a6b52c25-0542-41c6-b6ca-555f89d54734 ">
+<tr class="repr-element channels-f3520c5d-6421-4173-9f60-88d51ddeedbf ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -1143,7 +1144,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-a6b52c25-0542-41c6-b6ca-555f89d54734 ">
+<tr class="repr-element channels-f3520c5d-6421-4173-9f60-88d51ddeedbf ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -1158,9 +1159,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-2809d838-5f70-4d30-82f1-e19009f4bbb7"
+<tr class="mne-repr-section-header filters-adecfd19-8b55-4342-864f-14d5df937fa3"
      title="Hide section"
-    onclick="toggleVisibility('filters-2809d838-5f70-4d30-82f1-e19009f4bbb7')">
+    onclick="toggleVisibility('filters-adecfd19-8b55-4342-864f-14d5df937fa3')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -1172,14 +1173,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-2809d838-5f70-4d30-82f1-e19009f4bbb7 ">
+<tr class="repr-element filters-adecfd19-8b55-4342-864f-14d5df937fa3 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.50 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-2809d838-5f70-4d30-82f1-e19009f4bbb7 ">
+<tr class="repr-element filters-adecfd19-8b55-4342-864f-14d5df937fa3 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -1206,24 +1207,27 @@ separately to each band.</p>
 <p>The wavelet level (<code class="docutils literal notranslate"><span class="pre">wavelet_level</span></code>) controls the number of frequency
 bands that the data is decomposed into.
 When set to <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default), the optimal level is computed automatically
-based on the sampling frequency and the high-pass cutoff.
-For example, for a sampling frequency of 200 Hz, 9 wavelet levels
-provide wavelet bands covering classical EEG frequency bands:</p>
+based on the sampling frequency and the low cutoff.
+For example, at a sampling frequency of <code class="docutils literal notranslate"><span class="pre">200</span> <span class="pre">Hz</span></code> (Nyquist limit <code class="docutils literal notranslate"><span class="pre">100</span> <span class="pre">Hz</span></code>),
+9 decomposition levels produce 10 subbands (9 details + 1 scaling
+approximation):</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>(0.00 - 0.20 Hz)</p></li>
+<li><p>(0.00 - 0.10 Hz) Approximation (below cutoff -&gt; ignored)</p></li>
+<li><p>(0.10 - 0.20 Hz)</p></li>
 <li><p>(0.20 - 0.39 Hz)</p></li>
 <li><p>(0.39 - 0.78 Hz)</p></li>
 <li><p>(0.78 - 1.56 Hz)</p></li>
 <li><p>(1.56 - 3.12 Hz) Delta</p></li>
 <li><p>(3.12 - 6.25 Hz) Theta</p></li>
 <li><p>(6.25 - 12.5 Hz) Alpha</p></li>
-<li><p>(12.5 - 25 Hz) Beta</p></li>
-<li><p>(25 - 50 Hz) Gamma</p></li>
-<li><p>(50 - 100 Hz) High Gamma</p></li>
-<li><p>(100 - 200 Hz)</p></li>
+<li><p>(12.5 - 25.0 Hz) Beta</p></li>
+<li><p>(25.0 - 50.0 Hz) Low Gamma</p></li>
 </ul>
 </div></blockquote>
+<p>Or more generally at sampling rate <code class="docutils literal notranslate"><span class="pre">sfreq</span></code>, detail level <code class="docutils literal notranslate"><span class="pre">j</span></code> spans
+<code class="docutils literal notranslate"><span class="pre">[sfreq</span> <span class="pre">/</span> <span class="pre">2^(j</span> <span class="pre">+</span> <span class="pre">1),</span> <span class="pre">sfreq</span> <span class="pre">/</span> <span class="pre">2^j]</span></code> up to the Nyquist frequency
+<code class="docutils literal notranslate"><span class="pre">sfreq</span> <span class="pre">/</span> <span class="pre">2</span></code>.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">wavelet_level</span></a> <span class="o">=</span> <span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="w">
 </span></pre></div></div>
 <p>For each wavelet level, <code class="docutils literal notranslate"><span class="pre">AdaptiveMultibandGedai</span></code> automatically
@@ -1256,13 +1260,15 @@ each wavelet level using continuous SENSAI optimization
 ignored (e.g. below high-pass filtering). Setting <code class="docutils literal notranslate"><span class="pre">wavelet_low_cutoff=&quot;auto&quot;</span></code>
 uses <code class="docutils literal notranslate"><span class="pre">raw.info['highpass']</span></code> to automatically exclude sub-cutoff levels.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">wavelet_low_cutoff</span></a> <span class="o">=</span> <span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="w">
-</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">noise_multiplier</span></a> <span class="o">=</span> <span class="mf">3.0</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">noise_multiplier</span></a> <span class="o">=</span> <span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="w">
 </span></pre></div></div>
 <p>Fit the model directly on raw data:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="gedai.AdaptiveMultibandGedai.fit_raw"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="w">
 </span>    <span class="n">raw</span><span class="p">,</span><span class="w">
-</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">noise_multiplier</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">noise_multiplier</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">noise_multiplier</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">noise_multiplier</span></a><span class="p">,</span><span class="w">
 </span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">wavelet_low_cutoff</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">wavelet_low_cutoff</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
 </span><span class="p">)</span><span class="w">
 </span></pre></div></div>
@@ -1274,159 +1280,16 @@ Applying average reference.
 Applying a custom ('EEG',) reference.
 [adaptive.fit_raw] INFO: Applying wavelet HP pre-filter (sub-0.50 Hz)...
 [adaptive.fit_raw] INFO: Running broadband GEDAI pass...
+[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
 </pre></div>
 </div>
-<p>The different wavelet parameters are stored in the
-<code class="docutils literal notranslate"><span class="pre">adaptive_multiband_gedai._wavelets_fits</span></code> attribute. The <code class="docutils literal notranslate"><span class="pre">ignore</span></code> key
-indicates which wavelet levels were ignored based on the
-<code class="docutils literal notranslate"><span class="pre">wavelet_low_cutoff</span></code> setting. The <code class="docutils literal notranslate"><span class="pre">duration</span></code> key indicates the epoch
-duration used to estimate the GEDAI model of the corresponding wavelet level.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="nb">print</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">_wavelets_fits</span></a><span class="p">)</span><span class="w">
-</span></pre></div></div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[{'band_index': 0, 'fmin': 50.0, 'fmax': 100.0, 'model': &lt;Gedai (fitted)&gt;, 'duration': 0.2, 'n_samples': 40, 'ignore': False, 'sensai_bounds': (0.0, 12.0), 'sensai': 45.06315216097094, 'enova': 0.0, 'band_data': array([[-9.81068608e-07,  3.24987886e-07,  7.94195948e-07, ...,
-        -8.38651440e-08,  1.69703180e-07, -1.49867637e-08],
-       [-2.66356728e-08,  1.51266440e-07,  1.61546014e-07, ...,
-        -2.06164290e-08, -4.52285431e-08, -1.60116860e-07],
-       [-3.26248835e-07,  1.81181811e-07,  2.70584291e-07, ...,
-         2.65873632e-08,  3.75531930e-08, -4.33905897e-08],
-       ...,
-       [ 4.81433829e-09,  8.24189160e-08, -8.33442511e-08, ...,
-         6.27960163e-08,  2.07315771e-07, -1.52119898e-07],
-       [ 3.15748378e-07,  4.12706508e-09, -3.94718500e-07, ...,
-         1.69239371e-07,  2.65190872e-07, -1.61601032e-07],
-       [-9.10293505e-07,  3.28946204e-07,  7.85095647e-07, ...,
-         1.89770569e-07,  4.07554875e-07, -3.41658773e-07]],
-      shape=(27, 6001))}, {'band_index': 1, 'fmin': 25.0, 'fmax': 50.0, 'model': &lt;Gedai (fitted)&gt;, 'duration': 0.4, 'n_samples': 80, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 66.06526296426084, 'enova': 0.0, 'band_data': array([[-9.20627007e-07,  3.02531668e-07,  1.18354702e-06, ...,
-        -1.77228430e-07, -1.42934637e-07, -7.73564888e-07],
-       [-1.97245614e-08,  2.99317328e-07,  2.72236724e-07, ...,
-         3.88622077e-09, -2.27804874e-07, -2.79377003e-07],
-       [-2.74547661e-07,  1.99443879e-07,  4.56488630e-07, ...,
-         7.70842536e-08, -3.83024751e-08, -3.01839233e-07],
-       ...,
-       [-3.14865946e-08, -2.87170145e-08, -1.57075252e-07, ...,
-         2.05297036e-07,  2.07987857e-07,  2.02539953e-08],
-       [ 2.83766693e-07, -1.75439485e-07, -7.07973037e-07, ...,
-         2.31371333e-07,  4.37367670e-07,  3.81879311e-07],
-       [-1.07999020e-06,  2.79935338e-07,  1.13076244e-06, ...,
-         2.44617273e-07,  1.53212950e-07, -8.85547597e-07]],
-      shape=(27, 6001))}, {'band_index': 2, 'fmin': 12.5, 'fmax': 25.0, 'model': &lt;Gedai (fitted)&gt;, 'duration': 0.8, 'n_samples': 160, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 68.53445199817155, 'enova': 0.0, 'band_data': array([[-4.58773238e-07,  2.33298507e-07,  8.54273456e-07, ...,
-        -1.05517216e-06, -1.13805756e-06, -9.29409997e-07],
-       [ 3.18805505e-08,  1.93045697e-07,  3.01805620e-07, ...,
-        -3.00098064e-07, -2.37928462e-07, -1.26606730e-07],
-       [ 8.10335566e-10,  1.95283644e-07,  3.16453765e-07, ...,
-        -2.30171548e-07, -2.25671639e-07, -1.46169758e-07],
-       ...,
-       [ 6.06515109e-08, -1.44630497e-08, -2.44696315e-08, ...,
-         8.74613214e-08,  1.93513917e-07,  1.52679828e-07],
-       [ 1.28257400e-07, -2.34637436e-07, -4.71827096e-07, ...,
-         2.91366441e-07,  4.70947246e-07,  3.98235097e-07],
-       [-5.07758613e-07,  2.60738724e-10,  5.39029988e-07, ...,
-        -7.60847426e-07, -8.58174432e-07, -7.95432588e-07]],
-      shape=(27, 6001))}, {'band_index': 3, 'fmin': 6.25, 'fmax': 12.5, 'model': &lt;Gedai (fitted)&gt;, 'duration': 1.6, 'n_samples': 320, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 69.59702295973759, 'enova': 0.0, 'band_data': array([[-3.17404995e-07,  8.44469636e-08,  4.41058659e-07, ...,
-        -1.19920129e-06, -9.95739980e-07, -6.88426827e-07],
-       [ 1.86063467e-08,  1.50288184e-07,  2.49247863e-07, ...,
-        -2.87930854e-07, -2.19631942e-07, -1.14597158e-07],
-       [-7.30753512e-09,  9.87262587e-08,  1.90324570e-07, ...,
-        -2.47471719e-07, -1.81294861e-07, -1.00710404e-07],
-       ...,
-       [-1.02754118e-08,  4.41613942e-08,  7.67280325e-08, ...,
-        -2.30853953e-07, -1.59497759e-07, -8.29026536e-08],
-       [-8.33003422e-08, -1.58199406e-07, -2.22265085e-07, ...,
-         1.99265352e-08,  6.25581057e-09, -2.84787556e-08],
-       [-3.36253765e-07,  2.20952347e-08,  3.33205858e-07, ...,
-        -1.07496069e-06, -9.20385269e-07, -6.67116253e-07]],
-      shape=(27, 6001))}, {'band_index': 4, 'fmin': 3.125, 'fmax': 6.25, 'model': &lt;Gedai (fitted)&gt;, 'duration': 3.2, 'n_samples': 640, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 73.7371798797743, 'enova': 0.0, 'band_data': array([[-2.35229378e-07, -1.80953495e-08,  1.98135663e-07, ...,
-        -7.32798796e-07, -5.90982604e-07, -4.26718458e-07],
-       [ 1.17391097e-07,  1.75373104e-07,  2.29849061e-07, ...,
-        -3.46316756e-08,  1.13593389e-08,  6.17695396e-08],
-       [ 4.71285178e-08,  9.54327856e-08,  1.45488177e-07, ...,
-        -5.38402919e-08, -2.39529661e-08,  8.33708489e-09],
-       ...,
-       [-6.65228226e-09,  5.15547653e-08,  1.12889149e-07, ...,
-        -1.35593102e-07, -9.96684800e-08, -5.79190157e-08],
-       [-2.39754952e-07, -2.61656041e-07, -2.78399778e-07, ...,
-        -1.83186175e-07, -1.98421368e-07, -2.18862786e-07],
-       [-2.38246229e-07, -1.35339528e-08,  2.06264535e-07, ...,
-        -7.47558928e-07, -6.02565095e-07, -4.36987617e-07]],
-      shape=(27, 6001))}, {'band_index': 5, 'fmin': 1.5625, 'fmax': 3.125, 'model': &lt;Gedai (fitted)&gt;, 'duration': 6.4, 'n_samples': 1280, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 71.20411344435016, 'enova': 0.0, 'band_data': array([[ 3.19162475e-08,  1.64974253e-07,  2.94688012e-07, ...,
-        -3.48613430e-07, -2.26171594e-07, -9.87351304e-08],
-       [ 6.06919644e-08,  9.71190833e-08,  1.31719919e-07, ...,
-        -4.87748204e-08, -1.26712481e-08,  2.38705115e-08],
-       [ 1.60318268e-07,  1.82493043e-07,  2.01546791e-07, ...,
-         8.38045693e-08,  1.11168872e-07,  1.36673836e-07],
-       ...,
-       [ 8.98024998e-08,  1.21017162e-07,  1.51559683e-07, ...,
-         3.09665425e-10,  2.92500449e-08,  5.88353138e-08],
-       [-3.17843370e-07, -3.13504207e-07, -3.07448084e-07, ...,
-        -3.22582309e-07, -3.22729482e-07, -3.21288957e-07],
-       [ 2.33655675e-08,  1.49371699e-07,  2.73676083e-07, ...,
-        -3.31998160e-07, -2.17207915e-07, -9.89686456e-08]],
-      shape=(27, 6001))}, {'band_index': 6, 'fmin': 0.78125, 'fmax': 1.5625, 'model': &lt;Gedai (fitted)&gt;, 'duration': 12.8, 'n_samples': 2560, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 71.85803264988581, 'enova': 0.0, 'band_data': array([[-2.63643039e-07, -2.00245467e-07, -1.37195792e-07, ...,
-        -4.46397899e-07, -3.86711598e-07, -3.25832880e-07],
-       [-1.69679281e-07, -1.55780691e-07, -1.42866528e-07, ...,
-        -2.13417525e-07, -1.98844284e-07, -1.84171580e-07],
-       [-1.24371355e-07, -1.13474469e-07, -1.03314981e-07, ...,
-        -1.59117430e-07, -1.47275611e-07, -1.35626252e-07],
-       ...,
-       [-2.26820509e-07, -2.09802079e-07, -1.93725809e-07, ...,
-        -2.78229127e-07, -2.61410593e-07, -2.44278164e-07],
-       [-3.11751819e-07, -3.16841403e-07, -3.21410135e-07, ...,
-        -2.93339708e-07, -3.00195803e-07, -3.06394754e-07],
-       [-1.58821050e-07, -1.04544985e-07, -5.07228778e-08, ...,
-        -3.13884778e-07, -2.63486268e-07, -2.11978036e-07]],
-      shape=(27, 6001))}, {'band_index': 7, 'fmin': 0.390625, 'fmax': 0.78125, 'model': &lt;Gedai (fitted)&gt;, 'duration': 25.6, 'n_samples': 5120, 'ignore': False, 'sensai_bounds': (-6.0, 12.0), 'sensai': 60.582886554263894, 'enova': 0.0, 'band_data': array([[ 8.78199645e-08,  1.15021222e-07,  1.42272188e-07, ...,
-         8.09980472e-09,  3.43852239e-08,  6.09675030e-08],
-       [-4.25463275e-07, -4.13086129e-07, -4.00565059e-07, ...,
-        -4.61453303e-07, -4.49650092e-07, -4.37653095e-07],
-       [-1.47049221e-07, -1.38206208e-07, -1.29242202e-07, ...,
-        -1.72702629e-07, -1.64253051e-07, -1.55706107e-07],
-       ...,
-       [-8.49064163e-08, -7.80263673e-08, -7.10670019e-08, ...,
-        -1.05117508e-07, -9.83982417e-08, -9.16820759e-08],
-       [ 1.64307761e-07,  1.66288029e-07,  1.68342877e-07, ...,
-         1.57697048e-07,  1.60062000e-07,  1.62253466e-07],
-       [ 2.22130649e-07,  2.50142712e-07,  2.78196123e-07, ...,
-         1.39617175e-07,  1.66904838e-07,  1.94400849e-07]],
-      shape=(27, 6001))}, {'band_index': 8, 'fmin': 0.0, 'fmax': 0.390625, 'model': None, 'duration': 25.6, 'n_samples': 5120, 'ignore': True, 'sensai_bounds': (0.0, 12.0), 'enova': 0.0, 'band_data': None}]
-</pre></div>
-</div>
-<p>The wavelet model results can also be visualized using the <code class="docutils literal notranslate"><span class="pre">plot_fit</span></code> method:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="gedai.AdaptiveMultibandGedai.plot_fit"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">plot_fit</span></a><span class="p">(</span><span class="p">)</span><span class="w">
-</span></pre></div></div>
-<ul class="sphx-glr-horizontal">
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_001.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_001.png" alt="Band 1: 50.00-100.00 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_002.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_002.png" alt="Band 2: 25.00-50.00 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_003.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_003.png" alt="Band 3: 12.50-25.00 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_004.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_004.png" alt="Band 4: 6.25-12.50 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_005.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_005.png" alt="Band 5: 3.12-6.25 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_006.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_006.png" alt="Band 6: 1.56-3.12 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_007.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_007.png" alt="Band 7: 0.78-1.56 Hz" class = "sphx-glr-multi-img"/></li>
-<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_008.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_008.png" alt="Band 8: 0.39-0.78 Hz" class = "sphx-glr-multi-img"/></li>
-</ul>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[&lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;, &lt;Figure size 1200x500 with 2 Axes&gt;]
-</pre></div>
-</div>
-<p>%%
-Transform the Data (Denoising)
-——————————
-Denoising is performed seamlessly using continuous dual-stream cosine overlap-add
-blending across each band:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">adaptive_multiband_denoised_raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="gedai.AdaptiveMultibandGedai.transform_raw"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
-</span>    <span class="n">raw</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="w">
-</span><span class="p">)</span><span class="w">
-</span></pre></div></div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
-[_utils._apply_eeg_average_reference_if_needed] INFO: Setting average reference.
-EEG channel type selected for re-referencing
-Applying average reference.
-Applying a custom ('EEG',) reference.
-</pre></div>
-</div>
-</section>
-<section id="model-summary-table">
-<h2>Model Summary Table<a class="headerlink" href="#model-summary-table" title="Link to this heading">🔗</a></h2>
-<p>We can inspect the model fitting parameters and subband thresholds:</p>
+<p>We can inspect the fitted subband summary table and overall fit SENSAI score
+via the public <code class="docutils literal notranslate"><span class="pre">summary</span></code> property and <code class="docutils literal notranslate"><span class="pre">fit_metrics_</span></code> attribute:</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="nb">print</span><span class="p">(</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-property reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.summary" title="gedai.AdaptiveMultibandGedai.summary"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">summary</span></a><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Fit SENSAI score: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">fit_metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">sensai_score</span><span class="s1">'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> | </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Bad channels excluded: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="si">}</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>==================================================================================
   AdaptiveMultibandGedai Summary Table
@@ -1446,6 +1309,39 @@ Applying a custom ('EEG',) reference.
 ==================================================================================
   Fitted SENSAI Optimization Score: 65.83 %
 ==================================================================================
+Fit SENSAI score: 65.830 | Bad channels excluded: []
+</pre></div>
+</div>
+<p>The wavelet model results can also be visualized using the <code class="docutils literal notranslate"><span class="pre">plot_fit</span></code> method:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.plot_fit" title="gedai.AdaptiveMultibandGedai.plot_fit"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">plot_fit</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<ul class="sphx-glr-horizontal">
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_001.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_001.png" alt="Band 1: 50.00-100.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_002.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_002.png" alt="Band 2: 25.00-50.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_003.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_003.png" alt="Band 3: 12.50-25.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_004.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_004.png" alt="Band 4: 6.25-12.50 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_005.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_005.png" alt="Band 5: 3.12-6.25 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_006.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_006.png" alt="Band 6: 1.56-3.12 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_007.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_007.png" alt="Band 7: 0.78-1.56 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_30_gedai_adaptive_008.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_008.png" alt="Band 8: 0.39-0.78 Hz" class = "sphx-glr-multi-img"/></li>
+</ul>
+</section>
+<section id="transform-the-data-denoising">
+<h2>Transform the Data (Denoising)<a class="headerlink" href="#transform-the-data-denoising" title="Link to this heading">🔗</a></h2>
+<p>Denoising is performed seamlessly using continuous dual-stream cosine overlap-add
+blending across each band:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">adaptive_multiband_denoised_raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="gedai.AdaptiveMultibandGedai.transform_raw"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span><span class="w">
+</span>    <span class="n">interpolate_bads</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._apply_eeg_average_reference_if_needed] INFO: Setting average reference.
+EEG channel type selected for re-referencing
+Applying average reference.
+Applying a custom ('EEG',) reference.
 </pre></div>
 </div>
 </section>
@@ -1462,24 +1358,23 @@ alteration of genuine brain activity.</p></li>
 <li><p><strong>Artifact-contaminated segments</strong>: ENOVA spikes to 50-95%, showing selective
 rejection of high-power ocular, muscular, or movement artifacts.</p></li>
 </ul>
-<p>We can compute ENOVA across epochs and channels using the <code class="docutils literal notranslate"><span class="pre">gedai.metrics</span></code> module:</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">original_data</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
-</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">clean_data</span></a> <span class="o">=</span> <span class="n">adaptive_multiband_denoised_raw</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
-</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise_data</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">original_data</span></a> <span class="o">-</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">clean_data</span></a><span class="w">
-</span><span class="w">
-</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">sfreq</span><span class="s2">&quot;</span><span class="p">]</span><span class="w">
-</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">epoch_samples</span></a> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">round</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a> <span class="o">*</span> <span class="mf">1.0</span><span class="p">)</span><span class="p">)</span><span class="w">
-</span><span class="w">
-</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_epochs</span></a> <span class="o">=</span> <span class="n">compute_enova_per_epoch</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">clean_data</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">noise_data</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">epoch_samples</span></a><span class="p">)</span><span class="w">
+<p>Rather than recomputing ENOVA manually, <code class="docutils literal notranslate"><span class="pre">transform_raw</span></code> automatically
+populates <code class="docutils literal notranslate"><span class="pre">metrics_[&quot;enova_per_epoch&quot;]</span></code> and <code class="docutils literal notranslate"><span class="pre">metrics_[&quot;enova_per_channel&quot;]</span></code>:</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_epochs</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">enova_per_epoch</span><span class="s2">&quot;</span><span class="p">]</span><span class="w">
 </span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">enova_stats</span></a> <span class="o">=</span> <span class="n">enova_summary</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_epochs</span></a><span class="p">)</span><span class="w">
 </span><span class="w">
-</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Mean ENOVA across epochs: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">enova_stats</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">mean</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
-</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Median ENOVA:             </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">enova_stats</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">median</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Mean ENOVA across epochs:  </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">enova_stats</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">mean</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Median ENOVA:              </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">enova_stats</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">median</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
 </span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Max ENOVA (peak artifact): </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">enova_stats</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">max</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Max channel ENOVA:         </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">adaptive_multiband_gedai</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">enova_per_channel</span><span class="s1">'</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean ENOVA across epochs: 33.39 %
-Median ENOVA:             20.10 %
-Max ENOVA (peak artifact): 91.14 %
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean ENOVA across epochs:  32.41 %
+Median ENOVA:              18.54 %
+Max ENOVA (peak artifact): 90.72 %
+Max channel ENOVA:         39.32 %
 </pre></div>
 </div>
 <p>Finally, we can visualize the before-and-after denoising overlay:</p>
@@ -1488,8 +1383,8 @@ Max ENOVA (peak artifact): 91.14 %
 <img src="../../../_images/sphx_glr_30_gedai_adaptive_009.png" srcset="../../../_images/sphx_glr_30_gedai_adaptive_009.png" alt="30 gedai adaptive" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 15.432 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  364 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 12.763 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  353 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-basics-30-gedai-adaptive-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/49024ff9f6fb1c7f71b715d466279f64/30_gedai_adaptive.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">30_gedai_adaptive.ipynb</span></code></a></p>
@@ -1554,7 +1449,7 @@ Max ENOVA (peak artifact): 91.14 %
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gedai-adaptive-multiband-model">GEDAI Adaptive Multiband model</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-fitting">Model Fitting</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-summary-table">Model Summary Table</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform-the-data-denoising">Transform the Data (Denoising)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-evaluation-explained-noise-variance-enova">Quality Evaluation: Explained Noise Variance (ENOVA)</a></li>
 </ul>
   </nav></div>

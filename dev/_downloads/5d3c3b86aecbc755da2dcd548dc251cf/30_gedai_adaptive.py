@@ -21,11 +21,12 @@ across different frequency ranges.
 #     :ref:`Practical Pipelines <sphx_glr_generated_tutorials_use>` section.
 
 # %%
+import matplotlib.pyplot as plt
 from mne.io import read_raw
 
 from gedai import AdaptiveMultibandGedai
 from gedai.data import get_contaminated_eeg_set_path
-from gedai.metrics import compute_enova_per_epoch, enova_summary
+from gedai.metrics import enova_summary
 from gedai.viz import plot_mne_style_overlay_interactive
 
 n_jobs = 1
@@ -62,21 +63,25 @@ wavelet_type = "haar"
 # The wavelet level (``wavelet_level``) controls the number of frequency
 # bands that the data is decomposed into.
 # When set to ``"auto"`` (default), the optimal level is computed automatically
-# based on the sampling frequency and the high-pass cutoff.
-# For example, for a sampling frequency of 200 Hz, 9 wavelet levels
-# provide wavelet bands covering classical EEG frequency bands:
+# based on the sampling frequency and the low cutoff.
+# For example, at a sampling frequency of ``200 Hz`` (Nyquist limit ``100 Hz``),
+# 9 decomposition levels produce 10 subbands (9 details + 1 scaling
+# approximation):
 #
-#  - (0.00 - 0.20 Hz)
+#  - (0.00 - 0.10 Hz) Approximation (below cutoff -> ignored)
+#  - (0.10 - 0.20 Hz)
 #  - (0.20 - 0.39 Hz)
 #  - (0.39 - 0.78 Hz)
 #  - (0.78 - 1.56 Hz)
 #  - (1.56 - 3.12 Hz) Delta
 #  - (3.12 - 6.25 Hz) Theta
 #  - (6.25 - 12.5 Hz) Alpha
-#  - (12.5 - 25 Hz) Beta
-#  - (25 - 50 Hz) Gamma
-#  - (50 - 100 Hz) High Gamma
-#  - (100 - 200 Hz)
+#  - (12.5 - 25.0 Hz) Beta
+#  - (25.0 - 50.0 Hz) Low Gamma
+#
+# Or more generally at sampling rate ``sfreq``, detail level ``j`` spans
+# ``[sfreq / 2^(j + 1), sfreq / 2^j]`` up to the Nyquist frequency
+# ``sfreq / 2``.
 
 wavelet_level = "auto"
 
@@ -115,7 +120,7 @@ adaptive_multiband_gedai = AdaptiveMultibandGedai(
 # uses ``raw.info['highpass']`` to automatically exclude sub-cutoff levels.
 
 wavelet_low_cutoff = "auto"
-noise_multiplier = 3.0
+noise_multiplier = "auto"
 
 # %%
 # Fit the model directly on raw data:
@@ -123,37 +128,36 @@ adaptive_multiband_gedai.fit_raw(
     raw,
     noise_multiplier=noise_multiplier,
     wavelet_low_cutoff=wavelet_low_cutoff,
+    on_bad_channel="exclude",
+    bad_channel_threshold="auto",
     n_jobs=n_jobs,
 )
 
 # %%
-# The different wavelet parameters are stored in the
-# ``adaptive_multiband_gedai._wavelets_fits`` attribute. The ``ignore`` key
-# indicates which wavelet levels were ignored based on the
-# ``wavelet_low_cutoff`` setting. The ``duration`` key indicates the epoch
-# duration used to estimate the GEDAI model of the corresponding wavelet level.
+# We can inspect the fitted subband summary table and overall fit SENSAI score
+# via the public ``summary`` property and ``fit_metrics_`` attribute:
 
-print(adaptive_multiband_gedai._wavelets_fits)
+print(adaptive_multiband_gedai.summary)
+print(
+    f"Fit SENSAI score: {adaptive_multiband_gedai.fit_metrics_['sensai_score']:.3f} | "
+    f"Bad channels excluded: {adaptive_multiband_gedai.bad_channels_}"
+)
 
 # %%
 # The wavelet model results can also be visualized using the ``plot_fit`` method:
 adaptive_multiband_gedai.plot_fit()
+plt.show()
 
-# %%
 # %%
 # Transform the Data (Denoising)
 # ------------------------------
 # Denoising is performed seamlessly using continuous dual-stream cosine overlap-add
 # blending across each band:
 adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
-    raw, n_jobs=n_jobs
+    raw,
+    interpolate_bads=bool(adaptive_multiband_gedai.bad_channels_),
+    n_jobs=n_jobs,
 )
-
-# %%
-# Model Summary Table
-# -------------------
-# We can inspect the model fitting parameters and subband thresholds:
-print(adaptive_multiband_gedai.summary)
 
 # %%
 # Quality Evaluation: Explained Noise Variance (ENOVA)
@@ -168,21 +172,19 @@ print(adaptive_multiband_gedai.summary)
 # - **Artifact-contaminated segments**: ENOVA spikes to 50-95%, showing selective
 #   rejection of high-power ocular, muscular, or movement artifacts.
 #
-# We can compute ENOVA across epochs and channels using the ``gedai.metrics`` module:
+# Rather than recomputing ENOVA manually, ``transform_raw`` automatically
+# populates ``metrics_["enova_per_epoch"]`` and ``metrics_["enova_per_channel"]``:
 
-original_data = raw.get_data()
-clean_data = adaptive_multiband_denoised_raw.get_data()
-noise_data = original_data - clean_data
-
-sfreq = raw.info["sfreq"]
-epoch_samples = max(1, round(sfreq * 1.0))
-
-enova_epochs = compute_enova_per_epoch(clean_data, noise_data, epoch_samples)
+enova_epochs = adaptive_multiband_gedai.metrics_["enova_per_epoch"]
 enova_stats = enova_summary(enova_epochs)
 
-print(f"Mean ENOVA across epochs: {enova_stats['mean'] * 100:.2f} %")
-print(f"Median ENOVA:             {enova_stats['median'] * 100:.2f} %")
+print(f"Mean ENOVA across epochs:  {enova_stats['mean'] * 100:.2f} %")
+print(f"Median ENOVA:              {enova_stats['median'] * 100:.2f} %")
 print(f"Max ENOVA (peak artifact): {enova_stats['max'] * 100:.2f} %")
+print(
+    f"Max channel ENOVA:         "
+    f"{adaptive_multiband_gedai.metrics_['enova_per_channel'].max() * 100:.2f} %"
+)
 
 # %%
 # Finally, we can visualize the before-and-after denoising overlay:

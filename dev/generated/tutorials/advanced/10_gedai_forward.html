@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>GEDAI forward &#8212; gedai</title>
+    <title>Denoising with a Custom Forward Model Covariance &#8212; gedai</title>
   
   
   
@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=90275d6c"></script>
+    <script src="../../../_static/documentation_options.js?v=059408dc"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -263,6 +263,10 @@
   
 
   
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
 </div>
 
     </header>
@@ -405,7 +409,7 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Advanced Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">GEDAI forward</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">Denoising with a Custom Forward Model Covariance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -455,7 +459,7 @@
     
     <li class="breadcrumb-item"><a href="index.html" class="nav-link">Advanced Workflows</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">GEDAI forward</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Denoising with a Custom Forward Model Covariance</span></li>
   </ul>
 </nav>
 </div>
@@ -477,38 +481,48 @@
 <p><a class="reference internal" href="#sphx-glr-download-generated-tutorials-advanced-10-gedai-forward-py"><span class="std std-ref">Go to the end</span></a>
 to download the full example code.</p>
 </div>
-<section class="sphx-glr-example-title" id="gedai-forward">
-<span id="sphx-glr-generated-tutorials-advanced-10-gedai-forward-py"></span><h1>GEDAI forward<a class="headerlink" href="#gedai-forward" title="Link to this heading">🔗</a></h1>
-<p>This tutorial demonstrates how to compute a custom covariance
-matrix using a <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a> solution.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">mne</span><span class="w">
+<section class="sphx-glr-example-title" id="denoising-with-a-custom-forward-model-covariance">
+<span id="sphx-glr-generated-tutorials-advanced-10-gedai-forward-py"></span><h1>Denoising with a Custom Forward Model Covariance<a class="headerlink" href="#denoising-with-a-custom-forward-model-covariance" title="Link to this heading">🔗</a></h1>
+<p>By default, GEDAI builds its cortical signal subspace from a built-in generic
+10-20 head model (<code class="docutils literal notranslate"><span class="pre">reference_cov=&quot;leadfield&quot;</span></code>). You should supply a custom
+<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a> solution (or precomputed <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a>) when:</p>
+<ul class="simple">
+<li><p>Your EEG montage uses non-10-20 or high-density electrode locations.</p></li>
+<li><p>You have subject-specific MRI anatomy, a pediatric/animal head model, or
+customized sensor placements.</p></li>
+<li><p>You are denoising MEG or OPM data (covered in
+<a class="reference internal" href="20_gedai_opm.html#tut-gedai-opm-processing"><span class="std std-ref">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</span></a>).</p></li>
+</ul>
+<p>This tutorial builds a custom forward model from <code class="docutils literal notranslate"><span class="pre">fsaverage</span></code>, computes its
+sensor covariance with
+<a class="reference internal" href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a>, and runs
+<a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> on real EEG data.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="nn">.</span><span class="nn">pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">mne</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-datasets sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.datasets.fetch_fsaverage.html#mne.datasets.fetch_fsaverage" title="mne.datasets.fetch_fsaverage"><span class="n">fetch_fsaverage</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="w">
 </span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">MultibandGedai</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">covariance</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-gedai-covariance sphx-glr-backref-type-py-function reference internal" href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><span class="n">compute_covariance_from_forward</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span><span class="w">
 </span></pre></div></div>
-<p>Download fsaverage files</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">fs_dir</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-datasets sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.datasets.fetch_fsaverage.html#mne.datasets.fetch_fsaverage" title="mne.datasets.fetch_fsaverage"><span class="n">fetch_fsaverage</span></a><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
-</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">subjects_dir</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-attribute reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PurePath.parent" title="pathlib.PurePath.parent"><span class="n">fs_dir</span><span class="o">.</span><span class="n">parent</span></a><span class="w">
-</span><span class="w">
-</span><span class="c1"># The files live in:</span><span class="w">
+<section id="load-mri-template-eeg-recording">
+<h2>1. Load MRI Template &amp; EEG Recording<a class="headerlink" href="#load-mri-template-eeg-recording" title="Link to this heading">🔗</a></h2>
+<p>We fetch MNE’s <code class="docutils literal notranslate"><span class="pre">fsaverage</span></code> template anatomy and crop the sample recording
+(27 EEG channels at <code class="docutils literal notranslate"><span class="pre">200</span> <span class="pre">Hz</span></code>) to <code class="docutils literal notranslate"><span class="pre">30</span> <span class="pre">s</span></code> for fast execution.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">fs_dir</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-datasets sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.datasets.fetch_fsaverage.html#mne.datasets.fetch_fsaverage" title="mne.datasets.fetch_fsaverage"><span class="n">fetch_fsaverage</span></a><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">subject</span></a> <span class="o">=</span> <span class="s2">&quot;</span><span class="s2">fsaverage</span><span class="s2">&quot;</span><span class="w">
-</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">trans</span></a> <span class="o">=</span> <span class="s2">&quot;</span><span class="s2">fsaverage</span><span class="s2">&quot;</span>  <span class="c1"># MNE has a built-in fsaverage transformation</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">trans</span></a> <span class="o">=</span> <span class="s2">&quot;</span><span class="s2">fsaverage</span><span class="s2">&quot;</span>  <span class="c1"># MNE's built-in fsaverage head-to-MRI transformation</span><span class="w">
 </span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">fs_dir</span></a> <span class="o">/</span> <span class="s2">&quot;</span><span class="s2">bem</span><span class="s2">&quot;</span> <span class="o">/</span> <span class="s2">&quot;</span><span class="s2">fsaverage-ico-5-src.fif</span><span class="s2">&quot;</span><span class="w">
 </span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">bem</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">fs_dir</span></a> <span class="o">/</span> <span class="s2">&quot;</span><span class="s2">bem</span><span class="s2">&quot;</span> <span class="o">/</span> <span class="s2">&quot;</span><span class="s2">fsaverage-5120-5120-5120-bem-sol.fif</span><span class="s2">&quot;</span><span class="w">
+</span><span class="w">
+</span><span class="n">raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">get_contaminated_eeg_set_path</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="w">
+</span><span class="n">raw</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span><span class="w">
+</span><span class="n">raw</span><span class="o">.</span><span class="n">set_montage</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">standard_1005</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="n">raw</span><span class="o">.</span><span class="n">set_eeg_reference</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">average</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>0 files missing from root.txt in /home/runner/mne_data/MNE-fsaverage-data
-0 files missing from bem.txt in /home/runner/mne_data/MNE-fsaverage-data/fsaverage
-</pre></div>
-</div>
-<p>Load EEG data</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">get_contaminated_eeg_set_path</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
-</span></pre></div></div>
-<p>Set the EEG electrode locations</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">raw</span><span class="o">.</span><span class="n">set_montage</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">standard_1005</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
-</span></pre></div></div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/gedai/gedai/tutorials/advanced/10_gedai_forward.py:35: FutureWarning: Montage name 'standard_1005' is deprecated and will be removed in MNE 1.14. Use 'colin27_1005' instead.
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/home/runner/work/gedai/gedai/tutorials/advanced/10_gedai_forward.py:47: FutureWarning: Montage name 'standard_1005' is deprecated and will be removed in MNE 1.14. Use 'colin27_1005' instead.
   raw.set_montage("standard_1005")
 </pre></div>
 </div>
@@ -660,9 +674,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-badc3413-67b5-48da-9579-43f2ecc081d5"
+<tr class="mne-repr-section-header general-48e3a526-bdc1-4453-a04a-4675b1dcab71"
      title="Hide section"
-    onclick="toggleVisibility('general-badc3413-67b5-48da-9579-43f2ecc081d5')">
+    onclick="toggleVisibility('general-48e3a526-bdc1-4453-a04a-4675b1dcab71')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -674,7 +688,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-badc3413-67b5-48da-9579-43f2ecc081d5 ">
+<tr class="repr-element general-48e3a526-bdc1-4453-a04a-4675b1dcab71 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -685,26 +699,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-badc3413-67b5-48da-9579-43f2ecc081d5 ">
+<tr class="repr-element general-48e3a526-bdc1-4453-a04a-4675b1dcab71 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-badc3413-67b5-48da-9579-43f2ecc081d5 ">
+<tr class="repr-element general-48e3a526-bdc1-4453-a04a-4675b1dcab71 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-badc3413-67b5-48da-9579-43f2ecc081d5 ">
+<tr class="repr-element general-48e3a526-bdc1-4453-a04a-4675b1dcab71 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-badc3413-67b5-48da-9579-43f2ecc081d5 ">
+<tr class="repr-element general-48e3a526-bdc1-4453-a04a-4675b1dcab71 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -719,9 +733,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-90c7a8db-9e6b-4c72-98d4-1403c639cece"
+<tr class="mne-repr-section-header acquisition-f4f6bf9c-e2f8-46e4-b68b-b686105b5634"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-90c7a8db-9e6b-4c72-98d4-1403c639cece')">
+    onclick="toggleVisibility('acquisition-f4f6bf9c-e2f8-46e4-b68b-b686105b5634')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -733,10 +747,10 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-90c7a8db-9e6b-4c72-98d4-1403c639cece ">
+<tr class="repr-element acquisition-f4f6bf9c-e2f8-46e4-b68b-b686105b5634 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
-    <td>00:01:00 (HH:MM:SS)</td>
+    <td>00:00:31 (HH:MM:SS)</td>
 </tr>
 
 
@@ -746,17 +760,17 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-90c7a8db-9e6b-4c72-98d4-1403c639cece ">
+<tr class="repr-element acquisition-f4f6bf9c-e2f8-46e4-b68b-b686105b5634 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-90c7a8db-9e6b-4c72-98d4-1403c639cece ">
+<tr class="repr-element acquisition-f4f6bf9c-e2f8-46e4-b68b-b686105b5634 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
-    <td>12,000</td>
+    <td>6,001</td>
 </tr>
 
 
@@ -768,9 +782,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-796f3d5e-c0c9-4c10-ac2d-b25d23f37d61"
+<tr class="mne-repr-section-header channels-5429a935-5953-4901-a559-9143f5360579"
      title="Hide section"
-    onclick="toggleVisibility('channels-796f3d5e-c0c9-4c10-ac2d-b25d23f37d61')">
+    onclick="toggleVisibility('channels-5429a935-5953-4901-a559-9143f5360579')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -783,7 +797,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-796f3d5e-c0c9-4c10-ac2d-b25d23f37d61 ">
+<tr class="repr-element channels-5429a935-5953-4901-a559-9143f5360579 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -796,7 +810,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-796f3d5e-c0c9-4c10-ac2d-b25d23f37d61 ">
+<tr class="repr-element channels-5429a935-5953-4901-a559-9143f5360579 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -811,9 +825,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-b7c9a40a-763f-464a-b038-52da2d3ee769"
+<tr class="mne-repr-section-header filters-d003a9da-999d-4ec7-a0e1-d01df0f26500"
      title="Hide section"
-    onclick="toggleVisibility('filters-b7c9a40a-763f-464a-b038-52da2d3ee769')">
+    onclick="toggleVisibility('filters-d003a9da-999d-4ec7-a0e1-d01df0f26500')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -825,14 +839,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-b7c9a40a-763f-464a-b038-52da2d3ee769 ">
+<tr class="repr-element filters-d003a9da-999d-4ec7-a0e1-d01df0f26500 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-b7c9a40a-763f-464a-b038-52da2d3ee769 ">
+<tr class="repr-element filters-d003a9da-999d-4ec7-a0e1-d01df0f26500 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -842,7 +856,11 @@ this file apply (plus whatever default styling the IDE applies).
 </table>
 </div>
 <br />
-<br /><p>Check that the locations of EEG electrodes is correct with respect to MRI</p>
+<br /></section>
+<section id="inspect-coregistration-build-the-forward-covariance">
+<h2>2. Inspect Coregistration &amp; Build the Forward Covariance<a class="headerlink" href="#inspect-coregistration-build-the-forward-covariance" title="Link to this heading">🔗</a></h2>
+<p>Verify that the EEG electrode locations are aligned with the head and cortex
+surfaces before computing the leadfield.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-mne-viz sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.viz.plot_alignment.html#mne.viz.plot_alignment" title="mne.viz.plot_alignment"><span class="n">mne</span><span class="o">.</span><span class="n">viz</span><span class="o">.</span><span class="n">plot_alignment</span></a><span class="p">(</span><span class="w">
 </span>    <a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span><span class="w">
 </span>    <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a><span class="o">=</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a><span class="p">,</span><span class="w">
@@ -861,12 +879,21 @@ Using outer_skin.surf for head surface.
 Channel types:: eeg: 27
 Projecting sensors to the head surface
 
-&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7b060dfb79d0&gt;
+&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x76fc4c985450&gt;
 </pre></div>
 </div>
-<p>generate the forward solution</p>
+<p>Compute the forward solution and derive the cortical leadfield covariance.
+Note that <code class="docutils literal notranslate"><span class="pre">fit_raw(...,</span> <span class="pre">reference_cov=fwd)</span></code> also accepts an
+<a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a> object directly; calling
+<a class="reference internal" href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a> explicitly lets you
+inspect, save (<code class="docutils literal notranslate"><span class="pre">mne.write_cov</span></code>), and reuse the covariance across sessions.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward"><span class="n">fwd</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.make_forward_solution.html#mne.make_forward_solution" title="mne.make_forward_solution"><span class="n">mne</span><span class="o">.</span><span class="n">make_forward_solution</span></a><span class="p">(</span><span class="w">
-</span>    <a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">trans</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">trans</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a><span class="o">=</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">bem</span></a><span class="o">=</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">bem</span></a><span class="p">,</span> <span class="n">eeg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mindist</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="kc">None</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">trans</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">trans</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a><span class="o">=</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">src</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">bem</span></a><span class="o">=</span><a class="sphx-glr-backref-module-pathlib sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.PosixPath" title="pathlib.PosixPath"><span class="n">bem</span></a><span class="p">,</span> <span class="n">eeg</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">mindist</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance"><span class="n">reference_cov</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai-covariance sphx-glr-backref-type-py-function reference internal" href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><span class="n">compute_covariance_from_forward</span></a><span class="p">(</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward"><span class="n">fwd</span></a><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Computed forward covariance: </span><span class="si">{</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-property reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance.data" title="mne.Covariance.data"><span class="n">reference_cov</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span></a><span class="si">}</span><span class="s2"> </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">across </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-property reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance.ch_names" title="mne.Covariance.ch_names"><span class="n">reference_cov</span><span class="o">.</span><span class="n">ch_names</span></a><span class="p">)</span><span class="si">}</span><span class="s2"> EEG channels</span><span class="s2">&quot;</span><span class="w">
 </span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Source space          : /home/runner/mne_data/MNE-fsaverage-data/fsaverage/bem/fsaverage-ico-5-src.fif
@@ -910,25 +937,126 @@ Checking surface interior status for 10242 points...
     Found     0/ 7809 points outside using surface Qhull
     Found     0/ 7809 points outside using solid angles
     Total 10242/10242 points inside the surface
-Interior check completed in 8179.8 ms
+Interior check completed in 7317.3 ms
 Checking surface interior status for 10242 points...
     Found  2241/10242 points inside  an interior sphere of radius   47.7 mm
     Found     0/10242 points outside an exterior sphere of radius   98.3 mm
     Found     0/ 8001 points outside using surface Qhull
     Found     0/ 8001 points outside using solid angles
     Total 10242/10242 points inside the surface
-Interior check completed in 8338.3 ms
+Interior check completed in 7473.1 ms
 Setting up for EEG...
 Computing EEG at 20484 source locations (free orientations)...
 
 Finished.
+Computed forward covariance: (27, 27) across 27 EEG channels
 </pre></div>
 </div>
-<p>compute the covariance matrix from the forward solution</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance"><span class="n">reference_cov</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai-covariance sphx-glr-backref-type-py-function reference internal" href="../../../api/generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><span class="n">compute_covariance_from_forward</span></a><span class="p">(</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="mne.Forward"><span class="n">fwd</span></a><span class="p">)</span><span class="w">
+</section>
+<section id="denoise-with-custom-forward-covariance-vs-generic-leadfield">
+<h2>3. Denoise with Custom Forward Covariance vs. Generic Leadfield<a class="headerlink" href="#denoise-with-custom-forward-covariance-vs-generic-leadfield" title="Link to this heading">🔗</a></h2>
+<p>We fit and transform <a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> with our custom
+<code class="docutils literal notranslate"><span class="pre">reference_cov</span></code> and compare the cleaned output against the default generic
+<code class="docutils literal notranslate"><span class="pre">reference_cov=&quot;leadfield&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">common_fit_kwargs</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="w">
+</span>    <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">overlap</span><span class="o">=</span><span class="mf">0.75</span><span class="p">,</span><span class="w">
+</span>    <span class="n">noise_multiplier</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">wavelet_low_cutoff</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">gedai_fwd</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">MultibandGedai</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">wavelet_type</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">haar</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">wavelet_level</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">broadband_pass</span><span class="o">=</span><span class="kc">True</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.fit_raw" title="gedai.MultibandGedai.fit_raw"><span class="n">gedai_fwd</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance"><span class="n">reference_cov</span></a><span class="o">=</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance"><span class="n">reference_cov</span></a><span class="p">,</span> <span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">common_fit_kwargs</span></a><span class="p">)</span><span class="w">
+</span><span class="n">clean_fwd</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.transform_raw" title="gedai.MultibandGedai.transform_raw"><span class="n">gedai_fwd</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span> <span class="n">interpolate_bads</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">gedai_fwd</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="p">)</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">gedai_generic</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">MultibandGedai</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">wavelet_type</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">haar</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">wavelet_level</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">broadband_pass</span><span class="o">=</span><span class="kc">True</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.fit_raw" title="gedai.MultibandGedai.fit_raw"><span class="n">gedai_generic</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="mne.Covariance"><span class="n">reference_cov</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">leadfield</span><span class="s2">&quot;</span><span class="p">,</span> <span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">common_fit_kwargs</span></a><span class="p">)</span><span class="w">
+</span><span class="n">clean_generic</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.transform_raw" title="gedai.MultibandGedai.transform_raw"><span class="n">gedai_generic</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span> <span class="n">interpolate_bads</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">gedai_generic</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="p">)</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">fwd_bp</span></a> <span class="o">=</span> <span class="n">clean_fwd</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">gen_bp</span></a> <span class="o">=</span> <span class="n">clean_generic</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">r_models</span></a> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html#numpy.corrcoef" title="numpy.corrcoef"><span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">fwd_bp</span></a><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="p">)</span><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">gen_bp</span></a><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Mean ENOVA (Custom Forward):    </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">gedai_fwd</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">mean_enova</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Mean ENOVA (Generic Leadfield): </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">gedai_generic</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">mean_enova</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> %</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Waveform correlation between custom fwd and generic leadfield: R = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">r_models</span></a><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 34.766 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  1023 MB</p>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Mean ENOVA (Custom Forward):    27.3 %
+Mean ENOVA (Generic Leadfield): 27.5 %
+Waveform correlation between custom fwd and generic leadfield: R = 0.9846
+</pre></div>
+</div>
+<p>Visualize the normalized custom forward covariance (left) alongside a
+<code class="docutils literal notranslate"><span class="pre">6</span> <span class="pre">s</span></code> frontal <code class="docutils literal notranslate"><span class="pre">Fp1</span></code> comparison trace (right).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">diag</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">maximum</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.diag.html#numpy.diag" title="numpy.diag"><span class="n">np</span><span class="o">.</span><span class="n">diag</span></a><span class="p">(</span><a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-property reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance.data" title="mne.Covariance.data"><span class="n">reference_cov</span><span class="o">.</span><span class="n">data</span></a><span class="p">)</span><span class="p">,</span> <span class="mf">1e-30</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">corr_cov</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-property reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance.data" title="mne.Covariance.data"><span class="n">reference_cov</span><span class="o">.</span><span class="n">data</span></a> <span class="o">/</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.outer.html#numpy.outer" title="numpy.outer"><span class="n">np</span><span class="o">.</span><span class="n">outer</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">diag</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">diag</span></a><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">sfreq</span><span class="s2">&quot;</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">ch_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Fp1</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mf">6.0</span> <span class="o">*</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">peak_idx</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html#numpy.argmax" title="numpy.argmax"><span class="n">np</span><span class="o">.</span><span class="n">argmax</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">abs</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">peak_idx</span></a> <span class="o">-</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a> <span class="o">/</span><span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">raw_bp</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span> <span class="o">/</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">11.2</span><span class="p">,</span> <span class="mf">4.4</span><span class="p">)</span><span class="p">,</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-image sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/image_api.html#matplotlib.image.AxesImage" title="matplotlib.image.AxesImage"><span class="n">im</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">corr_cov</span></a><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">RdBu_r</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">vmin</span><span class="o">=</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Normalized Forward Covariance (27 x 27)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Channel Index</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Channel Index</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.colorbar.html#matplotlib.figure.Figure.colorbar" title="matplotlib.figure.Figure.colorbar"><span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span></a><span class="p">(</span><a class="sphx-glr-backref-module-matplotlib-image sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/image_api.html#matplotlib.image.AxesImage" title="matplotlib.image.AxesImage"><span class="n">im</span></a><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="p">,</span> <span class="n">shrink</span><span class="o">=</span><span class="mf">0.82</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Leadfield Correlation</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span><span class="w">
+</span>    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#b0b0b0</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span><span class="w">
+</span>    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span><span class="w">
+</span>    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Raw EEG (1-40 Hz)</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">gen_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span><span class="w">
+</span>    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#377eb8</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.6</span><span class="p">,</span><span class="w">
+</span>    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Generic Leadfield GEDAI</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">fwd_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span><span class="w">
+</span>    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#1b9e77</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">--</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.6</span><span class="p">,</span><span class="w">
+</span>    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Custom fsaverage Forward GEDAI</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Frontal Fp1 Denoising Comparison (R = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">r_models</span></a><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Time (s)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Amplitude (uV)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper right</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mf">8.5</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_10_gedai_forward_002.png" srcset="../../../_images/sphx_glr_10_gedai_forward_002.png" alt="Normalized Forward Covariance (27 x 27), Frontal Fp1 Denoising Comparison (R = 0.985)" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 41.164 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  1032 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-advanced-10-gedai-forward-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/eada028886c9f4d21fe577c6f812d603/10_gedai_forward.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_forward.ipynb</span></code></a></p>
@@ -941,6 +1069,7 @@ Finished.
 </div>
 </div>
 <p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
 </section>
 
 
@@ -977,6 +1106,26 @@ Finished.
             </div>
             
             
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-mri-template-eeg-recording">1. Load MRI Template &amp; EEG Recording</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inspect-coregistration-build-the-forward-covariance">2. Inspect Coregistration &amp; Build the Forward Covariance</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#denoise-with-custom-forward-covariance-vs-generic-leadfield">3. Denoise with Custom Forward Covariance vs. Generic Leadfield</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>
