@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=423e15eb"></script>
+    <script src="../../../_static/documentation_options.js?v=26f1c5af"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -405,7 +405,7 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">Advanced Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -474,16 +474,19 @@
 <p>This section covers specialized workflows for users who already know the basic
 GEDAI pipeline.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">00_gedai_online.py</span></code>: online denoising with chunked/epoch-wise processing.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">10_gedai_forward.py</span></code>: building a custom reference covariance from an MNE forward model.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">20_gedai_opm.py</span></code>: denoising Optically Pumped Magnetometer (OPM) MEG recordings using a subject-specific forward model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">00_gedai_online.py</span></code>: real-time chunk denoising with live W-OLA blending,
+right-edge causal trimming, and decoupled low-latency feature scoring.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">10_gedai_forward.py</span></code>: building a custom reference covariance from an MNE
+forward model and running multiband GEDAI denoising.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">20_gedai_opm.py</span></code>: denoising Optically Pumped Magnetometer (OPM) MEG
+recordings using a subject-specific forward model.</p></li>
 </ul>
-<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use GEDAI for online (real-time) denoising."><img alt="" src="../../../_images/sphx_glr_00_gedai_online_thumb.png" />
+<div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial shows how to run MultibandGedai in a real-time streaming pipeline (such as BCI or neurofeedback) with offline-grade denoising and sub-second feedback responsiveness."><img alt="" src="../../../_images/sphx_glr_00_gedai_online_thumb.png" />
 <p><a class="reference internal" href="00_gedai_online.html"><span class="doc">Using GEDAI for online (real-time) denoising</span></a></p>
   <div class="sphx-glr-thumbnail-title">Using GEDAI for online (real-time) denoising</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to compute a custom covariance matrix using a mne.Forward solution."><img alt="" src="../../../_images/sphx_glr_10_gedai_forward_thumb.png" />
-<p><a class="reference internal" href="10_gedai_forward.html"><span class="doc">GEDAI forward</span></a></p>
-  <div class="sphx-glr-thumbnail-title">GEDAI forward</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="By default, GEDAI builds its cortical signal subspace from a built-in generic 10-20 head model (``reference_cov=&quot;leadfield&quot;``). You should supply a custom mne.Forward solution (or precomputed mne.Covariance) when:"><img alt="" src="../../../_images/sphx_glr_10_gedai_forward_thumb.png" />
+<p><a class="reference internal" href="10_gedai_forward.html"><span class="doc">Denoising with a Custom Forward Model Covariance</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Denoising with a Custom Forward Model Covariance</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to apply GEDAI to Optically Pumped Magnetometer (OPM) MEG data, following and extending the official MNE-Python tutorial: Preprocessing optically pumped magnetometer (OPM) MEG data."><img alt="" src="../../../_images/sphx_glr_20_gedai_opm_thumb.png" />
 <p><a class="reference internal" href="20_gedai_opm.html"><span class="doc">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</span></a></p>
   <div class="sphx-glr-thumbnail-title">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</div>

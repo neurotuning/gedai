@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=423e15eb"></script>
+    <script src="../../_static/documentation_options.js?v=26f1c5af"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -801,7 +801,7 @@ and marginal KDE distributions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.transform_epochs">
-<span class="sig-name descname"><span class="pre">transform_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_epochs" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_epochs" title="Link to this definition">🔗</a></dt>
 <dd><p>Transform epochs data using the fitted model.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -826,6 +826,11 @@ MNE spherical spline interpolation (<code class="docutils literal notranslate"><
 re-applies an average reference across the restored montage. Requires
 valid 3D channel locations on the input instance.</p>
 </dd>
+<dt><strong>compute_metrics</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a>, default=True</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), computes post-transform ENOVA and SENSAI quality
+metrics and stores them in <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code>. Set to <code class="docutils literal notranslate"><span class="pre">False</span></code> in
+latency-critical real-time streaming loops to skip post-hoc metric
+computation and leave <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code> unchanged.</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -839,7 +844,7 @@ valid 3D channel locations on the input instance.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.transform_raw">
-<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Transform raw data using the fitted model.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -867,6 +872,11 @@ the engine specified at initialization.</p>
 MNE spherical spline interpolation (<code class="docutils literal notranslate"><span class="pre">interpolate_bads</span></code>) and, for EEG,
 re-applies an average reference across the restored montage. Requires
 valid 3D channel locations on the input instance.</p>
+</dd>
+<dt><strong>compute_metrics</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">bool</span></code></a>, default=True</span></dt><dd><p>If <code class="docutils literal notranslate"><span class="pre">True</span></code> (default), computes post-transform ENOVA and SENSAI quality
+metrics and stores them in <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code>. Set to <code class="docutils literal notranslate"><span class="pre">False</span></code> in
+latency-critical real-time streaming loops to skip post-hoc metric
+computation and leave <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code> unchanged.</p>
 </dd>
 </dl>
 </dd>

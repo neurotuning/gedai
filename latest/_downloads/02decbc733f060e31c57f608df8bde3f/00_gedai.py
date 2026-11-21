@@ -22,9 +22,8 @@ from gedai import Gedai
 from gedai.data import get_contaminated_eeg_set_path
 from gedai.viz import plot_mne_style_overlay_interactive
 
-# %%
-# The GEDAI model can be fitted on :class:`~mne.io.Raw` or :class:`~mne.Epochs` objects.
 # %% Load sample EEG data
+# The GEDAI model can be fitted on :class:`mne.io.Raw` or :class:`mne.Epochs` objects.
 raw = read_raw(str(get_contaminated_eeg_set_path()), preload=True)
 
 # %%
@@ -49,9 +48,10 @@ raw.set_eeg_reference("average", projection=False)
 # -----
 # ``GEDAI`` uses generalized eigenvalue decomposition to separate brain signals
 # from noise based on a leadfield covariance model.
-# In this tutorial, we will focus on the default ``GEDAI`` implementation which
-# uses broadband EEG data. Please refers to the documentation if you want to learn
-# more about the Spectral GEDAI and how to use it for frequency-specific denoising.
+# In this tutorial, we focus on the default broadband :class:`~gedai.gedai.Gedai`
+# implementation. Please refer to the multiband and adaptive tutorials if you
+# want to learn about :class:`~gedai.gedai.MultibandGedai` and
+# frequency-specific denoising.
 
 gedai = Gedai()
 
@@ -59,8 +59,8 @@ gedai = Gedai()
 # Model Fitting
 # -------------
 # The fitting process estimates the optimal threshold to distinguish between
-# signal and noise components. ``GEDAI`` can be fitted on :class:`~mne.io.Raw`
-# or :class:`~mne.Epochs` objects.
+# signal and noise components. ``GEDAI`` can be fitted on :class:`mne.io.Raw`
+# or :class:`mne.Epochs` objects.
 # If raw data is used, it is internally segmented into epochs before fitting.
 # The ``duration`` parameter controls the epoch length, and the ``overlap`` parameter
 # controls the overlap between consecutive epochs.
@@ -69,16 +69,21 @@ duration = 2.0
 overlap = 0.5
 
 # %%
-# Since ``GEDAI`` estimates the noise covariance from the data itself,
-# we usually want ``bad`` segments (e.g., with large artifacts) and ``bad`` channels
-# to be included in the fitting process. Unless you have specific requirements,
-# we recommend keeping the default ``reject_by_annotation`` setting.
+# Since ``GEDAI`` estimates the noise subspace directly from the data, keeping
+# artifact-contaminated time segments (``reject_by_annotation=False``, default)
+# helps ``GEDAI`` observe typical blink and muscle patterns.
+# Conversely, persistently corrupted or flat **channels** distort the spatial
+# average reference and subspace geometry, so ``on_bad_channel="exclude"`` and
+# ``bad_channel_threshold="auto"`` detect and exclude bad channels automatically
+# before fitting (you can restore them later with ``interpolate_bads=True``).
 
 reject_by_annotation = False  # default
+on_bad_channel = "exclude"  # default
+bad_channel_threshold = "auto"
 
 # %%
 # The reference covariance defines what good data should look like.
-# The default ``leadfield`` option uses a covariance matrix
+# The default ``"leadfield"`` option uses a covariance matrix
 # based on a generic head model and the standard 10-20 montage.
 # It is possible to use a custom reference covariance matrix instead,
 # for example, by using the :func:`~gedai.covariance.compute_covariance_from_forward`
@@ -89,9 +94,12 @@ reference_cov = "leadfield"
 # %%
 # .. note::
 #
-#     If you want to test ``GEDAI`` on data that does not follow the standard 10-20
-#     naming convention, you can use the :meth:`mne.io.Raw.interpolate_bads` method to
-#     project your data to a standard 10-20 montage before applying ``GEDAI``.
+#     If your recording uses a non-10-20 or high-density montage, compute a
+#     matching head-model covariance with
+#     :func:`~gedai.covariance.compute_covariance_from_forward` (see the
+#     forward-model tutorial in the ``advanced`` section). Note that
+#     :meth:`mne.io.Raw.interpolate_bads` only interpolates flagged bad sensors
+#     within your existing montage.
 
 # %%
 # To determine the optimal threshold for separating signal and noise components,
@@ -100,11 +108,11 @@ reference_cov = "leadfield"
 # the cleaned data and the reference covariance while minimizing the similarity
 # between the removed data and the reference covariance.
 # The ``noise_multiplier`` parameter controls the weight given to noise
-# similarity compared to signal similarity.
-# Higher values will prioritize keeping more brain signals, potentially at the
-# expense of removing less noise.
+# similarity compared to signal similarity. Leaving ``noise_multiplier="auto"``
+# selects the adaptive default automatically; passing a scalar float (such as
+# ``3.0``) manually emphasizes signal preservation.
 
-noise_multiplier = 3.0
+noise_multiplier = "auto"
 
 # %%
 # The optimal threshold can be determined either using continuous bounded scalar
@@ -124,6 +132,8 @@ gedai.fit_raw(
     reference_cov=reference_cov,
     sensai_method=sensai_method,
     noise_multiplier=noise_multiplier,
+    on_bad_channel=on_bad_channel,
+    bad_channel_threshold=bad_channel_threshold,
     verbose=True,
 )
 # %%
@@ -155,9 +165,20 @@ plt.show()
 # ------------------------------
 # Once fitted, the ``GEDAI`` model can be used to remove artifacts and noise
 # from the data. The transform operation projects out the noise components
-# while preserving the brain signals.
+# while preserving the brain signals, and populates ``gedai.metrics_``.
 
-denoised_raw = gedai.transform_raw(raw, overlap=overlap, verbose=False)
+denoised_raw = gedai.transform_raw(
+    raw,
+    overlap=overlap,
+    interpolate_bads=bool(gedai.bad_channels_),
+    verbose=False,
+)
+print(gedai.summary)
+print(
+    f"Fit SENSAI score: {gedai.fit_metrics_['sensai_score']:.3f} | "
+    f"Mean ENOVA: {gedai.metrics_['mean_enova'] * 100:.1f} % | "
+    f"Excluded bad channels: {gedai.bad_channels_}"
+)
 
 # %%
 # We can visualize the difference between the original and denoised data using

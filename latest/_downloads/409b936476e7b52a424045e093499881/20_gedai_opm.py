@@ -200,6 +200,8 @@ fwd = mne.make_forward_solution(
 )
 
 # Fit Adaptive Multiband GEDAI directly on the raw un-preprocessed OPM record.
+# Note: ``on_bad_channel="exclude"`` (default) respects ``raw.info["bads"]``
+# automatically, and ``bad_channel_threshold="auto"`` can flag remaining noisy sensors.
 ad = AdaptiveMultibandGedai(
     wavelet_type="haar",
     wavelet_level="auto",
@@ -212,6 +214,7 @@ ad.fit_raw(
     reference_cov=fwd,
     sensai_method="optimize",
     noise_multiplier="auto",
+    on_bad_channel="exclude",
     n_jobs=1,
     verbose=False,
 )
@@ -222,18 +225,24 @@ stop_300 = len(raw_gedai.times) - 15
 time_ds_300 = raw_gedai.times[:stop_300:step_300] - raw_gedai.times[0]
 data_ds_gedai = raw_gedai.get_data()[::5, :stop_300:step_300] * amp_scale
 
-fig, ax = plt.subplots(layout="constrained")
-ax.plot(
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.2), sharey=True, layout="constrained")
+axes[0].plot(time_ds, data_ds_hfc.T - np.mean(data_ds_hfc, axis=1), **plot_kwargs)
+axes[0].grid(True, ls=":")
+axes[0].set(title="MNE (Regression + HFC)", **set_kwargs)
+
+axes[1].plot(
     time_ds_300,
     data_ds_gedai.T - np.mean(data_ds_gedai, axis=1),
     color="#1b9e77",
     **plot_kwargs,
 )
-ax.grid(True, ls=":")
-ax.set(
-    title="Figure 3b: After GEDAI (Adaptive Multiband, No Ref Sensors)",
-    **set_kwargs,
+axes[1].grid(True, ls=":")
+axes[1].set(
+    title="GEDAI (Adaptive Multiband, No Ref Sensors)",
+    xlim=time_ds_300[[0, -1]],
+    xlabel="Time (s)",
 )
+fig.suptitle("Figure 3b: Raw OPM After Preprocessing — MNE vs. GEDAI")
 plt.show()
 
 psd_kwargs_300 = dict(fmax=20, n_fft=300, verbose=False)
@@ -271,40 +280,37 @@ ax.set(
 plt.show()
 
 # %%
-# Adding Homogeneous Field Correction (HFC) increases shielding across all sensors:
+# Next, compare MNE (Reference Regression + HFC) side-by-side with GEDAI
+# (forward-subspace denoising without external reference sensors):
 
-# Figure 5: Reference regression & HFC shielding (Original MNE)
 shielding_hfc = 10 * np.log10(psd_pre.get_data() / psd_post_hfc.get_data())
-fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
-ax.plot(psd_post_hfc.freqs, shielding_hfc.T, **plot_kwargs)
-ax.grid(True, ls=":")
-ax.set(
-    xticks=psd_post_hfc.freqs,
-    xlim=(0, 20),
-    ylim=(-5, 45),
-    title="Figure 5: Reference Regression & HFC Shielding (MNE)",
-    xlabel="Frequency (Hz)",
-    ylabel="Shielding (dB)",
-)
-plt.show()
-
-# %%
-# In comparison, ``GEDAI`` achieves up to 37 dB of broadband interference suppression
-# without requiring any external reference sensors:
-
-# Figure 5b: GEDAI shielding factor
 shielding_gedai = 10 * np.log10(psd_pre_300.get_data() / psd_post_gedai.get_data())
-fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
-ax.plot(psd_post_gedai.freqs, shielding_gedai.T, color="#1b9e77", **plot_kwargs)
-ax.grid(True, ls=":")
-ax.set(
-    xticks=psd_post_gedai.freqs,
+print(
+    f"GEDAI 0-20 Hz shielding -> peak: {shielding_gedai.max():.1f} dB, "
+    f"median: {np.median(shielding_gedai):.1f} dB"
+)
+
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True, layout="constrained")
+axes[0].plot(psd_post_hfc.freqs, shielding_hfc.T, **plot_kwargs)
+axes[0].grid(True, ls=":")
+axes[0].set(
+    xticks=psd_post_hfc.freqs[::2],
     xlim=(0, 20),
     ylim=(-5, 45),
-    title="Figure 5b: GEDAI Shielding Factor (Broadband Suppression)",
+    title="MNE: Reference Regression & HFC",
     xlabel="Frequency (Hz)",
     ylabel="Shielding (dB)",
 )
+
+axes[1].plot(psd_post_gedai.freqs, shielding_gedai.T, color="#1b9e77", **plot_kwargs)
+axes[1].grid(True, ls=":")
+axes[1].set(
+    xticks=psd_post_gedai.freqs[::2],
+    xlim=(0, 20),
+    title="GEDAI: Adaptive Multiband (No Ref Sensors)",
+    xlabel="Frequency (Hz)",
+)
+fig.suptitle("Figure 5: Broadband Shielding Factor Comparison (0-20 Hz)")
 plt.show()
 
 # %%
@@ -318,33 +324,32 @@ plt.show()
 raw_mne = raw_hfc.copy()
 raw_mne.notch_filter(np.arange(50, 251, 50), notch_widths=4, verbose=False)
 raw_mne.filter(2, 40, picks="meg", verbose=False)
-
 data_ds_filt, _ = raw_mne[meg_picks[::5], :stop]
 data_ds_filt = data_ds_filt[:, ::step] * amp_scale
 
-fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
-ax.plot(time_ds, data_ds_filt.T - np.mean(data_ds_filt, axis=1), **plot_kwargs)
-ax.grid(True, ls=":")
-ax.set(title="Figure 6: After Regression, HFC, and Filtering (MNE)", **set_kwargs)
-plt.show()
-
-# %%
-# Filter GEDAI pipeline data:
-
+# Filter GEDAI pipeline data
 raw_gedai.notch_filter([50, 100], notch_widths=4, verbose=False)
 raw_gedai.filter(2, 40, verbose=False)
-
 data_ds_gfilt = raw_gedai.get_data()[::5, :stop_300:step_300] * amp_scale
 
-fig, ax = plt.subplots(figsize=(9, 4.5), layout="constrained")
-ax.plot(
+fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True, layout="constrained")
+axes[0].plot(time_ds, data_ds_filt.T - np.mean(data_ds_filt, axis=1), **plot_kwargs)
+axes[0].grid(True, ls=":")
+axes[0].set(title="MNE (Regression + HFC + Filter)", **set_kwargs)
+
+axes[1].plot(
     time_ds_300,
     data_ds_gfilt.T - np.mean(data_ds_gfilt, axis=1),
     color="#1b9e77",
     **plot_kwargs,
 )
-ax.grid(True, ls=":")
-ax.set(title="Figure 6b: After GEDAI and Filtering (2-40 Hz)", **set_kwargs)
+axes[1].grid(True, ls=":")
+axes[1].set(
+    title="GEDAI + Filter (2-40 Hz)",
+    xlim=time_ds_300[[0, -1]],
+    xlabel="Time (s)",
+)
+fig.suptitle("Figure 6: After Denoising & 2-40 Hz Bandpass Filtering")
 plt.show()
 
 # %%
@@ -354,7 +359,7 @@ plt.show()
 # We extract auditory stimulation epochs and compute the Auditory Evoked Field
 # (AEF). Notice the clear N100m auditory peak around 100-140 ms:
 #
-# sphinx_gallery_thumbnail_number = 10
+# sphinx_gallery_thumbnail_number = 9
 
 events_mne = mne.find_events(raw_mne, min_duration=0.1, verbose=False)
 epochs_mne = mne.Epochs(
@@ -459,10 +464,13 @@ stc_gedai = mne.minimum_norm.apply_inverse(
 
 vert_lh_mne, time_lh_mne = stc_mne.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
 vert_rh_mne, time_rh_mne = stc_mne.get_peak(hemi="rh", tmin=0.08, tmax=0.11)
-_, time_lh_gedai = stc_gedai.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
+vert_lh_gedai, time_lh_gedai = stc_gedai.get_peak(hemi="lh", tmin=0.08, tmax=0.11)
 
-print(f"MNE Auditory Peak (LH): vertex {vert_lh_mne} at {time_lh_mne * 1000:.1f} ms")
-print(f"MNE Auditory Peak (RH): vertex {vert_rh_mne} at {time_rh_mne * 1000:.1f} ms")
+print(f"MNE Auditory Peak (LH):   vertex {vert_lh_mne} at {time_lh_mne * 1000:.1f} ms")
+print(
+    f"GEDAI Auditory Peak (LH): vertex {vert_lh_gedai} at {time_lh_gedai * 1000:.1f} ms"
+)
+print(f"MNE Auditory Peak (RH):   vertex {vert_rh_mne} at {time_rh_mne * 1000:.1f} ms")
 
 # %%
 # Auditory Cortex Source Time Courses (dSPM at M100 Peak):

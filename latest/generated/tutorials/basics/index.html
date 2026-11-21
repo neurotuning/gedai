@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=423e15eb"></script>
+    <script src="../../../_static/documentation_options.js?v=26f1c5af"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.1';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -405,7 +405,7 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">GEDAI forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -480,7 +480,7 @@
 <div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="In this first tutorial, we introduce the GEDAI (Generalized Eigenvalue De-Artifacting Instrument) model. GEDAI is an unsupervised method for denoising EEG data."><img alt="" src="../../../_images/sphx_glr_00_gedai_thumb.png" />
 <p><a class="reference internal" href="00_gedai.html"><span class="doc">Understanding the GEDAI model</span></a></p>
   <div class="sphx-glr-thumbnail-title">Understanding the GEDAI model</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use multiband GEDAI. Multiband GEDAI is a frequency-specific denoising method that extends the generalized eigenvalue decomposition approach of GEDAI. Its approach focuses on isolating and removing artifacts within specific frequency bands. For that, the multiband GEDAI first decomposes the EEG data into its frequency components using wavelet transform, then applies GEDAI to each frequency band separately. Finally, the denoised frequency components are recombined to reconstruct the cleaned EEG signal."><img alt="" src="../../../_images/sphx_glr_10_gedai_multiband_thumb.png" />
+</div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use MultibandGedai and why splitting cleaning across frequency subbands improves over a single broadband GED pass."><img alt="" src="../../../_images/sphx_glr_10_gedai_multiband_thumb.png" />
 <p><a class="reference internal" href="10_gedai_multiband.html"><span class="doc">Understanding the multiband extension of GEDAI</span></a></p>
   <div class="sphx-glr-thumbnail-title">Understanding the multiband extension of GEDAI</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to use Adaptive Multiband GEDAI. The method tackles the limitations of the standard multiband GEDAI by automatically determining the optimal epoch duration for each band (i.e., wavelet level) based on the frequency content of the band. By doing so, it allows to capture both transient and sustained artifacts across different frequency ranges."><img alt="" src="../../../_images/sphx_glr_30_gedai_adaptive_thumb.png" />

@@ -52,11 +52,30 @@ ad = AdaptiveMultibandGedai(
     broadband_pass=True,
 )
 
-# Fit the model (using continuous scalar optimization by default)
-ad.fit_raw(raw, noise_multiplier=3.0)
+# Fit the model using continuous scalar optimization, adaptive noise weighting,
+# and automatic two-pass bad-channel exclusion. Pass a float for
+# ``noise_multiplier`` (e.g., ``3.0``) to override signal vs. noise weighting.
+ad.fit_raw(
+    raw,
+    noise_multiplier="auto",
+    on_bad_channel="exclude",
+    bad_channel_threshold="auto",
+)
 
-# Denoise the data
-denoised_raw = ad.transform_raw(raw, verbose=False)
+# Denoise the data and interpolate any excluded bad channels if present
+denoised_raw = ad.transform_raw(
+    raw,
+    interpolate_bads=bool(ad.bad_channels_),
+    verbose=False,
+)
+
+# Inspect bad-channel QC and denoising metrics
+print(ad.summary)
+print(
+    f"Excluded bad channels: {ad.bad_channels_} | "
+    f"Mean ENOVA: {ad.metrics_['mean_enova'] * 100:.1f} % | "
+    f"SENSAI score: {ad.metrics_['sensai_score']:.3f}"
+)
 
 # %%
 # Since GEDAI algorithm automatically set the reference to ``average``, you can
@@ -116,9 +135,9 @@ plot_mne_style_overlay_interactive(raw, denoised_raw, duration=15.0)
 # Sub-optimal Denoising Outcomes:
 #
 # - **Noise-in-the-Signal**: The Red (Noise) cluster contains some Green (Signal)
-#   dots (i.e. under-cleaning, "noise" components were missclassified as "signal").
+#   dots (i.e. under-cleaning, "noise" components were misclassified as "signal").
 # - **Signal-in-the-Noise**: The Green (Signal) cluster contains some Red (Noise)
-#   dots (i.e. over-cleaning, "signal" components were missclassified as "noise").
+#   dots (i.e. over-cleaning, "signal" components were misclassified as "noise").
 #
 # Key Metrics:
 #
