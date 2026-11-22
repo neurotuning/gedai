@@ -418,6 +418,13 @@ def _interpolate_bad_channels(
             out_data[:, out_i, :] = clean_data[:, clean_i, :]
     inst_out._data = out_data
 
+    if isinstance(inst_out, BaseRaw):
+        bad_gedai = inst_clean.annotations[
+            inst_clean.annotations.description == "BAD_gedai"
+        ]
+        if len(bad_gedai):
+            inst_out.set_annotations(inst_out.annotations + bad_gedai)
+
     inst_out.info["bads"] = list(bad_to_interp)
     inst_out.interpolate_bads(reset_bads=True, verbose=False)
     if _detect_signal_type(inst_out.info) == "eeg":
@@ -494,8 +501,10 @@ def _run_two_pass_bad_channel_detection(
         )
 
     pass1_fit_kwargs = dict(fit_kwargs)
+    pass1_reference_forced = False
     if req_ref_channels and not flat_ref_labels:
         pass1_fit_kwargs["reference"] = "average"
+        pass1_reference_forced = True
 
     pass1_model = model._clone_unfitted()
     getattr(pass1_model, fit_method_name)(
@@ -525,8 +534,17 @@ def _run_two_pass_bad_channel_detection(
     all_bads = [ch for ch in inst.ch_names if ch in all_bad_set]
 
     if not detected_bads:
-        model.__dict__.update(pass1_model.__dict__)
-        model.metrics_ = None
+        if pass1_reference_forced:
+            getattr(model, fit_method_name)(
+                inst_cand,
+                picks=non_flat,
+                on_bad_channel="ignore",
+                bad_channel_threshold=None,
+                **fit_kwargs,
+            )
+        else:
+            model.__dict__.update(pass1_model.__dict__)
+            model.metrics_ = None
     else:
         pass2_fit_kwargs = dict(fit_kwargs)
         if req_ref_channels and any(ch in detected_set for ch in req_ref_channels):

@@ -277,6 +277,7 @@ def test_plot_sensai_without_prior_transform_and_auto_transform(
 ):
     """plot_sensai works both before transform_raw and with raw_after=None."""
     import matplotlib.figure
+    import matplotlib.pyplot as plt
 
     raw_sub = raw_eeg.copy().pick(raw_eeg.ch_names[:6])
     rng = np.random.default_rng(0)
@@ -301,6 +302,19 @@ def test_plot_sensai_without_prior_transform_and_auto_transform(
     assert isinstance(plot_metrics2, dict)
     assert model.metrics_ is not None
     assert "sensai_score" in model.metrics_
+
+    ch_names = model.ch_names
+    model.metrics_["enova_per_channel"] = np.full(len(ch_names), -1.0)
+    fig3, plot_metrics3 = model.plot_sensai(
+        raw_sub, raw_after=raw_after_custom, show=False
+    )
+    try:
+        assert not np.array_equal(
+            plot_metrics3["enova_per_channel"],
+            model.metrics_["enova_per_channel"],
+        )
+    finally:
+        plt.close(fig3)
 
 
 @pytest.mark.parametrize("sensai_method", ["gridsearch", "optimize"])

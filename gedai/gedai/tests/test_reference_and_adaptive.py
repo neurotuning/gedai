@@ -94,6 +94,18 @@ def test_flat_recording_reference_retained_and_noisy_falls_back():
     assert "Cz" in out.ch_names
     assert np.all(np.isfinite(out.get_data()))
 
+    raw_clean = _sample_raw(n_channels=27, duration_s=6.0)
+    g_clean = Gedai(engine="numpy")
+    g_clean.fit_raw(
+        raw_clean,
+        duration=1.0,
+        reference="Cz",
+        bad_channel_threshold=1e9,
+        verbose=False,
+    )
+    assert g_clean.detected_bad_channels_ == []
+    assert g_clean._reference == "Cz"
+
     # Noisy linked-mastoid channel triggers automatic fallback to average reference
     raw_mastoid = _sample_raw(n_channels=27, duration_s=6.0)
     raw_mastoid.rename_channels({"T7": "M1", "T8": "M2"})
@@ -119,9 +131,23 @@ def test_flat_recording_reference_retained_and_noisy_falls_back():
     raw_bad.info["bads"] = [raw_bad.ch_names[0]]
     g_rest = Gedai(engine="numpy")
     g_rest.fit_raw(raw_bad, duration=1.0, reference="REST", verbose=False)
-    out_interp = g_rest.transform_raw(raw_bad, interpolate_bads=True, verbose=False)
+    raw_bad.crop(1.0, 5.0)
+    clean_bad = g_rest.transform_raw(raw_bad, bad_epoch_threshold=1e-12, verbose=False)
+    out_interp = g_rest.transform_raw(
+        raw_bad,
+        interpolate_bads=True,
+        bad_epoch_threshold=1e-12,
+        verbose=False,
+    )
     assert out_interp.ch_names == raw_bad.ch_names
     assert np.all(np.isfinite(out_interp.get_data()))
+    clean_bad_epochs = clean_bad.annotations[
+        clean_bad.annotations.description == "BAD_gedai"
+    ]
+    interp_bad_epochs = out_interp.annotations[
+        out_interp.annotations.description == "BAD_gedai"
+    ]
+    np.testing.assert_array_equal(interp_bad_epochs.onset, clean_bad_epochs.onset)
 
 
 def test_sliding_window_adaptation_parity_and_scale_invariance():
@@ -472,7 +498,7 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
     finally:
         plt.close(fig_bar)
 
-    # 4. Proportion array with >1.5 outlier scales to %; explicit % stays intact
+    # 4. Proportion arrays convert to %; explicit % arrays stay intact
     prop_with_outlier = np.array([0.2, 0.5, 0.9, 1.8, 0.3, 0.4, 0.6, 0.7])
     fig_out, _ = plot_sensai_visualization(
         raw_arb_b,
@@ -497,6 +523,7 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
         reference_cov=ref_cov,
         epoch_duration_sec=0.5,
         enova_per_channel=pct_explicit,
+        enova_unit="percent",
         show=False,
     )
     try:
@@ -504,6 +531,40 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
         np.testing.assert_allclose(heights_pct, pct_explicit)
     finally:
         plt.close(fig_pct)
+
+    mild_pct = np.array([0.2, 0.5, 1.0, 0.8, 0.6, 0.4, 0.3, 0.1])
+    fig_mild_pct, _ = plot_sensai_visualization(
+        raw_arb_b,
+        raw_arb_a,
+        reference_cov=ref_cov,
+        epoch_duration_sec=0.5,
+        enova_per_channel=mild_pct,
+        enova_unit="percent",
+        show=False,
+    )
+    try:
+        heights_mild_pct = [
+            patch.get_height() for patch in fig_mild_pct.axes[-2].patches
+        ]
+        np.testing.assert_allclose(heights_mild_pct, mild_pct)
+    finally:
+        plt.close(fig_mild_pct)
+
+    fig_legacy_args, _ = plot_sensai_visualization(
+        raw_arb_b,
+        raw_arb_a,
+        ref_cov,
+        0.5,
+        3,
+        None,
+        None,
+        "legacy title",
+        False,
+    )
+    try:
+        assert fig_legacy_args is not None
+    finally:
+        plt.close(fig_legacy_args)
 
     # 5. Length mismatch on explicit enova_per_channel raises ValueError
     with pytest.raises(ValueError, match="enova_per_channel has length"):
@@ -515,3 +576,16 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
             enova_per_channel=np.array([0.1, 0.2]),
             show=False,
         )
+
+
+def test_sensai_weighted_psd_keeps_small_power_differences():
+    """PSD log flooring does not collapse physically small powers to one value."""
+    from gedai.viz.sensai_viz import _compute_enova_weighted_psd
+
+    rng = np.random.default_rng(42)
+    data_5 = rng.standard_normal((1, 1000)) * 5e-9
+    data_10 = data_5 * 2.0
+    zeros = np.zeros_like(data_5)
+    result_5 = _compute_enova_weighted_psd(data_5, zeros, zeros, 250.0, [100.0])
+    result_10 = _compute_enova_weighted_psd(data_10, zeros, zeros, 250.0, [100.0])
+    assert result_10[1][0] - result_5[1][0] == pytest.approx(6.0206, abs=0.1)

@@ -51,10 +51,10 @@ def _compute_enova_weighted_psd(
     else:
         w_ch = w_ch / float(np.sum(w_ch))
 
-    eps = float(np.finfo(np.float64).eps)
-    psd_b_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_b, eps))
-    psd_a_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_a, eps))
-    psd_n_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_n, eps))
+    psd_floor = float(np.finfo(np.float64).tiny)
+    psd_b_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_b, psd_floor))
+    psd_a_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_a, psd_floor))
+    psd_n_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_n, psd_floor))
     return f_psd, psd_b_db, psd_a_db, psd_n_db, w_ch
 
 
@@ -146,9 +146,11 @@ def plot_sensai_visualization(
     n_pc: int = 3,
     sensai_score: float | None = None,
     mean_enova: float | None = None,
-    enova_per_channel: np.ndarray | None = None,
     title_suffix: str = "",
     show: bool = True,
+    *,
+    enova_per_channel: np.ndarray | None = None,
+    enova_unit: str = "proportion",
 ):
     """Plot SENSAI subspace similarity, manifold classification, PSD, and ENOVA map.
 
@@ -176,9 +178,12 @@ def plot_sensai_visualization(
     mean_enova : float | None
         Mean ENOVA (%) to display in title.
     enova_per_channel : np.ndarray | None
-        Optional 1D array of per-channel ENOVA values (proportion in 0-1 or
-        percentage in 0-100) aligned with the common evaluated channels. When
-        ``None``, computed directly from ``raw_before`` and ``raw_after``.
+        Optional 1D array of per-channel ENOVA values aligned with the common
+        evaluated channels. When ``None``, computed directly from ``raw_before``
+        and ``raw_after``.
+    enova_unit : str
+        Unit of ``enova_per_channel``: ``"proportion"`` (default) or
+        ``"percent"``.
     title_suffix : str
         Additional parameters string for plot title.
     show : bool
@@ -337,18 +342,11 @@ def plot_sensai_visualization(
             data_after, data_noise, epoch_samples
         ).astype(np.float64)
 
+    if enova_unit not in ("proportion", "percent"):
+        raise ValueError("enova_unit must be 'proportion' or 'percent'.")
     enova_plot_val = enova_ch.copy()
-    if enova_computed_internally:
+    if enova_computed_internally or enova_unit == "proportion":
         enova_plot_val = enova_plot_val * 100.0
-    else:
-        finite_mask = np.isfinite(enova_plot_val)
-        if np.any(finite_mask):
-            med_val = float(np.median(enova_plot_val[finite_mask]))
-            mean_is_prop = (
-                mean_enova is not None and float(mean_enova) <= 1.5 and med_val <= 2.5
-            )
-            if med_val <= 1.5 or mean_is_prop:
-                enova_plot_val = enova_plot_val * 100.0
     enova_plot_val = np.where(
         np.isnan(enova_plot_val) | np.isneginf(enova_plot_val) | (enova_plot_val < 0.0),
         0.0,
