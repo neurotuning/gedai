@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=7c517f5b"></script>
+    <script src="../../../_static/documentation_options.js?v=ad8acc59"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -754,7 +754,7 @@ ambient magnetic drift is isolated across spectra and individual sensors.</p>
 </span><a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_pre_300</span></a> <span class="o">=</span> <span class="n">raw_300</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">pick</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">meg</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">compute_psd</span><span class="p">(</span><span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">psd_kwargs_300</span></a><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_post_gedai</span></a> <span class="o">=</span> <span class="n">raw_gedai</span><span class="o">.</span><span class="n">compute_psd</span><span class="p">(</span><span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">psd_kwargs_300</span></a><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../../_images/sphx_glr_20_gedai_opm_005.png" srcset="../../../_images/sphx_glr_20_gedai_opm_005.png" alt="SENSAI = 3.5%, ENOVA = 98.5%, [AdaptiveMultibandGedai], Before Denoising Mean SSI: 0.14, After Denoising Mean SSSI: 0.31  |  Mean NSSI: 0.15 SSI Silhouette Score: 0.19, ENOVA-weighted PSD over channels, ENOVA (Explained Noise Variance)" class = "sphx-glr-single-img"/></section>
+<img src="../../../_images/sphx_glr_20_gedai_opm_005.png" srcset="../../../_images/sphx_glr_20_gedai_opm_005.png" alt="SENSAI = 16.2%, ENOVA = 103.9%, [AdaptiveMultibandGedai], Before Denoising Mean SSI: 0.14, After Denoising Mean SSSI: 0.31  |  Mean NSSI: 0.15 SSI Silhouette Score: 0.19, ENOVA-weighted PSD over channels, ENOVA (Explained Noise Variance)" class = "sphx-glr-single-img"/></section>
 <section id="comparing-shielding-factors">
 <h2>5. Comparing Shielding Factors<a class="headerlink" href="#comparing-shielding-factors" title="Link to this heading">🔗</a></h2>
 <p>The shielding factor measures the attenuation of interference in decibels
@@ -934,7 +934,7 @@ Using outer_skin.surf for head surface.
 Getting helmet for system unknown (derived from 85 MEG channel locations)
 Channel types:: mag: 85
 
-&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7aeed8f94690&gt;
+&lt;mne.viz.backends._pyvista.PyVistaFigure object at 0x7d4fe24e48d0&gt;
 </pre></div>
 </div>
 </section>
@@ -1138,8 +1138,8 @@ matching dipolar generators in primary auditory cortex with high fidelity.</p></
 </aside>
 </aside>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (1 minutes 59.446 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  3228 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (2 minutes 0.096 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  3306 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-advanced-20-gedai-opm-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/2adfc68ab458f5c8e995494bcb722f2a/20_gedai_opm.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">20_gedai_opm.ipynb</span></code></a></p>
