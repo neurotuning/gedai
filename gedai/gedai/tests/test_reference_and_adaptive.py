@@ -1,5 +1,7 @@
 """Integration tests for reference modes, dipole projection, and adaptive processing."""
 
+from datetime import datetime, timezone
+
 import mne
 import numpy as np
 import pytest
@@ -131,23 +133,51 @@ def test_flat_recording_reference_retained_and_noisy_falls_back():
     raw_bad.info["bads"] = [raw_bad.ch_names[0]]
     g_rest = Gedai(engine="numpy")
     g_rest.fit_raw(raw_bad, duration=1.0, reference="REST", verbose=False)
-    raw_bad.crop(1.0, 5.0)
-    clean_bad = g_rest.transform_raw(raw_bad, bad_epoch_threshold=1e-12, verbose=False)
-    out_interp = g_rest.transform_raw(
-        raw_bad,
-        interpolate_bads=True,
-        bad_epoch_threshold=1e-12,
-        verbose=False,
+    sfreq = float(raw_bad.info["sfreq"])
+    rng = np.random.default_rng(42)
+    ch_std = float(np.std(raw_bad.get_data()))
+    raw_bad._data[1, int(3.0 * sfreq) : int(5.0 * sfreq)] += (
+        25.0
+        * ch_std
+        * rng.standard_normal(int(2.0 * sfreq))
     )
-    assert out_interp.ch_names == raw_bad.ch_names
-    assert np.all(np.isfinite(out_interp.get_data()))
-    clean_bad_epochs = clean_bad.annotations[
-        clean_bad.annotations.description == "BAD_gedai"
-    ]
-    interp_bad_epochs = out_interp.annotations[
-        out_interp.annotations.description == "BAD_gedai"
-    ]
-    np.testing.assert_array_equal(interp_bad_epochs.onset, clean_bad_epochs.onset)
+    meas_date = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    for annotation_orig_time in (False, True):
+        raw_for_case = raw_bad.copy()
+        raw_for_case.set_meas_date(meas_date if annotation_orig_time else None)
+        raw_for_case.set_annotations(
+            mne.Annotations(
+                [2.5],
+                [0.1],
+                ["USER_mark"],
+                orig_time=meas_date if annotation_orig_time else None,
+            )
+        )
+        raw_for_case.crop(1.0, 5.0)
+        clean_bad = g_rest.transform_raw(
+            raw_for_case, bad_epoch_threshold=0.2, verbose=False
+        )
+        out_interp = g_rest.transform_raw(
+            raw_for_case,
+            interpolate_bads=True,
+            bad_epoch_threshold=0.2,
+            verbose=False,
+        )
+        assert out_interp.ch_names == raw_for_case.ch_names
+        assert np.all(np.isfinite(out_interp.get_data()))
+        interp_bad_epochs = out_interp.annotations[
+            out_interp.annotations.description == "BAD_gedai"
+        ]
+        assert len(interp_bad_epochs) >= 1
+        np.testing.assert_array_equal(
+            out_interp.annotations.onset, clean_bad.annotations.onset
+        )
+        np.testing.assert_array_equal(
+            out_interp.annotations.duration, clean_bad.annotations.duration
+        )
+        np.testing.assert_array_equal(
+            out_interp.annotations.description, clean_bad.annotations.description
+        )
 
 
 def test_sliding_window_adaptation_parity_and_scale_invariance():
@@ -292,6 +322,61 @@ def test_plot_sensai_with_excluded_and_interpolated_bad_channel():
     plt.close(fig)
     assert metrics["ssi_before_mean"] > 0.1
     assert metrics["ssi_after_mean"] > 0.1
+
+
+def test_plot_sensai_explicit_raw_after_uses_current_enova():
+    """Explicit plot pairs do not reuse ENOVA metrics from an earlier transform."""
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    from gedai.metrics.enova import compute_enova_per_channel, compute_enova_per_epoch
+
+    raw_a = _sample_raw(n_channels=10, duration_s=6.0)
+    model = Gedai(engine="numpy")
+    model.fit_raw(raw_a, duration=1.0, verbose=False)
+    model.transform_raw(raw_a, verbose=False)
+    stale_mean = float(model.metrics_["mean_enova"])
+
+    raw_b = raw_a.copy()
+    rng = np.random.default_rng(123)
+    sfreq = float(raw_b.info["sfreq"])
+    ch_std = float(np.std(raw_b.get_data()))
+    raw_b._data[0, int(3.0 * sfreq) : int(5.0 * sfreq)] += (
+        25.0 * ch_std * rng.standard_normal(int(2.0 * sfreq))
+    )
+    clean_b = model.transform_raw(raw_b, compute_metrics=False, verbose=False)
+    assert model.metrics_["mean_enova"] == stale_mean
+
+    fig, metrics = model.plot_sensai(raw_before=raw_b, raw_after=clean_b, show=False)
+    try:
+        before_eval = raw_b.copy().pick(model.ch_names).reorder_channels(model.ch_names)
+        if model._ref_spec is not None:
+            from gedai.covariance.covariance import _apply_eeg_reference
+
+            _apply_eeg_reference(before_eval, model._ref_spec)
+        after_eval = clean_b.copy().pick(model.ch_names).reorder_channels(model.ch_names)
+        noise_data = before_eval.get_data() - after_eval.get_data()
+        epoch_samples = round(sfreq)
+        expected_channel = compute_enova_per_channel(
+            after_eval.get_data(), noise_data, epoch_samples
+        )
+        expected_mean = float(
+            np.mean(
+                compute_enova_per_epoch(
+                    after_eval.get_data(), noise_data, epoch_samples
+                )
+            )
+        )
+        np.testing.assert_allclose(
+            metrics["enova_per_channel"][0], expected_channel[0], rtol=1e-7
+        )
+        title = fig._suptitle.get_text()
+        assert f"ENOVA = {stale_mean * 100:.1f}%" not in title
+        assert f"ENOVA = {expected_mean * 100:.1f}%" in title
+    finally:
+        plt.close(fig)
     assert np.isfinite(metrics["ssi_noise_mean"])
 
 
@@ -574,6 +659,15 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
             reference_cov=ref_cov,
             epoch_duration_sec=0.5,
             enova_per_channel=np.array([0.1, 0.2]),
+            show=False,
+        )
+    with pytest.raises(ValueError, match="enova_unit must"):
+        plot_sensai_visualization(
+            raw_arb_b,
+            raw_arb_a,
+            reference_cov=ref_cov,
+            epoch_duration_sec=0.5,
+            enova_unit="invalid",
             show=False,
         )
 

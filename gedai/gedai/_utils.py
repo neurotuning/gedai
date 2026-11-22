@@ -418,13 +418,6 @@ def _interpolate_bad_channels(
             out_data[:, out_i, :] = clean_data[:, clean_i, :]
     inst_out._data = out_data
 
-    if isinstance(inst_out, BaseRaw):
-        bad_gedai = inst_clean.annotations[
-            inst_clean.annotations.description == "BAD_gedai"
-        ]
-        if len(bad_gedai):
-            inst_out.set_annotations(inst_out.annotations + bad_gedai)
-
     inst_out.info["bads"] = list(bad_to_interp)
     inst_out.interpolate_bads(reset_bads=True, verbose=False)
     if _detect_signal_type(inst_out.info) == "eeg":
@@ -436,6 +429,15 @@ def _interpolate_bad_channels(
                 reference_cov, inst_out.info, reference="REST"
             )
             _apply_eeg_reference(inst_out, full_spec)
+    if (
+        isinstance(inst_out, BaseRaw)
+        and isinstance(inst_clean, BaseRaw)
+        and len(inst_clean.annotations) > 0
+    ):
+        ann = inst_clean.annotations.copy()
+        if ann.orig_time is None and float(inst_out.first_time) != 0.0:
+            ann.onset = ann.onset - float(inst_out.first_time)
+        inst_out.set_annotations(ann, emit_warning=False)
     return inst_out
 
 

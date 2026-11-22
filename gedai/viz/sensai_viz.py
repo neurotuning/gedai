@@ -177,6 +177,10 @@ def plot_sensai_visualization(
         Overall SENSAI score (%) to display in title.
     mean_enova : float | None
         Mean ENOVA (%) to display in title.
+    title_suffix : str
+        Additional parameters string for plot title.
+    show : bool
+        Whether to call plt.show() or return the figure.
     enova_per_channel : np.ndarray | None
         Optional 1D array of per-channel ENOVA values aligned with the common
         evaluated channels. When ``None``, computed directly from ``raw_before``
@@ -184,10 +188,6 @@ def plot_sensai_visualization(
     enova_unit : str
         Unit of ``enova_per_channel``: ``"proportion"`` (default) or
         ``"percent"``.
-    title_suffix : str
-        Additional parameters string for plot title.
-    show : bool
-        Whether to call plt.show() or return the figure.
 
     Returns
     -------
@@ -198,7 +198,7 @@ def plot_sensai_visualization(
         metrics.
     """
     from ..covariance.covariance import _pick_cov, _resolve_reference_and_cov
-    from ..metrics.enova import compute_enova_per_channel
+    from ..metrics.enova import compute_enova_per_channel, compute_enova_per_epoch
 
     # 1. Align common channels and resolve reference covariance
     common_chs = [ch for ch in raw_after.ch_names if ch in raw_before.ch_names]
@@ -746,6 +746,9 @@ def plot_sensai_visualization(
     if mean_enova is not None:
         enova_val = mean_enova * 100 if mean_enova <= 1.0 else mean_enova
         title_parts.append(f"ENOVA = {enova_val:.1f}%")
+    elif sensai_score is not None:
+        enova_ep_eval = compute_enova_per_epoch(data_after, data_noise, epoch_samples)
+        title_parts.append(f"ENOVA = {float(np.mean(enova_ep_eval)) * 100.0:.1f}%")
     if title_suffix:
         title_parts.append(f"[{title_suffix}]")
     full_title = (

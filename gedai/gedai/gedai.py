@@ -1520,7 +1520,8 @@ class Gedai:
         from ..viz.sensai_viz import plot_sensai_visualization
 
         self._check_fit()
-        if raw_after is None:
+        auto_transformed = raw_after is None
+        if auto_transformed:
             raw_after = self.transform_raw(raw_before, verbose=False)
 
         ch_names = list(self.ch_names)
@@ -1531,10 +1532,21 @@ class Gedai:
 
         score = (
             self.metrics_.get("sensai_score")
-            if self.metrics_
+            if auto_transformed and self.metrics_
             else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
         )
-        mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+        mean_enova = (
+            self.metrics_.get("mean_enova")
+            if auto_transformed and self.metrics_
+            else None
+        )
+        enova_per_ch = (
+            self.metrics_.get("enova_per_channel")
+            if auto_transformed and self.metrics_
+            else None
+        )
+        if enova_per_ch is not None and len(enova_per_ch) != len(ch_names):
+            enova_per_ch = None
 
         return plot_sensai_visualization(
             raw_before=raw_before_eval,
@@ -1544,6 +1556,7 @@ class Gedai:
             n_pc=n_pc,
             sensai_score=score,
             mean_enova=mean_enova,
+            enova_per_channel=enova_per_ch,
             title_suffix=f"{self.__class__.__name__}",
             show=show,
         )
