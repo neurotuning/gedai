@@ -58,20 +58,10 @@ def _compute_enova_weighted_psd(
     return f_psd, psd_b_db, psd_a_db, psd_n_db, w_ch
 
 
-def _normalize_eeg_label(label: str) -> str:
-    """Normalize a channel label for 10-05 montage lookup."""
-    key = label.strip().upper()
-    if key.startswith("EEG "):
-        key = key[4:].strip()
-    for suffix in ("-REF", "-AVG", "-LE", "-M1", "-M2"):
-        if key.endswith(suffix) and len(key) > len(suffix):
-            key = key[: -len(suffix)].strip()
-            break
-    return _LEGACY_1020_ALIASES.get(key, key)
-
-
 def _prepare_topomap_info(info: mne.Info) -> tuple[mne.Info, np.ndarray]:
-    """Populate missing EEG 3D coordinates from standard 10-05 template."""
+    """Populate missing EEG 3D coordinates using GEDAI's label matcher."""
+    from ..covariance.covariance import _match_template_labels
+
     info_copy = info.copy()
 
     def _has_valid_xyz(ch_dict: dict) -> bool:
@@ -79,29 +69,40 @@ def _prepare_topomap_info(info: mne.Info) -> tuple[mne.Info, np.ndarray]:
         return bool(np.all(np.isfinite(xyz)) and np.linalg.norm(xyz) > 1e-6)
 
     valid_mask = np.array([_has_valid_xyz(ch) for ch in info_copy["chs"]], dtype=bool)
-    if not np.all(valid_mask):
-        ch_pos_upper: dict[str, np.ndarray] = {}
+    missing_eeg = [
+        idx
+        for idx, is_valid in enumerate(valid_mask)
+        if not is_valid and mne.channel_type(info_copy, idx) == "eeg"
+    ]
+    if missing_eeg:
+        ch_pos_raw: dict[str, np.ndarray] = {}
         for montage_name in ("colin27_1005", "fsaverage_1005", "standard_1005"):
             try:
                 montage = mne.channels.make_standard_montage(montage_name)
-                ch_pos = montage.get_positions().get("ch_pos", {})
-                ch_pos_upper = {
-                    k.strip().upper(): np.asarray(v, dtype=np.float64)
-                    for k, v in ch_pos.items()
-                }
+                ch_pos_raw = montage.get_positions().get("ch_pos", {})
                 break
             except Exception:
                 continue
 
-        if ch_pos_upper:
-            for idx, is_valid in enumerate(valid_mask):
-                if is_valid or mne.channel_type(info_copy, idx) != "eeg":
+        if ch_pos_raw:
+            ch_pos_upper = {
+                str(k).strip().upper(): np.asarray(v, dtype=np.float64)
+                for k, v in ch_pos_raw.items()
+            }
+            tmpl_names = list(ch_pos_raw.keys())
+            for legacy, modern in _LEGACY_1020_ALIASES.items():
+                if modern in ch_pos_upper and legacy not in ch_pos_upper:
+                    tmpl_names.append(legacy)
+                    ch_pos_upper[legacy] = ch_pos_upper[modern]
+
+            missing_names = [info_copy["ch_names"][idx] for idx in missing_eeg]
+            matched = _match_template_labels(missing_names, tmpl_names)
+            for idx, tmpl_idx in zip(missing_eeg, matched, strict=True):
+                if tmpl_idx < 0:
                     continue
-                norm_key = _normalize_eeg_label(info_copy["ch_names"][idx])
-                xyz = ch_pos_upper.get(norm_key)
+                xyz = ch_pos_upper[tmpl_names[tmpl_idx].strip().upper()]
                 if (
-                    xyz is not None
-                    and xyz.shape == (3,)
+                    xyz.shape == (3,)
                     and np.all(np.isfinite(xyz))
                     and np.linalg.norm(xyz) > 1e-6
                 ):
@@ -112,6 +113,29 @@ def _prepare_topomap_info(info: mne.Info) -> tuple[mne.Info, np.ndarray]:
         )
 
     return info_copy, valid_mask
+
+
+def _collapse_colocated_sites(
+    info: mne.Info,
+    values: np.ndarray,
+    tol_decimals: int = 3,
+) -> tuple[mne.Info, np.ndarray, int]:
+    """Collapse co-located multi-axis sensors (e.g., RAD+TAN) per 3D site."""
+    locs = np.array([ch["loc"][:3] for ch in info["chs"]], dtype=np.float64)
+    _, first_idx, inv = np.unique(
+        np.round(locs, tol_decimals),
+        axis=0,
+        return_index=True,
+        return_inverse=True,
+    )
+    order = np.argsort(first_idx)
+    rep_picks = first_idx[order]
+    site_vals = np.array(
+        [float(np.mean(values[inv == orig_k])) for orig_k in order],
+        dtype=np.float64,
+    )
+    info_sites = mne.pick_info(info, rep_picks.tolist())
+    return info_sites, site_vals, len(rep_picks)
 
 
 def plot_sensai_visualization(
@@ -640,30 +664,52 @@ def plot_sensai_visualization(
             info_topo,
             mne.pick_channels(info_topo.ch_names, include=valid_chs, ordered=True),
         )
-        try:
-            im, _ = mne.viz.plot_topomap(
-                enova_plot_val[valid_mask],
-                info_valid,
-                axes=ax_topo,
-                cmap="turbo",
-                vlim=(0.0, 100.0),
-                contours=6,
-                outlines="head",
-                sensors=True,
-                show=False,
+        info_sites, site_vals, n_sites = _collapse_colocated_sites(
+            info_valid, enova_plot_val[valid_mask]
+        )
+        if n_sites >= 3:
+            ch_types = set(info_sites.get_channel_types())
+            is_meg = any(ct in ("mag", "grad") for ct in ch_types)
+            site_locs = np.array(
+                [ch["loc"][:3] for ch in info_sites["chs"]], dtype=np.float64
             )
-            cb_enova = fig.colorbar(im, cax=cbar_topo_ax)
-            cb_enova.set_label("ENOVA (%)", fontsize=10)
-            cb_enova.set_ticks([0, 20, 40, 60, 80, 100])
-            ax_topo.set_title(
-                "ENOVA (Explained Noise Variance)",
-                fontsize=10,
-                fontweight="bold",
-                pad=8,
-            )
-            plot_done = True
-        except Exception:
-            ax_topo.cla()
+            max_r = float(np.max(np.linalg.norm(site_locs, axis=1)))
+            sphere_arg = (0.0, 0.0, 0.0, max(0.095, max_r * 1.05)) if is_meg else None
+            try:
+                if len(ch_types) == 1:
+                    pos_arg: mne.Info | np.ndarray = info_sites
+                else:
+                    from mne.channels.layout import _find_topomap_coords
+
+                    pos_arg = _find_topomap_coords(
+                        info_sites, picks="all", sphere=sphere_arg
+                    )
+
+                im, _ = mne.viz.plot_topomap(
+                    site_vals,
+                    pos_arg,
+                    axes=ax_topo,
+                    cmap="turbo",
+                    vlim=(0.0, 100.0),
+                    contours=6,
+                    outlines="head",
+                    sphere=sphere_arg,
+                    extrapolate="head",
+                    sensors=True,
+                    show=False,
+                )
+                cb_enova = fig.colorbar(im, cax=cbar_topo_ax)
+                cb_enova.set_label("ENOVA (%)", fontsize=10)
+                cb_enova.set_ticks([0, 20, 40, 60, 80, 100])
+                ax_topo.set_title(
+                    "ENOVA (Explained Noise Variance)",
+                    fontsize=10,
+                    fontweight="bold",
+                    pad=8,
+                )
+                plot_done = True
+            except Exception:
+                ax_topo.cla()
 
     if not plot_done:
         cbar_topo_ax.set_visible(False)

@@ -185,9 +185,11 @@ def clean_epochs_batched_torch(
                 f"Per-epoch threshold shape {thresh_arr.shape} must match n_epochs "
                 f"({x.shape[0]})."
             )
-        thresh_t = torch.from_numpy(np.ascontiguousarray(thresh_arr)).to(
-            dtype=torch.float64, device=x.device
-        ).unsqueeze(1)
+        thresh_t = (
+            torch.from_numpy(np.ascontiguousarray(thresh_arr))
+            .to(dtype=torch.float64, device=x.device)
+            .unsqueeze(1)
+        )
     at_threshold = torch.abs(abs_evals - thresh_t) <= torch.abs(thresh_t) * 1e-12
     signal_mask = ~((abs_evals >= thresh_t) | at_threshold)
 

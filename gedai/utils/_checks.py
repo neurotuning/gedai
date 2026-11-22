@@ -472,4 +472,3 @@ def ensure_engine(engine: str = "numpy") -> str:
         return "torch"
 
     return "numpy"
-

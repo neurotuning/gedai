@@ -10,9 +10,7 @@ from gedai.data import get_contaminated_eeg_set_path
 
 
 def _sample_raw(n_channels: int = 12, duration_s: float = 8.0) -> mne.io.BaseRaw:
-    raw = mne.io.read_raw(
-        get_contaminated_eeg_set_path(), preload=False, verbose=False
-    )
+    raw = mne.io.read_raw(get_contaminated_eeg_set_path(), preload=False, verbose=False)
     raw.drop_channels([ch for ch in raw.ch_names if "BIP" in ch])
     raw.pick(raw.ch_names[:n_channels])
     raw.crop(0.0, duration_s)
@@ -121,9 +119,7 @@ def test_flat_recording_reference_retained_and_noisy_falls_back():
     raw_bad.info["bads"] = [raw_bad.ch_names[0]]
     g_rest = Gedai(engine="numpy")
     g_rest.fit_raw(raw_bad, duration=1.0, reference="REST", verbose=False)
-    out_interp = g_rest.transform_raw(
-        raw_bad, interpolate_bads=True, verbose=False
-    )
+    out_interp = g_rest.transform_raw(raw_bad, interpolate_bads=True, verbose=False)
     assert out_interp.ch_names == raw_bad.ch_names
     assert np.all(np.isfinite(out_interp.get_data()))
 
@@ -385,8 +381,17 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
     finally:
         plt.close(fig)
 
-    # 2. 10-20 + legacy names (T3/T4) with missing coords resolve via 10-05 template
-    ch_legacy = ["Fp1", "Fp2", "C3", "C4", "T3", "T4", "O1", "O2"]
+    # 2. 10-20 + BIDS/legacy names (T3/T4, EEG Fp1-REF, C3-M2) resolve coords
+    ch_legacy = [
+        "EEG Fp1-REF",
+        "EEG Fp2-REF",
+        "C3-M2",
+        "C4-M1",
+        "EEG T3-AR",
+        "EEG T4-AR",
+        "O1",
+        "O2",
+    ]
     sfreq = 250.0
     rng = np.random.default_rng(7)
     info_1020 = mne.create_info(ch_legacy, sfreq=sfreq, ch_types="eeg")
@@ -402,6 +407,39 @@ def test_sensai_viz_psd_topoplot_and_fallbacks():
         assert fig_1020.axes[-1].get_visible()
     finally:
         plt.close(fig_1020)
+
+    # 2b. Co-located multi-axis MEG/OPM channels (e.g., RAD + TAN) render topoplot
+    coords_6 = np.array(
+        [
+            [0.05, 0.08, 0.04],
+            [-0.05, 0.08, 0.04],
+            [0.09, 0.00, 0.05],
+            [-0.09, 0.00, 0.05],
+            [0.05, -0.08, 0.04],
+            [-0.05, -0.08, 0.04],
+        ]
+    )
+    opm_names = []
+    for k in range(len(coords_6)):
+        opm_names.extend([f"OPM{k}-RAD", f"OPM{k}-TAN"])
+    info_opm = mne.create_info(opm_names, sfreq=sfreq, ch_types="mag")
+    for k, xyz in enumerate(coords_6):
+        info_opm["chs"][2 * k]["loc"][:3] = xyz
+        info_opm["chs"][2 * k + 1]["loc"][:3] = xyz
+    d_opm_b = rng.standard_normal((len(opm_names), int(4 * sfreq))) * 1e-11
+    d_opm_a = d_opm_b * 0.4
+    raw_opm_b = mne.io.RawArray(d_opm_b, info_opm, verbose=False)
+    raw_opm_a = mne.io.RawArray(d_opm_a, info_opm, verbose=False)
+    fig_opm, _ = plot_sensai_visualization(
+        raw_opm_b,
+        raw_opm_a,
+        reference_cov=np.eye(len(opm_names)),
+        show=False,
+    )
+    try:
+        assert fig_opm.axes[-1].get_visible()
+    finally:
+        plt.close(fig_opm)
 
     # 3. Arbitrary names with missing coords -> bar-chart fallback + short recording
     ch_arb = [f"CH{i}" for i in range(len(ch_legacy))]

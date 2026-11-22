@@ -20,9 +20,7 @@ from gedai.gedai._utils import (
 
 def _load_sample_eeg(n_channels=10, duration_s=4.0):
     """Load a small preloaded EEG Raw subset with valid 3D coordinates."""
-    raw = mne.io.read_raw(
-        get_contaminated_eeg_set_path(), preload=False, verbose=False
-    )
+    raw = mne.io.read_raw(get_contaminated_eeg_set_path(), preload=False, verbose=False)
     raw.drop_channels([ch for ch in raw.ch_names if "BIP" in ch])
     raw.pick(raw.ch_names[:n_channels])
     raw.crop(0.0, duration_s)

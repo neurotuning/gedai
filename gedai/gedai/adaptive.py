@@ -735,9 +735,7 @@ class AdaptiveMultibandGedai:
                 )
 
             orig_data = (
-                raw_transform.get_data(verbose=False).copy()
-                if need_orig
-                else None
+                raw_transform.get_data(verbose=False).copy() if need_orig else None
             )
 
             if self.broadband_pass and self._broadband_model is not None:

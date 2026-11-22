@@ -203,8 +203,7 @@ def _extract_target_unit_directions_als(info: mne.Info) -> np.ndarray:
         missing = [
             ch["ch_name"]
             for ch in info["chs"]
-            if not np.all(np.isfinite(ch["loc"][:3]))
-            or np.allclose(ch["loc"][:3], 0.0)
+            if not np.all(np.isfinite(ch["loc"][:3])) or np.allclose(ch["loc"][:3], 0.0)
         ]
         raise ValueError(
             "Valid 3D channel positions (X, Y, Z) are required for all channels to "
@@ -611,9 +610,7 @@ def _resolve_reference_and_cov(
     fallback for custom/non-10-20 montages), explicit ``"projection"``,
     ``mne.Forward``, and custom ``mne.Covariance``.
     """
-    _check_type(
-        reference_cov, (str, mne.Covariance, mne.Forward), "reference_cov"
-    )
+    _check_type(reference_cov, (str, mne.Covariance, mne.Forward), "reference_cov")
     ch_names = list(info["ch_names"])
     bads = list(info["bads"])
 

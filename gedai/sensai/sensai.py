@@ -352,10 +352,9 @@ def _sensai_score_torch(
             )[:, :k_max]
             gather_idx = order.unsqueeze(1).expand(-1, n_ch, -1)
             p_packed = torch.gather(all_VR_t[active], dim=2, index=gather_idx)
-            valid_col = (
-                torch.arange(k_max, device=template_t.device).unsqueeze(0)
-                < num_bad_act.unsqueeze(1)
-            )
+            valid_col = torch.arange(k_max, device=template_t.device).unsqueeze(
+                0
+            ) < num_bad_act.unsqueeze(1)
             p_packed = torch.where(valid_col.unsqueeze(1), p_packed, 0.0)
             g_pp = torch.bmm(p_packed.transpose(1, 2), p_packed)
             g_pp = 0.5 * (g_pp + g_pp.transpose(1, 2))
@@ -557,9 +556,7 @@ def compute_z3_noise_multiplier(
         m_raw = (m_d * pr * iso_boost) / (
             (iqr_log**2) * max(c1, c1_floor) * (excess_iqr**2)
         )
-        m_floor = max(
-            m_min, (m_d - w_dof * (m_d - m_min) * w_nondip) / (excess_iqr**3)
-        )
+        m_floor = max(m_min, (m_d - w_dof * (m_d - m_min) * w_nondip) / (excess_iqr**3))
         m_ceil = (1.5 * m_d) * ((m_d / 1.5) ** w_dof)
         m_eff = max(m_floor, min(m_ceil, m_raw))
 
@@ -812,7 +809,6 @@ def _select_sensai_threshold_from_curve(
         chosen_sv = s_peak
 
     return float(chosen_sv)
-
 
 
 def _sensai_optimize(

@@ -189,4 +189,3 @@ def test_adaptive_wavelet_low_cutoff_modes(monkeypatch):
     assert model_05._wavelet_low_cutoff == 0.5
     assert calls == [0.5]
     assert any(wf["ignore"] for wf in model_05._wavelets_fits)
-

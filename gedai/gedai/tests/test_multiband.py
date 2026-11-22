@@ -184,7 +184,9 @@ def test_circular_haar_duration_preserves_covariance_minimum(monkeypatch):
 def test_circular_haar_duration_rounds_to_even_sample_count():
     """Keep duration metadata consistent with dual-stream sample rounding."""
     duration_val, samples = compute_closest_valid_duration(
-        2.005, 9, 200.0,
+        2.005,
+        9,
+        200.0,
     )
     assert samples == 402
     assert duration_val == 402 / 200
@@ -212,7 +214,9 @@ def test_multiband_raw_two_second_epochs_at_level_nine(engine, broadband_pass):
     )
     cov = mne.Covariance(np.eye(len(names)) * 1e-12, names, [], [], nfree=1)
     model = MultibandGedai(
-        wavelet_level=9, broadband_pass=broadband_pass, engine=engine,
+        wavelet_level=9,
+        broadband_pass=broadband_pass,
+        engine=engine,
     )
     model.fit_raw(raw, duration=2.0, reference_cov=cov, n_jobs=1, verbose=False)
     assert model.wavelet_level == 9

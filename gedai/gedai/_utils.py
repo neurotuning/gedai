@@ -240,9 +240,9 @@ def _apply_eeg_reference(inst, ref_spec: dict | None = None) -> None:
     if isinstance(inst, BaseRaw):
         inst._data = np.asarray(op @ inst.get_data(verbose=False), dtype=np.float64)
     elif isinstance(inst, BaseEpochs):
-        inst._data = np.einsum(
-            "ij,ejt->eit", op, inst.get_data(verbose=False)
-        ).astype(np.float64, copy=False)
+        inst._data = np.einsum("ij,ejt->eit", op, inst.get_data(verbose=False)).astype(
+            np.float64, copy=False
+        )
     else:
         raise ValueError("Instance must be either a Raw or Epochs object.")
 
@@ -513,9 +513,7 @@ def _run_two_pass_bad_channel_detection(
     )
 
     enova_vals = pass1_model.metrics_["enova_per_channel"]
-    enova_map = {
-        ch: float(val) for ch, val in zip(non_flat, enova_vals, strict=True)
-    }
+    enova_map = {ch: float(val) for ch, val in zip(non_flat, enova_vals, strict=True)}
     enova_dict = {
         ch: (float("inf") if ch in flat_set else enova_map[ch])
         for ch in inst_cand.ch_names

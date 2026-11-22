@@ -81,9 +81,7 @@ def _check_smoothing_window(smoothing_window: float | int | None) -> float | Non
     if smoothing_window is None:
         return None
     if isinstance(smoothing_window, bool):
-        raise TypeError(
-            "smoothing_window must be a positive float or None, got bool."
-        )
+        raise TypeError("smoothing_window must be a positive float or None, got bool.")
     _check_type(smoothing_window, ("numeric",), "smoothing_window")
     val = float(smoothing_window)
     if np.isnan(val) or val <= 0:
@@ -1339,9 +1337,7 @@ class Gedai:
         raw_data = raw_transform.get_data(verbose=False)
         sfreq = raw_transform.info["sfreq"]
         epoch_duration = (
-            self._duration
-            if hasattr(self, "_duration") and self._duration > 0
-            else 1.0
+            self._duration if hasattr(self, "_duration") and self._duration > 0 else 1.0
         )
         thresh1, thresh2 = self._get_transform_thresholds(
             raw_data.shape[1], sfreq, epoch_duration

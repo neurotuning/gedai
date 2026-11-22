@@ -438,9 +438,7 @@ def test_multiband_and_adaptive_scale_invariance():
 
     ad_uv = AdaptiveMultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
     ad_uv.fit_raw(raw_uv, n_jobs=1, verbose=False)
-    out_aduv = (
-        ad_uv.transform_raw(raw_uv, n_jobs=1, verbose=False).get_data() / scale
-    )
+    out_aduv = ad_uv.transform_raw(raw_uv, n_jobs=1, verbose=False).get_data() / scale
     np.testing.assert_allclose(
         out_adv, out_aduv, rtol=1e-9, atol=1e-11 * float(np.std(out_adv))
     )
