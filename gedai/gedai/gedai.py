@@ -1388,7 +1388,9 @@ class Gedai:
                 threshold=bad_ep_thresh,
             )
             if len(ann) > 0:
-                raw_transform.set_annotations(raw_transform.annotations + ann)
+                raw_transform.set_annotations(
+                    raw_transform.annotations + ann, emit_warning=False
+                )
 
         if interpolate_bads and self.bad_channels_:
             return _interpolate_bad_channels(
