@@ -1,6 +1,7 @@
 """Integration tests for reference modes, dipole projection, and adaptive processing."""
 
 from datetime import datetime, timezone
+from importlib import import_module
 
 import mne
 import numpy as np
@@ -137,9 +138,7 @@ def test_flat_recording_reference_retained_and_noisy_falls_back():
     rng = np.random.default_rng(42)
     ch_std = float(np.std(raw_bad.get_data()))
     raw_bad._data[1, int(3.0 * sfreq) : int(5.0 * sfreq)] += (
-        25.0
-        * ch_std
-        * rng.standard_normal(int(2.0 * sfreq))
+        25.0 * ch_std * rng.standard_normal(int(2.0 * sfreq))
     )
     meas_date = datetime(2025, 1, 1, tzinfo=timezone.utc)
     for annotation_orig_time in (False, True):
@@ -297,6 +296,40 @@ def test_auto_scale_invariance_and_bad_epoch_annotation():
     assert g_ep.bad_epochs_ is not None
     assert g_ep.bad_epochs_.shape == (len(epochs),)
     assert np.any(g_ep.bad_epochs_[3:5])
+
+
+@pytest.mark.parametrize("model_class", [Gedai, MultibandGedai, AdaptiveMultibandGedai])
+@pytest.mark.parametrize("orig_time", [False, True])
+@pytest.mark.parametrize("crop_start", [0.0, 1.0])
+def test_raw_bad_epoch_annotation_timing(
+    model_class, orig_time, crop_start, monkeypatch
+):
+    """Keep existing and generated annotation times when transforming raw data."""
+    raw = _sample_raw(n_channels=8, duration_s=6.0)
+    date = datetime(2025, 1, 1, tzinfo=timezone.utc) if orig_time else None
+    raw.set_meas_date(date)
+    raw.set_annotations(mne.Annotations([2.5], [0.1], ["USER_mark"], orig_time=date))
+    raw.crop(crop_start, crop_start + 4.0)
+
+    kwargs = {"engine": "numpy"}
+    if model_class is not Gedai:
+        kwargs["wavelet_level"] = 2
+    model = model_class(**kwargs)
+    model.fit_raw(raw, n_jobs=1, verbose=False)
+    module = import_module(model_class.__module__)
+    monkeypatch.setattr(
+        module, "compute_enova_per_epoch", lambda *args: np.array([0.0, 0.0, 0.0, 1.0])
+    )
+    clean = model.transform_raw(
+        raw, n_jobs=1, compute_metrics=False, bad_epoch_threshold=0.5, verbose=False
+    )
+
+    user_ann = clean.annotations[clean.annotations.description == "USER_mark"]
+    np.testing.assert_array_equal(user_ann.onset, raw.annotations.onset)
+    np.testing.assert_array_equal(user_ann.duration, raw.annotations.duration)
+    bad_ann = clean.annotations[clean.annotations.description == "BAD_gedai"]
+    np.testing.assert_allclose(bad_ann.onset, [raw.first_time + 3.0])
+    np.testing.assert_allclose(bad_ann.duration, [1.0])
 
 
 def test_plot_sensai_with_excluded_and_interpolated_bad_channel():

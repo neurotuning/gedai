@@ -5,6 +5,7 @@ from mne import BaseEpochs
 from mne.io import BaseRaw
 
 from gedai.gedai._utils import (
+    _append_raw_annotations,
     _apply_eeg_reference,
     _check_bad_channel_threshold,
     _check_fit_info,
@@ -1203,9 +1204,7 @@ class MultibandGedai:
                 threshold=bad_ep_thresh,
             )
             if len(ann) > 0:
-                raw_transform.set_annotations(
-                    raw_transform.annotations + ann, emit_warning=False
-                )
+                _append_raw_annotations(raw_transform, ann)
 
         if interpolate_bads and self.bad_channels_:
             return _interpolate_bad_channels(

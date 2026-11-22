@@ -20,6 +20,14 @@ def _detect_signal_type(info):
     return "eeg"
 
 
+def _append_raw_annotations(raw, annotations):
+    """Append annotations whose onsets are aligned to the raw timeline."""
+    combined = raw.annotations + annotations
+    if combined.orig_time is None and raw.first_time:
+        combined.onset -= raw.first_time
+    raw.set_annotations(combined)
+
+
 def _ensure_wavelet_low_cutoff(
     wavelet_low_cutoff, filter_highpass=None, epoch_duration=None
 ):
