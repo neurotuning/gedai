@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Understanding the multiband extension of GEDAI &#8212; gedai</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=75c7c72ae941e8b558d8" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery.css?v=c83e6b79" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.min.css?v=6a604523" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/style.css?v=0bd98ae2" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=75c7c72ae941e8b558d8"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
+
+    <script src="../../../_static/documentation_options.js?v=5d38c726"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=30646c52"></script>
+    <script src="../../../_static/sg-tags.js?v=d80f6fa4"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../../../_static/design-tabs.js?v=fcb327ea"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated/tutorials/basics/10_gedai_multiband';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="Understanding the adaptive extension of multiband GEDAI" href="30_gedai_adaptive.html" />
+    <link rel="prev" title="Understanding the GEDAI model" href="00_gedai.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+<aside class="bd-header-announcement" aria-label="Announcement">
+  <div class="bd-header-announcement__content">This project is in early development, and has not yet reached a stable version Use for testing only.</div>
+</aside>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation" aria-expanded="false" aria-controls="pst-primary-sidebar-modal">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">gedai</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    GEDAI
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/index.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API References
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    GEDAI Tutorials
+  </a>
+</li>
+
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../license/index.html">
+    License
+  </a>
+</li>
+
+
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../dev/index.html">
+    Development
+  </a>
+</li>
+
+                </ul>
+            </li>
+            
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page" aria-expanded="false" aria-controls="pst-secondary-sidebar-modal">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal" tabindex="-1"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../index.html">
+    GEDAI
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../install/index.html">
+    Install
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api/index.html">
+    API References
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../index.html">
+    GEDAI Tutorials
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../license/index.html">
+    License
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../dev/index.html">
+    Development
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Basics: Understanding GEDAI Models</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="00_gedai.html">Understanding the GEDAI model</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">Understanding the multiband extension of GEDAI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="30_gedai_adaptive.html">Understanding the adaptive extension of multiband GEDAI</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../use/index.html">Practical Pipelines</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../use/00_gedai_offline_pipeline.html">Recommended Offline EEG Denoising Pipeline</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Custom Head Models &amp; SENSAI Goodness-of-Fit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-house"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">GEDAI Tutorials</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Basics: Understanding GEDAI Models</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Understanding the multiband extension of GEDAI</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p><a class="reference internal" href="#sphx-glr-download-generated-tutorials-basics-10-gedai-multiband-py"><span class="std std-ref">Go to the end</span></a>
+to download the full example code.</p>
+</div>
+<section class="sphx-glr-example-title" id="understanding-the-multiband-extension-of-gedai">
+<span id="sphx-glr-generated-tutorials-basics-10-gedai-multiband-py"></span><h1>Understanding the multiband extension of GEDAI<a class="headerlink" href="#understanding-the-multiband-extension-of-gedai" title="Link to this heading">🔗</a></h1>
+<p>This tutorial demonstrates how to use <a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a> and
+why splitting cleaning across frequency subbands improves over a single
+broadband GED pass.</p>
+<p><code class="docutils literal notranslate"><span class="pre">MultibandGedai</span></code> decomposes each channel into wavelet subbands using the
+Maximal Overlap Discrete Wavelet Transform (MODWT), fits an independent GEDAI
+threshold per subband, and reconstructs the cleaned signal.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="w">
+</span></pre></div></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This tutorial focuses on the parameters and behavior of
+<a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.gedai.MultibandGedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">MultibandGedai</span></code></a>. For a ready-to-copy offline
+pipeline template, see the
+<a class="reference internal" href="../use/index.html#sphx-glr-generated-tutorials-use"><span class="std std-ref">Practical Pipelines</span></a> section.</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="nn">.</span><span class="nn">pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="w">
+</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.Gedai"><span class="n">Gedai</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">MultibandGedai</span></a><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_mne_style_overlay_interactive</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a> <span class="o">=</span> <span class="mi">1</span><span class="w">
+</span></pre></div></div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">get_contaminated_eeg_set_path</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<p>For simplicity, we use only the first 30 seconds of the data in this tutorial.
+In practice, fitting on the full recording helps capture rare artifacts.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">raw</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="output_subarea output_html rendered_html output_result">
+<script type="text/javascript">
+    // must be `var` (not `const`) because this can get embedded multiple times on a page
+var toggleVisibility = (className) => {
+
+    const elements = document.querySelectorAll(`.${className}`);
+
+    elements.forEach(element => {
+        if (element.classList.contains("mne-repr-section-header")) {
+            return  // Don't collapse the section header row
+        }
+        element.classList.toggle("mne-repr-collapsed");
+    });
+
+    // trigger caret to rotate
+    var sel = `.mne-repr-section-header.${className} > th.mne-repr-section-toggle > button`;
+    const button = document.querySelector(sel);
+    button.classList.toggle("collapsed");
+
+    // adjust tooltip
+    sel = `tr.mne-repr-section-header.${className}`;
+    const secHeadRow = document.querySelector(sel);
+    secHeadRow.classList.toggle("collapsed");
+    secHeadRow.title = secHeadRow.title === "Hide section" ? "Show section" : "Hide section";
+}
+</script>
+
+<style type="text/css">
+    /*
+Styles in this section apply both to the sphinx-built website docs and to notebooks
+rendered in an IDE or in Jupyter. In our web docs, styles here are complemented by
+doc/_static/styles.css and other CSS files (e.g. from the sphinx theme, sphinx-gallery,
+or bootstrap). In IDEs/Jupyter, those style files are unavailable, so only the rules in
+this file apply (plus whatever default styling the IDE applies).
+*/
+.mne-repr-table {
+    display: inline;  /* prevent using full container width */
+}
+.mne-repr-table tr.mne-repr-section-header > th {
+    padding-top: 1rem;
+    text-align: left;
+    vertical-align: middle;
+}
+.mne-repr-section-toggle > button {
+    all: unset;
+    display: block;
+    height: 1rem;
+    width: 1rem;
+}
+.mne-repr-section-toggle > button > svg {
+    height: 60%;
+}
+
+/* transition (rotation) effects on the collapser button */
+.mne-repr-section-toggle > button.collapsed > svg {
+    transition: 0.1s ease-out;
+    transform: rotate(-90deg);
+}
+.mne-repr-section-toggle > button:not(.collapsed) > svg {
+    transition: 0.1s ease-out;
+    transform: rotate(0deg);
+}
+
+/* hide collapsed table rows */
+.mne-repr-collapsed {
+    display: none;
+}
+
+
+@layer {
+    /*
+    Selectors in a `@layer` will always be lower-precedence than selectors outside the
+    layer. So even though e.g. `div.output_html` is present in the sphinx-rendered
+    website docs, the styles here won't take effect there as long as some other rule
+    somewhere in the page's CSS targets the same element.
+
+    In IDEs or Jupyter notebooks, though, the CSS files from the sphinx theme,
+    sphinx-gallery, and bootstrap are unavailable, so these styles will apply.
+
+    Notes:
+
+    - the selector `.accordion-body` is for MNE Reports
+    - the selector `.output_html` is for VSCode's notebook interface
+    - the selector `.jp-RenderedHTML` is for Jupyter notebook
+    - variables starting with `--theme-` are VSCode-specific.
+    - variables starting with `--jp-` are Jupyter styles, *some of which* are also
+      available in VSCode. Here we try the `--theme-` variable first, then fall back to
+      the `--jp-` ones.
+    */
+    .mne-repr-table {
+        --mne-toggle-color: var(--theme-foreground, var(--jp-ui-font-color1));
+        --mne-button-bg-color: var(--theme-button-background, var(--jp-info-color0, var(--jp-content-link-color)));
+        --mne-button-fg-color: var(--theme-button-foreground, var(--jp-ui-inverse-font-color0, var(--jp-editor-background)));
+        --mne-button-hover-bg-color: var(--theme-button-hover-background, var(--jp-info-color1));
+        --mne-button-radius: var(--jp-border-radius, 0.25rem);
+    }
+    /* chevron position/alignment; in VSCode it looks ok without adjusting */
+    .accordion-body .mne-repr-section-toggle > button,
+    .jp-RenderedHTML .mne-repr-section-toggle > button {
+        padding: 0 0 45% 25% !important;
+    }
+    /* chevron color; MNE Report doesn't have light/dark mode */
+    div.output_html .mne-repr-section-toggle > button > svg > path,
+    .jp-RenderedHTML .mne-repr-section-toggle > button > svg > path {
+        fill: var(--mne-toggle-color);
+    }
+    .accordion-body .mne-ch-names-btn,
+    div.output_html .mne-ch-names-btn,
+    .jp-RenderedHTML .mne-ch-names-btn {
+        -webkit-border-radius: var(--mne-button-radius);
+        -moz-border-radius: var(--mne-button-radius);
+        border-radius: var(--mne-button-radius);
+        border: none;
+        background-image: none;
+        background-color: var(--mne-button-bg-color);
+        color: var(--mne-button-fg-color);
+        font-size: inherit;
+        min-width: 1.5rem;
+        padding: 0.25rem;
+        text-align: center;
+        text-decoration: none;
+    }
+    .accordion-body .mne-ch-names-btn:hover,
+    div.output_html .mne.ch-names-btn:hover,
+    .jp-RenderedHTML .mne-ch-names-btn:hover {
+        background-color: var(--mne-button-hover-bg-color);
+        text-decoration: underline;
+    }
+    .accordion-body .mne-ch-names-btn:focus-visible,
+    div.output_html .mne-ch-names-btn:focus-visible,
+    .jp-RenderedHTML .mne-ch-names-btn:focus-visible {
+        outline: 0.1875rem solid var(--mne-button-bg-color) !important;
+        outline-offset: 0.1875rem !important;
+    }
+}
+</style>
+
+
+
+<table class="table mne-repr-table">
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52"
+     title="Hide section"
+    onclick="toggleVisibility('general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>General</strong>
+    </th>
+</tr>
+
+
+<tr class="repr-element general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Filename(s)</td>
+    <td>
+
+        SNR=0.35481 contamination=25 clean_EEG_dataset_2.set + EOG_EMG_NOISE_dataset_1.set
+
+
+    </td>
+</tr>
+
+<tr class="repr-element general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>MNE object type</td>
+    <td>RawEEGLAB</td>
+</tr>
+<tr class="repr-element general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Measurement date</td>
+
+    <td>Unknown</td>
+
+</tr>
+<tr class="repr-element general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Participant</td>
+
+    <td>Unknown</td>
+
+</tr>
+<tr class="repr-element general-f9b690ea-015a-4cd8-8b6e-707aaf7e2f52 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Experimenter</td>
+
+    <td>Unknown</td>
+
+</tr>
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header acquisition-edc72017-125a-40c1-afd3-2bff246c790a"
+     title="Hide section"
+    onclick="toggleVisibility('acquisition-edc72017-125a-40c1-afd3-2bff246c790a')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>Acquisition</strong>
+    </th>
+</tr>
+
+
+<tr class="repr-element acquisition-edc72017-125a-40c1-afd3-2bff246c790a ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Duration</td>
+    <td>00:00:31 (HH:MM:SS)</td>
+</tr>
+
+
+
+
+
+
+
+
+<tr class="repr-element acquisition-edc72017-125a-40c1-afd3-2bff246c790a ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Sampling frequency</td>
+    <td>200.00 Hz</td>
+</tr>
+
+
+<tr class="repr-element acquisition-edc72017-125a-40c1-afd3-2bff246c790a ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Time points</td>
+    <td>6,001</td>
+</tr>
+
+
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header channels-d9c2fc01-4e7e-4c8d-9b07-2a22204f64c0"
+     title="Hide section"
+    onclick="toggleVisibility('channels-d9c2fc01-4e7e-4c8d-9b07-2a22204f64c0')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>Channels</strong>
+    </th>
+</tr>
+
+
+
+<tr class="repr-element channels-d9c2fc01-4e7e-4c8d-9b07-2a22204f64c0 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>EEG</td>
+    <td>
+        <button class="mne-ch-names-btn sd-sphinx-override sd-btn sd-btn-info sd-text-wrap sd-shadow-sm" onclick="alert('Good EEG:\n\nFp1, Fz, F3, F7, FC5, FC1, C3, T7, CP5, CP1, Pz, P3, P7, O1, O2, P4, P8, CP6, CP2, Cz, C4, T8, FC6, FC2, F4, F8, Fp2')" title="(Click to open in popup)&#13;&#13;Fp1, Fz, F3, F7, FC5, FC1, C3, T7, CP5, CP1, Pz, P3, P7, O1, O2, P4, P8, CP6, CP2, Cz, C4, T8, FC6, FC2, F4, F8, Fp2">
+            27
+        </button>
+
+
+    </td>
+</tr>
+
+
+<tr class="repr-element channels-d9c2fc01-4e7e-4c8d-9b07-2a22204f64c0 ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Head & sensor digitization</td>
+
+    <td>30 points</td>
+
+</tr>
+
+
+
+
+
+
+
+
+<tr class="mne-repr-section-header filters-f1e91efb-575f-4ab8-9634-c980e6b6a26d"
+     title="Hide section"
+    onclick="toggleVisibility('filters-f1e91efb-575f-4ab8-9634-c980e6b6a26d')">
+    <th class="mne-repr-section-toggle">
+        <button >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
+        </button>
+    </th>
+    <th colspan="2">
+        <strong>Filters</strong>
+    </th>
+</tr>
+
+
+<tr class="repr-element filters-f1e91efb-575f-4ab8-9634-c980e6b6a26d ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Highpass</td>
+    <td>0.00 Hz</td>
+</tr>
+
+
+<tr class="repr-element filters-f1e91efb-575f-4ab8-9634-c980e6b6a26d ">
+    <td class="mne-repr-section-toggle"></td>
+    <td>Lowpass</td>
+    <td>100.00 Hz</td>
+</tr>
+
+
+</table>
+</div>
+<br />
+<br /><section id="multibandgedai-parameters">
+<h2>MultibandGedai Parameters<a class="headerlink" href="#multibandgedai-parameters" title="Link to this heading">🔗</a></h2>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">wavelet_level=&quot;auto&quot;</span></code> computes the number of MODWT levels from
+the sampling frequency and low-frequency cutoff.</p>
+<section id="broadband-pass-two-pass-filtering">
+<h3>Broadband Pass (Two-Pass Filtering):<a class="headerlink" href="#broadband-pass-two-pass-filtering" title="Link to this heading">🔗</a></h3>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">broadband_pass=True</span></code> enables a two-stage hierarchical workflow:</p>
+<ol class="arabic simple">
+<li><p><strong>Pass 1 (Broadband Pass)</strong>: A full-spectrum spatial GEDAI filter removes
+large, widespread artifacts (such as eye blinks or gross jaw bursts) so
+high-amplitude energy does not leak into neighboring wavelet bands.</p></li>
+<li><p><strong>Pass 2 (Multiband Wavelet Pass)</strong>: Each MODWT subband receives its own
+SENSAI eigenvalue threshold tuned to the spectral mix of that band.</p></li>
+</ol>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">multiband_gedai</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai" title="gedai.MultibandGedai"><span class="n">MultibandGedai</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">wavelet_type</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">haar</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">wavelet_level</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">broadband_pass</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+</section>
+</section>
+<section id="model-fitting">
+<h2>Model Fitting<a class="headerlink" href="#model-fitting" title="Link to this heading">🔗</a></h2>
+<p><a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.fit_raw" title="gedai.gedai.MultibandGedai.fit_raw"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit_raw()</span></code></a> segments each wavelet band into
+fixed <code class="docutils literal notranslate"><span class="pre">2.0</span> <span class="pre">s</span></code> epochs, optimizes band-specific SENSAI thresholds, and
+automatically excludes bad channels via <code class="docutils literal notranslate"><span class="pre">on_bad_channel=&quot;exclude&quot;</span></code>.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.fit_raw" title="gedai.MultibandGedai.fit_raw"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span><span class="w">
+</span>    <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">strength</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-property reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.summary" title="gedai.MultibandGedai.summary"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">summary</span></a><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>    343 x 343 full covariance (kind = 1) found.
+[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._apply_eeg_average_reference_if_needed] INFO: Setting average reference.
+EEG channel type selected for re-referencing
+Applying average reference.
+Applying a custom ('EEG',) reference.
+[multiband.fit_raw] INFO: Applying wavelet HP pre-filter (sub-0.10 Hz)...
+[multiband.fit_raw] INFO: Running broadband GEDAI pass...
+[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+==================================================================================
+  MultibandGedai Summary Table
+==================================================================================
+  Frequency Band             |  Epoch (s) |  Threshold |  SENSAI (%) |  ENOVA (%)
+  ---------------------------+------------+------------+-------------+-----------
+  Pass 1: Broadband          |     1.00 s |      17.38 |     73.64 % |         --
+  Band 0 (50.00-100.00 Hz)   |     2.00 s |      14.43 |     62.40 % |         --
+  Band 1 (25.00-50.00 Hz)    |     2.00 s |      17.76 |     76.31 % |         --
+  Band 2 (12.50-25.00 Hz)    |     2.00 s |   1.03e+06 |     74.78 % |         --
+  Band 3 (6.25-12.50 Hz)     |     2.00 s |  1.114e+06 |     70.50 % |         --
+  Band 4 (3.12-6.25 Hz)      |     2.00 s |  1.005e+06 |     70.68 % |         --
+  Band 5 (1.56-3.12 Hz)      |     2.00 s |  1.378e+06 |     54.15 % |         --
+  Band 6 (0.78-1.56 Hz)      |     2.00 s |      36.47 |     40.93 % |         --
+  Band 7 (0.39-0.78 Hz)      |     2.00 s |      45.17 |     24.32 % |         --
+  Band 8 (0.00-0.39 Hz)      |     2.00 s |      1.252 |     29.03 % |         --
+==================================================================================
+  Fitted SENSAI Optimization Score: 55.90 %
+==================================================================================
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The Haar MODWT operates on arbitrary even epoch sample counts (as long as
+there are enough samples per epoch for covariance estimation) without
+requiring power-of-two window lengths. Setting <code class="docutils literal notranslate"><span class="pre">wavelet_low_cutoff</span></code> to
+<code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> or to your high-pass cutoff skips subbands below the signal
+bandwidth. <code class="docutils literal notranslate"><span class="pre">MultibandGedai</span></code> also supports <code class="docutils literal notranslate"><span class="pre">reference</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;average&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;REST&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;M1+M2&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Cz&quot;</span></code>), adaptive Z3 <code class="docutils literal notranslate"><span class="pre">strength</span></code> presets
+(<code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> = <code class="docutils literal notranslate"><span class="pre">7</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> = <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> = <code class="docutils literal notranslate"><span class="pre">6</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">0</span></code>-<code class="docutils literal notranslate"><span class="pre">10</span></code>), <code class="docutils literal notranslate"><span class="pre">smoothing_window</span></code>, and <code class="docutils literal notranslate"><span class="pre">bad_epoch_threshold</span></code>
+(<code class="docutils literal notranslate"><span class="pre">&quot;BAD_gedai&quot;</span></code>).</p>
+</div>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">fig</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.plot_fit" title="gedai.MultibandGedai.plot_fit"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">plot_fit</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<ul class="sphx-glr-horizontal">
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_001.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_001.png" alt="Band 1: 50.00-100.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_002.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_002.png" alt="Band 2: 25.00-50.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_003.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_003.png" alt="Band 3: 12.50-25.00 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_004.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_004.png" alt="Band 4: 6.25-12.50 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_005.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_005.png" alt="Band 5: 3.12-6.25 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_006.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_006.png" alt="Band 6: 1.56-3.12 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_007.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_007.png" alt="Band 7: 0.78-1.56 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_008.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_008.png" alt="Band 8: 0.39-0.78 Hz" class = "sphx-glr-multi-img"/></li>
+<li><img src="../../../_images/sphx_glr_10_gedai_multiband_009.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_009.png" alt="Band 9: 0.00-0.39 Hz" class = "sphx-glr-multi-img"/></li>
+</ul>
+</section>
+<section id="transform-the-data-denoising">
+<h2>Transform the Data (Denoising)<a class="headerlink" href="#transform-the-data-denoising" title="Link to this heading">🔗</a></h2>
+<p><a class="reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.transform_raw" title="gedai.gedai.MultibandGedai.transform_raw"><code class="xref py py-meth docutils literal notranslate"><span class="pre">transform_raw()</span></code></a> denoises each subband with
+dual-stream cosine overlap-add blending (50% shifted streams) to eliminate
+boundary discontinuities before recombining the bands.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">denoised_raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.transform_raw" title="gedai.MultibandGedai.transform_raw"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span><span class="w">
+</span>    <span class="n">interpolate_bads</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="nb">print</span><span class="p">(</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">MultibandGedai -&gt; Mean ENOVA: </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">mean_enova</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> % | </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">SENSAI score: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">sensai_score</span><span class="s1">'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+MultibandGedai -&gt; Mean ENOVA: 30.3 % | SENSAI score: 60.139
+</pre></div>
+</div>
+</section>
+<section id="why-multiband-beats-single-band-broadband-gedai">
+<h2>Why Multiband Beats Single-Band Broadband GEDAI<a class="headerlink" href="#why-multiband-beats-single-band-broadband-gedai" title="Link to this heading">🔗</a></h2>
+<p>Low-frequency artifacts (blinks, slow movement drifts) and high-frequency
+artifacts (EMG, line harmonics) have completely different spatial-to-brain
+power ratios. A single broadband <a class="reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.gedai.Gedai"><code class="xref py py-class docutils literal notranslate"><span class="pre">Gedai</span></code></a> threshold must
+compromise across all frequencies at once, whereas <code class="docutils literal notranslate"><span class="pre">MultibandGedai</span></code> targets
+each subband independently.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class sphx-glr-backref-instance reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.Gedai"><span class="n">broadband_gedai</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai" title="gedai.Gedai"><span class="n">Gedai</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai.fit_raw" title="gedai.Gedai.fit_raw"><span class="n">broadband_gedai</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span><span class="w">
+</span>    <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
+</span>    <span class="n">strength</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="n">broadband_denoised</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai.transform_raw" title="gedai.Gedai.transform_raw"><span class="n">broadband_gedai</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
+</span>    <span class="n">raw</span><span class="p">,</span><span class="w">
+</span>    <span class="n">interpolate_bads</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">broadband_gedai</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="n">raw_ref</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">set_eeg_reference</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">average</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a> <span class="o">=</span> <span class="n">raw_ref</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bb_bp</span></a> <span class="o">=</span> <span class="n">broadband_denoised</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">mb_bp</span></a> <span class="o">=</span> <span class="n">denoised_raw</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">sfreq</span><span class="s2">&quot;</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">ch_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Fp1</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mf">6.0</span> <span class="o">*</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">peak_idx</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html#numpy.argmax" title="numpy.argmax"><span class="n">np</span><span class="o">.</span><span class="n">argmax</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">abs</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">peak_idx</span></a> <span class="o">-</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a> <span class="o">/</span><span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">raw_bp</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span> <span class="o">/</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">psd_kw</span></a> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fmin</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">fmax</span><span class="o">=</span><span class="mf">45.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_raw</span></a> <span class="o">=</span> <span class="n">raw_ref</span><span class="o">.</span><span class="n">compute_psd</span><span class="p">(</span><span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">psd_kw</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_bb</span></a> <span class="o">=</span> <span class="n">broadband_denoised</span><span class="o">.</span><span class="n">compute_psd</span><span class="p">(</span><span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">psd_kw</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_mb</span></a> <span class="o">=</span> <span class="n">denoised_raw</span><span class="o">.</span><span class="n">compute_psd</span><span class="p">(</span><span class="o">*</span><span class="o">*</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">psd_kw</span></a><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig_cmp</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">10.2</span><span class="p">,</span> <span class="mf">6.2</span><span class="p">)</span><span class="p">,</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">color</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#b0b0b0</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span><span class="w">
+</span>    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Raw EEG (1-45 Hz)</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bb_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">color</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#d95f02</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Broadband Gedai</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">mb_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1_idx</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">color</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#1b9e77</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linestyle</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">--</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.6</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="o">=</span><span class="s2">&quot;</span><span class="s2">MultibandGedai</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Frontal Channel Fp1: Broadband vs. Multiband GEDAI</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Time (s)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Amplitude (uV)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper right</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><span class="k">for</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_obj</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">color</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">ls</span></a> <span class="ow">in</span> <span class="p">[</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">Raw EEG</span><span class="s2">&quot;</span><span class="p">,</span> <a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_raw</span></a><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">#b0b0b0</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">-</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">Broadband Gedai</span><span class="s2">&quot;</span><span class="p">,</span> <a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_bb</span></a><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">#d95f02</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">-</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="p">(</span><span class="s2">&quot;</span><span class="s2">MultibandGedai</span><span class="s2">&quot;</span><span class="p">,</span> <a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_mb</span></a><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">#1b9e77</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;</span><span class="s2">--</span><span class="s2">&quot;</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span><span class="p">]</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">mean_psd_db</span></a> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">*</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">log10</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.mean.html#numpy.mean" title="numpy.mean"><span class="n">np</span><span class="o">.</span><span class="n">mean</span></a><span class="p">(</span><a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-method reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum.get_data" title="mne.time_frequency.Spectrum.get_data"><span class="n">psd_obj</span><span class="o">.</span><span class="n">get_data</span></a><span class="p">(</span><span class="p">)</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">1e12</span> <span class="o">+</span> <span class="mf">1e-30</span><span class="p">)</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-mne-time_frequency sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.time_frequency.Spectrum.html#mne.time_frequency.Spectrum" title="mne.time_frequency.Spectrum"><span class="n">psd_obj</span></a><span class="o">.</span><span class="n">freqs</span><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">mean_psd_db</span></a><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">color</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">color</span></a><span class="p">,</span><span class="w">
+</span>        <span class="n">linestyle</span><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">ls</span></a><span class="p">,</span><span class="w">
+</span>        <span class="n">linewidth</span><span class="o">=</span><span class="mf">1.8</span><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="str"><span class="n">label</span></a><span class="p">,</span><span class="w">
+</span>    <span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Channel-Averaged Power Spectral Density (1-45 Hz)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Frequency (Hz)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Power (dB uV^2/Hz)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper right</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_cmp</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_10_gedai_multiband_010.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_010.png" alt="Frontal Channel Fp1: Broadband vs. Multiband GEDAI, Channel-Averaged Power Spectral Density (1-45 Hz)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+</pre></div>
+</div>
+</section>
+<section id="sensai-manifold-enova-weighted-psd-scalp-topography">
+<h2>SENSAI Manifold, ENOVA-Weighted PSD &amp; Scalp Topography<a class="headerlink" href="#sensai-manifold-enova-weighted-psd-scalp-topography" title="Link to this heading">🔗</a></h2>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">plot_sensai</span></code> displays Before/After epoch clustering against the
+brain leadfield subspace alongside the ENOVA-weighted Welch PSD and the
+spatial distribution of removed variance across channels.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.plot_sensai" title="gedai.MultibandGedai.plot_sensai"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">plot_sensai</span></a><span class="p">(</span><span class="n">raw_before</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">raw_after</span><span class="o">=</span><span class="n">denoised_raw</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_10_gedai_multiband_011.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_011.png" alt="SENSAI = 60.1%, ENOVA = 30.3%, [MultibandGedai], Before Denoising Mean SSI: 0.72, After Denoising Mean SSSI: 0.89  |  Mean NSSI: 0.41 SSI Silhouette Score: 0.97, ENOVA-weighted PSD over channels, ENOVA (Explained Noise Variance)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._apply_eeg_average_reference_if_needed] INFO: Setting average reference.
+EEG channel type selected for re-referencing
+Applying average reference.
+Applying a custom ('EEG',) reference.
+
+(&lt;Figure size 1800x650 with 9 Axes&gt;, {'ssi_before_mean': 0.7200546481811553, 'ssi_after_mean': 0.8855639149317225, 'ssi_noise_mean': 0.4138710142407555, 'signal_silhouette': 0.9732042855843751, 'ideal_power_target_db': 14.399162379224432, 'enova_per_channel': array([0.27839395, 0.41409671, 0.22053576, 0.31954548, 0.24400264,
+       0.15941738, 0.19764929, 0.27741936, 0.16524555, 0.2033318 ,
+       0.17964116, 0.21333268, 0.16814223, 0.12141984, 0.11194523,
+       0.18898757, 0.09059331, 0.23174503, 0.24435204, 0.16229247,
+       0.26484057, 0.27975056, 0.26120234, 0.13497323, 0.22097611,
+       0.23530468, 0.32469362]), 'psd_before_db': array([ -8.70682891,  -0.30600416,   1.09737552,  -0.23415991,
+        -2.67401047,  -6.36909252,  -8.05539835,  -8.45084284,
+       -10.3355173 , -10.95279845, -11.47304338, -11.23847482,
+       -12.23584565, -13.07600496, -14.68071176, -15.17140321,
+       -15.75827635, -16.57980083, -15.99219721, -15.45210253,
+       -15.32624327, -14.28836582, -12.45050448, -11.76300687,
+       -11.11323442, -10.67957691, -12.3550254 , -13.58067143,
+       -14.74086749, -15.33207987, -16.10294861, -16.61286627,
+       -16.48569223, -16.7494313 , -17.30550751, -17.89976959,
+       -18.12668461, -18.68395053, -18.49921876, -18.26925262,
+       -18.44059658, -18.18227207, -17.7945149 , -18.13577686,
+       -17.70451001, -17.96758926, -17.67587146, -18.30492934,
+       -17.45175818, -17.60880469, -17.63543757, -18.10008456,
+       -18.53635518, -18.88123781, -19.00039842, -19.73432527,
+       -20.49867574, -20.12824426, -21.12009238, -20.35811965,
+       -21.35243903, -21.35278226, -21.43822005, -20.38585792,
+       -20.35326111, -19.90844286, -18.61522122, -19.84296434,
+       -19.21331568, -19.61767818, -18.9749032 , -20.50472699,
+       -20.58952477, -20.5338098 , -19.78248587, -19.15292552,
+       -19.35630268, -18.77034612, -18.28963538, -18.94625968,
+       -18.58522158, -18.5606909 , -18.61168501, -19.12225829,
+       -19.69100649, -20.59883717, -20.71727207, -20.64561958,
+       -21.45921365, -21.50486475, -20.93275988, -20.54613729,
+       -20.72804412, -20.11887956, -19.6889305 , -20.53230633,
+       -21.03199448, -20.25412778, -19.31786729, -17.30093295,
+       -14.93405284, -17.04694356, -18.56099856, -19.73077085,
+       -20.49335348, -19.62095815, -21.4064511 , -22.90665138,
+       -23.87823539, -25.26503322, -28.32732526, -28.42427261,
+       -30.67955267, -32.5216025 , -34.92730719, -35.99575191,
+       -37.16246073, -38.21422697, -38.65797243, -38.11069485,
+       -38.18708173, -39.06774106, -38.94574351, -38.37375467,
+       -38.79216664, -39.12992585, -39.06034795, -38.91160652,
+       -38.9003326 , -39.34943411, -39.33070631, -38.96163801,
+       -39.30725221, -39.62021083, -39.17494311, -39.28725909,
+       -39.77759733, -39.49545467, -39.28286877, -39.69759629,
+       -39.8186476 , -39.67805896, -39.47930752, -39.62310645,
+       -40.28859358, -39.79744215, -39.30566128, -40.07598773,
+       -40.54256789, -39.73708994, -39.47407847, -40.17447381,
+       -40.5292567 , -39.87504905, -39.62493515, -40.25772089,
+       -40.70152833, -40.0564765 , -39.58436909, -40.44742186,
+       -40.87732475, -39.95382819, -39.83984033, -40.60068139,
+       -40.71802384, -40.11233116, -40.06830747, -40.54126084,
+       -40.7249096 , -40.30401803, -40.1037029 , -40.63280032,
+       -40.81475161, -40.16270214, -40.39126316, -40.85293125,
+       -40.39433157, -40.44327538, -40.6686243 , -40.58755645,
+       -40.52371703, -40.49699306, -40.67768922, -40.80941185,
+       -40.40471646, -40.41128493, -41.04941731, -40.80069271,
+       -40.16377705, -40.61708096, -41.23478116, -40.59851433,
+       -40.27549311, -40.64780684, -41.14710326, -40.81472458,
+       -40.13667429, -40.60570845, -41.39246989, -40.74165939,
+       -43.11545916]), 'psd_after_db': array([-18.29099189, -10.34448578,  -8.31622736,  -8.56322626,
+        -9.38193507, -10.23856174, -11.45649631, -12.32706467,
+       -12.85478196, -13.85039824, -15.09391229, -15.51397148,
+       -14.9093053 , -15.44719257, -16.49143502, -16.82849643,
+       -17.03817558, -18.14425485, -17.58701056, -17.1742638 ,
+       -16.45875576, -15.12597796, -12.91236481, -12.18950936,
+       -11.39127908, -10.91399799, -12.51499662, -13.73117175,
+       -15.04855834, -15.68867819, -16.90934663, -17.37475463,
+       -17.36823259, -17.59767761, -18.2070528 , -18.74736933,
+       -19.07913011, -19.46397462, -19.59536743, -19.27844658,
+       -19.46435323, -19.68993389, -19.5282751 , -19.9657609 ,
+       -19.70217562, -19.57201232, -20.00381887, -20.47140184,
+       -20.17611788, -20.31921163, -20.78993705, -20.7163973 ,
+       -20.90986309, -20.68773241, -21.09606845, -21.89387914,
+       -22.40193536, -22.62248433, -22.96790693, -22.77467114,
+       -23.61315273, -23.36372131, -23.31837963, -23.29990418,
+       -23.48765255, -22.98182068, -23.09248265, -23.65895569,
+       -24.21342715, -24.08648776, -24.42135129, -24.64241162,
+       -24.18113033, -23.82484431, -23.86301818, -24.0903736 ,
+       -24.30390205, -24.21717779, -23.78661639, -24.07415709,
+       -24.07225716, -23.76061651, -23.62948664, -23.91997757,
+       -24.64811055, -24.95153896, -25.24157506, -25.27284873,
+       -25.27565192, -25.17891767, -25.23433358, -25.43321886,
+       -25.04352162, -24.58333352, -24.73824986, -24.93148721,
+       -24.84768614, -25.04093475, -24.17600143, -22.09428862,
+       -19.3496596 , -23.03968602, -25.78954676, -25.5817202 ,
+       -25.62469261, -26.27148922, -27.35182793, -28.31989553,
+       -28.9935819 , -30.73704342, -31.94759213, -33.18975885,
+       -35.1242329 , -37.62778836, -40.14904427, -42.45741089,
+       -45.01439148, -46.70307452, -47.67431871, -48.0837366 ,
+       -48.43621377, -48.61811216, -48.79890212, -48.74666961,
+       -48.74794222, -49.00247657, -49.11844463, -48.9936172 ,
+       -49.132192  , -49.25673621, -49.23130649, -49.40866027,
+       -49.38011455, -49.38858628, -49.53342602, -49.5981235 ,
+       -49.62009922, -49.69101552, -49.58758728, -49.82702367,
+       -49.97949905, -49.72043534, -49.82397003, -50.0626438 ,
+       -50.11055399, -49.95039496, -49.91155215, -50.13940678,
+       -50.37982521, -50.07483552, -50.03422406, -50.42448987,
+       -50.51269021, -50.30307233, -50.21237975, -50.49295494,
+       -50.71460919, -50.43470045, -50.19142183, -50.64254464,
+       -50.80368853, -50.50164258, -50.46745614, -50.65879763,
+       -50.88696563, -50.71053652, -50.50986498, -50.73895383,
+       -51.02706871, -50.71270187, -50.72127873, -50.83952424,
+       -50.88590025, -50.96350189, -50.8261354 , -50.81420288,
+       -51.00092287, -50.99218211, -50.89914738, -51.00125539,
+       -50.86980852, -51.04388946, -51.14503223, -50.90777252,
+       -50.93322816, -51.15045557, -51.15144817, -51.01973797,
+       -50.9355652 , -51.04821109, -51.36313053, -51.02789081,
+       -50.8317704 , -51.18620003, -51.33763145, -51.06925693,
+       -50.88698147, -51.10737313, -51.40520365, -51.20433306,
+       -53.85523684]), 'psd_noise_db': array([ -9.75590418,  -1.11462624,   0.28494936,  -1.26650568,
+        -4.11668926,  -8.72306505, -11.06898486, -11.48354052,
+       -13.75054396, -13.93391778, -14.53274704, -14.33550786,
+       -16.57184873, -17.10710161, -19.13809215, -19.98226395,
+       -21.88154758, -22.46171488, -22.06762931, -21.55346357,
+       -22.17342823, -21.88642506, -22.14917778, -21.80184976,
+       -23.84309196, -23.84836433, -23.58738765, -23.81366669,
+       -24.82236951, -24.68226583, -24.16485527, -25.0265128 ,
+       -24.28082943, -25.08188981, -24.42733633, -25.55472817,
+       -24.98248677, -27.22771776, -25.03450875, -24.1643896 ,
+       -25.56346553, -23.3893247 , -22.82175247, -23.12342947,
+       -22.22401547, -23.16342805, -22.09378397, -22.76522822,
+       -21.13319949, -21.39719082, -20.84000356, -22.33791142,
+       -22.30054799, -24.05610414, -23.34206768, -23.52599589,
+       -25.03426795, -24.61091534, -26.26166954, -24.13327601,
+       -25.21476148, -25.71492209, -26.68790526, -24.57291742,
+       -24.00932535, -23.2218877 , -21.15860147, -22.90198381,
+       -21.39862799, -22.12370092, -20.92381897, -22.733633  ,
+       -22.73843689, -23.60491712, -22.59633607, -21.22465112,
+       -21.21249893, -20.66133378, -19.93151906, -20.85136632,
+       -20.23129243, -20.49414061, -20.68888604, -21.08248025,
+       -21.48897336, -22.88925273, -22.96188698, -23.01719469,
+       -24.07967763, -23.89509326, -23.25583628, -22.44483461,
+       -22.77309142, -21.92229643, -21.60793011, -23.09794908,
+       -23.87197521, -22.12485311, -21.35007344, -19.61585546,
+       -18.5325667 , -19.30296054, -20.03785103, -21.58119593,
+       -22.73305814, -21.51725638, -23.38608218, -24.96023539,
+       -26.27360635, -27.37677936, -30.84556336, -30.32976155,
+       -33.21227264, -34.51404015, -36.63480689, -37.40054994,
+       -38.31680379, -39.1555069 , -39.47180424, -38.91978747,
+       -39.00604234, -39.93924587, -39.62037577, -39.03840072,
+       -39.67165536, -40.04416379, -39.64224614, -39.6276624 ,
+       -39.75750915, -40.17278455, -40.08880179, -39.54835731,
+       -40.11306148, -40.6575042 , -39.77250359, -39.89831177,
+       -40.69910038, -40.29853173, -40.02676577, -40.3169352 ,
+       -40.52776512, -40.65140555, -40.18089894, -40.18779349,
+       -41.11794701, -40.65528713, -40.01007787, -40.76403802,
+       -41.23901124, -40.54115856, -40.28413616, -40.76659349,
+       -41.22923221, -40.68316864, -40.34727717, -40.98933902,
+       -41.39127853, -40.71654715, -40.45419401, -41.13503378,
+       -41.50591025, -40.69200365, -40.55787727, -41.42882495,
+       -41.39558892, -40.6639169 , -40.92313099, -41.37032287,
+       -41.29411856, -40.96326594, -40.84619925, -41.46980912,
+       -41.54759635, -40.67331596, -41.14091372, -41.82477242,
+       -41.00936895, -40.96774562, -41.49005686, -41.37871158,
+       -41.2548503 , -41.07485968, -41.28688805, -41.78124317,
+       -41.11082626, -40.88945228, -41.83032727, -41.61798264,
+       -40.84619164, -41.28575444, -41.78497123, -41.43498555,
+       -41.04914083, -41.19949027, -41.82044815, -41.59054478,
+       -40.8410128 , -41.30900034, -41.99329936, -41.41657465,
+       -43.90127279]), 'psd_freqs': array([  0. ,   0.5,   1. ,   1.5,   2. ,   2.5,   3. ,   3.5,   4. ,
+         4.5,   5. ,   5.5,   6. ,   6.5,   7. ,   7.5,   8. ,   8.5,
+         9. ,   9.5,  10. ,  10.5,  11. ,  11.5,  12. ,  12.5,  13. ,
+        13.5,  14. ,  14.5,  15. ,  15.5,  16. ,  16.5,  17. ,  17.5,
+        18. ,  18.5,  19. ,  19.5,  20. ,  20.5,  21. ,  21.5,  22. ,
+        22.5,  23. ,  23.5,  24. ,  24.5,  25. ,  25.5,  26. ,  26.5,
+        27. ,  27.5,  28. ,  28.5,  29. ,  29.5,  30. ,  30.5,  31. ,
+        31.5,  32. ,  32.5,  33. ,  33.5,  34. ,  34.5,  35. ,  35.5,
+        36. ,  36.5,  37. ,  37.5,  38. ,  38.5,  39. ,  39.5,  40. ,
+        40.5,  41. ,  41.5,  42. ,  42.5,  43. ,  43.5,  44. ,  44.5,
+        45. ,  45.5,  46. ,  46.5,  47. ,  47.5,  48. ,  48.5,  49. ,
+        49.5,  50. ,  50.5,  51. ,  51.5,  52. ,  52.5,  53. ,  53.5,
+        54. ,  54.5,  55. ,  55.5,  56. ,  56.5,  57. ,  57.5,  58. ,
+        58.5,  59. ,  59.5,  60. ,  60.5,  61. ,  61.5,  62. ,  62.5,
+        63. ,  63.5,  64. ,  64.5,  65. ,  65.5,  66. ,  66.5,  67. ,
+        67.5,  68. ,  68.5,  69. ,  69.5,  70. ,  70.5,  71. ,  71.5,
+        72. ,  72.5,  73. ,  73.5,  74. ,  74.5,  75. ,  75.5,  76. ,
+        76.5,  77. ,  77.5,  78. ,  78.5,  79. ,  79.5,  80. ,  80.5,
+        81. ,  81.5,  82. ,  82.5,  83. ,  83.5,  84. ,  84.5,  85. ,
+        85.5,  86. ,  86.5,  87. ,  87.5,  88. ,  88.5,  89. ,  89.5,
+        90. ,  90.5,  91. ,  91.5,  92. ,  92.5,  93. ,  93.5,  94. ,
+        94.5,  95. ,  95.5,  96. ,  96.5,  97. ,  97.5,  98. ,  98.5,
+        99. ,  99.5, 100. ]), 'enova_weights': array([0.04707506, 0.07002174, 0.03729152, 0.05403359, 0.04125966,
+       0.0269567 , 0.03342153, 0.04691026, 0.02794222, 0.03438242,
+       0.03037645, 0.03607352, 0.02843203, 0.0205315 , 0.01892939,
+       0.03195688, 0.01531889, 0.03918696, 0.04131874, 0.02744287,
+       0.04478325, 0.04730446, 0.04416805, 0.02282332, 0.03736599,
+       0.03978888, 0.05490411])})
+</pre></div>
+</div>
+</section>
+<section id="interactive-overlay">
+<h2>Interactive Overlay<a class="headerlink" href="#interactive-overlay" title="Link to this heading">🔗</a></h2>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">plot_mne_style_overlay_interactive</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">denoised_raw</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">15.0</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_10_gedai_multiband_012.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_012.png" alt="10 gedai multiband" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.591 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  373 MB</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-basics-10-gedai-multiband-py">
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../../_downloads/2511487d24aaa8273d2b5c7aae5b3336/10_gedai_multiband.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_multiband.ipynb</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../../_downloads/14ef17f03a5e9a08b4edf42cb4ab83de/10_gedai_multiband.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">10_gedai_multiband.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-zip docutils container">
+<p><a class="reference download internal" download="" href="../../../_downloads/ae85a1ca193c2b5573f31198b3fb6af7/10_gedai_multiband.zip"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">zipped:</span> <span class="pre">10_gedai_multiband.zip</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="00_gedai.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Understanding the GEDAI model</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="30_gedai_adaptive.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Understanding the adaptive extension of multiband GEDAI</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal" tabindex="-1"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multibandgedai-parameters">MultibandGedai Parameters</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#broadband-pass-two-pass-filtering">Broadband Pass (Two-Pass Filtering):</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-fitting">Model Fitting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform-the-data-denoising">Transform the Data (Denoising)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-multiband-beats-single-band-broadband-gedai">Why Multiband Beats Single-Band Broadband GEDAI</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sensai-manifold-enova-weighted-psd-scalp-topography">SENSAI Manifold, ENOVA-Weighted PSD &amp; Scalp Topography</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-overlay">Interactive Overlay</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2026, Neurotuning.
+      <br/>
+    
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.24.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
