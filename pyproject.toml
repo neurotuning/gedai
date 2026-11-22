@@ -26,6 +26,7 @@ dependencies = [
   'psutil',
   'pywavelets>=1.8.0',
   'scikit-learn>=1.6.1',
+  'scipy>=1.13.0',
 ]
 description = 'GEDAI in python.'
 dynamic = ["version"]
@@ -169,6 +170,7 @@ include-package-data = true
 'gedai' = [
   'data/*.fif',
   'data/*.mat',
+  'data/*.npz',
   'data/*.set',
 ]
 

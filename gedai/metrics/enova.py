@@ -1,9 +1,22 @@
 """ENOVA (Explained Noise Variance) and composite cleaning quality metrics."""
 
+import mne
 import numpy as np
 from scipy.linalg import eigh, subspace_angles
 
-from ..utils._checks import ensure_int
+from ..utils._checks import _check_type, ensure_int
+
+
+def _epoch_var_floor(var_arr: np.ndarray, mean_sq: np.ndarray | float) -> np.ndarray:
+    """Return scale-invariant variance floor to guard flat-signal roundoff."""
+    tiny = float(np.finfo(np.float64).tiny)
+    var_d = np.asarray(var_arr, dtype=np.float64)
+    pos = var_d[var_d > tiny]
+    ref_var = float(np.median(pos)) if pos.size > 0 else 0.0
+    return np.maximum(
+        np.maximum(1e-12 * ref_var, 1e-20 * np.asarray(mean_sq, dtype=np.float64)),
+        tiny,
+    )
 
 
 def compute_enova_per_epoch(
@@ -31,21 +44,35 @@ def compute_enova_per_epoch(
     """
     n_times = clean.shape[-1]
     n_epochs = n_times // epoch_samples
+    tiny = float(np.finfo(np.float64).tiny)
     if n_epochs == 0:
         original = clean + noise
         var_o = float(np.mean(np.var(original, axis=-1)))
         var_n = float(np.mean(np.var(noise, axis=-1)))
-        return np.array([var_n / var_o if var_o > 0 else 0.0], dtype=np.float32)
+        mean_sq = float(np.mean(original * original))
+        floor = max(1e-20 * mean_sq, tiny)
+        return np.array(
+            [var_n / var_o if (var_o > floor and var_n > floor) else 0.0],
+            dtype=np.float32,
+        )
 
-    enova = np.zeros(n_epochs, dtype=np.float32)
+    var_o_arr = np.zeros(n_epochs, dtype=np.float64)
+    var_n_arr = np.zeros(n_epochs, dtype=np.float64)
+    mean_sq_arr = np.zeros(n_epochs, dtype=np.float64)
     for i in range(n_epochs):
         s = i * epoch_samples
         e = s + epoch_samples
         orig_ep = clean[..., s:e] + noise[..., s:e]
-        var_o = float(np.mean(np.var(orig_ep, axis=-1)))
-        var_n = float(np.mean(np.var(noise[..., s:e], axis=-1)))
-        enova[i] = var_n / var_o if var_o > 0 else 0.0
-    return enova
+        var_o_arr[i] = float(np.mean(np.var(orig_ep, axis=-1)))
+        var_n_arr[i] = float(np.mean(np.var(noise[..., s:e], axis=-1)))
+        mean_sq_arr[i] = float(np.mean(orig_ep * orig_ep))
+
+    floor = _epoch_var_floor(var_o_arr, mean_sq_arr)
+    valid = (var_o_arr > floor) & (var_n_arr > floor)
+    enova = np.divide(
+        var_n_arr, var_o_arr, out=np.zeros(n_epochs, dtype=np.float64), where=valid
+    )
+    return enova.astype(np.float32)
 
 
 def compute_enova_per_channel(
@@ -76,21 +103,102 @@ def compute_enova_per_channel(
         original = clean + noise
         var_o = np.var(original, axis=1)
         var_n = np.var(noise, axis=1)
+        mean_sq = np.mean(original * original, axis=1)
+        floor = _epoch_var_floor(var_o, mean_sq)
+        valid = (var_o > floor) & (var_n > floor)
         return np.divide(
-            var_n, var_o, out=np.zeros_like(var_n, dtype=np.float32), where=(var_o > 0)
-        )
+            var_n, var_o, out=np.zeros_like(var_n, dtype=np.float32), where=valid
+        ).astype(np.float32)
 
-    enova_acc = np.zeros(n_ch, dtype=np.float64)
+    var_o_mat = np.zeros((n_ch, n_epochs), dtype=np.float64)
+    var_n_mat = np.zeros((n_ch, n_epochs), dtype=np.float64)
+    mean_sq_mat = np.zeros((n_ch, n_epochs), dtype=np.float64)
     for i in range(n_epochs):
         s = i * epoch_samples
         e = s + epoch_samples
         orig_ep = clean[:, s:e] + noise[:, s:e]
-        var_o = np.var(orig_ep, axis=1)
-        var_n = np.var(noise[:, s:e], axis=1)
-        enova_acc += np.divide(
-            var_n, var_o, out=np.zeros_like(var_n, dtype=np.float64), where=(var_o > 0)
-        )
-    return (enova_acc / n_epochs).astype(np.float32)
+        var_o_mat[:, i] = np.var(orig_ep, axis=1)
+        var_n_mat[:, i] = np.var(noise[:, s:e], axis=1)
+        mean_sq_mat[:, i] = np.mean(orig_ep * orig_ep, axis=1)
+
+    floor = _epoch_var_floor(var_o_mat, mean_sq_mat)
+    valid = (var_o_mat > floor) & (var_n_mat > floor)
+    ratio_mat = np.divide(
+        var_n_mat, var_o_mat, out=np.zeros_like(var_o_mat), where=valid
+    )
+    return np.mean(ratio_mat, axis=1).astype(np.float32)
+
+
+def annotate_bad_epochs(
+    raw: mne.io.BaseRaw,
+    enova_per_epoch: np.ndarray,
+    epoch_duration: float = 1.0,
+    threshold: float = 0.85,
+    description: str = "BAD_gedai",
+) -> mne.Annotations:
+    """Build MNE Annotations marking epochs whose ENOVA exceeds ``threshold``.
+
+    Contiguous bad epochs are merged into single annotation intervals aligned to
+    ``raw.first_time`` and clipped to the recording duration.
+
+    Parameters
+    ----------
+    raw : mne.io.BaseRaw
+        Raw instance corresponding to ``enova_per_epoch``.
+    enova_per_epoch : np.ndarray, shape (n_epochs,)
+        Explained noise variance ratio per epoch.
+    epoch_duration : float, default=1.0
+        Duration (seconds) of each epoch in ``enova_per_epoch``.
+    threshold : float, default=0.85
+        ENOVA threshold above which an epoch is flagged bad.
+    description : str, default="BAD_gedai"
+        MNE annotation label (prefix ``"BAD_"`` enables native MNE rejection).
+
+    Returns
+    -------
+    annotations : mne.Annotations
+        Annotations object covering flagged bad segments.
+    """
+    _check_type(raw, (mne.io.BaseRaw,), "raw")
+    _check_type(epoch_duration, (float, int), "epoch_duration")
+    _check_type(threshold, ("numeric",), "threshold")
+    _check_type(description, (str,), "description")
+    if not np.isfinite(epoch_duration) or epoch_duration <= 0:
+        raise ValueError(f"epoch_duration must be > 0, got {epoch_duration!r}.")
+    if not np.isfinite(threshold) or threshold <= 0:
+        raise ValueError(f"threshold must be > 0, got {threshold!r}.")
+
+    enova_arr = np.asarray(enova_per_epoch, dtype=np.float64).ravel()
+    bad_mask = enova_arr > float(threshold)
+    orig_time = raw.annotations.orig_time if raw.annotations is not None else None
+    if not np.any(bad_mask):
+        return mne.Annotations([], [], [], orig_time=orig_time)
+
+    max_dur = raw.n_times / float(raw.info["sfreq"])
+    first_time = float(raw.first_time)
+    onsets: list[float] = []
+    durations: list[float] = []
+
+    idx = 0
+    n_ep = len(bad_mask)
+    while idx < n_ep:
+        if not bad_mask[idx]:
+            idx += 1
+            continue
+        start_ep = idx
+        while idx < n_ep and bad_mask[idx]:
+            idx += 1
+        end_ep = idx
+        rel_onset = start_ep * float(epoch_duration)
+        rel_end = min(end_ep * float(epoch_duration), max_dur)
+        if rel_end > rel_onset:
+            onsets.append(first_time + rel_onset)
+            durations.append(rel_end - rel_onset)
+
+    descriptions = [description] * len(onsets)
+    return mne.Annotations(
+        onset=onsets, duration=durations, description=descriptions, orig_time=orig_time
+    )
 
 
 def enova_summary(enova_per_epoch: np.ndarray) -> dict:

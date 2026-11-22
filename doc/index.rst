@@ -12,6 +12,7 @@
 
    self
    install/index
+   faq
    api/index
    generated/tutorials/index
    license/index

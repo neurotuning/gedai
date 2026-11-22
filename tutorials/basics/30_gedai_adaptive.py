@@ -22,6 +22,7 @@ across different frequency ranges.
 
 # %%
 import matplotlib.pyplot as plt
+import numpy as np
 from mne.io import read_raw
 
 from gedai import AdaptiveMultibandGedai
@@ -120,14 +121,21 @@ adaptive_multiband_gedai = AdaptiveMultibandGedai(
 # uses ``raw.info['highpass']`` to automatically exclude sub-cutoff levels.
 
 wavelet_low_cutoff = "auto"
-noise_multiplier = "auto"
+strength = "auto"
 
 # %%
-# Fit the model directly on raw data:
+# Fit the model directly on raw data. Notice ``strength="auto"`` (equivalent to
+# ``7.0`` on the ``0``-``10`` scale) computes closed-form adaptive Z3 spectral
+# weighting while protecting rank-1/rank-2 dipolar brain rhythms. For long
+# recordings with non-stationary background EEG signal (e.g., sleep, epilepsy,
+# fatigue), pass ``smoothing_window=30.0`` (seconds) to adapt thresholds
+# smoothly across time via ``makima`` interpolation, and use ``reference`` to
+# select ``"average"``, ``"REST"``, linked mastoids, or a single electrode:
 adaptive_multiband_gedai.fit_raw(
     raw,
-    noise_multiplier=noise_multiplier,
+    strength=strength,
     wavelet_low_cutoff=wavelet_low_cutoff,
+    reference="average",
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
     n_jobs=n_jobs,
@@ -152,10 +160,13 @@ plt.show()
 # Transform the Data (Denoising)
 # ------------------------------
 # Denoising is performed seamlessly using continuous dual-stream cosine overlap-add
-# blending across each band:
+# blending across each band. Passing ``bad_epoch_threshold=0.85`` non-destructively
+# flags any residual extreme-ENOVA 1-second windows with MNE ``"BAD_gedai"``
+# annotations and populates ``bad_epochs_``:
 adaptive_multiband_denoised_raw = adaptive_multiband_gedai.transform_raw(
     raw,
     interpolate_bads=bool(adaptive_multiband_gedai.bad_channels_),
+    bad_epoch_threshold=0.85,
     n_jobs=n_jobs,
 )
 
@@ -186,6 +197,81 @@ print(
     f"{adaptive_multiband_gedai.metrics_['enova_per_channel'].max() * 100:.2f} %"
 )
 
+n_bad_epochs = (
+    int(adaptive_multiband_gedai.bad_epochs_.sum())
+    if adaptive_multiband_gedai.bad_epochs_ is not None
+    else 0
+)
+print(f"Flagged BAD_gedai epochs:  {n_bad_epochs}")
+
 # %%
-# Finally, we can visualize the before-and-after denoising overlay:
+# Visualizing Adaptive Window Durations & Per-Epoch ENOVA
+# -------------------------------------------------------
+# The figure below summarizes two key behaviors of ``AdaptiveMultibandGedai``:
+# (left) how each wavelet band is automatically assigned a frequency-scaled
+# calibration window based on ``cycles_per_wavelet``, and (right) how per-epoch
+# ENOVA tracks transient artifact bursts relative to ``bad_epoch_threshold``.
+
+active_bands = [
+    wf for wf in adaptive_multiband_gedai._wavelets_fits if not wf["ignore"]
+]
+band_labels = [f"{wf['fmin']:.2f}-{wf['fmax']:.2f} Hz" for wf in active_bands]
+band_durs = [float(wf["duration"]) for wf in active_bands]
+
+fig_qc, axes_qc = plt.subplots(1, 2, figsize=(11.4, 4.3), constrained_layout=True)
+
+y_pos = np.arange(len(active_bands))
+bars = axes_qc[0].barh(y_pos, band_durs, color="#2b8cbe", edgecolor="black", alpha=0.9)
+for bar, dur in zip(bars, band_durs, strict=True):
+    axes_qc[0].text(
+        dur + 0.08,
+        bar.get_y() + bar.get_height() / 2,
+        f"{dur:.2f} s",
+        va="center",
+        fontsize=8.3,
+    )
+axes_qc[0].set_yticks(y_pos, band_labels)
+axes_qc[0].invert_yaxis()
+axes_qc[0].set_xlim(0, max(band_durs) * 1.25)
+axes_qc[0].set_xlabel("Adaptive Epoch Duration (s)")
+axes_qc[0].set_title("A. Cycle-Adaptive Window per Wavelet Band")
+axes_qc[0].grid(axis="x", alpha=0.25)
+
+t_ep = np.arange(len(enova_epochs)) + 0.5
+bad_ep = (
+    np.asarray(adaptive_multiband_gedai.bad_epochs_, dtype=bool)
+    if adaptive_multiband_gedai.bad_epochs_ is not None
+    else np.zeros(len(enova_epochs), dtype=bool)
+)
+axes_qc[1].bar(
+    t_ep[~bad_ep],
+    enova_epochs[~bad_ep] * 100.0,
+    width=0.8,
+    color="#4e79a7",
+    label="Normal epochs",
+)
+if np.any(bad_ep):
+    axes_qc[1].bar(
+        t_ep[bad_ep],
+        enova_epochs[bad_ep] * 100.0,
+        width=0.8,
+        color="#e15759",
+        label="BAD_gedai (> 85%)",
+    )
+axes_qc[1].axhline(85.0, color="#c62828", ls="--", lw=1.4, label="Threshold (85%)")
+axes_qc[1].set_xlabel("Recording Time (s)")
+axes_qc[1].set_ylabel("ENOVA (%)")
+axes_qc[1].set_ylim(0, 105)
+axes_qc[1].set_title("B. Per-Epoch ENOVA & BAD_gedai QC")
+axes_qc[1].legend(loc="upper right", fontsize=8.3, frameon=True)
+axes_qc[1].grid(axis="y", alpha=0.25)
+plt.show()
+
+# %%
+# Next, inspect the 3-column SENSAI dashboard (SSI manifolds, ENOVA-weighted
+# Welch PSD, and per-channel ENOVA scalp topoplot) alongside the interactive
+# time-series overlay:
+adaptive_multiband_gedai.plot_sensai(
+    raw_before=raw, raw_after=adaptive_multiband_denoised_raw, show=True
+)
 plot_mne_style_overlay_interactive(raw, adaptive_multiband_denoised_raw, duration=15.0)

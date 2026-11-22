@@ -6,8 +6,12 @@ import numpy as np
 from mne import BaseEpochs
 from mne.io import BaseRaw
 from mne.parallel import parallel_func
+from scipy.interpolate import Akima1DInterpolator
+from scipy.linalg import eigh
 
 from gedai.gedai._utils import (
+    _append_raw_annotations,
+    _apply_eeg_reference,
     _check_bad_channel_threshold,
     _check_fit_info,
     _check_on_bad_channel,
@@ -21,8 +25,9 @@ from gedai.gedai._utils import (
     _run_two_pass_bad_channel_detection,
 )
 
-from ..covariance.covariance import _ensure_cov, _pick_cov
+from ..covariance.covariance import _resolve_reference_and_cov
 from ..metrics.enova import (
+    annotate_bad_epochs,
     compute_composite_sensai,
     compute_enova_per_channel,
     compute_enova_per_epoch,
@@ -35,21 +40,24 @@ from ..sensai.sensai import (
     _scale_invariant_eigh,
     _sensai_gridsearch,
     _sensai_optimize,
+    _sensai_score_loop,
     _sensai_to_eigen,
+    compute_z3_noise_multiplier,
 )
 from ..utils._checks import (
     _check_n_jobs,
     _check_type,
-    _ensure_noise_multiplier,
+    _ensure_strength,
     ensure_engine,
     ensure_int,
+    strength_to_z3_scale,
 )
 from ..utils._docs import fill_doc
 from ..utils._torch_backend import (
     clean_continuous_stream_torch,
     clean_epochs_batched_torch,
 )
-from ..utils.logs import verbose
+from ..utils.logs import logger, verbose
 from ..wavelet.transform import _apply_wavelet_highpass_prefilter
 
 
@@ -67,6 +75,109 @@ def _check_sensai_method(sensai_method):
             "sensai_method must be either 'gridsearch' or 'optimize', "
             f"got {sensai_method}"
         )
+
+
+def _check_smoothing_window(smoothing_window: float | int | None) -> float | None:
+    """Validate sliding-window adaptation duration in seconds."""
+    if smoothing_window is None:
+        return None
+    if isinstance(smoothing_window, bool):
+        raise TypeError("smoothing_window must be a positive float or None, got bool.")
+    _check_type(smoothing_window, ("numeric",), "smoothing_window")
+    val = float(smoothing_window)
+    if np.isnan(val) or val <= 0:
+        raise ValueError(
+            "smoothing_window must be > 0 (or None / np.inf), "
+            f"got {smoothing_window!r}."
+        )
+    if np.isinf(val):
+        return None
+    return val
+
+
+def _check_bad_epoch_threshold(
+    bad_epoch_threshold: float | int | None,
+) -> float | None:
+    """Validate optional ENOVA threshold for bad-epoch annotation/flagging."""
+    if bad_epoch_threshold is None:
+        return None
+    if isinstance(bad_epoch_threshold, bool):
+        raise TypeError(
+            "bad_epoch_threshold must be a positive float or None, got bool."
+        )
+    _check_type(bad_epoch_threshold, ("numeric",), "bad_epoch_threshold")
+    val = float(bad_epoch_threshold)
+    if not np.isfinite(val) or val <= 0:
+        raise ValueError(
+            f"bad_epoch_threshold must be finite and > 0, got {bad_epoch_threshold!r}."
+        )
+    return val
+
+
+def _validate_reference_cov_arg(reference_cov) -> None:
+    """Validate ``reference_cov`` type and supported string keywords."""
+    _check_type(reference_cov, (str, mne.Covariance, mne.Forward), "reference_cov")
+    if isinstance(reference_cov, str):
+        norm = reference_cov.strip().lower()
+        if norm not in ("leadfield", "projection", "projected", "dipole"):
+            raise ValueError(
+                "Reference covariance must be 'leadfield', 'projection', "
+                "an mne.Covariance, or an mne.Forward instance; "
+                f"got '{reference_cov}' instead."
+            )
+
+
+def _pad_and_segment_continuous(
+    data: np.ndarray, sfreq: float, epoch_duration: float
+) -> tuple[np.ndarray, int, int, int]:
+    """Reflect-pad continuous 2D data and return non-overlapping epochs."""
+    n_ch, orig_len = data.shape
+    epoch_samples = max(2, int(round(epoch_duration * sfreq)))
+    if epoch_samples % 2 != 0:
+        epoch_samples += 1
+    rem = orig_len % epoch_samples
+    pad_len = (epoch_samples - rem) % epoch_samples
+    if pad_len > 0:
+        data_padded = np.pad(data, ((0, 0), (0, pad_len)), mode="reflect")
+    else:
+        data_padded = data
+    total_len = data_padded.shape[1]
+    n_ep = total_len // epoch_samples
+    epochs_arr = (
+        data_padded[:, : n_ep * epoch_samples]
+        .reshape(n_ch, n_ep, epoch_samples)
+        .transpose(1, 0, 2)
+    )
+    return (
+        np.ascontiguousarray(epochs_arr, dtype=np.float64),
+        epoch_samples,
+        n_ep,
+        orig_len,
+    )
+
+
+def _interp_window_curve(
+    window_centers: np.ndarray, values: np.ndarray, n_ep: int
+) -> np.ndarray:
+    """Smooth and makima-interpolate window-level curves onto epoch indices."""
+    vals = np.asarray(values, dtype=np.float64).ravel()
+    if len(vals) <= 1:
+        return np.full(n_ep, float(vals[0]) if len(vals) else 0.0, dtype=np.float64)
+    if len(vals) >= 3:
+        padded_v = np.pad(vals, 1, mode="edge")
+        vals = (padded_v[:-2] + padded_v[1:-1] + padded_v[2:]) / 3.0
+    padded_c = np.concatenate(
+        [[0.0], np.asarray(window_centers, dtype=np.float64), [float(n_ep - 1)]]
+    )
+    padded_y = np.concatenate([[vals[0]], vals, [vals[-1]]])
+    u_c, u_idx = np.unique(padded_c, return_index=True)
+    u_y = padded_y[u_idx]
+    target_x = np.arange(n_ep, dtype=np.float64)
+    if len(u_c) == 1:
+        return np.full(n_ep, float(u_y[0]), dtype=np.float64)
+    if len(u_c) == 2:
+        return np.interp(target_x, u_c, u_y)
+    return Akima1DInterpolator(u_c, u_y, method="makima")(target_x)
 
 
 def _get_channel_multiplier() -> float:
@@ -137,8 +248,14 @@ class Gedai:
         self.bad_channels_ = []
         self.detected_bad_channels_ = []
         self.flat_channels_ = []
+        self.flat_reference_channels_ = []
         self.noisy_channels_ = []
         self.enova_per_channel_ = None
+        self.bad_epochs_ = None
+        self._reference = "average"
+        self._ref_spec = None
+        self._reference_cov_arg = "leadfield"
+        self._smoothing_window = None
 
     def _clone_unfitted(self):
         """Return an unfitted clone with the same initialization settings."""
@@ -176,7 +293,7 @@ class Gedai:
         picks: list | str = "eeg",
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
-        noise_multiplier: float | str = "auto",
+        strength: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         sensai_tol: float = 0.1,
         n_pc: int | str = "auto",
@@ -185,6 +302,7 @@ class Gedai:
         engine: str | None = None,
         on_bad_channel: str = "exclude",
         bad_channel_threshold: float | str | None = None,
+        reference: str | None = "average",
     ):
         """Fit the GEDAI model to the epochs.
 
@@ -195,7 +313,7 @@ class Gedai:
         %(picks)s
         %(reference_cov)s
         %(sensai_method)s
-        %(noise_multiplier)s
+        %(strength)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(sensai_tol)s
@@ -207,12 +325,13 @@ class Gedai:
             engine specified at initialization.
         %(on_bad_channel)s
         %(bad_channel_threshold)s
+        %(reference)s
         """
         self._check_unfitted()
         current_engine = ensure_engine(engine) if engine is not None else self.engine
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_sensai_method(sensai_method)
-        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        resolved_strength = _ensure_strength(strength)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
@@ -220,7 +339,7 @@ class Gedai:
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
         resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
-        ensured_cov = _ensure_cov(reference_cov)
+        _validate_reference_cov_arg(reference_cov)
 
         if resolved_bad_thresh is not None:
             _run_two_pass_bad_channel_detection(
@@ -232,15 +351,16 @@ class Gedai:
                 on_bad_channel=on_bad_channel,
                 threshold=resolved_bad_thresh,
                 fit_kwargs=dict(
-                    reference_cov=ensured_cov,
+                    reference_cov=reference_cov,
                     sensai_method=sensai_method,
-                    noise_multiplier=noise_multiplier,
+                    strength=resolved_strength,
                     sensai_bounds=sensai_bounds,
                     sensai_tol=sensai_tol,
                     n_pc=n_pc,
                     n_jobs=n_jobs,
                     verbose=verbose,
                     engine=current_engine,
+                    reference=reference,
                 ),
                 transform_kwargs=dict(
                     n_jobs=n_jobs,
@@ -250,13 +370,24 @@ class Gedai:
             return
 
         epochs_fit, excluded_bads = _prepare_epochs_fit(
-            epochs, picks, on_bad_channel=on_bad_channel, return_bads=True
+            epochs,
+            picks,
+            on_bad_channel=on_bad_channel,
+            return_bads=True,
+            apply_reference=False,
         )
-        data = epochs_fit.get_data()
+        cov, ref_spec = _resolve_reference_and_cov(
+            reference_cov, epochs_fit.info, reference=reference
+        )
+        _apply_eeg_reference(epochs_fit, ref_spec)
+        if ref_spec.get("is_external_ref", False):
+            logger.info(
+                "Aligned leadfield to external recording reference '%s'.",
+                ref_spec.get("external_ref_label", ""),
+            )
 
-        cov = ensured_cov.copy()
-        cov = _pick_cov(cov, epochs_fit.info)
-        reference_cov = cov.data.copy()
+        data = epochs_fit.get_data()
+        reference_cov_arr = cov.data.copy()
 
         signal_type = _detect_signal_type(epochs_fit.info)
 
@@ -268,42 +399,56 @@ class Gedai:
         data_cov_trace = float(
             np.mean(np.sum(centered * centered, axis=(1, 2)) / denom)
         )
-        ref_cov_trace = float(np.trace(reference_cov))
+        ref_cov_trace = float(np.trace(reference_cov_arr))
         if ref_cov_trace > 0 and data_cov_trace > 0:
-            reference_cov *= data_cov_trace / ref_cov_trace
+            reference_cov_arr *= data_cov_trace / ref_cov_trace
 
-        avg_diag_power = np.trace(reference_cov) / reference_cov.shape[0]
+        avg_diag_power = np.trace(reference_cov_arr) / reference_cov_arr.shape[0]
         regularization_lambda = 0.05
-        reference_cov = (1.0 - regularization_lambda) * reference_cov + (
+        reference_cov_arr = (1.0 - regularization_lambda) * reference_cov_arr + (
             regularization_lambda * avg_diag_power
-        ) * np.eye(reference_cov.shape[0])
-        reference_cov = (reference_cov + reference_cov.T) * 0.5
-        cov.update(data=reference_cov)
+        ) * np.eye(reference_cov_arr.shape[0])
+        reference_cov_arr = (reference_cov_arr + reference_cov_arr.T) * 0.5
+        cov.update(data=reference_cov_arr)
 
         all_eval, all_evec = _precompute_gevd(
-            data, reference_cov, engine=current_engine
+            data, reference_cov_arr, engine=current_engine
         )
         epochs_eigenvalues = all_eval
         percentile = 99 if signal_type == "meg" else 98
         if n_pc == "auto":
             resolved_n_pc = _compute_default_n_pc(
-                reference_cov, signal_type=signal_type, data=data
+                reference_cov_arr, signal_type=signal_type, data=data
             )
         else:
             resolved_n_pc = ensure_int(n_pc, "n_pc")
-            if not 1 <= resolved_n_pc <= reference_cov.shape[0]:
-                max_n_pc = reference_cov.shape[0]
+            if not 1 <= resolved_n_pc <= reference_cov_arr.shape[0]:
+                max_n_pc = reference_cov_arr.shape[0]
                 raise ValueError(
                     f"n_pc must be an integer in the range [1, {max_n_pc}], "
                     f"got {n_pc!r}."
                 )
 
-        fit_epochs = mne.EpochsArray(
-            data, epochs_fit.info, tmin=epochs.tmin, verbose=False
-        )
         min_sensai_threshold, max_sensai_threshold = (
             float(sensai_bounds[0]),
             float(sensai_bounds[1]),
+        )
+        z3_scale = strength_to_z3_scale(resolved_strength)
+        _, ref_evecs = eigh(reference_cov_arr)
+        template = ref_evecs[:, ::-1][:, :resolved_n_pc]
+        m_eff, *_ = compute_z3_noise_multiplier(
+            all_eval,
+            all_evec,
+            reference_cov_arr,
+            template,
+            resolved_n_pc,
+            min_threshold=min_sensai_threshold,
+            epoch_samples=data.shape[-1],
+        )
+        resolved_noise_multiplier = float(z3_scale * m_eff)
+
+        fit_epochs = mne.EpochsArray(
+            data, epochs_fit.info, tmin=epochs.tmin, verbose=False
         )
         step = 0.1
 
@@ -319,9 +464,9 @@ class Gedai:
             ]
             threshold, sensai_value, runs = _sensai_gridsearch(
                 fit_epochs,
-                reference_cov,
+                reference_cov_arr,
                 n_pc=resolved_n_pc,
-                noise_multiplier=noise_multiplier,
+                noise_multiplier=resolved_noise_multiplier,
                 eigen_thresholds=eigen_thresholds,
                 n_jobs=n_jobs,
                 verbose=verbose,
@@ -335,9 +480,9 @@ class Gedai:
             sensai_threshold_bounds = (min_sensai_threshold, max_sensai_threshold)
             threshold, sensai_value, runs = _sensai_optimize(
                 fit_epochs,
-                reference_cov,
+                reference_cov_arr,
                 n_pc=resolved_n_pc,
-                noise_multiplier=noise_multiplier,
+                noise_multiplier=resolved_noise_multiplier,
                 epochs_eigenvalues=epochs_eigenvalues,
                 bounds=sensai_threshold_bounds,
                 all_eval=all_eval,
@@ -365,6 +510,7 @@ class Gedai:
             "threshold": threshold,
             "sensai_value": sensai_value,
             "T1": T1,
+            "strength": float(resolved_strength),
         }
 
         self._fit = {
@@ -390,11 +536,21 @@ class Gedai:
         self._duration = (self._n_samples - 1) / self._info["sfreq"]
         self._on_bad_channel = on_bad_channel
         self._bad_channel_threshold = None
+        self._reference = ref_spec["mode"]
+        self._ref_spec = ref_spec
+        self._reference_cov_arg = (
+            reference_cov
+            if isinstance(reference_cov, (str, mne.Forward))
+            else "leadfield"
+        )
+        self._smoothing_window = None
         self.bad_channels_ = list(excluded_bads)
         self.detected_bad_channels_ = []
         self.flat_channels_ = []
+        self.flat_reference_channels_ = []
         self.noisy_channels_ = []
         self.enova_per_channel_ = None
+        self.bad_epochs_ = None
 
     @fill_doc
     @verbose
@@ -407,7 +563,7 @@ class Gedai:
         reject_by_annotation: bool | None = False,
         reference_cov: str | mne.Covariance | mne.Forward = "leadfield",
         sensai_method: str = "optimize",
-        noise_multiplier: float | str = "auto",
+        strength: float | str = "auto",
         sensai_bounds: tuple[float, float] = (-6.0, 12.0),
         sensai_tol: float = 0.1,
         highpass_prefilter: float | None = 0.1,
@@ -417,6 +573,8 @@ class Gedai:
         engine: str | None = None,
         on_bad_channel: str = "exclude",
         bad_channel_threshold: float | str | None = None,
+        reference: str | None = "average",
+        smoothing_window: float | None = None,
     ):
         """Fit the GEDAI model to the raw data.
 
@@ -430,7 +588,7 @@ class Gedai:
         %(reject_by_annotation)s
         %(reference_cov)s
         %(sensai_method)s
-        %(noise_multiplier)s
+        %(strength)s
         sensai_bounds : tuple of float
             The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).
         %(sensai_tol)s
@@ -443,6 +601,8 @@ class Gedai:
             Computation engine ('numpy', 'torch', or 'auto').
         %(on_bad_channel)s
         %(bad_channel_threshold)s
+        %(reference)s
+        %(smoothing_window)s
         """
         _check_type(raw, (BaseRaw,), "raw")
         _check_type(duration, (float, int), "duration")
@@ -451,13 +611,14 @@ class Gedai:
         if not (0 <= overlap < 1):
             raise ValueError(f"overlap must be between 0 and 1, got {overlap}")
         _check_type(reject_by_annotation, (bool,), "reject_by_annotation")
-        reference_cov = _ensure_cov(reference_cov)
+        _validate_reference_cov_arg(reference_cov)
         _check_sensai_method(sensai_method)
-        noise_multiplier = _ensure_noise_multiplier(noise_multiplier)
+        resolved_strength = _ensure_strength(strength)
         _check_type(sensai_bounds, (tuple, list), "sensai_bounds")
         _check_type(sensai_tol, (float, int), "sensai_tol")
         if sensai_tol <= 0:
             raise ValueError(f"sensai_tol must be > 0, got {sensai_tol}")
+        resolved_smooth = _check_smoothing_window(smoothing_window)
         n_jobs = _check_n_jobs(n_jobs)
         on_bad_channel = _check_on_bad_channel(on_bad_channel)
         resolved_bad_thresh = _check_bad_channel_threshold(bad_channel_threshold)
@@ -478,7 +639,7 @@ class Gedai:
                     reject_by_annotation=reject_by_annotation,
                     reference_cov=reference_cov,
                     sensai_method=sensai_method,
-                    noise_multiplier=noise_multiplier,
+                    strength=resolved_strength,
                     sensai_bounds=sensai_bounds,
                     sensai_tol=sensai_tol,
                     highpass_prefilter=highpass_prefilter,
@@ -486,6 +647,8 @@ class Gedai:
                     n_jobs=n_jobs,
                     verbose=verbose,
                     engine=current_engine,
+                    reference=reference,
+                    smoothing_window=resolved_smooth,
                 ),
                 transform_kwargs=dict(
                     overlap=overlap,
@@ -496,8 +659,21 @@ class Gedai:
             return
 
         raw_fit, excluded_bads = _prepare_raw_fit(
-            raw, picks, on_bad_channel=on_bad_channel, return_bads=True
+            raw,
+            picks,
+            on_bad_channel=on_bad_channel,
+            return_bads=True,
+            apply_reference=False,
         )
+        cov, ref_spec = _resolve_reference_and_cov(
+            reference_cov, raw_fit.info, reference=reference
+        )
+        _apply_eeg_reference(raw_fit, ref_spec)
+        if ref_spec.get("is_external_ref", False):
+            logger.info(
+                "Aligned leadfield to external recording reference '%s'.",
+                ref_spec.get("external_ref_label", ""),
+            )
 
         # Enforce at least k*C samples to avoid rank deficiency and
         # ill-conditioning in high-density arrays
@@ -523,6 +699,27 @@ class Gedai:
             )
         self._highpass_prefilter = highpass_prefilter
 
+        if resolved_smooth is not None:
+            self._fit_sliding_window_raw(
+                raw_fit.get_data(verbose=False),
+                raw_fit.info,
+                cov=cov,
+                ref_spec=ref_spec,
+                reference_cov_arg=reference_cov,
+                duration=duration,
+                sensai_method=sensai_method,
+                resolved_strength=resolved_strength,
+                sensai_bounds=sensai_bounds,
+                sensai_tol=sensai_tol,
+                n_pc=n_pc,
+                n_jobs=n_jobs,
+                engine=current_engine,
+                smoothing_window=resolved_smooth,
+                on_bad_channel=on_bad_channel,
+                excluded_bads=excluded_bads,
+            )
+            return
+
         overlap_seconds = duration * overlap
         epochs = mne.make_fixed_length_epochs(
             raw_fit,
@@ -535,9 +732,9 @@ class Gedai:
         self.fit_epochs(
             epochs,
             picks=raw_fit.ch_names,
-            reference_cov=reference_cov,
+            reference_cov=cov,
             sensai_method=sensai_method,
-            noise_multiplier=noise_multiplier,
+            strength=resolved_strength,
             sensai_bounds=sensai_bounds,
             sensai_tol=sensai_tol,
             n_pc=n_pc,
@@ -546,14 +743,383 @@ class Gedai:
             engine=current_engine,
             on_bad_channel="ignore",
             bad_channel_threshold=None,
+            reference="none",
         )
+        self._reference = ref_spec["mode"]
+        self._ref_spec = ref_spec
+        self._reference_cov_arg = (
+            reference_cov
+            if isinstance(reference_cov, (str, mne.Forward))
+            else "leadfield"
+        )
+        self._smoothing_window = None
         self._on_bad_channel = on_bad_channel
         self._bad_channel_threshold = None
         self.bad_channels_ = list(excluded_bads)
         self.detected_bad_channels_ = []
         self.flat_channels_ = []
+        self.flat_reference_channels_ = []
         self.noisy_channels_ = []
         self.enova_per_channel_ = None
+        self.bad_epochs_ = None
+
+    def _fit_continuous_band_array(
+        self,
+        band_data: np.ndarray,
+        info: mne.Info,
+        cov: mne.Covariance,
+        duration: float,
+        sensai_method: str = "optimize",
+        strength: float | str = "auto",
+        sensai_bounds: tuple[float, float] = (-6.0, 12.0),
+        sensai_tol: float = 0.1,
+        n_pc: int | str = "auto",
+        engine: str = "auto",
+        n_jobs: int = 1,
+        smoothing_window: float | None = None,
+    ) -> None:
+        """Fit an already-referenced continuous sub-band array (used by multiband)."""
+        self._check_unfitted()
+        resolved_strength = _ensure_strength(strength)
+        ref_spec = {
+            "mode": "none",
+            "label": "none",
+            "is_rest": False,
+            "is_external_ref": False,
+            "external_ref_label": "",
+            "R": np.eye(band_data.shape[0], dtype=np.float64),
+            "rest_operator": None,
+            "required_indices": [],
+            "required_channels": [],
+        }
+        self._highpass_prefilter = None
+        resolved_smooth = _check_smoothing_window(smoothing_window)
+        if resolved_smooth is None:
+            sfreq = float(info["sfreq"])
+            epoch_samples = max(2, int(round(duration * sfreq)))
+            if epoch_samples % 2 != 0:
+                epoch_samples += 1
+            n_ep = band_data.shape[1] // epoch_samples
+            if n_ep > 0:
+                ep_arr = (
+                    band_data[:, : n_ep * epoch_samples]
+                    .reshape(band_data.shape[0], n_ep, epoch_samples)
+                    .transpose(1, 0, 2)
+                )
+            else:
+                ep_arr = band_data[np.newaxis, :, :]
+            epochs_band = mne.EpochsArray(ep_arr, info, tmin=0.0, verbose=False)
+            self.fit_epochs(
+                epochs_band,
+                picks="all",
+                reference_cov=cov.copy(),
+                sensai_method=sensai_method,
+                strength=resolved_strength,
+                sensai_bounds=sensai_bounds,
+                sensai_tol=sensai_tol,
+                n_pc=n_pc,
+                n_jobs=n_jobs,
+                verbose=False,
+                engine=engine,
+                reference="none",
+            )
+            return
+
+        self._fit_sliding_window_raw(
+            band_data,
+            info,
+            cov=cov.copy(),
+            ref_spec=ref_spec,
+            reference_cov_arg="leadfield",
+            duration=duration,
+            sensai_method=sensai_method,
+            resolved_strength=resolved_strength,
+            sensai_bounds=sensai_bounds,
+            sensai_tol=sensai_tol,
+            n_pc=n_pc,
+            n_jobs=n_jobs,
+            engine=engine,
+            smoothing_window=resolved_smooth,
+            on_bad_channel="ignore",
+            excluded_bads=[],
+        )
+
+    def _fit_sliding_window_raw(
+        self,
+        raw_data: np.ndarray,
+        info: mne.Info,
+        cov: mne.Covariance,
+        ref_spec: dict,
+        reference_cov_arg,
+        duration: float,
+        sensai_method: str,
+        resolved_strength: float,
+        sensai_bounds: tuple[float, float],
+        sensai_tol: float,
+        n_pc: int | str,
+        n_jobs: int,
+        engine: str,
+        smoothing_window: float,
+        on_bad_channel: str,
+        excluded_bads: list[str],
+    ) -> None:
+        """Fit smooth non-stationary per-epoch threshold curves on continuous data."""
+        sfreq = float(info["sfreq"])
+        signal_type = _detect_signal_type(info)
+        percentile = 99 if signal_type == "meg" else 98
+        epochs_arr, epoch_samples, n_ep, _ = _pad_and_segment_continuous(
+            raw_data, sfreq, duration
+        )
+
+        # Match MATLAB GEDAI_per_band trace matching on the continuous recording
+        cov_fit = cov.copy()
+        ref_arr = cov_fit.data.astype(np.float64, copy=True)
+        centered = raw_data - raw_data.mean(axis=1, keepdims=True)
+        denom = max(1, raw_data.shape[1] - 1)
+        data_cov_trace = float(np.sum(centered * centered) / denom)
+        ref_trace = float(np.trace(ref_arr))
+        if ref_trace > 0.0 and data_cov_trace > 0.0:
+            ref_arr *= data_cov_trace / ref_trace
+        avg_diag = np.trace(ref_arr) / ref_arr.shape[0]
+        lam = 0.05
+        ref_arr = (1.0 - lam) * ref_arr + (lam * avg_diag) * np.eye(ref_arr.shape[0])
+        ref_arr = (ref_arr + ref_arr.T) * 0.5
+        cov_fit.update(data=ref_arr)
+
+        if n_pc == "auto":
+            resolved_n_pc = _compute_default_n_pc(
+                ref_arr, signal_type=signal_type, data=raw_data
+            )
+        else:
+            resolved_n_pc = ensure_int(n_pc, "n_pc")
+            if not 1 <= resolved_n_pc <= ref_arr.shape[0]:
+                raise ValueError(
+                    f"n_pc must be an integer in the range [1, {ref_arr.shape[0]}], "
+                    f"got {n_pc!r}."
+                )
+
+        _, ref_evecs = eigh(ref_arr)
+        template = np.ascontiguousarray(ref_evecs[:, ::-1][:, :resolved_n_pc])
+        z3_scale = strength_to_z3_scale(resolved_strength)
+
+        min_b, max_b = float(sensai_bounds[0]), float(sensai_bounds[1])
+        epoch_dur = epoch_samples / sfreq
+        window_epochs = min(n_ep, max(1, int(round(smoothing_window / epoch_dur))))
+        step_epochs = max(1, int(round(window_epochs / 2.0)))
+        if n_ep <= window_epochs:
+            num_windows = 1
+        else:
+            num_windows = max(1, int(np.ceil((n_ep - window_epochs) / step_epochs)) + 1)
+
+        window_centers = np.zeros(num_windows, dtype=np.float64)
+        opt_sv = np.zeros(num_windows, dtype=np.float64)
+        win_log_prctile = np.zeros(num_windows, dtype=np.float64)
+        tiny = float(np.finfo(np.float64).tiny)
+        last_runs = []
+        nm_values: list[float] = []
+
+        all_eval_full = np.empty((n_ep, ref_arr.shape[0]), dtype=np.float64)
+        all_evec_full = np.empty(
+            (n_ep, ref_arr.shape[0], ref_arr.shape[0]), dtype=np.float64
+        )
+        computed_mask = np.zeros(n_ep, dtype=bool)
+
+        for w in range(num_windows):
+            idx_start = w * step_epochs
+            idx_end = min(n_ep, idx_start + window_epochs)
+            if (
+                w == num_windows - 1
+                and (idx_end - idx_start) < (window_epochs / 2.0)
+                and num_windows > 1
+            ):
+                idx_start = max(0, n_ep - window_epochs)
+                idx_end = n_ep
+            window_centers[w] = 0.5 * (idx_start + (idx_end - 1))
+
+            ep_sub = epochs_arr[idx_start:idx_end]
+            eval_sub, evec_sub = _precompute_gevd(ep_sub, ref_arr, engine=engine)
+            all_eval_full[idx_start:idx_end] = eval_sub
+            all_evec_full[idx_start:idx_end] = evec_sub
+            computed_mask[idx_start:idx_end] = True
+
+            m_eff, *_ = compute_z3_noise_multiplier(
+                eval_sub,
+                evec_sub,
+                ref_arr,
+                template,
+                resolved_n_pc,
+                min_threshold=min_b,
+                epoch_samples=epoch_samples,
+            )
+            nm_w = float(z3_scale * m_eff)
+            nm_values.append(nm_w)
+
+            mags_w = np.abs(eval_sub.ravel())
+            max_mag_w = float(np.max(mags_w)) if mags_w.size else 0.0
+            if max_mag_w > 0.0:
+                valid_w = np.maximum(mags_w, max(1e-12 * max_mag_w, tiny))
+                win_log_prctile[w] = float(
+                    np.percentile(np.log(valid_w) + 100.0, percentile)
+                )
+            else:
+                win_log_prctile[w] = 100.0
+
+            if sensai_method == "gridsearch":
+                sv_grid = np.arange(min_b, max_b, 0.1)
+                ev_grid = [
+                    _sensai_to_eigen(sv, eval_sub, percentile=percentile)
+                    for sv in sv_grid
+                ]
+                _, sv_w, last_runs = _sensai_gridsearch(
+                    ep_sub,
+                    ref_arr,
+                    n_pc=resolved_n_pc,
+                    noise_multiplier=nm_w,
+                    eigen_thresholds=ev_grid,
+                    n_jobs=n_jobs,
+                    verbose=False,
+                    all_eval=eval_sub,
+                    all_evec=evec_sub,
+                    sensai_thresholds=sv_grid,
+                    signal_type=signal_type,
+                    engine=engine,
+                )
+            else:
+                _, sv_w, last_runs = _sensai_optimize(
+                    ep_sub,
+                    ref_arr,
+                    n_pc=resolved_n_pc,
+                    noise_multiplier=nm_w,
+                    epochs_eigenvalues=eval_sub,
+                    bounds=(min_b, max_b),
+                    all_eval=eval_sub,
+                    all_evec=evec_sub,
+                    percentile=percentile,
+                    signal_type=signal_type,
+                    engine=engine,
+                    sensai_tol=sensai_tol,
+                    is_wavelet_band=getattr(self, "_is_wavelet_band", False),
+                )
+            opt_sv[w] = sv_w
+
+        # Fill any gaps if step > window (normally step <= window/2 so all True)
+        if not np.all(computed_mask):
+            miss = ~computed_mask
+            ev_m, evec_m = _precompute_gevd(epochs_arr[miss], ref_arr, engine=engine)
+            all_eval_full[miss] = ev_m
+            all_evec_full[miss] = evec_m
+
+        sv_curve = np.clip(
+            _interp_window_curve(window_centers, opt_sv, n_ep), min_b, max_b
+        )
+        logp_curve = _interp_window_curve(window_centers, win_log_prctile, n_ep)
+        thresh_stream1 = np.exp(((105.0 - sv_curve) / 100.0) * logp_curve - 100.0)
+
+        if n_ep > 1:
+            sv_2 = 0.5 * (sv_curve[:-1] + sv_curve[1:])
+            logp_2 = 0.5 * (logp_curve[:-1] + logp_curve[1:])
+            thresh_stream2 = np.exp(((105.0 - sv_2) / 100.0) * logp_2 - 100.0)
+        else:
+            thresh_stream2 = thresh_stream1.copy()
+
+        # Global whole-recording SENSAI score under the per-epoch threshold curve
+        all_VR = np.ascontiguousarray(np.einsum("ij,ejk->eik", ref_arr, all_evec_full))
+        abs_all = np.ascontiguousarray(np.abs(all_eval_full))
+        sig_ep = np.zeros(n_ep, dtype=np.float64)
+        noi_ep = np.zeros(n_ep, dtype=np.float64)
+        for e in range(n_ep):
+            s_e, n_e = _sensai_score_loop(
+                abs_all[e : e + 1],
+                all_VR[e : e + 1],
+                template,
+                float(thresh_stream1[e]),
+                n_pc=resolved_n_pc,
+                signal_type=signal_type,
+            )
+            sig_ep[e] = s_e[0]
+            noi_ep[e] = n_e[0]
+        mean_sig = float(np.mean(sig_ep) * 100.0)
+        mean_noi = float(np.mean(noi_ep) * 100.0)
+        mean_nm = float(np.mean(nm_values))
+        overall_sensai = float(mean_sig - mean_nm * mean_noi)
+
+        scalar_thresh = float(np.median(thresh_stream1))
+        scalar_sv = float(np.median(sv_curve))
+        t1_val = float((105.0 - scalar_sv) / 100.0)
+
+        self.fit_metrics_ = {
+            "sensai_score": overall_sensai,
+            "signal_similarity": mean_sig,
+            "noise_similarity": mean_noi,
+            "threshold": scalar_thresh,
+            "sensai_value": scalar_sv,
+            "T1": t1_val,
+            "strength": float(resolved_strength),
+        }
+        self._fit = {
+            "threshold": scalar_thresh,
+            "threshold_curve": thresh_stream1,
+            "threshold_curve_stream2": thresh_stream2,
+            "sensai_curve": sv_curve,
+            "window_centers_sec": (window_centers + 0.5) * epoch_dur,
+            "smoothing_window": float(smoothing_window),
+            "n_ep_fitted": int(n_ep),
+            "epochs_eigenvalues": all_eval_full,
+            "sensai_runs": last_runs,
+            "sensai_bounds": (min_b, max_b),
+            "sensai_value": scalar_sv,
+            "T1": t1_val,
+            "percentile": percentile,
+        }
+        self.T1_ = t1_val
+        self.percentile_ = percentile
+
+        self.fitted = True
+        self._info = info.copy()
+        self._reference_cov = cov_fit
+        self._signal_type = signal_type
+        self._n_pc = resolved_n_pc
+        self._percentile = percentile
+        self._n_samples = epoch_samples
+        self._duration = (epoch_samples - 1) / sfreq
+        self._reference = ref_spec["mode"]
+        self._ref_spec = ref_spec
+        self._reference_cov_arg = (
+            reference_cov_arg
+            if isinstance(reference_cov_arg, (str, mne.Forward))
+            else "leadfield"
+        )
+        self._smoothing_window = float(smoothing_window)
+        self._on_bad_channel = on_bad_channel
+        self._bad_channel_threshold = None
+        self.bad_channels_ = list(excluded_bads)
+        self.detected_bad_channels_ = []
+        self.flat_channels_ = []
+        self.flat_reference_channels_ = []
+        self.noisy_channels_ = []
+        self.enova_per_channel_ = None
+        self.bad_epochs_ = None
+
+    def _get_transform_thresholds(
+        self, n_times: int, sfreq: float, epoch_duration: float
+    ) -> tuple[float | np.ndarray, np.ndarray | None]:
+        """Return scalar threshold or per-epoch curve pair when length matches."""
+        curve1 = self._fit.get("threshold_curve")
+        curve2 = self._fit.get("threshold_curve_stream2")
+        if curve1 is not None:
+            epoch_samples = max(2, int(round(epoch_duration * sfreq)))
+            if epoch_samples % 2 != 0:
+                epoch_samples += 1
+            n_ep = int(np.ceil(n_times / epoch_samples))
+            if n_ep == self._fit.get("n_ep_fitted") and len(curve1) == n_ep:
+                return curve1, curve2
+            logger.info(
+                "Input duration (%d epochs) differs from fitted sliding-window "
+                "duration (%s epochs); applying median scalar threshold.",
+                n_ep,
+                self._fit.get("n_ep_fitted"),
+            )
+        return self._fit["threshold"], None
 
     @fill_doc
     @verbose
@@ -565,6 +1131,7 @@ class Gedai:
         engine: str | None = None,
         interpolate_bads: bool = False,
         compute_metrics: bool = True,
+        bad_epoch_threshold: float | None = None,
     ):
         """Transform epochs data using the fitted model.
 
@@ -579,6 +1146,7 @@ class Gedai:
             the engine specified at initialization.
         %(interpolate_bads)s
         %(compute_metrics)s
+        %(bad_epoch_threshold)s
 
         Returns
         -------
@@ -589,6 +1157,7 @@ class Gedai:
         _check_type(epochs, (BaseEpochs,), "epochs")
         _check_type(interpolate_bads, (bool,), "interpolate_bads")
         _check_type(compute_metrics, (bool,), "compute_metrics")
+        bad_ep_thresh = _check_bad_epoch_threshold(bad_epoch_threshold)
         n_jobs = _check_n_jobs(n_jobs)
 
         if epochs.get_data(verbose=False).shape[-1] != self._n_samples:
@@ -609,7 +1178,9 @@ class Gedai:
             self.ch_names,
             on_bad_channel=self._on_bad_channel,
             excluded_bads=self.bad_channels_,
+            apply_reference=False,
         )
+        _apply_eeg_reference(epochs_transform, self._ref_spec)
 
         data = epochs_transform.get_data()
 
@@ -647,7 +1218,8 @@ class Gedai:
 
         epochs_transform._data = cleaned_epochs_data
 
-        if compute_metrics:
+        enova_ep = None
+        if compute_metrics or bad_ep_thresh is not None:
             orig_2d = data.transpose(1, 0, 2).reshape(data.shape[1], -1)
             clean_2d = cleaned_epochs_data.transpose(1, 0, 2).reshape(
                 cleaned_epochs_data.shape[1], -1
@@ -655,24 +1227,33 @@ class Gedai:
             noise_2d = orig_2d - clean_2d
             ep_samples = data.shape[-1]
             enova_ep = compute_enova_per_epoch(clean_2d, noise_2d, ep_samples)
-            enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
-            n_pc = min(3 if self._n_pc is None else self._n_pc, clean_2d.shape[0])
-            sensai_val = compute_composite_sensai(
-                clean_2d,
-                noise_2d,
-                epochs_transform.info["sfreq"],
-                reference_cov,
-                n_pc=n_pc,
-            )
-            self.metrics_ = {
-                "enova_per_epoch": enova_ep,
-                "enova_per_channel": enova_ch,
-                "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
-                "sensai_score": sensai_val,
-            }
+            if compute_metrics:
+                enova_ch = compute_enova_per_channel(clean_2d, noise_2d, ep_samples)
+                n_pc = min(3 if self._n_pc is None else self._n_pc, clean_2d.shape[0])
+                sensai_val = compute_composite_sensai(
+                    clean_2d,
+                    noise_2d,
+                    epochs_transform.info["sfreq"],
+                    reference_cov,
+                    n_pc=n_pc,
+                )
+                self.metrics_ = {
+                    "enova_per_epoch": enova_ep,
+                    "enova_per_channel": enova_ch,
+                    "mean_enova": (
+                        float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0
+                    ),
+                    "sensai_score": sensai_val,
+                }
+        if bad_ep_thresh is not None and enova_ep is not None:
+            self.bad_epochs_ = np.asarray(enova_ep > bad_ep_thresh, dtype=bool)
         if interpolate_bads and self.bad_channels_:
             return _interpolate_bad_channels(
-                epochs, epochs_transform, self.bad_channels_
+                epochs,
+                epochs_transform,
+                self.bad_channels_,
+                reference=self._reference,
+                reference_cov=self._reference_cov_arg,
             )
         return epochs_transform
 
@@ -687,6 +1268,7 @@ class Gedai:
         engine: str | None = None,
         interpolate_bads: bool = False,
         compute_metrics: bool = True,
+        bad_epoch_threshold: float | None = None,
     ):
         """Transform raw data using the fitted model.
 
@@ -702,6 +1284,7 @@ class Gedai:
             the engine specified at initialization.
         %(interpolate_bads)s
         %(compute_metrics)s
+        %(bad_epoch_threshold)s
 
         Returns
         -------
@@ -713,6 +1296,7 @@ class Gedai:
         _check_type(overlap, (float, int), "overlap")
         _check_type(interpolate_bads, (bool,), "interpolate_bads")
         _check_type(compute_metrics, (bool,), "compute_metrics")
+        bad_ep_thresh = _check_bad_epoch_threshold(bad_epoch_threshold)
         n_jobs = _check_n_jobs(n_jobs)
         current_engine = ensure_engine(engine) if engine is not None else self.engine
 
@@ -725,7 +1309,9 @@ class Gedai:
             self.ch_names,
             on_bad_channel=self._on_bad_channel,
             excluded_bads=self.bad_channels_,
+            apply_reference=False,
         )
+        _apply_eeg_reference(raw_transform, self._ref_spec)
 
         if (
             getattr(self, "_highpass_prefilter", None) is not None
@@ -751,50 +1337,67 @@ class Gedai:
 
         raw_data = raw_transform.get_data(verbose=False)
         sfreq = raw_transform.info["sfreq"]
-        threshold = self._fit["threshold"]
+        epoch_duration = (
+            self._duration if hasattr(self, "_duration") and self._duration > 0 else 1.0
+        )
+        thresh1, thresh2 = self._get_transform_thresholds(
+            raw_data.shape[1], sfreq, epoch_duration
+        )
 
         # Fast dual-stream continuous broadband cleaning
-        clean_data, _ = _clean_continuous_dual_stream(
+        clean_data, noise_data = _clean_continuous_dual_stream(
             raw_data,
             sfreq=sfreq,
             reference_cov=self._reference_cov.data,
-            epoch_duration=self._duration
-            if hasattr(self, "_duration") and self._duration > 0
-            else 1.0,
-            threshold=threshold,
+            epoch_duration=epoch_duration,
+            threshold=thresh1,
+            threshold_stream2=thresh2,
             engine=current_engine,
         )
 
-        if compute_metrics:
-            noise_data = raw_data - clean_data
+        enova_ep = None
+        if compute_metrics or bad_ep_thresh is not None:
             ep_samples = max(1, round(sfreq * 1.0))
             enova_ep = compute_enova_per_epoch(clean_data, noise_data, ep_samples)
-            enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
-            n_pc = min(3 if self._n_pc is None else self._n_pc, clean_data.shape[0])
-            sensai_val = compute_composite_sensai(
-                clean_data,
-                noise_data,
-                sfreq,
-                self._reference_cov.data,
-                n_pc=n_pc,
-            )
-            self.metrics_ = {
-                "enova_per_epoch": enova_ep,
-                "enova_per_channel": enova_ch,
-                "mean_enova": float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0,
-                "sensai_score": sensai_val,
-            }
+            if compute_metrics:
+                enova_ch = compute_enova_per_channel(clean_data, noise_data, ep_samples)
+                n_pc = min(3 if self._n_pc is None else self._n_pc, clean_data.shape[0])
+                sensai_val = compute_composite_sensai(
+                    clean_data,
+                    noise_data,
+                    sfreq,
+                    self._reference_cov.data,
+                    n_pc=n_pc,
+                )
+                self.metrics_ = {
+                    "enova_per_epoch": enova_ep,
+                    "enova_per_channel": enova_ch,
+                    "mean_enova": (
+                        float(np.mean(enova_ep)) if len(enova_ep) > 0 else 0.0
+                    ),
+                    "sensai_score": sensai_val,
+                }
 
         raw_transform._data = clean_data
 
-        if verbose in (True, 1, "INFO", "info", "DEBUG", "debug") or (
-            isinstance(verbose, int) and not isinstance(verbose, bool) and verbose >= 1
-        ):
-            pass
+        if bad_ep_thresh is not None and enova_ep is not None:
+            self.bad_epochs_ = np.asarray(enova_ep > bad_ep_thresh, dtype=bool)
+            ann = annotate_bad_epochs(
+                raw_transform,
+                enova_ep,
+                epoch_duration=ep_samples / sfreq,
+                threshold=bad_ep_thresh,
+            )
+            if len(ann) > 0:
+                _append_raw_annotations(raw_transform, ann)
 
         if interpolate_bads and self.bad_channels_:
             return _interpolate_bad_channels(
-                raw, raw_transform, self.bad_channels_
+                raw,
+                raw_transform,
+                self.bad_channels_,
+                reference=self._reference,
+                reference_cov=self._reference_cov_arg,
             )
         return raw_transform
 
@@ -892,7 +1495,8 @@ class Gedai:
 
         Replicates MATLAB's SENSAI_visualization.m with side-by-side
         Before/After subspace projections, LDA decision boundary shading,
-        and marginal KDE distributions.
+        marginal KDE distributions, ENOVA-weighted Welch PSD, and per-channel
+        ENOVA topoplot.
 
         Parameters
         ----------
@@ -917,20 +1521,43 @@ class Gedai:
         from ..viz.sensai_viz import plot_sensai_visualization
 
         self._check_fit()
-        if raw_after is None:
+        auto_transformed = raw_after is None
+        if auto_transformed:
             raw_after = self.transform_raw(raw_before, verbose=False)
 
-        score = self.metrics_.get("sensai_score") if self.metrics_ else None
-        mean_enova = self.metrics_.get("mean_enova") if self.metrics_ else None
+        ch_names = list(self.ch_names)
+        raw_before_eval = raw_before.copy().pick(ch_names).reorder_channels(ch_names)
+        if getattr(self, "_ref_spec", None) is not None:
+            _apply_eeg_reference(raw_before_eval, self._ref_spec)
+        raw_after_eval = raw_after.copy().pick(ch_names).reorder_channels(ch_names)
+
+        score = (
+            self.metrics_.get("sensai_score")
+            if auto_transformed and self.metrics_
+            else (self.fit_metrics_.get("sensai_score") if self.fit_metrics_ else None)
+        )
+        mean_enova = (
+            self.metrics_.get("mean_enova")
+            if auto_transformed and self.metrics_
+            else None
+        )
+        enova_per_ch = (
+            self.metrics_.get("enova_per_channel")
+            if auto_transformed and self.metrics_
+            else None
+        )
+        if enova_per_ch is not None and len(enova_per_ch) != len(ch_names):
+            enova_per_ch = None
 
         return plot_sensai_visualization(
-            raw_before=raw_before,
-            raw_after=raw_after,
-            reference_cov=self._reference_cov.data,
+            raw_before=raw_before_eval,
+            raw_after=raw_after_eval,
+            reference_cov=self._reference_cov,
             epoch_duration_sec=epoch_duration_sec,
             n_pc=n_pc,
             sensai_score=score,
             mean_enova=mean_enova,
+            enova_per_channel=enova_per_ch,
             title_suffix=f"{self.__class__.__name__}",
             show=show,
         )
@@ -994,8 +1621,9 @@ def _clean_continuous_dual_stream(
     sfreq: float,
     reference_cov: np.ndarray,
     epoch_duration: float,
-    threshold: float | None = None,
+    threshold: float | np.ndarray | None = None,
     engine: str = "numpy",
+    threshold_stream2: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Clean continuous multi-channel data using dual-stream epoching with 50% shift.
 
@@ -1009,10 +1637,12 @@ def _clean_continuous_dual_stream(
         Reference covariance matrix.
     epoch_duration : float
         Epoch length in seconds.
-    threshold : float
-        Eigenvalue threshold.
+    threshold : float | np.ndarray
+        Eigenvalue threshold (scalar or per-epoch array for stream 1).
     engine : str, default 'numpy'
         Computation engine ('numpy', 'torch', or 'auto').
+    threshold_stream2 : np.ndarray | None
+        Optional per-epoch thresholds for shifted stream 2.
 
     Returns
     -------
@@ -1060,21 +1690,24 @@ def _clean_continuous_dual_stream(
 
     cw = create_cosine_weights(epoch_samples)
 
-    def _process_stream(stream):
+    def _process_stream(stream, stream_thresh):
         if resolved_engine == "torch":
             return clean_continuous_stream_torch(
                 stream,
                 reference_cov,
-                threshold=threshold,
+                threshold=stream_thresh,
                 cosine_weights=cw,
             )
         n_ep = len(stream)
+        thresh_arr = np.asarray(stream_thresh, dtype=np.float64)
+        is_per_epoch = thresh_arr.ndim > 0
         clean_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
         noise_out = np.zeros((n_ch, n_ep * epoch_samples), dtype=np.float64)
 
         for i in range(n_ep):
             ep = stream[i].astype(np.float64)
-            c = _process_single_epoch(ep, reference_cov, threshold)
+            t_i = float(thresh_arr[i]) if is_per_epoch else float(thresh_arr)
+            c = _process_single_epoch(ep, reference_cov, t_i)
             n = ep - c
             if i == 0:
                 c[:, half:] *= cw[half:]
@@ -1090,12 +1723,15 @@ def _clean_continuous_dual_stream(
             noise_out[:, s : s + epoch_samples] = n
         return clean_out, noise_out
 
-    clean1, noise1 = _process_stream(stream1)
+    clean1, noise1 = _process_stream(stream1, threshold)
     clean_total = clean1[:, :total_len].copy()
     noise_total = noise1[:, :total_len].copy()
 
     if stream2 is not None and len(stream2) > 0:
-        clean2, noise2 = _process_stream(stream2)
+        thresh_2 = threshold_stream2 if threshold_stream2 is not None else threshold
+        if np.asarray(thresh_2).ndim > 0 and len(thresh_2) != len(stream2):
+            thresh_2 = np.asarray(thresh_2, dtype=np.float64)[: len(stream2)]
+        clean2, noise2 = _process_stream(stream2, thresh_2)
         len2 = clean2.shape[1]
         end2 = len2 - half
         clean2[:, :half] *= cw[:half]

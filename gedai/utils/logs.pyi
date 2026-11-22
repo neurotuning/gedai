@@ -4,11 +4,10 @@ from pathlib import Path
 
 from _typeshed import Incomplete
 
-from ._checks import check_verbose as check_verbose
+from ._checks import _check_type as _check_type
+from ._checks import _ensure_verbose as _ensure_verbose
 from ._docs import fill_doc as fill_doc
-from ._fixes import WrapStdOut as WrapStdOut
-
-_PACKAGE: str
+from ._fixes import _WrapStdOut as _WrapStdOut
 
 def _init_logger(*, verbose: bool | str | int | None = None) -> logging.Logger:
     """Initialize a logger.
@@ -18,15 +17,16 @@ def _init_logger(*, verbose: bool | str | int | None = None) -> logging.Logger:
     Parameters
     ----------
     verbose : int | str | bool | None
-        Sets the verbosity level. The verbosity increases gradually between ``"CRITICAL"``,
-        ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``. If None is provided, the
-        verbosity is set to ``"WARNING"``. If a bool is provided, the verbosity is set to
-        ``"WARNING"`` for False and to ``"INFO"`` for True.
+    Control verbosity of the logging output. If ``None``, use the default
+    verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds
+    to ``"WARNING"``.
+    The default is ``None`` (interpreted as ``"INFO"``).
 
     Returns
     -------
     logger : Logger
-        The initialized logger.
+    The initialized logger.
     """
 
 def add_file_handler(
@@ -41,43 +41,43 @@ def add_file_handler(
     Parameters
     ----------
     fname : str | Path
-        Path to the file where the logging output is saved.
+    Path to the file where the logging output is saved.
     mode : str
-        Mode in which the file is opened.
+    Mode in which the file is opened.
     encoding : str | None
-        If not None, encoding used to open the file.
+    If not None, encoding used to open the file.
     verbose : int | str | bool | None
-        Sets the verbosity level of the file handler. The verbosity increases gradually
-        between ``"CRITICAL"``, ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``.
-        If a bool is provided, the verbosity is set to ``"WARNING"`` for False and to
-        ``"INFO"`` for True. If None is provided, the verbosity of the logger is used.
-
-    Notes
-    -----
-    Don't forget to close added file handlers by iterating on ``logger.handlers`` and
-    calling ``handler.close()``.
+    Control verbosity of the logging output. If ``None``, use the default
+    verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds
+    to ``"WARNING"``.
+    The default is ``None`` (interpreted as ``"INFO"``).
     """
 
-def set_log_level(verbose: bool | str | int | None) -> None:
-    """Set the log level for the logger.
+def set_log_level(verbose: bool | str | int | None, apply_to_mne: bool = True) -> None:
+    """Set the log level for the logger and the first handler ``sys.stdout``.
 
     Parameters
     ----------
     verbose : int | str | bool | None
-        Sets the verbosity level. The verbosity increases gradually between ``"CRITICAL"``,
-        ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``. If None is provided, the
-        verbosity is set to ``"WARNING"``. If a bool is provided, the verbosity is set to
-        ``"WARNING"`` for False and to ``"INFO"`` for True.
+    Control verbosity of the logging output. If ``None``, use the default
+    verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds
+    to ``"WARNING"``.
+    The default is ``None`` (interpreted as ``"INFO"``).
+    apply_to_mne : bool
+    If True, also changes the log level of MNE.
     """
 
 class _LoggerFormatter(logging.Formatter):
-    """Format string syntax."""
+    """Format string Syntax for pycrostates."""
 
     _formatters: Incomplete
 
     def __init__(self) -> None: ...
-    def format(self, record: logging.LogRecord):
-        """Format the received log record.
+    def format(self, record):
+        """
+        Format the received log record.
 
         Parameters
         ----------
@@ -90,12 +90,12 @@ def verbose(f: Callable) -> Callable:
     Parameters
     ----------
     f : callable
-        The function with a verbose argument.
+    The function with a verbose argument.
 
     Returns
     -------
     f : callable
-        The function.
+    The function.
     """
 
 class _use_log_level:
@@ -104,10 +104,11 @@ class _use_log_level:
     Parameters
     ----------
     verbose : int | str | bool | None
-        Sets the verbosity level. The verbosity increases gradually between ``"CRITICAL"``,
-        ``"ERROR"``, ``"WARNING"``, ``"INFO"`` and ``"DEBUG"``. If None is provided, the
-        verbosity is set to ``"WARNING"``. If a bool is provided, the verbosity is set to
-        ``"WARNING"`` for False and to ``"INFO"`` for True.
+    Control verbosity of the logging output. If ``None``, use the default
+    verbosity level (``"INFO"``).
+    If a boolean, ``True`` corresponds to ``"INFO"`` and ``False`` corresponds
+    to ``"WARNING"``.
+    The default is ``None`` (interpreted as ``"INFO"``).
     """
 
     _old_level: Incomplete
@@ -116,34 +117,5 @@ class _use_log_level:
     def __init__(self, verbose: bool | str | int | None = None) -> None: ...
     def __enter__(self) -> None: ...
     def __exit__(self, *args) -> None: ...
-
-def warn(
-    message: str,
-    category: type[Warning] = ...,
-    module: str = ...,
-    ignore_namespaces: tuple[str, ...] | list[str] = ...,
-) -> None:
-    """Emit a warning with trace outside the requested namespace.
-
-    This function takes arguments like :func:`warnings.warn`, and sends messages
-    using both :func:`warnings.warn` and :func:`logging.warn`. Warnings can be
-    generated deep within nested function calls. In order to provide a
-    more helpful warning, this function traverses the stack until it
-    reaches a frame outside the ignored namespace that caused the error.
-
-    This function is inspired from the MNE-Python package and behaves as a smart
-    'stacklevel' argument.
-
-    Parameters
-    ----------
-    message : str
-        Warning message.
-    category : type of Warning
-        The warning class. Defaults to ``RuntimeWarning``.
-    module : str
-        The name of the module emitting the warning.
-    ignore_namespaces : list of str | tuple of str
-        Namespaces to ignore when traversing the stack.
-    """
 
 logger: Incomplete

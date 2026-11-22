@@ -20,9 +20,7 @@ from gedai.gedai._utils import (
 
 def _load_sample_eeg(n_channels=10, duration_s=4.0):
     """Load a small preloaded EEG Raw subset with valid 3D coordinates."""
-    raw = mne.io.read_raw(
-        get_contaminated_eeg_set_path(), preload=False, verbose=False
-    )
+    raw = mne.io.read_raw(get_contaminated_eeg_set_path(), preload=False, verbose=False)
     raw.drop_channels([ch for ch in raw.ch_names if "BIP" in ch])
     raw.pick(raw.ch_names[:n_channels])
     raw.crop(0.0, duration_s)
@@ -210,7 +208,11 @@ def test_multiband_and_adaptive_on_bad_channel():
     assert mb_ep.bad_channels_ == [bad_ch]
     clean_mb_ep = mb_ep.transform_epochs(epochs, n_jobs=1, verbose=False)
     assert clean_mb_ep.ch_names == mb_ep.ch_names
-    assert np.any(mb_ep.metrics_["enova_per_channel"] > 0)
+    assert len(mb_ep.metrics_["enova_per_channel"]) == len(mb_ep.ch_names)
+    assert np.all(
+        (mb_ep.metrics_["enova_per_channel"] >= 0.0)
+        & (mb_ep.metrics_["enova_per_channel"] <= 1.0)
+    )
 
     mb_raw = MultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
     mb_raw.fit_raw(raw, duration=1.0, on_bad_channel="exclude", n_jobs=1, verbose=False)

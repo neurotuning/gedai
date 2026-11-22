@@ -48,6 +48,14 @@ bad_channel_threshold : float | str | None, default=None
     ``(0, 1]``), performs a pre-pass to detect flat channels and a Pass 1
     fit/transform to flag channels whose ENOVA exceeds the threshold, then
     re-fits Pass 2 on the remaining good channels."""
+docdict["bad_epoch_threshold"] = """
+bad_epoch_threshold : float | None, default=None
+    ENOVA threshold (e.g., ``0.85``) above which 1-second epochs are flagged
+    as severely corrupted. On ``transform_raw``, appends ``"BAD_gedai"``
+    annotations to the returned instance (without destructively removing samples)
+    and populates ``self.bad_epochs_``. On ``transform_epochs``, populates
+    boolean mask ``self.bad_epochs_``. When ``None`` (default), no bad-epoch
+    annotations are added."""
 # -- C ---------------------------------------------------------------------------------
 docdict["compute_metrics"] = """
 compute_metrics : bool, default=True
@@ -103,16 +111,6 @@ n_pc : int | "auto", default="auto"
       ambient room noise harmonics versus localized bursts.
 
     If an :class:`int`, uses the specified number of principal components."""
-docdict["noise_multiplier"] = """
-noise_multiplier : float | str
-    The noise multiplier or string preset for artefact threshold rejection optimization.
-    Supported string presets:
-
-    - ``"auto"`` : Standard balance (noise_multiplier = 3.0, default).
-    - ``"auto+"`` : More aggressive denoising (noise_multiplier = 1.5).
-    - ``"auto-"`` : More conservative denoising (noise_multiplier = 6.0).
-
-    Alternatively, a custom numerical float can be passed."""
 # -- O ---------------------------------------------------------------------------------
 docdict["on_bad_channel"] = """
 on_bad_channel : "exclude" | "ignore", default="exclude"
@@ -141,14 +139,27 @@ picks : str | list | slice
     EEG channels."""
 # -- Q ---------------------------------------------------------------------------------
 # -- R ---------------------------------------------------------------------------------
+docdict["reference"] = """
+reference : str | None, default="average"
+    EEG reference convention applied consistently to both data and leadfield /
+    reference covariance (ignored for MEG):
+
+    - ``"average"`` (default): Average reference.
+    - ``"REST"``: Reference Electrode Standardization Technique (infinity reference;
+      requires a leadfield/Forward).
+    - ``"M1+M2"`` / ``"TP9+TP10"`` / ``"A1+A2"``: Linked mastoids / earlobes.
+    - ``"none"``: No re-referencing.
+    - Any channel label (e.g., ``"Cz"``): Re-reference to that channel (or adjust the
+      leadfield directly if it is an external 10-05 reference not in the montage)."""
 docdict["reference_cov"] = """
-reference_cov : str | mne.Covariance
-    The reference covariance to use. If ``'leadfield'``, use a pre-computed covariance.
-    The precomputed covariance if computed from a leadfield made using 1005 EEG channels
-    layout and fsaverage head model.
-    If :class:`mne.Covariance`, use a pre-computed covariance.
-    See :func:`~gedai.covariance.compute_covariance_from_forward` for more
-    details on how to compute a covariance from a forward solution."""
+reference_cov : str | mne.Covariance | mne.Forward
+    The reference covariance to use. If ``'leadfield'``, uses the bundled 343-channel
+    OpenMEEG BEM covariance (with automatic 3D dipole-kernel projection fallback when
+    electrode labels are non-10-20 and 3D coordinates are present). If
+    ``'projection'``, always computes 3D dipole-kernel projection from channel
+    positions. Also accepts an :class:`mne.Covariance` or :class:`mne.Forward`.
+    See :func:`~gedai.covariance.compute_covariance_from_forward` and
+    :func:`~gedai.covariance.compute_covariance_from_dipole_projection`."""
 docdict["reject_by_annotation"] = """
 reject_by_annotation : bool
     Whether annotated bad segments should be rejected.
@@ -168,6 +179,24 @@ sensai_tol : float
     ``sensai_method='optimize'``. Defaults to ``0.1`` for fast convergence.
     Can be set to smaller values (e.g. ``0.01``) for finer search precision.
 """
+docdict["smoothing_window"] = """
+smoothing_window : float | None, default=None
+    Duration in seconds of overlapping calibration windows for sliding-window
+    threshold adaptation during ``fit_raw``, intended for long recordings with
+    non-stationary background EEG signal (e.g., sleep, epilepsy, fatigue).
+    Thresholds vary smoothly across the recording via Akima (makima)
+    interpolation. When ``None`` or ``np.inf`` (default), fits a single
+    stationary threshold."""
+docdict["strength"] = """
+strength : float | str, default="auto"
+    Denoising strength balancing artifact suppression and neural preservation
+    via closed-form adaptive Z3 spectral weighting (higher = stronger cleaning):
+
+    - ``"auto"`` (default) : Standard balance (``7.0``).
+    - ``"auto+"`` : More aggressive denoising (``8.0``).
+    - ``"auto-"`` : More conservative denoising (``6.0``).
+    - ``float`` in ``[0, 10]``: Continuous perceptual strength (higher = stronger
+      cleaning, matching MATLAB GEDAI's log-linearized ``0``-``10`` scale)."""
 # -- T ---------------------------------------------------------------------------------
 # -- U ---------------------------------------------------------------------------------
 # -- V ---------------------------------------------------------------------------------

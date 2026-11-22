@@ -13,3 +13,6 @@ Covariance
    :toctree: generated/
 
    compute_covariance_from_forward
+   compute_covariance_from_dipole_projection
+   project_leadfield_dipole
+   compute_covariance_from_channel_positions

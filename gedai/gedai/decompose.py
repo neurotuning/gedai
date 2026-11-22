@@ -36,14 +36,23 @@ def _clean_epochs(
     cleaned_epochs = np.zeros_like(epochs_data)
     artefact_epochs = np.zeros_like(epochs_data)
 
+    thresh_arr = np.asarray(threshold, dtype=np.float64)
+    is_per_epoch = thresh_arr.ndim > 0
+    if is_per_epoch and thresh_arr.shape != (len(epochs_data),):
+        raise ValueError(
+            f"Per-epoch threshold shape {thresh_arr.shape} must match n_epochs "
+            f"({len(epochs_data)})."
+        )
+
     for e, epoch_data in enumerate(epochs_data):
+        thresh_e = float(thresh_arr[e]) if is_per_epoch else float(thresh_arr)
         covariance = np.cov(epoch_data)
         eigenvalues, eigenvectors = _scale_invariant_eigh(
             covariance, reference_cov, check_finite=True
         )
 
         eigvecs_filtered = eigenvectors.copy()
-        signal_mask = ~_artifact_mask(eigenvalues, threshold)
+        signal_mask = ~_artifact_mask(eigenvalues, thresh_e)
         eigvecs_filtered[:, signal_mask] = 0
 
         # Direct Regularized Reference Covariance Projection:

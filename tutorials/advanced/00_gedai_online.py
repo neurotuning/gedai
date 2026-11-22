@@ -567,7 +567,27 @@ ax.grid(axis="x", alpha=0.25)
 plt.show()
 
 # %%
-# 6. Practical Tuning Guide & Real-Time ``mne-lsl`` Template
+# 6. Online W-OLA SENSAI & ENOVA Verification
+# -------------------------------------------
+# Finally, we evaluate the live W-OLA output over the stabilized interior slice
+# (``2.0 s`` to ``t_end - 0.20 s``) with ``plot_sensai`` using identically
+# bandpass-filtered (``2-20 Hz``) and average-referenced streams before vs.
+# after online denoising.
+
+raw_live_eval = RawArray(
+    raw_live_bp[:, eval_start:eval_end].copy(),
+    raw_live_ref.info.copy(),
+    verbose=False,
+)
+raw_online_eval = RawArray(
+    on_eval.copy(),
+    raw_live_ref.info.copy(),
+    verbose=False,
+)
+gedai.plot_sensai(raw_before=raw_live_eval, raw_after=raw_online_eval, show=True)
+
+# %%
+# 7. Practical Tuning Guide & Real-Time ``mne-lsl`` Template
 # ----------------------------------------------------------
 # Depending on whether your closed-loop paradigm prioritizes minimal smoothing
 # lag or smoother spectral/microstate estimates, adjust these four parameters:

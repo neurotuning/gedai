@@ -277,6 +277,7 @@ def test_plot_sensai_without_prior_transform_and_auto_transform(
 ):
     """plot_sensai works both before transform_raw and with raw_after=None."""
     import matplotlib.figure
+    import matplotlib.pyplot as plt
 
     raw_sub = raw_eeg.copy().pick(raw_eeg.ch_names[:6])
     rng = np.random.default_rng(0)
@@ -302,6 +303,19 @@ def test_plot_sensai_without_prior_transform_and_auto_transform(
     assert model.metrics_ is not None
     assert "sensai_score" in model.metrics_
 
+    ch_names = model.ch_names
+    model.metrics_["enova_per_channel"] = np.full(len(ch_names), -1.0)
+    fig3, plot_metrics3 = model.plot_sensai(
+        raw_sub, raw_after=raw_after_custom, show=False
+    )
+    try:
+        assert not np.array_equal(
+            plot_metrics3["enova_per_channel"],
+            model.metrics_["enova_per_channel"],
+        )
+    finally:
+        plt.close(fig3)
+
 
 @pytest.mark.parametrize("sensai_method", ["gridsearch", "optimize"])
 @pytest.mark.parametrize("scale", [1e3, 1e6, 1e-3])
@@ -319,7 +333,7 @@ def test_gedai_epochs_scale_invariance(sensai_method, scale):
             ep_base,
             reference_cov="leadfield",
             sensai_method=sensai_method,
-            noise_multiplier=3.0,
+            strength=7.0,
             verbose=False,
         )
         out_v = g_v.transform_epochs(ep_base, verbose=False).get_data()
@@ -329,7 +343,7 @@ def test_gedai_epochs_scale_invariance(sensai_method, scale):
             ep_scaled,
             reference_cov="leadfield",
             sensai_method=sensai_method,
-            noise_multiplier=3.0,
+            strength=7.0,
             verbose=False,
         )
         out_s = g_s.transform_epochs(ep_scaled, verbose=False).get_data() / scale
@@ -438,9 +452,7 @@ def test_multiband_and_adaptive_scale_invariance():
 
     ad_uv = AdaptiveMultibandGedai(wavelet_level=2, broadband_pass=True, engine="numpy")
     ad_uv.fit_raw(raw_uv, n_jobs=1, verbose=False)
-    out_aduv = (
-        ad_uv.transform_raw(raw_uv, n_jobs=1, verbose=False).get_data() / scale
-    )
+    out_aduv = ad_uv.transform_raw(raw_uv, n_jobs=1, verbose=False).get_data() / scale
     np.testing.assert_allclose(
         out_adv, out_aduv, rtol=1e-9, atol=1e-11 * float(np.std(out_adv))
     )

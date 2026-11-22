@@ -3,6 +3,11 @@ from mne import BaseEpochs
 from mne._fiff.pick import _picks_to_idx
 from mne.io import BaseRaw
 
+from ..covariance.covariance import (
+    _create_reference_spec,
+    _normalize_reference_mode,
+    _resolve_reference_and_cov,
+)
 from ..utils._checks import _check_picks_uniqueness, _check_type, _check_value
 from ..utils.logs import logger
 
@@ -13,6 +18,14 @@ def _detect_signal_type(info):
     if any(t in ("mag", "grad", "ref_meg") for t in ch_types):
         return "meg"
     return "eeg"
+
+
+def _append_raw_annotations(raw, annotations):
+    """Append annotations whose onsets are aligned to the raw timeline."""
+    combined = raw.annotations + annotations
+    if combined.orig_time is None and raw.first_time:
+        combined.onset -= raw.first_time
+    raw.set_annotations(combined)
 
 
 def _ensure_wavelet_low_cutoff(
@@ -218,7 +231,33 @@ def _apply_eeg_average_reference_if_needed(inst):
             inst.set_eeg_reference("average", projection=False)
 
 
-def _prepare_inst_fit(inst, picks, on_bad_channel="exclude", return_bads=False):
+def _apply_eeg_reference(inst, ref_spec: dict | None = None) -> None:
+    """Apply EEG linear reference specification in place on Raw or Epochs."""
+    if _detect_signal_type(inst.info) != "eeg":
+        return
+    if ref_spec is None:
+        _apply_eeg_average_reference_if_needed(inst)
+        return
+    mode_low = ref_spec.get("mode", "average").lower()
+    if mode_low == "none" or ref_spec.get("is_external_ref", False):
+        return
+    if mode_low == "average":
+        _apply_eeg_average_reference_if_needed(inst)
+        return
+    op = ref_spec["rest_operator"] if ref_spec.get("is_rest", False) else ref_spec["R"]
+    if isinstance(inst, BaseRaw):
+        inst._data = np.asarray(op @ inst.get_data(verbose=False), dtype=np.float64)
+    elif isinstance(inst, BaseEpochs):
+        inst._data = np.einsum("ij,ejt->eit", op, inst.get_data(verbose=False)).astype(
+            np.float64, copy=False
+        )
+    else:
+        raise ValueError("Instance must be either a Raw or Epochs object.")
+
+
+def _prepare_inst_fit(
+    inst, picks, on_bad_channel="exclude", return_bads=False, apply_reference=True
+):
     pick_idx, excluded_bads = _resolve_fit_picks(
         inst, picks, on_bad_channel=on_bad_channel
     )
@@ -227,7 +266,8 @@ def _prepare_inst_fit(inst, picks, on_bad_channel="exclude", return_bads=False):
     inst_fit = inst_fit.pick(pick_idx)
     inst_fit.info["bads"] = []
 
-    _apply_eeg_average_reference_if_needed(inst_fit)
+    if apply_reference:
+        _apply_eeg_average_reference_if_needed(inst_fit)
 
     if return_bads:
         return inst_fit, excluded_bads
@@ -239,6 +279,7 @@ def _prepare_inst_transform(
     picks,
     on_bad_channel="exclude",
     excluded_bads=None,
+    apply_reference=True,
 ):
     _check_on_bad_channel(on_bad_channel)
     input_bads = set(inst.info["bads"])
@@ -279,13 +320,20 @@ def _prepare_inst_transform(
             "These channels will be ignored during transformation. \n"
         )
 
-    _apply_eeg_average_reference_if_needed(inst_transform)
+    if apply_reference:
+        _apply_eeg_average_reference_if_needed(inst_transform)
     return inst_transform
 
 
-def _prepare_epochs_fit(epochs, picks, on_bad_channel="exclude", return_bads=False):
+def _prepare_epochs_fit(
+    epochs, picks, on_bad_channel="exclude", return_bads=False, apply_reference=True
+):
     return _prepare_inst_fit(
-        epochs, picks, on_bad_channel=on_bad_channel, return_bads=return_bads
+        epochs,
+        picks,
+        on_bad_channel=on_bad_channel,
+        return_bads=return_bads,
+        apply_reference=apply_reference,
     )
 
 
@@ -294,18 +342,26 @@ def _prepare_epochs_transform(
     picks,
     on_bad_channel="exclude",
     excluded_bads=None,
+    apply_reference=True,
 ):
     return _prepare_inst_transform(
         epochs,
         picks,
         on_bad_channel=on_bad_channel,
         excluded_bads=excluded_bads,
+        apply_reference=apply_reference,
     )
 
 
-def _prepare_raw_fit(raw, picks, on_bad_channel="exclude", return_bads=False):
+def _prepare_raw_fit(
+    raw, picks, on_bad_channel="exclude", return_bads=False, apply_reference=True
+):
     return _prepare_inst_fit(
-        raw, picks, on_bad_channel=on_bad_channel, return_bads=return_bads
+        raw,
+        picks,
+        on_bad_channel=on_bad_channel,
+        return_bads=return_bads,
+        apply_reference=apply_reference,
     )
 
 
@@ -314,16 +370,24 @@ def _prepare_raw_transform(
     picks,
     on_bad_channel="exclude",
     excluded_bads=None,
+    apply_reference=True,
 ):
     return _prepare_inst_transform(
         raw,
         picks,
         on_bad_channel=on_bad_channel,
         excluded_bads=excluded_bads,
+        apply_reference=apply_reference,
     )
 
 
-def _interpolate_bad_channels(inst_orig, inst_clean, bad_channels):
+def _interpolate_bad_channels(
+    inst_orig,
+    inst_clean,
+    bad_channels,
+    reference: str | None = "average",
+    reference_cov="leadfield",
+):
     """Interpolate excluded bad channels back into the cleaned instance."""
     clean_set = set(inst_clean.ch_names)
     orig_set = set(inst_orig.ch_names)
@@ -365,7 +429,23 @@ def _interpolate_bad_channels(inst_orig, inst_clean, bad_channels):
     inst_out.info["bads"] = list(bad_to_interp)
     inst_out.interpolate_bads(reset_bads=True, verbose=False)
     if _detect_signal_type(inst_out.info) == "eeg":
-        inst_out.set_eeg_reference("average", projection=False, verbose=False)
+        mode_low = _normalize_reference_mode(reference).lower()
+        if mode_low == "average":
+            inst_out.set_eeg_reference("average", projection=False, verbose=False)
+        elif mode_low == "rest":
+            _, full_spec = _resolve_reference_and_cov(
+                reference_cov, inst_out.info, reference="REST"
+            )
+            _apply_eeg_reference(inst_out, full_spec)
+    if (
+        isinstance(inst_out, BaseRaw)
+        and isinstance(inst_clean, BaseRaw)
+        and len(inst_clean.annotations) > 0
+    ):
+        ann = inst_clean.annotations.copy()
+        if ann.orig_time is None and float(inst_out.first_time) != 0.0:
+            ann.onset = ann.onset - float(inst_out.first_time)
+        inst_out.set_annotations(ann, emit_warning=False)
     return inst_out
 
 
@@ -383,7 +463,8 @@ def _run_two_pass_bad_channel_detection(
     """Run MATLAB-parity two-pass bad-channel detection and rejection.
 
     Pre-pass identifies flat channels via unit-invariant first temporal
-    differences before average referencing. Pass 1 fits and transforms the
+    differences before referencing while retaining a flat online recording
+    reference channel when configured. Pass 1 fits and transforms the
     non-flat channels to evaluate per-channel ENOVA. When any channels exceed
     ``threshold`` (or are flat), Pass 2 re-fits cleanly on the remaining
     good channels.
@@ -396,7 +477,31 @@ def _run_two_pass_bad_channel_detection(
     inst_cand = inst_cand.pick(pick_idx)
     inst_cand.info["bads"] = []
 
+    reference = fit_kwargs.get("reference", "average")
+    ref_mode = _normalize_reference_mode(reference)
     flat_channels = _detect_flat_channels(inst_cand)
+
+    flat_ref_labels: list[str] = []
+    req_ref_channels: list[str] = []
+    if _detect_signal_type(inst_cand.info) == "eeg" and ref_mode.lower() not in (
+        "average",
+        "none",
+        "rest",
+    ):
+        spec_init = _create_reference_spec(inst_cand.info, ref_mode)
+        req_ref_channels = list(spec_init["required_channels"])
+        if req_ref_channels:
+            req_set = set(req_ref_channels)
+            flat_ref_labels = [ch for ch in flat_channels if ch in req_set]
+            if flat_ref_labels:
+                flat_channels = [ch for ch in flat_channels if ch not in req_set]
+                logger.warning(
+                    "Retained flat recording reference channel(s) %s for '%s' "
+                    "leadfield alignment.",
+                    flat_ref_labels,
+                    ref_mode,
+                )
+
     flat_set = set(flat_channels)
     non_flat = [ch for ch in inst_cand.ch_names if ch not in flat_set]
     if len(non_flat) < 2:
@@ -405,13 +510,19 @@ def _run_two_pass_bad_channel_detection(
             f"got {len(non_flat)} (flat channels detected: {flat_channels})."
         )
 
+    pass1_fit_kwargs = dict(fit_kwargs)
+    pass1_reference_forced = False
+    if req_ref_channels and not flat_ref_labels:
+        pass1_fit_kwargs["reference"] = "average"
+        pass1_reference_forced = True
+
     pass1_model = model._clone_unfitted()
     getattr(pass1_model, fit_method_name)(
         inst_cand,
         picks=non_flat,
         on_bad_channel="ignore",
         bad_channel_threshold=None,
-        **fit_kwargs,
+        **pass1_fit_kwargs,
     )
     pass1_model.bad_channels_ = list(flat_channels)
     getattr(pass1_model, transform_method_name)(
@@ -421,9 +532,7 @@ def _run_two_pass_bad_channel_detection(
     )
 
     enova_vals = pass1_model.metrics_["enova_per_channel"]
-    enova_map = {
-        ch: float(val) for ch, val in zip(non_flat, enova_vals, strict=True)
-    }
+    enova_map = {ch: float(val) for ch, val in zip(non_flat, enova_vals, strict=True)}
     enova_dict = {
         ch: (float("inf") if ch in flat_set else enova_map[ch])
         for ch in inst_cand.ch_names
@@ -435,9 +544,26 @@ def _run_two_pass_bad_channel_detection(
     all_bads = [ch for ch in inst.ch_names if ch in all_bad_set]
 
     if not detected_bads:
-        model.__dict__.update(pass1_model.__dict__)
-        model.metrics_ = None
+        if pass1_reference_forced:
+            getattr(model, fit_method_name)(
+                inst_cand,
+                picks=non_flat,
+                on_bad_channel="ignore",
+                bad_channel_threshold=None,
+                **fit_kwargs,
+            )
+        else:
+            model.__dict__.update(pass1_model.__dict__)
+            model.metrics_ = None
     else:
+        pass2_fit_kwargs = dict(fit_kwargs)
+        if req_ref_channels and any(ch in detected_set for ch in req_ref_channels):
+            logger.warning(
+                "Reference channel(s) %s marked bad; falling back to 'average' "
+                "reference for Pass 2.",
+                req_ref_channels,
+            )
+            pass2_fit_kwargs["reference"] = "average"
         remaining = [ch for ch in inst_cand.ch_names if ch not in detected_set]
         if len(remaining) < 2:
             raise ValueError(
@@ -457,7 +583,7 @@ def _run_two_pass_bad_channel_detection(
             picks=remaining,
             on_bad_channel="ignore",
             bad_channel_threshold=None,
-            **fit_kwargs,
+            **pass2_fit_kwargs,
         )
 
     if hasattr(model, "_fitted_raw_ref"):
@@ -470,6 +596,7 @@ def _run_two_pass_bad_channel_detection(
     model._on_bad_channel = on_bad_channel
     model._bad_channel_threshold = threshold
     model.flat_channels_ = list(flat_channels)
+    model.flat_reference_channels_ = list(flat_ref_labels)
     model.noisy_channels_ = list(noisy_channels)
     model.detected_bad_channels_ = list(detected_bads)
     model.bad_channels_ = list(all_bads)

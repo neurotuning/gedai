@@ -3,27 +3,162 @@ import mne
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.linalg import eigh, svd
+from scipy.signal import welch
+from scipy.signal.windows import hann
 from scipy.stats import gaussian_kde
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics import silhouette_samples
+
+_LEGACY_1020_ALIASES = {
+    "T3": "T7",
+    "T4": "T8",
+    "T5": "P7",
+    "T6": "P8",
+}
+
+
+def _compute_enova_weighted_psd(
+    data_before: np.ndarray,
+    data_after: np.ndarray,
+    data_noise: np.ndarray,
+    sfreq: float,
+    enova_pct: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Compute ENOVA-weighted Welch PSD curves (in dB) at 0.5 Hz resolution."""
+    n_ch, n_times = data_after.shape
+    nfft_psd = max(2, int(round(2.0 * sfreq)))
+    nperseg = min(nfft_psd, n_times)
+    noverlap = nperseg // 2
+    win = hann(nperseg, sym=True) if nperseg >= 2 else np.ones(nperseg)
+
+    welch_kwargs = {
+        "fs": sfreq,
+        "window": win,
+        "nperseg": nperseg,
+        "noverlap": noverlap,
+        "nfft": nfft_psd,
+        "detrend": "constant",
+        "scaling": "density",
+        "axis": -1,
+    }
+    f_psd, pxx_b = welch(data_before, **welch_kwargs)
+    _, pxx_a = welch(data_after, **welch_kwargs)
+    _, pxx_n = welch(data_noise, **welch_kwargs)
+
+    w_ch = np.asarray(enova_pct, dtype=np.float64).ravel()
+    if w_ch.size != n_ch or not np.all(np.isfinite(w_ch)) or float(np.sum(w_ch)) <= 0.0:
+        w_ch = np.full(n_ch, 1.0 / max(1, n_ch), dtype=np.float64)
+    else:
+        w_ch = w_ch / float(np.sum(w_ch))
+
+    psd_floor = float(np.finfo(np.float64).tiny)
+    psd_b_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_b, psd_floor))
+    psd_a_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_a, psd_floor))
+    psd_n_db = 10.0 * np.log10(np.maximum(w_ch @ pxx_n, psd_floor))
+    return f_psd, psd_b_db, psd_a_db, psd_n_db, w_ch
+
+
+def _prepare_topomap_info(info: mne.Info) -> tuple[mne.Info, np.ndarray]:
+    """Populate missing EEG 3D coordinates using GEDAI's label matcher."""
+    from ..covariance.covariance import _match_template_labels
+
+    info_copy = info.copy()
+
+    def _has_valid_xyz(ch_dict: dict) -> bool:
+        xyz = np.asarray(ch_dict["loc"][:3], dtype=np.float64)
+        return bool(np.all(np.isfinite(xyz)) and np.linalg.norm(xyz) > 1e-6)
+
+    valid_mask = np.array([_has_valid_xyz(ch) for ch in info_copy["chs"]], dtype=bool)
+    missing_eeg = [
+        idx
+        for idx, is_valid in enumerate(valid_mask)
+        if not is_valid and mne.channel_type(info_copy, idx) == "eeg"
+    ]
+    if missing_eeg:
+        ch_pos_raw: dict[str, np.ndarray] = {}
+        for montage_name in ("colin27_1005", "fsaverage_1005", "standard_1005"):
+            try:
+                montage = mne.channels.make_standard_montage(montage_name)
+                ch_pos_raw = montage.get_positions().get("ch_pos", {})
+                break
+            except Exception:
+                continue
+
+        if ch_pos_raw:
+            ch_pos_upper = {
+                str(k).strip().upper(): np.asarray(v, dtype=np.float64)
+                for k, v in ch_pos_raw.items()
+            }
+            tmpl_names = list(ch_pos_raw.keys())
+            for legacy, modern in _LEGACY_1020_ALIASES.items():
+                if modern in ch_pos_upper and legacy not in ch_pos_upper:
+                    tmpl_names.append(legacy)
+                    ch_pos_upper[legacy] = ch_pos_upper[modern]
+
+            missing_names = [info_copy["ch_names"][idx] for idx in missing_eeg]
+            matched = _match_template_labels(missing_names, tmpl_names)
+            for idx, tmpl_idx in zip(missing_eeg, matched, strict=True):
+                if tmpl_idx < 0:
+                    continue
+                xyz = ch_pos_upper[tmpl_names[tmpl_idx].strip().upper()]
+                if (
+                    xyz.shape == (3,)
+                    and np.all(np.isfinite(xyz))
+                    and np.linalg.norm(xyz) > 1e-6
+                ):
+                    info_copy["chs"][idx]["loc"][:3] = xyz
+
+        valid_mask = np.array(
+            [_has_valid_xyz(ch) for ch in info_copy["chs"]], dtype=bool
+        )
+
+    return info_copy, valid_mask
+
+
+def _collapse_colocated_sites(
+    info: mne.Info,
+    values: np.ndarray,
+    tol_decimals: int = 3,
+) -> tuple[mne.Info, np.ndarray, int]:
+    """Collapse co-located multi-axis sensors (e.g., RAD+TAN) per 3D site."""
+    locs = np.array([ch["loc"][:3] for ch in info["chs"]], dtype=np.float64)
+    _, first_idx, inv = np.unique(
+        np.round(locs, tol_decimals),
+        axis=0,
+        return_index=True,
+        return_inverse=True,
+    )
+    order = np.argsort(first_idx)
+    rep_picks = first_idx[order]
+    site_vals = np.array(
+        [float(np.mean(values[inv == orig_k])) for orig_k in order],
+        dtype=np.float64,
+    )
+    info_sites = mne.pick_info(info, rep_picks.tolist())
+    return info_sites, site_vals, len(rep_picks)
 
 
 def plot_sensai_visualization(
     raw_before: mne.io.BaseRaw,
     raw_after: mne.io.BaseRaw,
-    reference_cov: np.ndarray | str = "leadfield",
+    reference_cov: np.ndarray | mne.Covariance | str = "leadfield",
     epoch_duration_sec: float = 1.0,
     n_pc: int = 3,
     sensai_score: float | None = None,
     mean_enova: float | None = None,
     title_suffix: str = "",
     show: bool = True,
+    *,
+    enova_per_channel: np.ndarray | None = None,
+    enova_unit: str = "proportion",
 ):
-    """Plot SENSAI subspace similarity and manifold classification.
+    """Plot SENSAI subspace similarity, manifold classification, PSD, and ENOVA map.
 
-    Exact replica of MATLAB's SENSAI_visualization.m with side-by-side
+    Replica of MATLAB's ``SENSAI_visualization.m`` with side-by-side
     Before/After subspace projections, soft pastel LDA decision shading,
-    and marginal KDE distributions.
+    marginal KDE distributions, an ENOVA-weighted Welch PSD panel, and a
+    per-channel ENOVA scalp topoplot (with bar-chart fallback when sensor
+    coordinates are unavailable).
 
     Parameters
     ----------
@@ -31,8 +166,9 @@ def plot_sensai_visualization(
         Original EEG recording before denoising.
     raw_after : mne.io.BaseRaw
         Cleaned EEG recording after denoising.
-    reference_cov : np.ndarray or str
-        Reference leadfield covariance matrix.
+    reference_cov : np.ndarray | mne.Covariance | str
+        Reference leadfield covariance matrix, ``mne.Covariance``, or
+        ``"leadfield"`` / ``"projection"``.
     epoch_duration_sec : float
         Epoch length in seconds (default 1.0s).
     n_pc : int
@@ -45,20 +181,54 @@ def plot_sensai_visualization(
         Additional parameters string for plot title.
     show : bool
         Whether to call plt.show() or return the figure.
+    enova_per_channel : np.ndarray | None
+        Optional 1D array of per-channel ENOVA values aligned with the common
+        evaluated channels. When ``None``, computed directly from ``raw_before``
+        and ``raw_after``.
+    enova_unit : str
+        Unit of ``enova_per_channel``: ``"proportion"`` (default) or
+        ``"percent"``.
 
     Returns
     -------
     fig : matplotlib.figure.Figure
         The created visualization figure.
     metrics : dict
-        Computed subspace similarity and LDA classification metrics.
+        Computed subspace similarity, LDA classification, ENOVA, and PSD
+        metrics.
     """
-    from ..covariance.covariance import _ensure_cov, _pick_cov
+    from ..covariance.covariance import _pick_cov, _resolve_reference_and_cov
+    from ..metrics.enova import compute_enova_per_channel, compute_enova_per_epoch
 
-    # Extract common channels and data in microvolts (uV) for standard EEG dB scaling
-    ch_names = [ch for ch in raw_after.ch_names if ch in raw_before.ch_names]
-    data_before = raw_before.copy().pick(ch_names).get_data(verbose=False) * 1e6
-    data_after = raw_after.copy().pick(ch_names).get_data(verbose=False) * 1e6
+    # 1. Align common channels and resolve reference covariance
+    common_chs = [ch for ch in raw_after.ch_names if ch in raw_before.ch_names]
+    if isinstance(reference_cov, mne.Covariance):
+        ch_names = [ch for ch in reference_cov.ch_names if ch in common_chs]
+        ref_cov_data = _pick_cov(reference_cov, ch_names).data
+    elif isinstance(reference_cov, str):
+        ch_names = common_chs
+        info_sub = raw_after.copy().pick(ch_names).reorder_channels(ch_names).info
+        ref_cov_data = _resolve_reference_and_cov(reference_cov, info_sub)[0].data
+    else:
+        ch_names = common_chs
+        ref_cov_data = np.asarray(reference_cov, dtype=np.float64)
+        if ref_cov_data.shape != (len(ch_names), len(ch_names)):
+            raise ValueError(
+                f"reference_cov shape {ref_cov_data.shape} does not match the "
+                f"{len(ch_names)} common channels between raw_before and raw_after."
+            )
+
+    # Extract aligned channel data in microvolts (uV) for standard EEG dB scaling
+    data_before = (
+        raw_before.copy()
+        .pick(ch_names)
+        .reorder_channels(ch_names)
+        .get_data(verbose=False)
+        * 1e6
+    )
+    raw_after_picked = raw_after.copy().pick(ch_names).reorder_channels(ch_names)
+    data_after = raw_after_picked.get_data(verbose=False) * 1e6
+    info_eval = raw_after_picked.info
     data_noise = data_before - data_after
 
     sfreq = raw_after.info["sfreq"]
@@ -73,15 +243,7 @@ def plot_sensai_visualization(
             f"{epoch_duration_sec}s."
         )
 
-    # 1. Prepare Reference Subspace
-    if isinstance(reference_cov, str):
-        cov = _ensure_cov(reference_cov)
-        cov = _pick_cov(cov, ch_names)
-        ref_cov_data = cov.data
-    else:
-        ref_cov_data = np.asarray(reference_cov)
-
-    # Regularize reference covariance
+    # Regularize reference covariance and extract top subspace basis
     trace_ref = np.trace(ref_cov_data) / ref_cov_data.shape[0]
     ref_cov_reg = 0.95 * ref_cov_data + 0.05 * trace_ref * np.eye(ref_cov_data.shape[0])
     _, Vref = eigh(ref_cov_reg)
@@ -167,18 +329,59 @@ def plot_sensai_visualization(
         x_min, x_max = float(np.min(all_vals_finite)), float(np.max(all_vals_finite))
         x_lims = (x_min - 2.0, x_max + 5.0)
 
-    # 5. Create Figure & Layout Matching MATLAB
-    fig = plt.figure(figsize=(15.5, 6.8), facecolor="white")
+    # 4b. Compute Per-Channel ENOVA (%) and ENOVA-Weighted Welch PSD
+    enova_computed_internally = enova_per_channel is None
+    if not enova_computed_internally:
+        enova_ch = np.asarray(enova_per_channel, dtype=np.float64).ravel()
+        if enova_ch.shape != (n_ch,):
+            raise ValueError(
+                f"enova_per_channel has length {enova_ch.shape[0]}, expected {n_ch}."
+            )
+    else:
+        enova_ch = compute_enova_per_channel(
+            data_after, data_noise, epoch_samples
+        ).astype(np.float64)
 
-    # Outer split: Left panel (0.06 to 0.44), Right panel (0.52 to 0.94)
-    # Left Panel
-    ax1 = fig.add_axes([0.06, 0.10, 0.32, 0.70])
-    cbar_ax = fig.add_axes([0.395, 0.10, 0.015, 0.70])
+    if enova_unit not in ("proportion", "percent"):
+        raise ValueError("enova_unit must be 'proportion' or 'percent'.")
+    enova_plot_val = enova_ch.copy()
+    if enova_computed_internally or enova_unit == "proportion":
+        enova_plot_val = enova_plot_val * 100.0
+    enova_plot_val = np.where(
+        np.isnan(enova_plot_val) | np.isneginf(enova_plot_val) | (enova_plot_val < 0.0),
+        0.0,
+        enova_plot_val,
+    )
+    enova_plot_val = np.where(
+        np.isposinf(enova_plot_val) | (enova_plot_val > 100.0),
+        100.0,
+        enova_plot_val,
+    )
 
-    # Right Panel Main + Marginals
-    ax2 = fig.add_axes([0.52, 0.10, 0.33, 0.70])
-    ax2_top = fig.add_axes([0.52, 0.81, 0.33, 0.07])
-    ax2_right = fig.add_axes([0.855, 0.10, 0.035, 0.70])
+    f_psd, psd_b_db, psd_a_db, psd_n_db, w_ch = _compute_enova_weighted_psd(
+        data_before, data_after, data_noise, sfreq, enova_plot_val
+    )
+
+    # 5. Create Figure & 3-Column Layout Matching MATLAB
+    fig = plt.figure(figsize=(18.0, 6.5), facecolor="white")
+
+    # Column 1: Before Denoising + SSI Colorbar
+    ax1 = fig.add_axes([0.048, 0.12, 0.195, 0.61])
+    cbar_ax = fig.add_axes([0.249, 0.12, 0.009, 0.61])
+    ax1_top = fig.add_axes([0.048, 0.745, 0.195, 0.080])
+    ax1_top.axis("off")
+
+    # Column 2: After Denoising + Marginals
+    ax2 = fig.add_axes([0.325, 0.12, 0.195, 0.61])
+    ax2_top = fig.add_axes([0.325, 0.745, 0.195, 0.080])
+    ax2_right = fig.add_axes([0.526, 0.12, 0.024, 0.61])
+
+    # Column 3 (Upper): ENOVA-weighted Welch PSD
+    ax_psd = fig.add_axes([0.708, 0.530, 0.255, 0.295])
+
+    # Column 3 (Lower): ENOVA Topoplot + Colorbar
+    ax_topo = fig.add_axes([0.730, 0.080, 0.175, 0.325])
+    cbar_topo_ax = fig.add_axes([0.912, 0.100, 0.010, 0.285])
 
     # Exact MATLAB Color Palette
     col_sig = np.array([0.08, 0.72, 0.22])  # Green
@@ -225,18 +428,21 @@ def plot_sensai_visualization(
     )
     ax1.set_xlim(x_lims)
     ax1.set_ylim(-0.05, 1.15)
-    ax1.set_xlabel("Epoch Power (dB)", fontsize=11)
-    ax1.set_ylabel(f"SSI (geom. mean of top-{n_pc} PC cosines)", fontsize=11)
+    ax1.set_xlabel("Epoch Power (dB)", fontsize=10.5)
+    ax1.set_ylabel(f"SSI (geom. mean of top-{n_pc} PC cosines)", fontsize=10.5)
     ax1.tick_params(direction="inout", top=False, right=False)
     ax1.spines["top"].set_visible(False)
     ax1.spines["right"].set_visible(False)
-    ax1.set_title(
-        f"Before Denoising  |  Mean SSI: {np.mean(ssi_before):.2f}", fontsize=10, pad=20
+    ax1_top.set_title(
+        f"Before Denoising\nMean SSI: {np.mean(ssi_before):.2f}",
+        fontsize=10,
+        fontweight="bold",
+        pad=8,
     )
 
     # Colorbar
     cb = fig.colorbar(sc1, cax=cbar_ax)
-    cb.set_label("SSI (Subspace Similarity Index) relative to Leadfield", fontsize=10)
+    cb.set_label("SSI (Subspace Similarity Index) relative to Leadfield", fontsize=9.5)
     cb.set_ticks(np.linspace(0, 1, 11))
 
     # ── PANEL 2: AFTER DENOISING ──────────────────────────────────────────
@@ -305,8 +511,8 @@ def plot_sensai_visualization(
 
     ax2.set_xlim(x_lims)
     ax2.set_ylim(-0.05, 1.15)
-    ax2.set_xlabel("Epoch Power (dB)", fontsize=11)
-    ax2.set_ylabel(f"SSI (geom. mean of top-{n_pc} PC cosines)", fontsize=11)
+    ax2.set_xlabel("Epoch Power (dB)", fontsize=10.5)
+    # Redundant y-axis label omitted on Panel 2 (matching MATLAB)
     ax2.tick_params(direction="inout", top=False, right=False)
     ax2.spines["top"].set_visible(False)
     ax2.spines["right"].set_visible(False)
@@ -319,12 +525,12 @@ def plot_sensai_visualization(
             f"Signal (mean SSI={np.mean(ssi_after):.2f})",
             f"Noise (mean SSI={np.mean(ssi_noise):.2f})",
         ],
-        loc="upper right",
-        bbox_to_anchor=(1.40, 1.02),
+        loc="lower left",
+        bbox_to_anchor=(1.03, 1.02),
         frameon=True,
         edgecolor="black",
         facecolor="white",
-        fontsize=9,
+        fontsize=8.0,
     )
 
     # ── PANEL 2 MARGINALS (KDE Distributions) ─────────────────────────────
@@ -365,11 +571,12 @@ def plot_sensai_visualization(
         f"\nSSI Silhouette Score: {sil_signal:.2f}" if not np.isnan(sil_signal) else ""
     )
     ax2_top.set_title(
-        "After Denoising  |  "
+        "After Denoising\n"
         f"Mean SSSI: {np.mean(ssi_after):.2f}  |  "
         f"Mean NSSI: {np.mean(ssi_noise):.2f}{sil_str}",
-        fontsize=9,
-        pad=10,
+        fontsize=9.0,
+        fontweight="bold",
+        pad=8,
     )
 
     # Right Marginal (SSI distribution)
@@ -405,6 +612,133 @@ def plot_sensai_visualization(
     ax2_right.spines["bottom"].set_color("#888888")
     ax2_right.set_facecolor("none")
 
+    # ── PANEL 3 (UPPER): ENOVA-WEIGHTED PSD OVER CHANNELS ────────────────
+    max_f_disp = min(45.0, float(sfreq) / 2.0)
+    f_mask = (f_psd >= 0.5) & (f_psd <= max_f_disp)
+    if not np.any(f_mask):
+        f_mask = np.ones_like(f_psd, dtype=bool)
+    f_disp = f_psd[f_mask]
+
+    ax_psd.plot(
+        f_disp,
+        psd_b_db[f_mask],
+        "-",
+        color=(0.25, 0.45, 0.75),
+        lw=1.8,
+        label="Original",
+    )
+    ax_psd.plot(
+        f_disp,
+        psd_a_db[f_mask],
+        "-",
+        color=(0.08, 0.68, 0.25),
+        lw=2.0,
+        label="Signal",
+    )
+    ax_psd.plot(
+        f_disp,
+        psd_n_db[f_mask],
+        "-",
+        color=(0.85, 0.18, 0.18),
+        lw=1.8,
+        label="Noise",
+    )
+    if f_disp.size >= 2:
+        ax_psd.set_xlim(float(f_disp[0]), float(f_disp[-1]))
+    ax_psd.set_xlabel("Frequency (Hz)", fontsize=10.5)
+    ax_psd.set_ylabel("Power (dB)", fontsize=10.5)
+    ax_psd.set_title("ENOVA-weighted PSD over channels", fontsize=10, fontweight="bold")
+    ax_psd.grid(True, alpha=0.3)
+    ax_psd.spines["top"].set_visible(False)
+    ax_psd.spines["right"].set_visible(False)
+    ax_psd.legend(loc="upper right", frameon=False, fontsize=8.5)
+
+    # ── PANEL 3 (LOWER): ENOVA TOPOPLOT (OR BAR FALLBACK) ────────────────
+    info_topo, valid_mask = _prepare_topomap_info(info_eval)
+    plot_done = False
+    if int(np.sum(valid_mask)) >= 3:
+        valid_chs = [ch for ch, ok in zip(ch_names, valid_mask, strict=True) if ok]
+        info_valid = mne.pick_info(
+            info_topo,
+            mne.pick_channels(info_topo.ch_names, include=valid_chs, ordered=True),
+        )
+        info_sites, site_vals, n_sites = _collapse_colocated_sites(
+            info_valid, enova_plot_val[valid_mask]
+        )
+        if n_sites >= 3:
+            ch_types = set(info_sites.get_channel_types())
+            is_meg = any(ct in ("mag", "grad") for ct in ch_types)
+            site_locs = np.array(
+                [ch["loc"][:3] for ch in info_sites["chs"]], dtype=np.float64
+            )
+            max_r = float(np.max(np.linalg.norm(site_locs, axis=1)))
+            sphere_arg = (0.0, 0.0, 0.0, max(0.095, max_r * 1.05)) if is_meg else None
+            try:
+                if len(ch_types) == 1:
+                    pos_arg: mne.Info | np.ndarray = info_sites
+                else:
+                    from mne.channels.layout import _find_topomap_coords
+
+                    pos_arg = _find_topomap_coords(
+                        info_sites, picks="all", sphere=sphere_arg
+                    )
+
+                im, _ = mne.viz.plot_topomap(
+                    site_vals,
+                    pos_arg,
+                    axes=ax_topo,
+                    cmap="turbo",
+                    vlim=(0.0, 100.0),
+                    contours=6,
+                    outlines="head",
+                    sphere=sphere_arg,
+                    extrapolate="head",
+                    sensors=True,
+                    show=False,
+                )
+                cb_enova = fig.colorbar(im, cax=cbar_topo_ax)
+                cb_enova.set_label("ENOVA (%)", fontsize=10)
+                cb_enova.set_ticks([0, 20, 40, 60, 80, 100])
+                ax_topo.set_title(
+                    "ENOVA (Explained Noise Variance)",
+                    fontsize=10,
+                    fontweight="bold",
+                    pad=8,
+                )
+                plot_done = True
+            except Exception:
+                ax_topo.cla()
+
+    if not plot_done:
+        cbar_topo_ax.set_visible(False)
+        ax_topo.set_position([0.708, 0.115, 0.255, 0.290])
+        x_idx = np.arange(n_ch)
+        ax_topo.bar(
+            x_idx,
+            enova_plot_val,
+            color=(0.85, 0.35, 0.25),
+            edgecolor="none",
+        )
+        step = max(1, n_ch // 20)
+        tick_idx = x_idx[::step]
+        ax_topo.set_xticks(tick_idx)
+        ax_topo.set_xticklabels(
+            [ch_names[i] for i in tick_idx],
+            rotation=45,
+            ha="right",
+            fontsize=8,
+        )
+        ax_topo.set_ylim(0.0, 105.0)
+        ax_topo.set_ylabel("ENOVA (%)", fontsize=10.5)
+        ax_topo.set_title(
+            "ENOVA (Explained Noise Variance)",
+            fontsize=10,
+            fontweight="bold",
+        )
+        ax_topo.grid(True, axis="y", alpha=0.3)
+        ax_topo.spines["top"].set_visible(False)
+        ax_topo.spines["right"].set_visible(False)
+
     # ── GLOBAL TITLE ──────────────────────────────────────────────────────
     title_parts = []
     if sensai_score is not None:
@@ -412,6 +746,9 @@ def plot_sensai_visualization(
     if mean_enova is not None:
         enova_val = mean_enova * 100 if mean_enova <= 1.0 else mean_enova
         title_parts.append(f"ENOVA = {enova_val:.1f}%")
+    elif sensai_score is not None:
+        enova_ep_eval = compute_enova_per_epoch(data_after, data_noise, epoch_samples)
+        title_parts.append(f"ENOVA = {float(np.mean(enova_ep_eval)) * 100.0:.1f}%")
     if title_suffix:
         title_parts.append(f"[{title_suffix}]")
     full_title = (
@@ -428,6 +765,12 @@ def plot_sensai_visualization(
         "ssi_noise_mean": float(np.mean(ssi_noise)),
         "signal_silhouette": sil_signal,
         "ideal_power_target_db": ideal_power_target,
+        "enova_per_channel": enova_ch,
+        "psd_before_db": psd_b_db,
+        "psd_after_db": psd_a_db,
+        "psd_noise_db": psd_n_db,
+        "psd_freqs": f_psd,
+        "enova_weights": w_ch,
     }
 
     if show:

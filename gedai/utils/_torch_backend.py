@@ -142,7 +142,7 @@ def precompute_gevd_torch(
 def clean_epochs_batched_torch(
     epochs_data: np.ndarray,
     reference_cov: np.ndarray,
-    threshold: float | None = None,
+    threshold: float | np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Process all epochs in a single batched tensor pass on PyTorch CPU.
 
@@ -152,8 +152,8 @@ def clean_epochs_batched_torch(
         Multi-channel epoch data.
     reference_cov : np.ndarray, shape (n_channels, n_channels)
         Regularized reference covariance matrix.
-    threshold : float | None
-        Eigenvalue threshold for artifact rejection.
+    threshold : float | np.ndarray | None
+        Eigenvalue threshold for artifact rejection (scalar or shape ``(n_epochs,)``).
 
     Returns
     -------
@@ -176,8 +176,22 @@ def clean_epochs_batched_torch(
 
     evals, evecs = robust_cholesky_gevd(covs, b)
     abs_evals = torch.abs(evals)
-    at_threshold = torch.abs(abs_evals - threshold) <= abs(threshold) * 1e-12
-    signal_mask = ~((abs_evals >= threshold) | at_threshold)
+    thresh_arr = np.asarray(threshold, dtype=np.float64)
+    if thresh_arr.ndim == 0:
+        thresh_t = torch.tensor(float(thresh_arr), dtype=torch.float64, device=x.device)
+    else:
+        if thresh_arr.shape != (x.shape[0],):
+            raise ValueError(
+                f"Per-epoch threshold shape {thresh_arr.shape} must match n_epochs "
+                f"({x.shape[0]})."
+            )
+        thresh_t = (
+            torch.from_numpy(np.ascontiguousarray(thresh_arr))
+            .to(dtype=torch.float64, device=x.device)
+            .unsqueeze(1)
+        )
+    at_threshold = torch.abs(abs_evals - thresh_t) <= torch.abs(thresh_t) * 1e-12
+    signal_mask = ~((abs_evals >= thresh_t) | at_threshold)
 
     evecs_filtered = torch.where(
         signal_mask.unsqueeze(1), torch.zeros_like(evecs), evecs
