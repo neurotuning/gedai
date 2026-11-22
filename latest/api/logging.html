@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=26f1c5af"></script>
+    <script src="../_static/documentation_options.js?v=a85d417d"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -63,7 +63,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="gedai.add_file_handler" href="generated/gedai.add_file_handler.html" />
-    <link rel="prev" title="gedai.covariance.compute_covariance_from_forward" href="generated/gedai.covariance.compute_covariance_from_forward.html" />
+    <link rel="prev" title="gedai.covariance.compute_covariance_from_channel_positions" href="generated/gedai.covariance.compute_covariance_from_channel_positions.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
@@ -166,6 +166,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     API References
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -303,6 +320,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     API References
@@ -401,6 +425,9 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="covariance.html">Covariance</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_forward.html">gedai.covariance.compute_covariance_from_forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_dipole_projection.html">gedai.covariance.compute_covariance_from_dipole_projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.project_leadfield_dipole.html">gedai.covariance.project_leadfield_dipole</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_channel_positions.html">gedai.covariance.compute_covariance_from_channel_positions</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">Logging</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -494,12 +521,12 @@
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="generated/gedai.covariance.compute_covariance_from_forward.html"
+       href="generated/gedai.covariance.compute_covariance_from_channel_positions.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">gedai.covariance.compute_covariance_from_forward</p>
+        <p class="prev-next-title">gedai.covariance.compute_covariance_from_channel_positions</p>
       </div>
     </a>
     <a class="right-next"

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=26f1c5af"></script>
+    <script src="../../_static/documentation_options.js?v=a85d417d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
@@ -166,6 +166,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../index.html">
     API References
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -307,6 +324,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../index.html">
     API References
@@ -405,6 +429,9 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../covariance.html">Covariance</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="gedai.covariance.compute_covariance_from_forward.html">gedai.covariance.compute_covariance_from_forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gedai.covariance.compute_covariance_from_dipole_projection.html">gedai.covariance.compute_covariance_from_dipole_projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gedai.covariance.project_leadfield_dipole.html">gedai.covariance.project_leadfield_dipole</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gedai.covariance.compute_covariance_from_channel_positions.html">gedai.covariance.compute_covariance_from_channel_positions</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../logging.html">Logging</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -548,7 +575,7 @@ cleaned outputs are invariant to uniform input amplitude rescaling
 </div>
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.fit_epochs">
-<span class="sig-name descname"><span class="pre">fit_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-6.0,</span> <span class="pre">12.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_bad_channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exclude'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_channel_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_epochs" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-6.0,</span> <span class="pre">12.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_bad_channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exclude'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_channel_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'average'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_epochs" title="Link to this definition">🔗</a></dt>
 <dd><p>Fit the GEDAI model to the epochs.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -562,25 +589,27 @@ channels. Can also be the string values <code class="docutils literal notranslat
 <code class="docutils literal notranslate"><span class="pre">&quot;data&quot;</span></code> to pick data channels. The default is <code class="docutils literal notranslate"><span class="pre">&quot;eeg&quot;</span></code> to pick all
 EEG channels.</p>
 </dd>
-<dt><strong>reference_cov</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a></span></dt><dd><p>The reference covariance to use. If <code class="docutils literal notranslate"><span class="pre">'leadfield'</span></code>, use a pre-computed covariance.
-The precomputed covariance if computed from a leadfield made using 1005 EEG channels
-layout and fsaverage head model.
-If <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a>, use a pre-computed covariance.
-See <a class="reference internal" href="gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a> for more
-details on how to compute a covariance from a forward solution.</p>
+<dt><strong>reference_cov</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a> | <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Forward</span></code></a></span></dt><dd><p>The reference covariance to use. If <code class="docutils literal notranslate"><span class="pre">'leadfield'</span></code>, uses the bundled 343-channel
+OpenMEEG BEM covariance (with automatic 3D dipole-kernel projection fallback when
+electrode labels are non-10-20 and 3D coordinates are present). If
+<code class="docutils literal notranslate"><span class="pre">'projection'</span></code>, always computes 3D dipole-kernel projection from channel
+positions. Also accepts an <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a> or <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a>.
+See <a class="reference internal" href="gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a> and
+<a class="reference internal" href="gedai.covariance.compute_covariance_from_dipole_projection.html#gedai.covariance.compute_covariance_from_dipole_projection" title="gedai.covariance.compute_covariance_from_dipole_projection"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_dipole_projection()</span></code></a>.</p>
 </dd>
 <dt><strong>sensai_method</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The method to use for threshold optimization.
 Can be <code class="docutils literal notranslate"><span class="pre">'optimize'</span></code> (default, continuous scalar minimization) or
 <code class="docutils literal notranslate"><span class="pre">'gridsearch'</span></code>.</p>
 </dd>
-<dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The noise multiplier or string preset for artefact threshold rejection optimization.
-Supported string presets:</p>
+<dt><strong>strength</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a>, default=”auto”</span></dt><dd><p>Denoising strength balancing artifact suppression and neural preservation
+via closed-form adaptive Z3 spectral weighting (higher = stronger cleaning):</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> : Standard balance (noise_multiplier = 3.0, default).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (noise_multiplier = 1.5).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (noise_multiplier = 6.0).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default) : Standard balance (<code class="docutils literal notranslate"><span class="pre">7.0</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (<code class="docutils literal notranslate"><span class="pre">8.0</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (<code class="docutils literal notranslate"><span class="pre">6.0</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">10]</span></code>: Continuous perceptual strength (higher = stronger
+cleaning, matching MATLAB GEDAI’s log-linearized <code class="docutils literal notranslate"><span class="pre">0</span></code>-<code class="docutils literal notranslate"><span class="pre">10</span></code> scale).</p></li>
 </ul>
-<p>Alternatively, a custom numerical float can be passed.</p>
 </dd>
 <dt><strong>sensai_bounds</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).</p>
 </dd>
@@ -631,6 +660,18 @@ disabled. If <code class="docutils literal notranslate"><span class="pre">&quot;
 fit/transform to flag channels whose ENOVA exceeds the threshold, then
 re-fits Pass 2 on the remaining good channels.</p>
 </dd>
+<dt><strong>reference</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, default=”average”</span></dt><dd><p>EEG reference convention applied consistently to both data and leadfield /
+reference covariance (ignored for MEG):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;average&quot;</span></code> (default): Average reference.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;REST&quot;</span></code>: Reference Electrode Standardization Technique (infinity reference;
+requires a leadfield/Forward).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;M1+M2&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;TP9+TP10&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;A1+A2&quot;</span></code>: Linked mastoids / earlobes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>: No re-referencing.</p></li>
+<li><p>Any channel label (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Cz&quot;</span></code>): Re-reference to that channel (or adjust the
+leadfield directly if it is an external 10-05 reference not in the montage).</p></li>
+</ul>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -638,7 +679,7 @@ re-fits Pass 2 on the remaining good channels.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.fit_raw">
-<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">noise_multiplier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-6.0,</span> <span class="pre">12.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass_prefilter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_bad_channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exclude'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_channel_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">fit_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">picks</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eeg'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reject_by_annotation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference_cov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'leadfield'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'optimize'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(-6.0,</span> <span class="pre">12.0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensai_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass_prefilter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_pc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_bad_channel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'exclude'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_channel_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'average'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">smoothing_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.fit_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Fit the GEDAI model to the raw data.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -663,25 +704,27 @@ It is recommended to set this to <code class="docutils literal notranslate"><spa
 algorithm needs to learn from bad segments.
 The default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p>
 </dd>
-<dt><strong>reference_cov</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a></span></dt><dd><p>The reference covariance to use. If <code class="docutils literal notranslate"><span class="pre">'leadfield'</span></code>, use a pre-computed covariance.
-The precomputed covariance if computed from a leadfield made using 1005 EEG channels
-layout and fsaverage head model.
-If <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a>, use a pre-computed covariance.
-See <a class="reference internal" href="gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a> for more
-details on how to compute a covariance from a forward solution.</p>
+<dt><strong>reference_cov</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a> | <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Forward</span></code></a></span></dt><dd><p>The reference covariance to use. If <code class="docutils literal notranslate"><span class="pre">'leadfield'</span></code>, uses the bundled 343-channel
+OpenMEEG BEM covariance (with automatic 3D dipole-kernel projection fallback when
+electrode labels are non-10-20 and 3D coordinates are present). If
+<code class="docutils literal notranslate"><span class="pre">'projection'</span></code>, always computes 3D dipole-kernel projection from channel
+positions. Also accepts an <a class="reference external" href="https://mne.tools/stable/generated/mne.Covariance.html#mne.Covariance" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Covariance</span></code></a> or <a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">mne.Forward</span></code></a>.
+See <a class="reference internal" href="gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_forward()</span></code></a> and
+<a class="reference internal" href="gedai.covariance.compute_covariance_from_dipole_projection.html#gedai.covariance.compute_covariance_from_dipole_projection" title="gedai.covariance.compute_covariance_from_dipole_projection"><code class="xref py py-func docutils literal notranslate"><span class="pre">compute_covariance_from_dipole_projection()</span></code></a>.</p>
 </dd>
 <dt><strong>sensai_method</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The method to use for threshold optimization.
 Can be <code class="docutils literal notranslate"><span class="pre">'optimize'</span></code> (default, continuous scalar minimization) or
 <code class="docutils literal notranslate"><span class="pre">'gridsearch'</span></code>.</p>
 </dd>
-<dt><strong>noise_multiplier</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a></span></dt><dd><p>The noise multiplier or string preset for artefact threshold rejection optimization.
-Supported string presets:</p>
+<dt><strong>strength</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a>, default=”auto”</span></dt><dd><p>Denoising strength balancing artifact suppression and neural preservation
+via closed-form adaptive Z3 spectral weighting (higher = stronger cleaning):</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> : Standard balance (noise_multiplier = 3.0, default).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (noise_multiplier = 1.5).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (noise_multiplier = 6.0).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> (default) : Standard balance (<code class="docutils literal notranslate"><span class="pre">7.0</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> : More aggressive denoising (<code class="docutils literal notranslate"><span class="pre">8.0</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> : More conservative denoising (<code class="docutils literal notranslate"><span class="pre">6.0</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code> in <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">10]</span></code>: Continuous perceptual strength (higher = stronger
+cleaning, matching MATLAB GEDAI’s log-linearized <code class="docutils literal notranslate"><span class="pre">0</span></code>-<code class="docutils literal notranslate"><span class="pre">10</span></code> scale).</p></li>
 </ul>
-<p>Alternatively, a custom numerical float can be passed.</p>
 </dd>
 <dt><strong>sensai_bounds</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">tuple</span></code></a> of <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a></span></dt><dd><p>The (min, max) bounds for the SENSAI search threshold. Default (-6.0, 12.0).</p>
 </dd>
@@ -733,6 +776,25 @@ disabled. If <code class="docutils literal notranslate"><span class="pre">&quot;
 fit/transform to flag channels whose ENOVA exceeds the threshold, then
 re-fits Pass 2 on the remaining good channels.</p>
 </dd>
+<dt><strong>reference</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, default=”average”</span></dt><dd><p>EEG reference convention applied consistently to both data and leadfield /
+reference covariance (ignored for MEG):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;average&quot;</span></code> (default): Average reference.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;REST&quot;</span></code>: Reference Electrode Standardization Technique (infinity reference;
+requires a leadfield/Forward).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;M1+M2&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;TP9+TP10&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;A1+A2&quot;</span></code>: Linked mastoids / earlobes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>: No re-referencing.</p></li>
+<li><p>Any channel label (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Cz&quot;</span></code>): Re-reference to that channel (or adjust the
+leadfield directly if it is an external 10-05 reference not in the montage).</p></li>
+</ul>
+</dd>
+<dt><strong>smoothing_window</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, default=None</span></dt><dd><p>Duration in seconds of overlapping calibration windows for sliding-window
+threshold adaptation during <code class="docutils literal notranslate"><span class="pre">fit_raw</span></code>, intended for long recordings with
+non-stationary background EEG signal (e.g., sleep, epilepsy, fatigue).
+Thresholds vary smoothly across the recording via Akima (makima)
+interpolation. When <code class="docutils literal notranslate"><span class="pre">None</span></code> or <code class="docutils literal notranslate"><span class="pre">np.inf</span></code> (default), fits a single
+stationary threshold.</p>
+</dd>
 </dl>
 </dd>
 </dl>
@@ -772,7 +834,8 @@ re-fits Pass 2 on the remaining good channels.</p>
 <dd><p>Plot SENSAI subspace similarity and manifold classification.</p>
 <p>Replicates MATLAB’s SENSAI_visualization.m with side-by-side
 Before/After subspace projections, LDA decision boundary shading,
-and marginal KDE distributions.</p>
+marginal KDE distributions, ENOVA-weighted Welch PSD, and per-channel
+ENOVA topoplot.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
@@ -801,7 +864,7 @@ and marginal KDE distributions.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.transform_epochs">
-<span class="sig-name descname"><span class="pre">transform_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_epochs" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_epochs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epochs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_epoch_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_epochs" title="Link to this definition">🔗</a></dt>
 <dd><p>Transform epochs data using the fitted model.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -831,6 +894,13 @@ metrics and stores them in <code class="docutils literal notranslate"><span clas
 latency-critical real-time streaming loops to skip post-hoc metric
 computation and leave <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code> unchanged.</p>
 </dd>
+<dt><strong>bad_epoch_threshold</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, default=None</span></dt><dd><p>ENOVA threshold (e.g., <code class="docutils literal notranslate"><span class="pre">0.85</span></code>) above which 1-second epochs are flagged
+as severely corrupted. On <code class="docutils literal notranslate"><span class="pre">transform_raw</span></code>, appends <code class="docutils literal notranslate"><span class="pre">&quot;BAD_gedai&quot;</span></code>
+annotations to the returned instance (without destructively removing samples)
+and populates <code class="docutils literal notranslate"><span class="pre">self.bad_epochs_</span></code>. On <code class="docutils literal notranslate"><span class="pre">transform_epochs</span></code>, populates
+boolean mask <code class="docutils literal notranslate"><span class="pre">self.bad_epochs_</span></code>. When <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), no bad-epoch
+annotations are added.</p>
+</dd>
 </dl>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -844,7 +914,7 @@ computation and leave <code class="docutils literal notranslate"><span class="pr
 
 <dl class="py method">
 <dt class="sig sig-object py" id="gedai.gedai.Gedai.transform_raw">
-<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_raw" title="Link to this definition">🔗</a></dt>
+<span class="sig-name descname"><span class="pre">transform_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interpolate_bads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bad_epoch_threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.gedai.Gedai.transform_raw" title="Link to this definition">🔗</a></dt>
 <dd><p>Transform raw data using the fitted model.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -877,6 +947,13 @@ valid 3D channel locations on the input instance.</p>
 metrics and stores them in <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code>. Set to <code class="docutils literal notranslate"><span class="pre">False</span></code> in
 latency-critical real-time streaming loops to skip post-hoc metric
 computation and leave <code class="docutils literal notranslate"><span class="pre">self.metrics_</span></code> unchanged.</p>
+</dd>
+<dt><strong>bad_epoch_threshold</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, default=None</span></dt><dd><p>ENOVA threshold (e.g., <code class="docutils literal notranslate"><span class="pre">0.85</span></code>) above which 1-second epochs are flagged
+as severely corrupted. On <code class="docutils literal notranslate"><span class="pre">transform_raw</span></code>, appends <code class="docutils literal notranslate"><span class="pre">&quot;BAD_gedai&quot;</span></code>
+annotations to the returned instance (without destructively removing samples)
+and populates <code class="docutils literal notranslate"><span class="pre">self.bad_epochs_</span></code>. On <code class="docutils literal notranslate"><span class="pre">transform_epochs</span></code>, populates
+boolean mask <code class="docutils literal notranslate"><span class="pre">self.bad_epochs_</span></code>. When <code class="docutils literal notranslate"><span class="pre">None</span></code> (default), no bad-epoch
+annotations are added.</p>
 </dd>
 </dl>
 </dd>

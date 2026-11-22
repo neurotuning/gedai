@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=26f1c5af"></script>
+    <script src="../../_static/documentation_options.js?v=a85d417d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,14 +55,14 @@
     <script>
         DOCUMENTATION_OPTIONS.theme_version = '0.24.0';
         DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://neurotuning.github.io/gedai/dev/_static/switcher.json';
-        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.7.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = '0.8.0';
         DOCUMENTATION_OPTIONS.show_version_warning_banner =
             false;
         </script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="Logging" href="../logging.html" />
+    <link rel="next" title="gedai.covariance.compute_covariance_from_dipole_projection" href="gedai.covariance.compute_covariance_from_dipole_projection.html" />
     <link rel="prev" title="Covariance" href="../covariance.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
@@ -166,6 +166,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../index.html">
     API References
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -307,6 +324,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="../index.html">
     API References
@@ -405,6 +429,9 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../covariance.html">Covariance</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">gedai.covariance.compute_covariance_from_forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gedai.covariance.compute_covariance_from_dipole_projection.html">gedai.covariance.compute_covariance_from_dipole_projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gedai.covariance.project_leadfield_dipole.html">gedai.covariance.project_leadfield_dipole</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gedai.covariance.compute_covariance_from_channel_positions.html">gedai.covariance.compute_covariance_from_channel_positions</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../logging.html">Logging</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -479,12 +506,19 @@
 <h1>gedai.covariance.compute_covariance_from_forward<a class="headerlink" href="#gedai-covariance-compute-covariance-from-forward" title="Link to this heading">🔗</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="gedai.covariance.compute_covariance_from_forward">
-<span class="sig-prename descclassname"><span class="pre">gedai.covariance.</span></span><span class="sig-name descname"><span class="pre">compute_covariance_from_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forward</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.covariance.compute_covariance_from_forward" title="Link to this definition">🔗</a></dt>
+<span class="sig-prename descclassname"><span class="pre">gedai.covariance.</span></span><span class="sig-name descname"><span class="pre">compute_covariance_from_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reference</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'average'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#gedai.covariance.compute_covariance_from_forward" title="Link to this definition">🔗</a></dt>
 <dd><p>Compute covariance matrix from the leadfield of a forward solution.</p>
+<p>For EEG forwards, applies the requested linear reference operator
+(default <code class="docutils literal notranslate"><span class="pre">&quot;average&quot;</span></code>) so the resulting covariance matches the EEG
+reference space used during GEDAI denoising. MEG forwards and
+<code class="docutils literal notranslate"><span class="pre">reference=&quot;none&quot;</span></code> use the raw unreferenced leadfield <code class="docutils literal notranslate"><span class="pre">G</span> <span class="pre">&#64;</span> <span class="pre">G.T</span></code>.</p>
 <dl class="field-list">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><dl>
 <dt><strong>forward</strong><span class="classifier"><a class="reference external" href="https://mne.tools/stable/generated/mne.Forward.html#mne.Forward" title="(in MNE v1.13)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mne.Forward</span></code></a></span></dt><dd><p>The forward solution from which to compute the covariance matrix.</p>
+</dd>
+<dt><strong>reference</strong><span class="classifier"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">str</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="docutils literal notranslate"><span class="pre">None</span></code></a>, default=”average”</span></dt><dd><p>EEG reference mode applied to the forward gain matrix (ignored for MEG).
+Use <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code> to leave an EEG forward unreferenced.</p>
 </dd>
 </dl>
 </dd>
@@ -519,11 +553,11 @@
       </div>
     </a>
     <a class="right-next"
-       href="../logging.html"
+       href="gedai.covariance.compute_covariance_from_dipole_projection.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Logging</p>
+        <p class="prev-next-title">gedai.covariance.compute_covariance_from_dipole_projection</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

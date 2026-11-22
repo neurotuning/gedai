@@ -11,7 +11,7 @@ Maximal Overlap Discrete Wavelet Transform (MODWT), fits an independent GEDAI
 threshold per subband, and reconstructs the cleaned signal.
 """
 
-# sphinx_gallery_thumbnail_number = 10
+# sphinx_gallery_thumbnail_number = 3
 
 # %%
 # .. note::
@@ -72,7 +72,7 @@ multiband_gedai = MultibandGedai(
 multiband_gedai.fit_raw(
     raw,
     duration=2.0,
-    noise_multiplier="auto",
+    strength="auto",
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
     n_jobs=n_jobs,
@@ -87,7 +87,11 @@ print(multiband_gedai.summary)
 #       there are enough samples per epoch for covariance estimation) without
 #       requiring power-of-two window lengths. Setting ``wavelet_low_cutoff`` to
 #       ``"auto"`` or to your high-pass cutoff skips subbands below the signal
-#       bandwidth.
+#       bandwidth. ``MultibandGedai`` also supports ``reference`` (``"average"``,
+#       ``"REST"``, ``"M1+M2"``, ``"Cz"``), adaptive Z3 ``strength`` presets
+#       (``"auto"`` = ``7``, ``"auto+"`` = ``8``, ``"auto-"`` = ``6``, or
+#       ``0``-``10``), ``smoothing_window``, and ``bad_epoch_threshold``
+#       (``"BAD_gedai"``).
 
 # %%
 
@@ -126,7 +130,7 @@ broadband_gedai = Gedai()
 broadband_gedai.fit_raw(
     raw,
     duration=2.0,
-    noise_multiplier="auto",
+    strength="auto",
     on_bad_channel="exclude",
     bad_channel_threshold="auto",
     n_jobs=n_jobs,
@@ -209,6 +213,15 @@ axes_cmp[1].set_ylabel("Power (dB uV^2/Hz)")
 axes_cmp[1].legend(loc="upper right", frameon=True)
 axes_cmp[1].grid(alpha=0.25)
 plt.show()
+
+# %%
+# SENSAI Manifold, ENOVA-Weighted PSD & Scalp Topography
+# -------------------------------------------------------
+# Calling ``plot_sensai`` displays Before/After epoch clustering against the
+# brain leadfield subspace alongside the ENOVA-weighted Welch PSD and the
+# spatial distribution of removed variance across channels.
+
+multiband_gedai.plot_sensai(raw_before=raw, raw_after=denoised_raw, show=True)
 
 # %%
 # Interactive Overlay
