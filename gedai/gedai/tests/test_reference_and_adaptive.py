@@ -353,10 +353,12 @@ def test_plot_sensai_explicit_raw_after_uses_current_enova():
     try:
         before_eval = raw_b.copy().pick(model.ch_names).reorder_channels(model.ch_names)
         if model._ref_spec is not None:
-            from gedai.covariance.covariance import _apply_eeg_reference
+            from gedai.gedai._utils import _apply_eeg_reference
 
             _apply_eeg_reference(before_eval, model._ref_spec)
-        after_eval = clean_b.copy().pick(model.ch_names).reorder_channels(model.ch_names)
+        after_eval = (
+            clean_b.copy().pick(model.ch_names).reorder_channels(model.ch_names)
+        )
         noise_data = before_eval.get_data() - after_eval.get_data()
         epoch_samples = round(sfreq)
         expected_channel = compute_enova_per_channel(
