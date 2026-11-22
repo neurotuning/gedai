@@ -128,18 +128,13 @@ def test_sliding_window_adaptation_parity_and_scale_invariance():
     """Sliding-window adaptation works across estimators, scales, and engines."""
     raw = _sample_raw(n_channels=8, duration_s=10.0)
 
-    # 1. Gedai NumPy vs Torch parity + 1e6 scale invariance
+    # 1. Gedai sliding-window adaptation + 1e6 scale invariance
     g_np = Gedai(engine="numpy")
     g_np.fit_raw(raw, duration=1.0, smoothing_window=4.0, verbose=False)
     assert "threshold_curve" in g_np._fit
     assert len(g_np._fit["threshold_curve"]) == g_np._fit["n_ep_fitted"]
     assert g_np._fit["n_ep_fitted"] >= 10
     out_np = g_np.transform_raw(raw, verbose=False).get_data()
-
-    g_pt = Gedai(engine="torch")
-    g_pt.fit_raw(raw, duration=1.0, smoothing_window=4.0, verbose=False)
-    out_pt = g_pt.transform_raw(raw, verbose=False).get_data()
-    np.testing.assert_allclose(out_pt, out_np, rtol=1e-9, atol=1e-12)
 
     raw_uv = raw.copy()
     raw_uv._data = raw_uv.get_data() * 1e6
@@ -168,6 +163,21 @@ def test_sliding_window_adaptation_parity_and_scale_invariance():
     mb.fit_raw(raw, duration=1.0, smoothing_window=4.0, n_jobs=1, verbose=False)
     out_mb = mb.transform_raw(raw, n_jobs=1, verbose=False).get_data()
     assert np.all(np.isfinite(out_mb))
+
+
+def test_sliding_window_adaptation_torch_parity():
+    """Sliding-window adaptation results match across NumPy and Torch engines."""
+    pytest.importorskip("torch")
+    raw = _sample_raw(n_channels=8, duration_s=10.0)
+
+    g_np = Gedai(engine="numpy")
+    g_np.fit_raw(raw, duration=1.0, smoothing_window=4.0, verbose=False)
+    out_np = g_np.transform_raw(raw, verbose=False).get_data()
+
+    g_pt = Gedai(engine="torch")
+    g_pt.fit_raw(raw, duration=1.0, smoothing_window=4.0, verbose=False)
+    out_pt = g_pt.transform_raw(raw, verbose=False).get_data()
+    np.testing.assert_allclose(out_pt, out_np, rtol=1e-9, atol=1e-12)
 
 
 def test_auto_scale_invariance_and_bad_epoch_annotation():
