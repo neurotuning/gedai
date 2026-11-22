@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=059408dc"></script>
+    <script src="../../../_static/documentation_options.js?v=26c8029e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -62,7 +62,7 @@
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
-    <link rel="next" title="Denoising with a Custom Forward Model Covariance" href="10_gedai_forward.html" />
+    <link rel="next" title="Custom Head Models &amp; SENSAI Goodness-of-Fit" href="10_gedai_forward.html" />
     <link rel="prev" title="Advanced Workflows" href="index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
@@ -167,6 +167,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/index.html">
     API References
   </a>
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -308,6 +325,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/index.html">
     API References
   </a>
@@ -409,7 +433,7 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Advanced Workflows</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
 <li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="10_gedai_forward.html">Custom Head Models &amp; SENSAI Goodness-of-Fit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -677,9 +701,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-7348dde1-1668-4be3-ae2d-893dd53624c6"
+<tr class="mne-repr-section-header general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996"
      title="Hide section"
-    onclick="toggleVisibility('general-7348dde1-1668-4be3-ae2d-893dd53624c6')">
+    onclick="toggleVisibility('general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -691,7 +715,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-7348dde1-1668-4be3-ae2d-893dd53624c6 ">
+<tr class="repr-element general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -702,26 +726,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-7348dde1-1668-4be3-ae2d-893dd53624c6 ">
+<tr class="repr-element general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996 ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-7348dde1-1668-4be3-ae2d-893dd53624c6 ">
+<tr class="repr-element general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-7348dde1-1668-4be3-ae2d-893dd53624c6 ">
+<tr class="repr-element general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-7348dde1-1668-4be3-ae2d-893dd53624c6 ">
+<tr class="repr-element general-984d1ed5-bfd1-4d88-bbfc-0c758cea7996 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -736,9 +760,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-15cda1b7-39e3-4982-98b6-f873c08a0853"
+<tr class="mne-repr-section-header acquisition-920552ad-1bb1-40e8-9309-b623142cd14f"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-15cda1b7-39e3-4982-98b6-f873c08a0853')">
+    onclick="toggleVisibility('acquisition-920552ad-1bb1-40e8-9309-b623142cd14f')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -750,7 +774,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-15cda1b7-39e3-4982-98b6-f873c08a0853 ">
+<tr class="repr-element acquisition-920552ad-1bb1-40e8-9309-b623142cd14f ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:26 (HH:MM:SS)</td>
@@ -763,14 +787,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-15cda1b7-39e3-4982-98b6-f873c08a0853 ">
+<tr class="repr-element acquisition-920552ad-1bb1-40e8-9309-b623142cd14f ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-15cda1b7-39e3-4982-98b6-f873c08a0853 ">
+<tr class="repr-element acquisition-920552ad-1bb1-40e8-9309-b623142cd14f ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>5,001</td>
@@ -785,9 +809,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-3bd33568-eb31-4c79-9e46-a8510bd80580"
+<tr class="mne-repr-section-header channels-d04959f6-b27a-4243-b7be-9522c2199cb4"
      title="Hide section"
-    onclick="toggleVisibility('channels-3bd33568-eb31-4c79-9e46-a8510bd80580')">
+    onclick="toggleVisibility('channels-d04959f6-b27a-4243-b7be-9522c2199cb4')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -800,7 +824,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-3bd33568-eb31-4c79-9e46-a8510bd80580 ">
+<tr class="repr-element channels-d04959f6-b27a-4243-b7be-9522c2199cb4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -813,7 +837,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-3bd33568-eb31-4c79-9e46-a8510bd80580 ">
+<tr class="repr-element channels-d04959f6-b27a-4243-b7be-9522c2199cb4 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -828,9 +852,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-3607fd54-6430-428c-b550-021659baa2af"
+<tr class="mne-repr-section-header filters-ba2cb42b-0cfa-4660-abc6-74bf574efd0a"
      title="Hide section"
-    onclick="toggleVisibility('filters-3607fd54-6430-428c-b550-021659baa2af')">
+    onclick="toggleVisibility('filters-ba2cb42b-0cfa-4660-abc6-74bf574efd0a')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -842,14 +866,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-3607fd54-6430-428c-b550-021659baa2af ">
+<tr class="repr-element filters-ba2cb42b-0cfa-4660-abc6-74bf574efd0a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-3607fd54-6430-428c-b550-021659baa2af ">
+<tr class="repr-element filters-ba2cb42b-0cfa-4660-abc6-74bf574efd0a ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -1165,7 +1189,7 @@ and accumulate the live output timeline to verify fidelity against offline
 </span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Processed 331 live chunks (0.50 s scored slice per hop):
-  Compute latency -&gt; median: 13.68 ms | p95: 14.58 ms | max: 18.01 ms (duty cycle: 13.7% of 100 ms hop)
+  Compute latency -&gt; median: 8.84 ms | p95: 9.09 ms | max: 11.59 ms (duty cycle: 8.8% of 100 ms hop)
 </pre></div>
 </div>
 </section>
@@ -1198,7 +1222,7 @@ boundary verifies how closely streaming W-OLA matches full offline denoising.</p
 </span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">R = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">r_online_offline</span></a><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, RRMSE = </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">rrmse</span></a><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">
 </span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Online W-OLA vs. Offline GEDAI fidelity (interior): R = 0.9821, RRMSE = 0.4655
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Online W-OLA vs. Offline GEDAI fidelity (interior): R = 0.9837, RRMSE = 0.4679
 </pre></div>
 </div>
 <p>We plot an <code class="docutils literal notranslate"><span class="pre">8</span> <span class="pre">s</span></code> window centered on strong frontal artifact activity on
@@ -1280,7 +1304,7 @@ over the full live stream (bottom).</p>
 </span><a class="sphx-glr-backref-module-matplotlib-axes sphx-glr-backref-type-py-method reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.grid.html#matplotlib.axes.Axes.grid" title="matplotlib.axes.Axes.grid"><span class="n">ax</span><span class="o">.</span><span class="n">grid</span></a><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../../_images/sphx_glr_00_gedai_online_001.png" srcset="../../../_images/sphx_glr_00_gedai_online_001.png" alt="Frontal Channel Fp1: Online W-OLA vs. Offline GEDAI (R = 0.982, RRMSE = 0.465), Global Field Power Across All 27 Channels" class = "sphx-glr-single-img"/><p>The second figure summarizes per-hop compute timing (left) and compares three
+<img src="../../../_images/sphx_glr_00_gedai_online_001.png" srcset="../../../_images/sphx_glr_00_gedai_online_001.png" alt="Frontal Channel Fp1: Online W-OLA vs. Offline GEDAI (R = 0.984, RRMSE = 0.468), Global Field Power Across All 27 Channels" class = "sphx-glr-single-img"/><p>The second figure summarizes per-hop compute timing (left) and compares three
 sliding-window designs (right). Raising the update rate from <code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">Hz</span></code> to
 <code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">Hz</span></code> lowers the average hop-phase wait from <code class="docutils literal notranslate"><span class="pre">250</span> <span class="pre">ms</span></code> to <code class="docutils literal notranslate"><span class="pre">50</span> <span class="pre">ms</span></code>,
 while decoupling the <code class="docutils literal notranslate"><span class="pre">2.0</span> <span class="pre">s</span></code> denoising context from a <code class="docutils literal notranslate"><span class="pre">0.50</span> <span class="pre">s</span></code> feature
@@ -1372,8 +1396,212 @@ slice cuts the 50% step-response midpoint by more than half.</p>
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <img src="../../../_images/sphx_glr_00_gedai_online_002.png" srcset="../../../_images/sphx_glr_00_gedai_online_002.png" alt="Per-Chunk Compute Latency Distribution, Effect of Hop Rate & Decoupled Scoring on Delay" class = "sphx-glr-single-img"/></section>
+<section id="online-w-ola-sensai-enova-verification">
+<h2>6. Online W-OLA SENSAI &amp; ENOVA Verification<a class="headerlink" href="#online-w-ola-sensai-enova-verification" title="Link to this heading">🔗</a></h2>
+<p>Finally, we evaluate the live W-OLA output over the stabilized interior slice
+(<code class="docutils literal notranslate"><span class="pre">2.0</span> <span class="pre">s</span></code> to <code class="docutils literal notranslate"><span class="pre">t_end</span> <span class="pre">-</span> <span class="pre">0.20</span> <span class="pre">s</span></code>) with <code class="docutils literal notranslate"><span class="pre">plot_sensai</span></code> using identically
+bandpass-filtered (<code class="docutils literal notranslate"><span class="pre">2-20</span> <span class="pre">Hz</span></code>) and average-referenced streams before vs.
+after online denoising.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray"><span class="n">raw_live_eval</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class reference external" href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray"><span class="n">RawArray</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_live_bp</span></a><span class="p">[</span><span class="p">:</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">eval_start</span></a><span class="p">:</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">eval_end</span></a><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info.copy" title="mne.Info.copy"><span class="n">raw_live_ref</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">copy</span></a><span class="p">(</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray"><span class="n">raw_online_eval</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class reference external" href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray"><span class="n">RawArray</span></a><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">on_eval</span></a><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-mne sphx-glr-backref-type-py-method reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info.copy" title="mne.Info.copy"><span class="n">raw_live_ref</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">copy</span></a><span class="p">(</span><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.plot_sensai" title="gedai.MultibandGedai.plot_sensai"><span class="n">gedai</span><span class="o">.</span><span class="n">plot_sensai</span></a><span class="p">(</span><span class="n">raw_before</span><span class="o">=</span><a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray"><span class="n">raw_live_eval</span></a><span class="p">,</span> <span class="n">raw_after</span><span class="o">=</span><a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.io.RawArray.html#mne.io.RawArray" title="mne.io.RawArray"><span class="n">raw_online_eval</span></a><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_00_gedai_online_003.png" srcset="../../../_images/sphx_glr_00_gedai_online_003.png" alt="SENSAI = 66.5%, ENOVA = 37.7%, [MultibandGedai], Before Denoising Mean SSI: 0.76, After Denoising Mean SSSI: 0.84  |  Mean NSSI: 0.71 SSI Silhouette Score: 0.64, ENOVA-weighted PSD over channels, ENOVA (Explained Noise Variance)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1800x650 with 9 Axes&gt;, {'ssi_before_mean': 0.7567926431614522, 'ssi_after_mean': 0.8393524445851562, 'ssi_noise_mean': 0.7059311974402342, 'signal_silhouette': 0.6438331533326783, 'ideal_power_target_db': 7.287034270586268, 'enova_per_channel': array([0.39119047, 0.55563414, 0.33074772, 0.39810547, 0.32878065,
+       0.29048288, 0.28702509, 0.32467285, 0.30518728, 0.31616983,
+       0.30312258, 0.29693452, 0.30074   , 0.28083748, 0.26535863,
+       0.28609133, 0.26293063, 0.3014901 , 0.31522223, 0.28232667,
+       0.3068065 , 0.32603395, 0.35292265, 0.28860235, 0.32857096,
+       0.41101077, 0.3960923 ]), 'psd_before_db': array([ -18.06949347,  -10.5904647 ,   -4.62839452,   -2.78108466,
+         -3.62683372,   -5.60778134,   -7.56652824,   -8.87820131,
+        -11.67313549,  -12.79746124,  -13.07542564,  -14.14291835,
+        -14.15718193,  -14.64457873,  -15.87105349,  -16.29026675,
+        -15.93646924,  -16.7610754 ,  -16.65179811,  -16.1930138 ,
+        -15.84759207,  -14.57321459,  -12.89658236,  -12.16420061,
+        -11.42605282,  -11.47146317,  -12.41676411,  -13.81521237,
+        -15.31067562,  -16.24953669,  -16.98836351,  -17.19063484,
+        -17.09941175,  -18.02952052,  -18.05799461,  -17.98825316,
+        -18.1006377 ,  -19.00318229,  -19.60866337,  -19.2405046 ,
+        -19.6675866 ,  -19.79590516,  -20.31474737,  -21.71908561,
+        -23.25217175,  -25.57392882,  -29.12874384,  -33.73192921,
+        -40.15635032,  -48.24518637,  -59.82078129,  -73.25263554,
+        -76.42818299,  -79.72742883,  -84.94201788,  -85.594469  ,
+        -83.40234655,  -83.19338917,  -88.18581129,  -85.24248178,
+        -82.71070832,  -87.57997358,  -89.7327864 ,  -84.36329238,
+        -85.78568669,  -89.2051759 ,  -88.33862149,  -88.7045536 ,
+        -88.3857633 ,  -88.21116714,  -93.46364263,  -91.20694304,
+        -88.21760366,  -92.81699304,  -95.49507594,  -89.77270381,
+        -91.01744667,  -92.87311109,  -93.29054265,  -92.80625266,
+        -92.60146917,  -92.27435966,  -98.685114  ,  -95.22895182,
+        -91.49957871,  -95.78697152, -100.18343088,  -93.98302644,
+        -93.68396187,  -94.75903846,  -96.78783347,  -96.42323613,
+        -94.99924733,  -94.73730208, -101.71716002,  -98.66774838,
+        -93.68280521,  -97.07655422, -101.55155665,  -92.53727435,
+        -89.12373413,  -93.91538335, -100.32103921, -100.53537376,
+        -97.33336457,  -97.26777107, -105.53025354, -105.31658602,
+       -100.87962902, -103.9903356 , -109.6386227 , -108.30491189,
+       -106.80244033, -108.44704821, -112.68917165, -115.54663554,
+       -112.57748973, -112.91445751, -119.92937671, -117.94981142,
+       -111.8730734 , -113.7605199 , -117.37105605, -118.32307557,
+       -115.87403594, -113.71963111, -116.13100432, -120.42355538,
+       -114.13915117, -112.58541111, -118.50711085, -121.90590623,
+       -116.10521174, -117.03499744, -118.73032988, -120.22598411,
+       -117.14096618, -115.69218214, -117.78428633, -121.13111274,
+       -118.33439993, -116.67305477, -120.9471744 , -122.2488662 ,
+       -117.59347968, -117.95570036, -119.91854559, -122.37800537,
+       -118.84725762, -116.9540344 , -119.27419492, -124.39359922,
+       -118.49984851, -116.4571216 , -120.60011172, -123.19077707,
+       -117.94417601, -117.30229876, -118.26331039, -123.3946306 ,
+       -120.96107257, -117.72287297, -118.74939573, -124.0897058 ,
+       -120.88159403, -117.09784756, -118.90683006, -122.77482456,
+       -122.21802989, -120.49875893, -120.50416207, -123.22572721,
+       -122.31604441, -119.64762578, -119.41258033, -121.37126534,
+       -122.32534478, -120.55114676, -121.08447732, -122.77537042,
+       -121.57470538, -120.25801711, -119.84925437, -122.24035892,
+       -122.41938242, -119.89570443, -119.9844128 , -123.31640685,
+       -122.2376927 , -118.68641941, -120.05381835, -122.73856298,
+       -122.6503258 , -120.67047245, -119.71214596, -122.77349148,
+       -124.85370412, -120.55640483, -119.25587961, -121.37094998,
+       -127.84907183]), 'psd_after_db': array([ -36.14070615,  -37.35199035,  -25.70231804,  -18.65650112,
+        -14.86605815,  -13.6813931 ,  -13.75393255,  -15.11332094,
+        -18.27172352,  -19.0790858 ,  -19.23633038,  -20.47360587,
+        -19.93205519,  -20.21176039,  -21.4694057 ,  -22.19319135,
+        -21.92523452,  -22.52070739,  -22.02180391,  -21.47309611,
+        -21.24704625,  -19.88692842,  -18.03998622,  -17.30616704,
+        -16.52254605,  -16.58935578,  -17.54093518,  -18.93935224,
+        -20.48852585,  -21.52999838,  -22.26659172,  -22.33010014,
+        -22.17400196,  -23.21353483,  -23.31746119,  -23.21633228,
+        -23.17740754,  -24.11210823,  -24.87010282,  -24.51321079,
+        -24.94707778,  -24.94875   ,  -25.49951358,  -27.00366646,
+        -28.42877957,  -30.62450891,  -34.22124729,  -38.77975292,
+        -44.92018473,  -52.54426169,  -63.31070978,  -76.8316741 ,
+        -81.79406288,  -84.8328225 ,  -89.76112571,  -90.26516826,
+        -88.84402449,  -88.67870794,  -92.98296516,  -90.44681286,
+        -88.33529493,  -92.58597179,  -94.97133419,  -90.49956396,
+        -91.54512044,  -94.73524773,  -94.17485343,  -94.36261549,
+        -94.20477899,  -94.33832321,  -98.93783994,  -96.64684155,
+        -94.14918888,  -97.86186249, -100.45252594,  -95.62297265,
+        -96.7574119 ,  -98.88652474,  -99.39316825,  -98.82474739,
+        -98.15691461,  -98.02039057, -103.49054459, -100.3118118 ,
+        -97.56142755, -100.94826403, -105.31618194, -100.23524353,
+        -99.68902029, -100.89412052, -102.52941052, -102.21493736,
+       -100.68510251, -100.63005483, -106.3974741 , -103.69435205,
+        -99.53681376, -102.19212619, -106.61122125,  -98.5020179 ,
+        -94.38741371,  -98.98669193, -106.26459524, -106.26385225,
+       -103.57078857, -103.98947794, -109.8977392 , -109.89105893,
+       -106.62707642, -109.45481069, -114.88648037, -114.13489521,
+       -113.12709921, -114.8768542 , -117.1979562 , -117.83504901,
+       -117.58406915, -118.30596874, -120.74133453, -120.95892713,
+       -119.72184393, -120.060851  , -121.33076378, -120.64537414,
+       -118.56516243, -118.45215353, -119.84240334, -120.94371642,
+       -120.83957149, -119.89951379, -121.08761582, -121.20261315,
+       -120.23902025, -119.02138977, -118.33789321, -117.82463744,
+       -118.30443985, -120.33302492, -121.97915417, -122.99319086,
+       -123.01589097, -122.32002714, -122.25050527, -121.87564112,
+       -118.82646489, -118.48401696, -118.56674156, -119.77251066,
+       -121.53071401, -120.97150172, -121.29881048, -121.77364593,
+       -121.2964481 , -119.40034713, -118.60916615, -118.65761221,
+       -119.55925225, -121.34763967, -122.85157285, -123.69017691,
+       -123.42324465, -122.88216113, -122.15524687, -121.50591857,
+       -118.88112009, -117.97587899, -118.59988595, -119.66064043,
+       -121.87894117, -121.81144706, -121.5870176 , -122.42580884,
+       -122.69726683, -121.1340884 , -120.54155392, -120.21419876,
+       -120.86074364, -122.56152081, -123.46497291, -123.89141097,
+       -123.71836177, -122.86759526, -122.25750229, -121.78998558,
+       -120.04214476, -119.39502621, -119.84067046, -120.61258094,
+       -122.61359362, -122.55213221, -122.99629913, -123.49931602,
+       -123.73548212, -122.66454175, -121.18463557, -120.89946182,
+       -121.58068606, -122.91814908, -123.26792854, -123.08203509,
+       -126.76814903]), 'psd_noise_db': array([ -18.45456142,  -10.74196117,   -5.12044066,   -3.76053657,
+         -5.54602292,   -8.76563096,  -12.25413647,  -13.13143523,
+        -15.56486771,  -17.70801565,  -17.99122486,  -18.54918991,
+        -19.09262207,  -20.11816913,  -21.61356678,  -21.24478295,
+        -20.85469749,  -22.18101636,  -22.65216818,  -22.41759901,
+        -21.68977496,  -20.68778998,  -19.65141417,  -19.00047082,
+        -18.30141062,  -18.25028069,  -19.19604232,  -20.675856  ,
+        -21.94087252,  -22.56941467,  -23.1151748 ,  -23.63465357,
+        -23.96395282,  -24.56540737,  -24.3009311 ,  -24.41029953,
+        -24.86825783,  -25.70783281,  -25.8793494 ,  -25.519359  ,
+        -26.14037756,  -26.38958   ,  -26.83899967,  -27.99505117,
+        -29.7117768 ,  -32.24984631,  -35.46027058,  -39.83374718,
+        -46.30466099,  -54.23460581,  -65.21897206,  -77.4137272 ,
+        -82.29827668,  -86.03502226,  -91.10380882,  -90.46322075,
+        -87.97066371,  -88.78506892,  -93.23754519,  -90.10825565,
+        -88.02857987,  -92.49837141,  -94.44971351,  -89.10163664,
+        -90.01943873,  -93.34301273,  -93.34048012,  -92.76805481,
+        -92.15841297,  -92.68421048,  -97.34658883,  -94.73633808,
+        -92.58141479,  -96.79393049,  -99.56581251,  -94.13010968,
+        -94.54582356,  -96.59636667,  -97.93099581,  -96.69778094,
+        -96.48649348,  -97.00340565, -102.68889166,  -98.56000801,
+        -95.25575384,  -98.94370828, -103.18407103,  -98.01822907,
+        -97.0752867 ,  -98.10033295, -101.36386511, -100.12304084,
+        -98.64598856,  -98.98945805, -105.49875884, -102.21615815,
+        -97.97389635, -100.99524462, -105.07650727,  -96.17906903,
+        -92.35309743,  -96.82979826, -103.7120426 , -103.62978297,
+        -99.89658427,  -99.89680372, -107.69544738, -108.00136827,
+       -104.61146096, -107.26587163, -111.88646185, -111.27607515,
+       -109.18350749, -109.92948256, -113.81837928, -114.95934536,
+       -112.88052853, -113.93308674, -118.88826577, -117.4911582 ,
+       -112.4040402 , -114.03620143, -117.18190778, -117.7460378 ,
+       -115.78454925, -113.55875269, -115.28513727, -118.80184637,
+       -114.44533628, -113.15428163, -117.35934525, -119.73307974,
+       -116.77604902, -116.71346995, -116.66317969, -116.97457022,
+       -116.03810774, -115.67451764, -117.18586496, -119.85569543,
+       -118.4506713 , -117.08795862, -119.99646609, -119.56381959,
+       -116.70180139, -116.2528153 , -117.11368582, -118.66717065,
+       -117.9130823 , -116.61548286, -118.20320126, -120.49445749,
+       -117.58625893, -115.40554277, -117.19254707, -117.89041032,
+       -116.29899283, -116.84178936, -117.82190903, -121.79899804,
+       -120.2862368 , -117.46249563, -117.97765164, -120.23161192,
+       -117.59116295, -115.5089889 , -116.30288596, -118.29466508,
+       -119.83196637, -119.01691387, -119.22505856, -120.58300509,
+       -120.28719904, -117.82089543, -117.54872064, -118.41217563,
+       -119.21355523, -119.3328933 , -120.3649128 , -121.29639111,
+       -120.42769081, -119.41967849, -118.77496611, -119.71977508,
+       -118.50753265, -117.24520233, -117.56074286, -119.6499111 ,
+       -119.9545037 , -118.04712344, -119.26587304, -120.9452007 ,
+       -120.5436238 , -119.06729613, -118.63178343, -119.47060391,
+       -120.07473961, -118.97343756, -118.5412621 , -120.02189145,
+       -124.86326755]), 'psd_freqs': array([  0. ,   0.5,   1. ,   1.5,   2. ,   2.5,   3. ,   3.5,   4. ,
+         4.5,   5. ,   5.5,   6. ,   6.5,   7. ,   7.5,   8. ,   8.5,
+         9. ,   9.5,  10. ,  10.5,  11. ,  11.5,  12. ,  12.5,  13. ,
+        13.5,  14. ,  14.5,  15. ,  15.5,  16. ,  16.5,  17. ,  17.5,
+        18. ,  18.5,  19. ,  19.5,  20. ,  20.5,  21. ,  21.5,  22. ,
+        22.5,  23. ,  23.5,  24. ,  24.5,  25. ,  25.5,  26. ,  26.5,
+        27. ,  27.5,  28. ,  28.5,  29. ,  29.5,  30. ,  30.5,  31. ,
+        31.5,  32. ,  32.5,  33. ,  33.5,  34. ,  34.5,  35. ,  35.5,
+        36. ,  36.5,  37. ,  37.5,  38. ,  38.5,  39. ,  39.5,  40. ,
+        40.5,  41. ,  41.5,  42. ,  42.5,  43. ,  43.5,  44. ,  44.5,
+        45. ,  45.5,  46. ,  46.5,  47. ,  47.5,  48. ,  48.5,  49. ,
+        49.5,  50. ,  50.5,  51. ,  51.5,  52. ,  52.5,  53. ,  53.5,
+        54. ,  54.5,  55. ,  55.5,  56. ,  56.5,  57. ,  57.5,  58. ,
+        58.5,  59. ,  59.5,  60. ,  60.5,  61. ,  61.5,  62. ,  62.5,
+        63. ,  63.5,  64. ,  64.5,  65. ,  65.5,  66. ,  66.5,  67. ,
+        67.5,  68. ,  68.5,  69. ,  69.5,  70. ,  70.5,  71. ,  71.5,
+        72. ,  72.5,  73. ,  73.5,  74. ,  74.5,  75. ,  75.5,  76. ,
+        76.5,  77. ,  77.5,  78. ,  78.5,  79. ,  79.5,  80. ,  80.5,
+        81. ,  81.5,  82. ,  82.5,  83. ,  83.5,  84. ,  84.5,  85. ,
+        85.5,  86. ,  86.5,  87. ,  87.5,  88. ,  88.5,  89. ,  89.5,
+        90. ,  90.5,  91. ,  91.5,  92. ,  92.5,  93. ,  93.5,  94. ,
+        94.5,  95. ,  95.5,  96. ,  96.5,  97. ,  97.5,  98. ,  98.5,
+        99. ,  99.5, 100. ]), 'enova_weights': array([0.04428693, 0.06290371, 0.03744417, 0.04506979, 0.03722148,
+       0.03288576, 0.0324943 , 0.03675643, 0.03455046, 0.0357938 ,
+       0.03431671, 0.03361615, 0.03404698, 0.0317938 , 0.03004143,
+       0.03238859, 0.02976655, 0.03413189, 0.03568652, 0.03196239,
+       0.03473377, 0.03691052, 0.03995461, 0.03267286, 0.03719774,
+       0.0465308 , 0.04484187])})
+</pre></div>
+</div>
+</section>
 <section id="practical-tuning-guide-real-time-mne-lsl-template">
-<h2>6. Practical Tuning Guide &amp; Real-Time <code class="docutils literal notranslate"><span class="pre">mne-lsl</span></code> Template<a class="headerlink" href="#practical-tuning-guide-real-time-mne-lsl-template" title="Link to this heading">🔗</a></h2>
+<h2>7. Practical Tuning Guide &amp; Real-Time <code class="docutils literal notranslate"><span class="pre">mne-lsl</span></code> Template<a class="headerlink" href="#practical-tuning-guide-real-time-mne-lsl-template" title="Link to this heading">🔗</a></h2>
 <p>Depending on whether your closed-loop paradigm prioritizes minimal smoothing
 lag or smoother spectral/microstate estimates, adjust these four parameters:</p>
 <div class="pst-scrollable-table-container"><table class="table">
@@ -1436,8 +1664,8 @@ builds):</p>
 </span>    <span class="k">if</span> <span class="n">sleep_for</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span><span class="w">
 </span>        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">sleep_for</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.486 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  340 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 7.789 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  331 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-advanced-00-gedai-online-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/c40e9334a71a03a409f1832aed9e6518/00_gedai_online.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">00_gedai_online.ipynb</span></code></a></p>
@@ -1477,7 +1705,7 @@ builds):</p>
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Denoising with a Custom Forward Model Covariance</p>
+        <p class="prev-next-title">Custom Head Models &amp; SENSAI Goodness-of-Fit</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -1505,7 +1733,8 @@ builds):</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stateful-live-w-ola-processor-with-decoupled-scoring-slice">3. Stateful Live W-OLA Processor with Decoupled Scoring Slice</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulate-a-10-hz-live-stream-profile-per-hop-compute-latency">4. Simulate a 10 Hz Live Stream &amp; Profile Per-Hop Compute Latency</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#validate-online-w-ola-against-full-offline-gedai">5. Validate Online W-OLA Against Full Offline GEDAI</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#practical-tuning-guide-real-time-mne-lsl-template">6. Practical Tuning Guide &amp; Real-Time <code class="docutils literal notranslate"><span class="pre">mne-lsl</span></code> Template</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#online-w-ola-sensai-enova-verification">6. Online W-OLA SENSAI &amp; ENOVA Verification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#practical-tuning-guide-real-time-mne-lsl-template">7. Practical Tuning Guide &amp; Real-Time <code class="docutils literal notranslate"><span class="pre">mne-lsl</span></code> Template</a></li>
 </ul>
   </nav></div>
 

@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=059408dc"></script>
+    <script src="../_static/documentation_options.js?v=26c8029e"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -166,6 +166,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     API References
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -303,6 +320,13 @@
 </li>
 
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
 <li class="nav-item current active">
   <a class="nav-link nav-internal" href="index.html">
     API References
@@ -401,6 +425,9 @@
 </details></li>
 <li class="toctree-l1 current active has-children"><a aria-current="page" class="current reference internal" href="#">Covariance</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_forward.html">gedai.covariance.compute_covariance_from_forward</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_dipole_projection.html">gedai.covariance.compute_covariance_from_dipole_projection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.project_leadfield_dipole.html">gedai.covariance.project_leadfield_dipole</a></li>
+<li class="toctree-l2"><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_channel_positions.html">gedai.covariance.compute_covariance_from_channel_positions</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="logging.html">Logging</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
@@ -472,8 +499,17 @@
 <span id="id1"></span><h1>Covariance<a class="headerlink" href="#covariance" title="Link to this heading">🔗</a></h1>
 <span class="target" id="module-gedai.covariance"></span><div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_covariance_from_forward</span></code></a>(forward)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_forward.html#gedai.covariance.compute_covariance_from_forward" title="gedai.covariance.compute_covariance_from_forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_covariance_from_forward</span></code></a>(forward[, ...])</p></td>
 <td><p>Compute covariance matrix from the leadfield of a forward solution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_dipole_projection.html#gedai.covariance.compute_covariance_from_dipole_projection" title="gedai.covariance.compute_covariance_from_dipole_projection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_covariance_from_dipole_projection</span></code></a>(info)</p></td>
+<td><p>Compute EEG reference covariance via 3D cortical dipole-kernel projection.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/gedai.covariance.project_leadfield_dipole.html#gedai.covariance.project_leadfield_dipole" title="gedai.covariance.project_leadfield_dipole"><code class="xref py py-obj docutils literal notranslate"><span class="pre">project_leadfield_dipole</span></code></a>(info[, use_avgref])</p></td>
+<td><p>Project the 343-channel OpenMEEG BEM leadfield onto arbitrary 3D sensor sites.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/gedai.covariance.compute_covariance_from_channel_positions.html#gedai.covariance.compute_covariance_from_channel_positions" title="gedai.covariance.compute_covariance_from_channel_positions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_covariance_from_channel_positions</span></code></a>(info)</p></td>
+<td><p>Compute covariance matrix from channel positions.</p></td>
 </tr>
 </tbody>
 </table>

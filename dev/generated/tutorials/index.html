@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=059408dc"></script>
+    <script src="../../_static/documentation_options.js?v=26c8029e"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -167,6 +167,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../api/index.html">
     API References
   </a>
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -308,6 +325,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../api/index.html">
     API References
   </a>
@@ -409,7 +433,7 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="advanced/10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="advanced/10_gedai_forward.html">Custom Head Models &amp; SENSAI Goodness-of-Fit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="advanced/20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -550,17 +574,17 @@ GEDAI pipeline.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">00_gedai_online.py</span></code>: real-time chunk denoising with live W-OLA blending,
 right-edge causal trimming, and decoupled low-latency feature scoring.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">10_gedai_forward.py</span></code>: building a custom reference covariance from an MNE
-forward model and running multiband GEDAI denoising.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">10_gedai_forward.py</span></code>: non-10-20 subject-specific MRI BEM, 4-shell sphere,
+automatic 3D dipole projection, and SENSAI goodness-of-fit comparison.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">20_gedai_opm.py</span></code>: denoising Optically Pumped Magnetometer (OPM) MEG
 recordings using a subject-specific forward model.</p></li>
 </ul>
 <div id='sg-tag-list' class='sphx-glr-tag-list'></div><div class="sphx-glr-thumbnails"><div class="sphx-glr-thumbcontainer" tooltip="This tutorial shows how to run MultibandGedai in a real-time streaming pipeline (such as BCI or neurofeedback) with offline-grade denoising and sub-second feedback responsiveness."><img alt="" src="../../_images/sphx_glr_00_gedai_online_thumb.png" />
 <p><a class="reference internal" href="advanced/00_gedai_online.html"><span class="doc">Using GEDAI for online (real-time) denoising</span></a></p>
   <div class="sphx-glr-thumbnail-title">Using GEDAI for online (real-time) denoising</div>
-</div><div class="sphx-glr-thumbcontainer" tooltip="By default, GEDAI builds its cortical signal subspace from a built-in generic 10-20 head model (``reference_cov=&quot;leadfield&quot;``). You should supply a custom mne.Forward solution (or precomputed mne.Covariance) when:"><img alt="" src="../../_images/sphx_glr_10_gedai_forward_thumb.png" />
-<p><a class="reference internal" href="advanced/10_gedai_forward.html"><span class="doc">Denoising with a Custom Forward Model Covariance</span></a></p>
-  <div class="sphx-glr-thumbnail-title">Denoising with a Custom Forward Model Covariance</div>
+</div><div class="sphx-glr-thumbcontainer" tooltip="GEDAI&#x27;s default reference_cov=&quot;leadfield&quot; already bundles a generic 343-channel fsaverage OpenMEEG BEM model (with automatic 3D dipole-kernel projection fallback when custom channel names lack standard 10-05 labels). Rebuilding another fsaverage BEM forward for 10-20 channels is therefore redundant."><img alt="" src="../../_images/sphx_glr_10_gedai_forward_thumb.png" />
+<p><a class="reference internal" href="advanced/10_gedai_forward.html"><span class="doc">Custom Head Models &amp; SENSAI Goodness-of-Fit</span></a></p>
+  <div class="sphx-glr-thumbnail-title">Custom Head Models & SENSAI Goodness-of-Fit</div>
 </div><div class="sphx-glr-thumbcontainer" tooltip="This tutorial demonstrates how to apply GEDAI to Optically Pumped Magnetometer (OPM) MEG data, following and extending the official MNE-Python tutorial: Preprocessing optically pumped magnetometer (OPM) MEG data."><img alt="" src="../../_images/sphx_glr_20_gedai_opm_thumb.png" />
 <p><a class="reference internal" href="advanced/20_gedai_opm.html"><span class="doc">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</span></a></p>
   <div class="sphx-glr-thumbnail-title">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</div>

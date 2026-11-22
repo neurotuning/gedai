@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=059408dc"></script>
+    <script src="../../../_static/documentation_options.js?v=26c8029e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -167,6 +167,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/index.html">
     API References
   </a>
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -308,6 +325,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/index.html">
     API References
   </a>
@@ -409,7 +433,7 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Custom Head Models &amp; SENSAI Goodness-of-Fit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -662,9 +686,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-100772c0-a7a2-4790-8a68-fc013101b1f2"
+<tr class="mne-repr-section-header general-456d02f8-6dae-413f-8360-0e9f138b224e"
      title="Hide section"
-    onclick="toggleVisibility('general-100772c0-a7a2-4790-8a68-fc013101b1f2')">
+    onclick="toggleVisibility('general-456d02f8-6dae-413f-8360-0e9f138b224e')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -676,7 +700,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-100772c0-a7a2-4790-8a68-fc013101b1f2 ">
+<tr class="repr-element general-456d02f8-6dae-413f-8360-0e9f138b224e ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -687,26 +711,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-100772c0-a7a2-4790-8a68-fc013101b1f2 ">
+<tr class="repr-element general-456d02f8-6dae-413f-8360-0e9f138b224e ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-100772c0-a7a2-4790-8a68-fc013101b1f2 ">
+<tr class="repr-element general-456d02f8-6dae-413f-8360-0e9f138b224e ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-100772c0-a7a2-4790-8a68-fc013101b1f2 ">
+<tr class="repr-element general-456d02f8-6dae-413f-8360-0e9f138b224e ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-100772c0-a7a2-4790-8a68-fc013101b1f2 ">
+<tr class="repr-element general-456d02f8-6dae-413f-8360-0e9f138b224e ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -721,9 +745,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-83dd7c15-cbdd-4167-b690-773e627f17fa"
+<tr class="mne-repr-section-header acquisition-77df3f4b-fc6c-4860-ac78-843875e5070d"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-83dd7c15-cbdd-4167-b690-773e627f17fa')">
+    onclick="toggleVisibility('acquisition-77df3f4b-fc6c-4860-ac78-843875e5070d')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -735,7 +759,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-83dd7c15-cbdd-4167-b690-773e627f17fa ">
+<tr class="repr-element acquisition-77df3f4b-fc6c-4860-ac78-843875e5070d ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:00:31 (HH:MM:SS)</td>
@@ -748,14 +772,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-83dd7c15-cbdd-4167-b690-773e627f17fa ">
+<tr class="repr-element acquisition-77df3f4b-fc6c-4860-ac78-843875e5070d ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-83dd7c15-cbdd-4167-b690-773e627f17fa ">
+<tr class="repr-element acquisition-77df3f4b-fc6c-4860-ac78-843875e5070d ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>6,001</td>
@@ -770,9 +794,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-4618d6e5-646b-4be4-872e-a12fb287d3ac"
+<tr class="mne-repr-section-header channels-43569b13-4b09-489f-b945-fa1b40c4e232"
      title="Hide section"
-    onclick="toggleVisibility('channels-4618d6e5-646b-4be4-872e-a12fb287d3ac')">
+    onclick="toggleVisibility('channels-43569b13-4b09-489f-b945-fa1b40c4e232')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -785,7 +809,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-4618d6e5-646b-4be4-872e-a12fb287d3ac ">
+<tr class="repr-element channels-43569b13-4b09-489f-b945-fa1b40c4e232 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -798,7 +822,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-4618d6e5-646b-4be4-872e-a12fb287d3ac ">
+<tr class="repr-element channels-43569b13-4b09-489f-b945-fa1b40c4e232 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -813,9 +837,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-54d47d7d-958b-4826-bae1-478df37e064c"
+<tr class="mne-repr-section-header filters-9b910d65-fe4f-4802-8118-9da2f48c7a75"
      title="Hide section"
-    onclick="toggleVisibility('filters-54d47d7d-958b-4826-bae1-478df37e064c')">
+    onclick="toggleVisibility('filters-9b910d65-fe4f-4802-8118-9da2f48c7a75')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -827,14 +851,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-54d47d7d-958b-4826-bae1-478df37e064c ">
+<tr class="repr-element filters-9b910d65-fe4f-4802-8118-9da2f48c7a75 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-54d47d7d-958b-4826-bae1-478df37e064c ">
+<tr class="repr-element filters-9b910d65-fe4f-4802-8118-9da2f48c7a75 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -874,7 +898,7 @@ automatically excludes bad channels via <code class="docutils literal notranslat
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.fit_raw" title="gedai.MultibandGedai.fit_raw"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="w">
 </span>    <span class="n">raw</span><span class="p">,</span><span class="w">
 </span>    <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
-</span>    <span class="n">noise_multiplier</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">strength</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
@@ -896,18 +920,18 @@ Applying a custom ('EEG',) reference.
 ==================================================================================
   Frequency Band             |  Epoch (s) |  Threshold |  SENSAI (%) |  ENOVA (%)
   ---------------------------+------------+------------+-------------+-----------
-  Pass 1: Broadband          |     1.00 s |      17.38 |     74.66 % |         --
-  Band 0 (50.00-100.00 Hz)   |     2.00 s |      14.43 |     63.50 % |         --
-  Band 1 (25.00-50.00 Hz)    |     2.00 s |      17.76 |     76.40 % |         --
+  Pass 1: Broadband          |     1.00 s |      17.38 |     73.64 % |         --
+  Band 0 (50.00-100.00 Hz)   |     2.00 s |      14.43 |     62.40 % |         --
+  Band 1 (25.00-50.00 Hz)    |     2.00 s |      17.76 |     76.31 % |         --
   Band 2 (12.50-25.00 Hz)    |     2.00 s |   1.03e+06 |     74.78 % |         --
   Band 3 (6.25-12.50 Hz)     |     2.00 s |  1.114e+06 |     70.50 % |         --
   Band 4 (3.12-6.25 Hz)      |     2.00 s |  1.005e+06 |     70.68 % |         --
-  Band 5 (1.56-3.12 Hz)      |     2.00 s |      20.72 |     57.06 % |         --
-  Band 6 (0.78-1.56 Hz)      |     2.00 s |      36.47 |     41.26 % |         --
-  Band 7 (0.39-0.78 Hz)      |     2.00 s |      45.17 |     24.77 % |         --
-  Band 8 (0.00-0.39 Hz)      |     2.00 s |      3.546 |     29.12 % |         --
+  Band 5 (1.56-3.12 Hz)      |     2.00 s |  1.378e+06 |     54.15 % |         --
+  Band 6 (0.78-1.56 Hz)      |     2.00 s |      36.47 |     40.93 % |         --
+  Band 7 (0.39-0.78 Hz)      |     2.00 s |      45.17 |     24.32 % |         --
+  Band 8 (0.00-0.39 Hz)      |     2.00 s |      1.252 |     29.03 % |         --
 ==================================================================================
-  Fitted SENSAI Optimization Score: 56.45 %
+  Fitted SENSAI Optimization Score: 55.90 %
 ==================================================================================
 </pre></div>
 </div>
@@ -917,7 +941,11 @@ Applying a custom ('EEG',) reference.
 there are enough samples per epoch for covariance estimation) without
 requiring power-of-two window lengths. Setting <code class="docutils literal notranslate"><span class="pre">wavelet_low_cutoff</span></code> to
 <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> or to your high-pass cutoff skips subbands below the signal
-bandwidth.</p>
+bandwidth. <code class="docutils literal notranslate"><span class="pre">MultibandGedai</span></code> also supports <code class="docutils literal notranslate"><span class="pre">reference</span></code> (<code class="docutils literal notranslate"><span class="pre">&quot;average&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;REST&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;M1+M2&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;Cz&quot;</span></code>), adaptive Z3 <code class="docutils literal notranslate"><span class="pre">strength</span></code> presets
+(<code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> = <code class="docutils literal notranslate"><span class="pre">7</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;auto+&quot;</span></code> = <code class="docutils literal notranslate"><span class="pre">8</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;auto-&quot;</span></code> = <code class="docutils literal notranslate"><span class="pre">6</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">0</span></code>-<code class="docutils literal notranslate"><span class="pre">10</span></code>), <code class="docutils literal notranslate"><span class="pre">smoothing_window</span></code>, and <code class="docutils literal notranslate"><span class="pre">bad_epoch_threshold</span></code>
+(<code class="docutils literal notranslate"><span class="pre">&quot;BAD_gedai&quot;</span></code>).</p>
 </div>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">fig</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.plot_fit" title="gedai.MultibandGedai.plot_fit"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">plot_fit</span></a><span class="p">(</span><span class="p">)</span><span class="w">
 </span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
@@ -952,7 +980,7 @@ boundary discontinuities before recombining the bands.</p>
 </span><span class="p">)</span><span class="w">
 </span></pre></div></div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
-MultibandGedai -&gt; Mean ENOVA: 31.4 % | SENSAI score: 61.067
+MultibandGedai -&gt; Mean ENOVA: 30.3 % | SENSAI score: 60.139
 </pre></div>
 </div>
 </section>
@@ -967,7 +995,7 @@ each subband independently.</p>
 </span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.Gedai.html#gedai.gedai.Gedai.fit_raw" title="gedai.Gedai.fit_raw"><span class="n">broadband_gedai</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="w">
 </span>    <span class="n">raw</span><span class="p">,</span><span class="w">
 </span>    <span class="n">duration</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w">
-</span>    <span class="n">noise_multiplier</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">strength</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="o">=</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_jobs</span></a><span class="p">,</span><span class="w">
@@ -1057,15 +1085,214 @@ each subband independently.</p>
 </pre></div>
 </div>
 </section>
+<section id="sensai-manifold-enova-weighted-psd-scalp-topography">
+<h2>SENSAI Manifold, ENOVA-Weighted PSD &amp; Scalp Topography<a class="headerlink" href="#sensai-manifold-enova-weighted-psd-scalp-topography" title="Link to this heading">🔗</a></h2>
+<p>Calling <code class="docutils literal notranslate"><span class="pre">plot_sensai</span></code> displays Before/After epoch clustering against the
+brain leadfield subspace alongside the ENOVA-weighted Welch PSD and the
+spatial distribution of removed variance across channels.</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.MultibandGedai.html#gedai.gedai.MultibandGedai.plot_sensai" title="gedai.MultibandGedai.plot_sensai"><span class="n">multiband_gedai</span><span class="o">.</span><span class="n">plot_sensai</span></a><span class="p">(</span><span class="n">raw_before</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">raw_after</span><span class="o">=</span><span class="n">denoised_raw</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_10_gedai_multiband_011.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_011.png" alt="SENSAI = 55.9%, ENOVA = 30.3%, [MultibandGedai], Before Denoising Mean SSI: 0.72, After Denoising Mean SSSI: 0.89  |  Mean NSSI: 0.41 SSI Silhouette Score: 0.97, ENOVA-weighted PSD over channels, ENOVA (Explained Noise Variance)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._apply_eeg_average_reference_if_needed] INFO: Setting average reference.
+EEG channel type selected for re-referencing
+Applying average reference.
+Applying a custom ('EEG',) reference.
+
+(&lt;Figure size 1800x650 with 9 Axes&gt;, {'ssi_before_mean': 0.7200546481811553, 'ssi_after_mean': 0.8855639149317225, 'ssi_noise_mean': 0.4138710142407555, 'signal_silhouette': 0.9732042855843751, 'ideal_power_target_db': 14.399162379224432, 'enova_per_channel': array([0.27962548, 0.41414857, 0.22067699, 0.32082877, 0.24483992,
+       0.16004267, 0.19859229, 0.27809304, 0.16589083, 0.20366289,
+       0.17984438, 0.21382862, 0.16859059, 0.12162561, 0.11238202,
+       0.18934821, 0.09088757, 0.23218638, 0.24483189, 0.16260578,
+       0.26520526, 0.27995843, 0.26204634, 0.13531867, 0.22120436,
+       0.23734523, 0.32571527]), 'psd_before_db': array([ -8.70803269,  -0.30749615,   1.09663151,  -0.2354668 ,
+        -2.6749835 ,  -6.36909771,  -8.05487002,  -8.44970392,
+       -10.33463046, -10.95135515, -11.47249505, -11.23761111,
+       -12.23510298, -13.07569211, -14.6803418 , -15.17203175,
+       -15.75879039, -16.57971224, -15.99225985, -15.45252482,
+       -15.32635412, -14.28866032, -12.45030856, -11.76289962,
+       -11.1133448 , -10.6796258 , -12.35514232, -13.58060774,
+       -14.74105146, -15.33231449, -16.10337949, -16.61292833,
+       -16.48545105, -16.74946095, -17.30545607, -17.89959854,
+       -18.12635418, -18.68378429, -18.49967133, -18.26927704,
+       -18.43993913, -18.18226349, -17.79482031, -18.13536312,
+       -17.70405362, -17.96689378, -17.67522576, -18.3043813 ,
+       -17.45125356, -17.60779106, -17.63457969, -18.09924289,
+       -18.53541278, -18.88078882, -18.99997464, -19.73407984,
+       -20.49824436, -20.1276867 , -21.12021749, -20.35818227,
+       -21.35238431, -21.35217913, -21.43762497, -20.38531781,
+       -20.35223274, -19.90756259, -18.61428187, -19.84183614,
+       -19.21247349, -19.61613432, -18.97366206, -20.50402686,
+       -20.58884743, -20.53309023, -19.78182336, -19.15197313,
+       -19.35496938, -18.7683866 , -18.2884058 , -18.9452844 ,
+       -18.58433591, -18.55935438, -18.61070173, -19.1206442 ,
+       -19.69001032, -20.5982298 , -20.71607809, -20.64506872,
+       -21.45879111, -21.50402206, -20.93167659, -20.5449637 ,
+       -20.7270334 , -20.11792273, -19.68782928, -20.53110987,
+       -21.03091678, -20.25257875, -19.31604014, -17.29977916,
+       -14.93276413, -17.04548869, -18.55966863, -19.72940502,
+       -20.49217696, -19.61998128, -21.40527397, -22.90556193,
+       -23.87716398, -25.26381975, -28.32738333, -28.42410982,
+       -30.67930334, -32.52163076, -34.9282205 , -35.99744735,
+       -37.16599059, -38.21616532, -38.66059026, -38.11543712,
+       -38.18947398, -39.0702406 , -38.95033852, -38.37687249,
+       -38.79550423, -39.13299191, -39.06331875, -38.91651155,
+       -38.90331046, -39.35127432, -39.33551915, -38.96565938,
+       -39.30985228, -39.62350272, -39.17835008, -39.2917437 ,
+       -39.78112059, -39.49726234, -39.28729667, -39.70228674,
+       -39.82078438, -39.68157221, -39.48312846, -39.62669365,
+       -40.29282349, -39.79963643, -39.30925487, -40.08102603,
+       -40.54461263, -39.7405996 , -39.47856248, -40.1771758 ,
+       -40.533501  , -39.87879723, -39.62771182, -40.26237725,
+       -40.70479597, -40.05945153, -39.58893268, -40.45013963,
+       -40.8804277 , -39.95879812, -39.84265424, -40.60362522,
+       -40.72266641, -40.11560041, -40.07216856, -40.54454658,
+       -40.72759416, -40.30919432, -40.10719247, -40.63456586,
+       -40.81958071, -40.16684244, -40.39433451, -40.85631343,
+       -40.39734275, -40.44813273, -40.67256218, -40.58920187,
+       -40.52807088, -40.50175265, -40.68035916, -40.81281389,
+       -40.40818729, -40.41537013, -41.05383601, -40.8026854 ,
+       -40.16743532, -40.62225058, -41.23717461, -40.60176513,
+       -40.27977337, -40.6508385 , -41.15139541, -40.81817294,
+       -40.13942457, -40.61060713, -41.39559585, -40.74445892,
+       -43.12022457]), 'psd_after_db': array([-18.28904669, -10.34271637,  -8.31413414,  -8.56132585,
+        -9.38042485, -10.23620213, -11.45397159, -12.32482671,
+       -12.85302015, -13.84858833, -15.09244116, -15.51292851,
+       -14.90822672, -15.44614549, -16.49076971, -16.82846876,
+       -17.03821683, -18.14383189, -17.58651833, -17.1739371 ,
+       -16.45855292, -15.12603259, -12.91221621, -12.18933927,
+       -11.39119947, -10.9141307 , -12.5152024 , -13.73114826,
+       -15.04849638, -15.68868502, -16.90932646, -17.37477256,
+       -17.3682742 , -17.59786728, -18.206886  , -18.74687685,
+       -19.0788073 , -19.46347889, -19.59552638, -19.27863914,
+       -19.46349975, -19.68965173, -19.52837492, -19.96552302,
+       -19.70221542, -19.57154039, -20.00290162, -20.47125867,
+       -20.17595369, -20.31829162, -20.78878552, -20.71594349,
+       -20.90935243, -20.68751029, -21.09579307, -21.89362949,
+       -22.40187926, -22.62248539, -22.9680541 , -22.77484297,
+       -23.61258236, -23.36272529, -23.31781972, -23.29965161,
+       -23.48681399, -22.98073119, -23.09142765, -23.65820507,
+       -24.21291541, -24.08542422, -24.42012025, -24.64160057,
+       -24.18080104, -23.82437989, -23.86235979, -24.0890156 ,
+       -24.30238783, -24.21587646, -23.78574731, -24.07333785,
+       -24.07110872, -23.75874131, -23.62826037, -23.91867371,
+       -24.64729822, -24.95052778, -25.24068515, -25.27276376,
+       -25.27523916, -25.17829868, -25.23345352, -25.43249177,
+       -25.04304433, -24.58340558, -24.73825882, -24.93016321,
+       -24.84640737, -25.0394852 , -24.17452955, -22.09348938,
+       -19.34901761, -23.03885332, -25.78827593, -25.5805505 ,
+       -25.62368078, -26.27089686, -27.35139678, -28.31907729,
+       -28.99265683, -30.73645771, -31.947566  , -33.18937619,
+       -35.12357336, -37.62704064, -40.14873414, -42.45692475,
+       -45.01296493, -46.70169118, -47.67291949, -48.08134924,
+       -48.43289361, -48.61569811, -48.7974563 , -48.74432658,
+       -48.74469955, -48.99973707, -49.11674777, -48.99162922,
+       -49.12893967, -49.25366333, -49.22954041, -49.40672677,
+       -49.37707002, -49.38543361, -49.53129634, -49.59639876,
+       -49.61737313, -49.68759079, -49.58524808, -49.82539683,
+       -49.97687442, -49.7171528 , -49.82132915, -50.06090359,
+       -50.10838421, -49.94704118, -49.9085699 , -50.13773115,
+       -50.3777978 , -50.07169697, -50.03118409, -50.42248999,
+       -50.51101771, -50.30014345, -50.20907143, -50.49087998,
+       -50.71297883, -50.43192514, -50.18815184, -50.6401061 ,
+       -50.80213357, -50.49925452, -50.46405276, -50.6561673 ,
+       -50.88541929, -50.70829003, -50.50664157, -50.73607465,
+       -51.02526731, -50.71083519, -50.71813558, -50.83634869,
+       -50.88408585, -50.96170352, -50.82322367, -50.81105206,
+       -50.9986566 , -50.99058029, -50.89660745, -50.99782595,
+       -50.86741733, -51.0423184 , -51.14264472, -50.90457255,
+       -50.93049019, -51.1487526 , -51.14949019, -51.01652655,
+       -50.93255387, -51.04648944, -51.36130672, -51.02488152,
+       -50.82868758, -51.18413868, -51.33606497, -51.06649815,
+       -50.88364128, -51.10517404, -51.40371468, -51.20175176,
+       -53.85202924]), 'psd_noise_db': array([ -9.75770512,  -1.1169484 ,   0.28332441,  -1.26843302,
+        -4.11871932,  -8.72480264, -11.06966463, -11.48449632,
+       -13.7517216 , -13.93385762, -14.53279347, -14.33542004,
+       -16.57279284, -17.10729559, -19.13876398, -19.98475197,
+       -21.88432878, -22.46313147, -22.06975516, -21.55481291,
+       -22.17429211, -21.8870745 , -22.15002897, -21.80296008,
+       -23.84466888, -23.84938172, -23.58852081, -23.81516446,
+       -24.82278536, -24.6830323 , -24.16563817, -25.02803378,
+       -24.2816022 , -25.08223023, -24.42791672, -25.55593776,
+       -24.98242994, -27.22843289, -25.03452735, -24.1644995 ,
+       -25.56416761, -23.38878   , -22.82154446, -23.12316493,
+       -22.22311281, -23.16291359, -22.09300899, -22.76446262,
+       -21.13195706, -21.39618081, -20.83885369, -22.33679604,
+       -22.29947871, -24.05509834, -23.34144514, -23.52526814,
+       -25.03345879, -24.61040562, -26.26156637, -24.1324342 ,
+       -25.21416628, -25.71432919, -26.68802087, -24.57208484,
+       -24.00820253, -23.22129952, -21.1576495 , -22.90080019,
+       -21.39746763, -22.1225469 , -20.92259598, -22.73264844,
+       -22.73726652, -23.60423285, -22.59565669, -21.22360009,
+       -21.21100863, -20.66007358, -19.93017019, -20.85015024,
+       -20.2299338 , -20.49273927, -20.68742518, -21.08122257,
+       -21.48780442, -22.88810522, -22.96082376, -23.01620054,
+       -24.07904981, -23.89432727, -23.25488348, -22.4437802 ,
+       -22.77201529, -21.92104276, -21.6065253 , -23.09679523,
+       -23.87096014, -22.12359607, -21.34873829, -19.61469982,
+       -18.53132971, -19.30170656, -20.0365735 , -21.57972178,
+       -22.73155919, -21.5161083 , -23.3848417 , -24.95900398,
+       -26.2728327 , -27.37560792, -30.84507106, -30.32921764,
+       -33.21198677, -34.51443085, -36.63617153, -37.40275893,
+       -38.32166525, -39.15839734, -39.47508484, -38.92563389,
+       -39.00957338, -39.94273745, -39.62555393, -39.04227753,
+       -39.67636112, -40.04847614, -39.64563731, -39.6334183 ,
+       -39.76178926, -40.17570486, -40.09444883, -39.55293697,
+       -40.1167989 , -40.66240316, -39.77651753, -39.90336819,
+       -40.70391395, -40.30149615, -40.03219654, -40.32214526,
+       -40.53073182, -40.65652696, -40.18565549, -40.19186478,
+       -41.12318688, -40.65873189, -40.01474268, -40.76978739,
+       -41.24164048, -40.5459445 , -40.28995867, -40.769806  ,
+       -41.23411679, -40.68812608, -40.35117648, -40.99488346,
+       -41.39508604, -40.7203953 , -40.46032205, -41.13853177,
+       -41.50942643, -40.69803494, -40.56184638, -41.43284918,
+       -41.40084076, -40.66779831, -40.92842697, -41.37480792,
+       -41.29724861, -40.96920882, -40.85086466, -41.47273601,
+       -41.55323022, -40.67792916, -41.14507893, -41.82968335,
+       -41.01309551, -40.97303826, -41.49514706, -41.38153218,
+       -41.26020873, -41.08013782, -41.29026577, -41.78621793,
+       -41.11530824, -40.89393719, -41.83566717, -41.62115526,
+       -40.85093329, -41.29167859, -41.78776278, -41.4395339 ,
+       -41.05473011, -41.20308014, -41.82535222, -41.59510461,
+       -40.8449163 , -41.31484489, -41.99680632, -41.42023856,
+       -43.90746819]), 'psd_freqs': array([  0. ,   0.5,   1. ,   1.5,   2. ,   2.5,   3. ,   3.5,   4. ,
+         4.5,   5. ,   5.5,   6. ,   6.5,   7. ,   7.5,   8. ,   8.5,
+         9. ,   9.5,  10. ,  10.5,  11. ,  11.5,  12. ,  12.5,  13. ,
+        13.5,  14. ,  14.5,  15. ,  15.5,  16. ,  16.5,  17. ,  17.5,
+        18. ,  18.5,  19. ,  19.5,  20. ,  20.5,  21. ,  21.5,  22. ,
+        22.5,  23. ,  23.5,  24. ,  24.5,  25. ,  25.5,  26. ,  26.5,
+        27. ,  27.5,  28. ,  28.5,  29. ,  29.5,  30. ,  30.5,  31. ,
+        31.5,  32. ,  32.5,  33. ,  33.5,  34. ,  34.5,  35. ,  35.5,
+        36. ,  36.5,  37. ,  37.5,  38. ,  38.5,  39. ,  39.5,  40. ,
+        40.5,  41. ,  41.5,  42. ,  42.5,  43. ,  43.5,  44. ,  44.5,
+        45. ,  45.5,  46. ,  46.5,  47. ,  47.5,  48. ,  48.5,  49. ,
+        49.5,  50. ,  50.5,  51. ,  51.5,  52. ,  52.5,  53. ,  53.5,
+        54. ,  54.5,  55. ,  55.5,  56. ,  56.5,  57. ,  57.5,  58. ,
+        58.5,  59. ,  59.5,  60. ,  60.5,  61. ,  61.5,  62. ,  62.5,
+        63. ,  63.5,  64. ,  64.5,  65. ,  65.5,  66. ,  66.5,  67. ,
+        67.5,  68. ,  68.5,  69. ,  69.5,  70. ,  70.5,  71. ,  71.5,
+        72. ,  72.5,  73. ,  73.5,  74. ,  74.5,  75. ,  75.5,  76. ,
+        76.5,  77. ,  77.5,  78. ,  78.5,  79. ,  79.5,  80. ,  80.5,
+        81. ,  81.5,  82. ,  82.5,  83. ,  83.5,  84. ,  84.5,  85. ,
+        85.5,  86. ,  86.5,  87. ,  87.5,  88. ,  88.5,  89. ,  89.5,
+        90. ,  90.5,  91. ,  91.5,  92. ,  92.5,  93. ,  93.5,  94. ,
+        94.5,  95. ,  95.5,  96. ,  96.5,  97. ,  97.5,  98. ,  98.5,
+        99. ,  99.5, 100. ]), 'enova_weights': array([0.04715974, 0.06984749, 0.03721789, 0.05410881, 0.04129304,
+       0.02699171, 0.03349323, 0.04690129, 0.02797802, 0.0343484 ,
+       0.03033134, 0.03606289, 0.02843335, 0.02051255, 0.01895359,
+       0.03193419, 0.01532848, 0.03915898, 0.04129169, 0.02742399,
+       0.04472772, 0.04721589, 0.04419496, 0.02282193, 0.03730683,
+       0.04002904, 0.05493293])})
+</pre></div>
+</div>
+</section>
 <section id="interactive-overlay">
 <h2>Interactive Overlay<a class="headerlink" href="#interactive-overlay" title="Link to this heading">🔗</a></h2>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">plot_mne_style_overlay_interactive</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">denoised_raw</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">15.0</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../../_images/sphx_glr_10_gedai_multiband_011.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_011.png" alt="10 gedai multiband" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
+<img src="../../../_images/sphx_glr_10_gedai_multiband_012.png" srcset="../../../_images/sphx_glr_10_gedai_multiband_012.png" alt="10 gedai multiband" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 11.355 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  392 MB</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 9.624 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  371 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-basics-10-gedai-multiband-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/2511487d24aaa8273d2b5c7aae5b3336/10_gedai_multiband.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">10_gedai_multiband.ipynb</span></code></a></p>
@@ -1135,6 +1362,7 @@ each subband independently.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-fitting">Model Fitting</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform-the-data-denoising">Transform the Data (Denoising)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#why-multiband-beats-single-band-broadband-gedai">Why Multiband Beats Single-Band Broadband GEDAI</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sensai-manifold-enova-weighted-psd-scalp-topography">SENSAI Manifold, ENOVA-Weighted PSD &amp; Scalp Topography</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interactive-overlay">Interactive Overlay</a></li>
 </ul>
   </nav></div>

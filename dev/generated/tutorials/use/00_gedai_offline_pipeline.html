@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=059408dc"></script>
+    <script src="../../../_static/documentation_options.js?v=26c8029e"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -167,6 +167,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/index.html">
     API References
   </a>
@@ -179,20 +186,30 @@
   </a>
 </li>
 
-
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../license/index.html">
+            <li class="nav-item dropdown">
+                <button class="btn dropdown-toggle nav-item" type="button"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                aria-controls="pst-nav-more-links">
+                    More
+                </button>
+                <ul id="pst-nav-more-links" class="dropdown-menu">
+                    
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../license/index.html">
     License
   </a>
 </li>
 
 
-<li class="nav-item ">
-  <a class="nav-link nav-internal" href="../../../dev/index.html">
+<li class=" ">
+  <a class="nav-link dropdown-item nav-internal" href="../../../dev/index.html">
     Development
   </a>
 </li>
 
+                </ul>
+            </li>
+            
   </ul>
 </nav></div>
       
@@ -308,6 +325,13 @@
 
 
 <li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../faq.html">
+    FAQ & Hyperparameter Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
   <a class="nav-link nav-internal" href="../../../api/index.html">
     API References
   </a>
@@ -409,7 +433,7 @@
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../advanced/index.html">Advanced Workflows</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/00_gedai_online.html">Using GEDAI for online (real-time) denoising</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Denoising with a Custom Forward Model Covariance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../advanced/10_gedai_forward.html">Custom Head Models &amp; SENSAI Goodness-of-Fit</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../advanced/20_gedai_opm.html">Optically Pumped Magnetometer (OPM) MEG Data: MNE Pipeline vs. GEDAI</a></li>
 </ul>
 </details></li>
@@ -493,7 +517,9 @@ using Adaptive Multiband GEDAI on EEG data.</p>
 </ol>
 <p>Use this tutorial as a template and adapt only the data-loading block and
 parameter values for your own dataset.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="w">
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="nn">.</span><span class="nn">pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span><span class="w">
+</span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span><span class="w">
+</span><span class="kn">from</span><span class="w"> </span><span class="nn">mne</span><span class="nn">.</span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="w">
 </span><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="w"> </span><span class="kn">import</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-class reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai" title="gedai.AdaptiveMultibandGedai"><span class="n">AdaptiveMultibandGedai</span></a><span class="w">
 </span><span class="kn">from</span><span class="w"> </span><span class="nn">gedai</span><span class="nn">.</span><span class="nn">data</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_contaminated_eeg_set_path</span><span class="w">
@@ -501,13 +527,14 @@ parameter values for your own dataset.</p>
 </span></pre></div></div>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-mne-io sphx-glr-backref-type-py-function reference external" href="https://mne.tools/stable/generated/mne.io.read_raw.html#mne.io.read_raw" title="mne.io.read_raw"><span class="n">read_raw</span></a><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">get_contaminated_eeg_set_path</span><span class="p">(</span><span class="p">)</span><span class="p">)</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<p>Preprocessing
-GEDAI will automatically apply an average reference before fitting or
-transforming the data. If your acquisition used a different reference,
-consider adding the missing reference channel beforehand to preserve
-the rank of your data. For example, if your data was recorded with a
-<code class="docutils literal notranslate"><span class="pre">Cz</span></code> reference, you can add a virtual <code class="docutils literal notranslate"><span class="pre">Cz</span></code> channel as follows:
-<code class="docutils literal notranslate"><span class="pre">raw.add_reference_channels(&quot;Cz&quot;,</span> <span class="pre">copy=False)</span></code>.</p>
+<p>Preprocessing &amp; Reference Handling
+GEDAI applies a consistent reference (default <code class="docutils literal notranslate"><span class="pre">reference=&quot;average&quot;</span></code>) across
+both the EEG data and leadfield/reference covariance, and also supports
+infinity <code class="docutils literal notranslate"><span class="pre">&quot;REST&quot;</span></code>, linked mastoids/earlobes (<code class="docutils literal notranslate"><span class="pre">&quot;M1+M2&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;TP9+TP10&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;A1+A2&quot;</span></code>), or any single channel (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;Cz&quot;</span></code>). Flat online recording
+references (<code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">uV</span></code>) are retained automatically during two-pass bad-channel
+detection, clinical/BIDS labels (e.g., <code class="docutils literal notranslate"><span class="pre">&quot;EEG</span> <span class="pre">Fp1-REF&quot;</span></code>) are matched safely,
+and custom non-10-20 channels with 3D positions use 3D dipole projection.</p>
 <p>High-pass filtering before GEDAI usually improves covariance estimation by
 reducing slow drifts and non-stationarities.</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">raw</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">l_freq</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">h_freq</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span><span class="w">
@@ -673,9 +700,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header general-bd39e9f2-b697-49ca-a5d3-0150ed433060"
+<tr class="mne-repr-section-header general-162f2691-7188-4e88-9d0a-e955a4c4d14b"
      title="Hide section"
-    onclick="toggleVisibility('general-bd39e9f2-b697-49ca-a5d3-0150ed433060')">
+    onclick="toggleVisibility('general-162f2691-7188-4e88-9d0a-e955a4c4d14b')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -687,7 +714,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element general-bd39e9f2-b697-49ca-a5d3-0150ed433060 ">
+<tr class="repr-element general-162f2691-7188-4e88-9d0a-e955a4c4d14b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Filename(s)</td>
     <td>
@@ -698,26 +725,26 @@ this file apply (plus whatever default styling the IDE applies).
     </td>
 </tr>
 
-<tr class="repr-element general-bd39e9f2-b697-49ca-a5d3-0150ed433060 ">
+<tr class="repr-element general-162f2691-7188-4e88-9d0a-e955a4c4d14b ">
     <td class="mne-repr-section-toggle"></td>
     <td>MNE object type</td>
     <td>RawEEGLAB</td>
 </tr>
-<tr class="repr-element general-bd39e9f2-b697-49ca-a5d3-0150ed433060 ">
+<tr class="repr-element general-162f2691-7188-4e88-9d0a-e955a4c4d14b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Measurement date</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-bd39e9f2-b697-49ca-a5d3-0150ed433060 ">
+<tr class="repr-element general-162f2691-7188-4e88-9d0a-e955a4c4d14b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Participant</td>
 
     <td>Unknown</td>
 
 </tr>
-<tr class="repr-element general-bd39e9f2-b697-49ca-a5d3-0150ed433060 ">
+<tr class="repr-element general-162f2691-7188-4e88-9d0a-e955a4c4d14b ">
     <td class="mne-repr-section-toggle"></td>
     <td>Experimenter</td>
 
@@ -732,9 +759,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header acquisition-103147bf-4335-4ed9-95aa-505ae0ab45e0"
+<tr class="mne-repr-section-header acquisition-f7297ed0-4dce-4454-ac28-6a257c687938"
      title="Hide section"
-    onclick="toggleVisibility('acquisition-103147bf-4335-4ed9-95aa-505ae0ab45e0')">
+    onclick="toggleVisibility('acquisition-f7297ed0-4dce-4454-ac28-6a257c687938')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -746,7 +773,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element acquisition-103147bf-4335-4ed9-95aa-505ae0ab45e0 ">
+<tr class="repr-element acquisition-f7297ed0-4dce-4454-ac28-6a257c687938 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Duration</td>
     <td>00:01:00 (HH:MM:SS)</td>
@@ -759,14 +786,14 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element acquisition-103147bf-4335-4ed9-95aa-505ae0ab45e0 ">
+<tr class="repr-element acquisition-f7297ed0-4dce-4454-ac28-6a257c687938 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Sampling frequency</td>
     <td>200.00 Hz</td>
 </tr>
 
 
-<tr class="repr-element acquisition-103147bf-4335-4ed9-95aa-505ae0ab45e0 ">
+<tr class="repr-element acquisition-f7297ed0-4dce-4454-ac28-6a257c687938 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Time points</td>
     <td>12,000</td>
@@ -781,9 +808,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header channels-5a370e43-6edd-4d8c-9685-5e86617faf10"
+<tr class="mne-repr-section-header channels-621d1779-1df0-4ab4-8f70-bf130da2f813"
      title="Hide section"
-    onclick="toggleVisibility('channels-5a370e43-6edd-4d8c-9685-5e86617faf10')">
+    onclick="toggleVisibility('channels-621d1779-1df0-4ab4-8f70-bf130da2f813')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -796,7 +823,7 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="repr-element channels-5a370e43-6edd-4d8c-9685-5e86617faf10 ">
+<tr class="repr-element channels-621d1779-1df0-4ab4-8f70-bf130da2f813 ">
     <td class="mne-repr-section-toggle"></td>
     <td>EEG</td>
     <td>
@@ -809,7 +836,7 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element channels-5a370e43-6edd-4d8c-9685-5e86617faf10 ">
+<tr class="repr-element channels-621d1779-1df0-4ab4-8f70-bf130da2f813 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Head & sensor digitization</td>
 
@@ -824,9 +851,9 @@ this file apply (plus whatever default styling the IDE applies).
 
 
 
-<tr class="mne-repr-section-header filters-1cfe04d5-83df-4f91-8043-2d7c3d70acea"
+<tr class="mne-repr-section-header filters-ffb3e061-7252-4095-b570-49d1516ba694"
      title="Hide section"
-    onclick="toggleVisibility('filters-1cfe04d5-83df-4f91-8043-2d7c3d70acea')">
+    onclick="toggleVisibility('filters-ffb3e061-7252-4095-b570-49d1516ba694')">
     <th class="mne-repr-section-toggle">
         <button >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--!Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M233.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L256 338.7 86.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z"/></svg>
@@ -838,14 +865,14 @@ this file apply (plus whatever default styling the IDE applies).
 </tr>
 
 
-<tr class="repr-element filters-1cfe04d5-83df-4f91-8043-2d7c3d70acea ">
+<tr class="repr-element filters-ffb3e061-7252-4095-b570-49d1516ba694 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Highpass</td>
     <td>0.50 Hz</td>
 </tr>
 
 
-<tr class="repr-element filters-1cfe04d5-83df-4f91-8043-2d7c3d70acea ">
+<tr class="repr-element filters-ffb3e061-7252-4095-b570-49d1516ba694 ">
     <td class="mne-repr-section-toggle"></td>
     <td>Lowpass</td>
     <td>100.00 Hz</td>
@@ -867,27 +894,36 @@ decomposing the signal into adaptive wavelet bands.</p>
 </span>    <span class="n">broadband_pass</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="w">
 </span><span class="p">)</span><span class="w">
 </span><span class="w">
-</span><span class="c1"># Fit the model using continuous scalar optimization, adaptive noise weighting,</span><span class="w">
-</span><span class="c1"># and automatic two-pass bad-channel exclusion. Pass a float for</span><span class="w">
-</span><span class="c1"># ``noise_multiplier`` (e.g., ``3.0``) to override signal vs. noise weighting.</span><span class="w">
+</span><span class="c1"># Fit the model using continuous scalar optimization, closed-form adaptive Z3</span><span class="w">
+</span><span class="c1"># weighting (&quot;auto&quot;), and automatic two-pass bad-channel exclusion. For long</span><span class="w">
+</span><span class="c1"># recordings with non-stationary background EEG signal (e.g., sleep, epilepsy,</span><span class="w">
+</span><span class="c1"># fatigue), pass e.g. ``smoothing_window=30.0`` (seconds) to adapt thresholds</span><span class="w">
+</span><span class="c1"># smoothly over time.</span><span class="w">
 </span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.fit_raw" title="gedai.AdaptiveMultibandGedai.fit_raw"><span class="n">ad</span><span class="o">.</span><span class="n">fit_raw</span></a><span class="p">(</span><span class="w">
 </span>    <span class="n">raw</span><span class="p">,</span><span class="w">
-</span>    <span class="n">noise_multiplier</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">strength</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">reference</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">average</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="c1"># smoothing_window=30.0,</span><span class="w">
 </span>    <span class="n">on_bad_channel</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">exclude</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span>    <span class="n">bad_channel_threshold</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">auto</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
 </span><span class="p">)</span><span class="w">
 </span><span class="w">
-</span><span class="c1"># Denoise the data and interpolate any excluded bad channels if present</span><span class="w">
+</span><span class="c1"># Denoise, interpolate any excluded bad channels, and annotate any residual</span><span class="w">
+</span><span class="c1"># extreme-ENOVA 1 s windows with &quot;BAD_gedai&quot; (without deleting samples)</span><span class="w">
 </span><span class="n">denoised_raw</span> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.transform_raw" title="gedai.AdaptiveMultibandGedai.transform_raw"><span class="n">ad</span><span class="o">.</span><span class="n">transform_raw</span></a><span class="p">(</span><span class="w">
 </span>    <span class="n">raw</span><span class="p">,</span><span class="w">
 </span>    <span class="n">interpolate_bads</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">ad</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="p">)</span><span class="p">,</span><span class="w">
+</span>    <span class="n">bad_epoch_threshold</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span><span class="w">
 </span>    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="w">
 </span><span class="p">)</span><span class="w">
 </span><span class="w">
-</span><span class="c1"># Inspect bad-channel QC and denoising metrics</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_bad_ep</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">ad</span><span class="o">.</span><span class="n">bad_epochs_</span></a><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="p">)</span><span class="p">)</span> <span class="k">if</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">ad</span><span class="o">.</span><span class="n">bad_epochs_</span></a> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="w">
+</span><span class="w">
+</span><span class="c1"># Inspect bad-channel/bad-epoch QC and denoising metrics</span><span class="w">
 </span><span class="nb">print</span><span class="p">(</span><a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-property reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.summary" title="gedai.AdaptiveMultibandGedai.summary"><span class="n">ad</span><span class="o">.</span><span class="n">summary</span></a><span class="p">)</span><span class="w">
 </span><span class="nb">print</span><span class="p">(</span><span class="w">
 </span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Excluded bad channels: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="list"><span class="n">ad</span><span class="o">.</span><span class="n">bad_channels_</span></a><span class="si">}</span><span class="s2"> | </span><span class="s2">&quot;</span><span class="w">
+</span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Flagged BAD_gedai epochs: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">n_bad_ep</span></a><span class="si">}</span><span class="s2"> | </span><span class="s2">&quot;</span><span class="w">
 </span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">Mean ENOVA: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">ad</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">mean_enova</span><span class="s1">'</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> % | </span><span class="s2">&quot;</span><span class="w">
 </span>    <span class="sa">f</span><span class="s2">&quot;</span><span class="s2">SENSAI score: </span><span class="si">{</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">ad</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s1">'</span><span class="s1">sensai_score</span><span class="s1">'</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="w">
 </span><span class="p">)</span><span class="w">
@@ -907,30 +943,87 @@ Applying a custom ('EEG',) reference.
 ==================================================================================
   Frequency Band             |  Epoch (s) |  Threshold |  SENSAI (%) |  ENOVA (%)
   ---------------------------+------------+------------+-------------+-----------
-  Pass 1: Broadband          |     1.00 s |      15.74 |     72.08 % |         --
-  Band 0 (50.00-100.00 Hz)   |     0.20 s |      17.48 |     45.43 % |         --
-  Band 1 (25.00-50.00 Hz)    |     0.40 s |      17.89 |     66.95 % |         --
-  Band 2 (12.50-25.00 Hz)    |     0.80 s |  1.104e+06 |     70.00 % |         --
-  Band 3 (6.25-12.50 Hz)     |     1.60 s |  1.114e+06 |     71.91 % |         --
-  Band 4 (3.12-6.25 Hz)      |     3.20 s |  8.824e+05 |     74.65 % |         --
-  Band 5 (1.56-3.12 Hz)      |     6.40 s |      13.33 |     73.01 % |         --
-  Band 6 (0.78-1.56 Hz)      |    12.80 s |      13.25 |     68.17 % |         --
-  Band 7 (0.39-0.78 Hz)      |    25.60 s |      9.508 |     65.45 % |         --
-  Band 8 (0.00-0.39 Hz)      |    25.60 s |      11.56 |     52.72 % |         --
+  Pass 1: Broadband          |     1.00 s |      11.56 |     72.77 % |         --
+  Band 0 (50.00-100.00 Hz)   |     0.20 s |       19.9 |     42.75 % |         --
+  Band 1 (25.00-50.00 Hz)    |     0.40 s |      24.39 |     65.40 % |         --
+  Band 2 (12.50-25.00 Hz)    |     0.80 s |  1.115e+06 |     69.26 % |         --
+  Band 3 (6.25-12.50 Hz)     |     1.60 s |  1.099e+06 |     71.27 % |         --
+  Band 4 (3.12-6.25 Hz)      |     3.20 s |  8.631e+05 |     76.25 % |         --
+  Band 5 (1.56-3.12 Hz)      |     6.40 s |  9.105e+05 |     73.31 % |         --
+  Band 6 (0.78-1.56 Hz)      |    12.80 s |  9.703e+05 |     67.04 % |         --
+  Band 7 (0.39-0.78 Hz)      |    25.60 s |      7.741 |     66.09 % |         --
+  Band 8 (0.00-0.39 Hz)      |    25.60 s |      7.617 |     52.14 % |         --
 ==================================================================================
-  Fitted SENSAI Optimization Score: 65.37 %
+  Fitted SENSAI Optimization Score: 64.83 %
 ==================================================================================
-Excluded bad channels: [] | Mean ENOVA: 30.4 % | SENSAI score: 59.707
+Excluded bad channels: [] | Flagged BAD_gedai epochs: 6 | Mean ENOVA: 31.3 % | SENSAI score: 60.814
 </pre></div>
 </div>
-<p>Since GEDAI algorithm automatically set the reference to <code class="docutils literal notranslate"><span class="pre">average</span></code>, you can
+<p>Plot per-epoch ENOVA (highlighting any <code class="docutils literal notranslate"><span class="pre">BAD_gedai</span></code> epochs above <code class="docutils literal notranslate"><span class="pre">85%</span></code>)
+alongside a zoomed 6-second comparison on frontal channel <code class="docutils literal notranslate"><span class="pre">Fp1</span></code> (bandpass
+filtered to <code class="docutils literal notranslate"><span class="pre">1-45</span> <span class="pre">Hz</span></code> for display).</p>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_ep</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">ad</span><span class="o">.</span><span class="n">metrics_</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">enova_per_epoch</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">100.0</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_ep</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><span class="nb">len</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_ep</span></a><span class="p">)</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bad_ep</span></a> <span class="o">=</span> <span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.asarray.html#numpy.asarray" title="numpy.asarray"><span class="n">np</span><span class="o">.</span><span class="n">asarray</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">ad</span><span class="o">.</span><span class="n">bad_epochs_</span></a><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span><span class="w">
+</span>    <span class="k">if</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">ad</span><span class="o">.</span><span class="n">bad_epochs_</span></a> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="w">
+</span>    <span class="k">else</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.zeros.html#numpy.zeros" title="numpy.zeros"><span class="n">np</span><span class="o">.</span><span class="n">zeros</span></a><span class="p">(</span><span class="nb">len</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_ep</span></a><span class="p">)</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">den_bp</span></a> <span class="o">=</span> <span class="n">denoised_raw</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">45.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><a class="sphx-glr-backref-module-mne-_fiff-meas_info sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://mne.tools/stable/generated/mne.Info.html#mne.Info" title="mne._fiff.meas_info.Info"><span class="n">raw</span><span class="o">.</span><span class="n">info</span></a><span class="p">[</span><span class="s2">&quot;</span><span class="s2">sfreq</span><span class="s2">&quot;</span><span class="p">]</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1</span></a> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">ch_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Fp1</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="mf">6.0</span> <span class="o">*</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">pk</span></a> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.argmax.html#numpy.argmax" title="numpy.argmax"><span class="n">np</span><span class="o">.</span><span class="n">argmax</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html#numpy.ufunc" title="numpy.ufunc"><span class="n">np</span><span class="o">.</span><span class="n">abs</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1</span></a><span class="p">]</span><span class="p">)</span><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">pk</span></a> <span class="o">-</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a> <span class="o">/</span><span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="tuple"><span class="n">raw_bp</span><span class="o">.</span><span class="n">shape</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.arange.html#numpy.arange" title="numpy.arange"><span class="n">np</span><span class="o">.</span><span class="n">arange</span></a><span class="p">(</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">st</span></a> <span class="o">+</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">seg_len</span></a><span class="p">)</span> <span class="o">/</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="float"><span class="n">sfreq</span></a><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig_qc</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplots.html#matplotlib.pyplot.subplots" title="matplotlib.pyplot.subplots"><span class="n">plt</span><span class="o">.</span><span class="n">subplots</span></a><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mf">11.4</span><span class="p">,</span> <span class="mf">4.3</span><span class="p">)</span><span class="p">,</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_ep</span></a><span class="p">[</span><span class="o">~</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bad_ep</span></a><span class="p">]</span><span class="p">,</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_ep</span></a><span class="p">[</span><span class="o">~</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bad_ep</span></a><span class="p">]</span><span class="p">,</span><span class="w">
+</span>    <span class="n">width</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span><span class="w">
+</span>    <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#4e79a7</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Normal</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><span class="k">if</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-function reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.any.html#numpy.any" title="numpy.any"><span class="n">np</span><span class="o">.</span><span class="n">any</span></a><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bad_ep</span></a><span class="p">)</span><span class="p">:</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">bar</span><span class="p">(</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_ep</span></a><span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bad_ep</span></a><span class="p">]</span><span class="p">,</span><span class="w">
+</span>        <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">enova_ep</span></a><span class="p">[</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">bad_ep</span></a><span class="p">]</span><span class="p">,</span><span class="w">
+</span>        <span class="n">width</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span><span class="w">
+</span>        <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#e15759</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>        <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">BAD_gedai (&gt; 85</span><span class="s2">%</span><span class="s2">)</span><span class="s2">&quot;</span><span class="p">,</span><span class="w">
+</span>    <span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="mf">85.0</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#c62828</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">--</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Threshold (85</span><span class="s2">%</span><span class="s2">)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">A. Per-Epoch ENOVA &amp; BAD_gedai Epochs</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Time (s)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">ENOVA (</span><span class="s2">%</span><span class="s2">)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">105</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper right</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mf">8.2</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">y</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span><span class="w">
+</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">raw_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#b0b0b0</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">Raw Fp1</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="w">
+</span>    <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">t_seg</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">den_bp</span></a><span class="p">[</span><a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="int"><span class="n">fp1</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/functions.html#slice" title="slice"><span class="n">sl</span></a><span class="p">]</span> <span class="o">*</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">#1b9e77</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">GEDAI Denoised</span><span class="s2">&quot;</span><span class="w">
+</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">B. Frontal Fp1 Zoom (1-45 Hz Display)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Time (s)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;</span><span class="s2">Amplitude (uV)</span><span class="s2">&quot;</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s2">&quot;</span><span class="s2">upper right</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="mf">8.2</span><span class="p">,</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-numpy sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="numpy.ndarray"><span class="n">axes_qc</span></a><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span><span class="w">
+</span><a class="sphx-glr-backref-module-matplotlib-pyplot sphx-glr-backref-type-py-function reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html#matplotlib.pyplot.show" title="matplotlib.pyplot.show"><span class="n">plt</span><span class="o">.</span><span class="n">show</span></a><span class="p">(</span><span class="p">)</span><span class="w">
+</span></pre></div></div>
+<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_001.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_001.png" alt="A. Per-Epoch ENOVA & BAD_gedai Epochs, B. Frontal Fp1 Zoom (1-45 Hz Display)" class = "sphx-glr-single-img"/><p>Since GEDAI algorithm automatically set the reference to <code class="docutils literal notranslate"><span class="pre">average</span></code>, you can
 reset the reference to the original channel after denoising to preserve the
 original reference scheme:
 <code class="docutils literal notranslate"><span class="pre">denoised_raw.set_eeg_reference(ref_channels=&quot;Cz&quot;,</span> <span class="pre">copy=False)</span></code></p>
 <p>Visualize the results</p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span class="n">plot_mne_style_overlay_interactive</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">denoised_raw</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="mf">15.0</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_001.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_001.png" alt="00 gedai offline pipeline" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
+<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" alt="00 gedai offline pipeline" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>(&lt;Figure size 1200x1750 with 1 Axes&gt;, &lt;Axes: xlabel='Time (s)', ylabel='Channels'&gt;)
 </pre></div>
 </div>
 </section>
@@ -964,7 +1057,7 @@ more brain-like, blue/purple is less brain-like). You will typically see a
 wide spread of data here, where epochs with high power and low SSI are clear
 indicators of prominent, non-brain artifacts (like blinks or gross muscle
 movement).</p></li>
-<li><p><strong>Right Panel (After Denoising)</strong>: This illustrates the core separation
+<li><p><strong>Middle Panel (After Denoising)</strong>: This illustrates the core separation
 achieved by the algorithm, dividing the data into two distinct clusters
 (along with density distribution curves on the top and right borders):</p>
 <ul>
@@ -976,6 +1069,14 @@ They generally exhibit lower similarity to the brain leadfield and are
 often scattered across a wider range of power levels.</p></li>
 </ul>
 </li>
+<li><p><strong>Far-Right Upper Panel (ENOVA-weighted PSD over channels)</strong>: Compares the
+0.5 Hz Welch spectrum of <strong>Original</strong>, <strong>Signal</strong>, and removed <strong>Noise</strong>
+weighted across channels by removed variance (confirming delta/blink or
+high-frequency EMG suppression while preserving physiological rhythms like
+occipital alpha).</p></li>
+<li><p><strong>Far-Right Lower Panel (ENOVA Scalp Topoplot)</strong>: Maps the percentage of
+variance removed at each electrode (<code class="docutils literal notranslate"><span class="pre">0-100%</span></code>) so spatial hotspots (e.g.,
+frontal blinks or localized bad electrodes) stand out immediately.</p></li>
 </ul>
 <p>Sub-optimal Denoising Outcomes:</p>
 <ul class="simple">
@@ -998,8 +1099,15 @@ the SSSI).</p></li>
 </ul>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><a class="sphx-glr-backref-module-matplotlib-figure sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://matplotlib.org/stable/api/_as_gen/matplotlib.figure.Figure.html#matplotlib.figure.Figure" title="matplotlib.figure.Figure"><span class="n">fig</span></a><span class="p">,</span> <a class="sphx-glr-backref-module-builtins sphx-glr-backref-type-py-class sphx-glr-backref-instance reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="dict"><span class="n">metrics</span></a> <span class="o">=</span> <a class="sphx-glr-backref-module-gedai sphx-glr-backref-type-py-method reference internal" href="../../../api/generated/gedai.gedai.AdaptiveMultibandGedai.html#gedai.gedai.AdaptiveMultibandGedai.plot_sensai" title="gedai.AdaptiveMultibandGedai.plot_sensai"><span class="n">ad</span><span class="o">.</span><span class="n">plot_sensai</span></a><span class="p">(</span><span class="n">raw_before</span><span class="o">=</span><span class="n">raw</span><span class="p">,</span> <span class="n">raw_after</span><span class="o">=</span><span class="n">denoised_raw</span><span class="p">)</span><span class="w">
 </span></pre></div></div>
-<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_002.png" alt="SENSAI = 59.7%, ENOVA = 30.4%, [AdaptiveMultibandGedai], Before Denoising  |  Mean SSI: 0.74, After Denoising  |  Mean SSSI: 0.89  |  Mean NSSI: 0.47 SSI Silhouette Score: 0.97" class = "sphx-glr-single-img"/><p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 15.052 seconds)</p>
-<p><strong>Estimated memory usage:</strong>  394 MB</p>
+<img src="../../../_images/sphx_glr_00_gedai_offline_pipeline_003.png" srcset="../../../_images/sphx_glr_00_gedai_offline_pipeline_003.png" alt="SENSAI = 64.8%, ENOVA = 31.3%, [AdaptiveMultibandGedai], Before Denoising Mean SSI: 0.74, After Denoising Mean SSSI: 0.89  |  Mean NSSI: 0.42 SSI Silhouette Score: 0.98, ENOVA-weighted PSD over channels, ENOVA (Explained Noise Variance)" class = "sphx-glr-single-img"/><div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[_utils._check_reference_channel] WARNING: Input data does not contain a flat reference channel. GEDAI will apply average referencing. Consider adding the reference channel(s) using :func:`mne.add_reference_channels` before using GEDAI.
+[_utils._apply_eeg_average_reference_if_needed] INFO: Setting average reference.
+EEG channel type selected for re-referencing
+Applying average reference.
+Applying a custom ('EEG',) reference.
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 11.478 seconds)</p>
+<p><strong>Estimated memory usage:</strong>  381 MB</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-generated-tutorials-use-00-gedai-offline-pipeline-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../../../_downloads/8d3e979a9ef2be106ca1dbbae53d0fbe/00_gedai_offline_pipeline.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">00_gedai_offline_pipeline.ipynb</span></code></a></p>
